@@ -98,7 +98,7 @@ import { SECTIONS, LINKS } from '../../data/sections'
     .scrim { display: block; position: fixed; inset: 0; z-index: 39; background: rgba(0, 0, 0, .45); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; pointer-events: none; transition: opacity .4s var(--ease) }
     .scrim.on { opacity: 1; pointer-events: auto }
     .isle { display: block; position: fixed; z-index: 40; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); width: var(--w, 212px); height: var(--h, 54px); transform: translateX(-50%);
-      background: rgba(24, 24, 24, .86); backdrop-filter: blur(22px) saturate(1.8); -webkit-backdrop-filter: blur(22px) saturate(1.8);
+      background: rgba(18, 18, 20, .97); backdrop-filter: blur(22px) saturate(1.8); -webkit-backdrop-filter: blur(22px) saturate(1.8);
       --ns-border: rgba(255, 255, 255, .14); --ns-motion: var(--signal); --ns-accent-width: 1.5px; color: var(--text);
       contain: layout style; transition: width .55s var(--ease), height .55s var(--ease); filter: drop-shadow(0 16px 30px rgba(0, 0, 0, .5)) }
     .pill { position: absolute; inset: 0; display: flex; align-items: center; gap: 11px; padding: 0 8px 0 9px; border: 0; background: none; cursor: pointer; text-align: left; transition: opacity .25s; touch-action: pan-y }
@@ -119,7 +119,7 @@ import { SECTIONS, LINKS } from '../../data/sections'
     header button { width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, .1); display: grid; place-items: center; cursor: pointer }
     header svg { width: 14px; height: 14px }
     ul { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0; padding: 0; list-style: none }
-    ul a { display: flex; flex-direction: column; gap: 10px; padding: 14px; min-height: 86px; background: rgba(255, 255, 255, .06); --ns-border: rgba(255, 255, 255, .06); transition: background .2s }
+    ul a { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; min-height: 72px; background: rgba(255, 255, 255, .06); --ns-border: rgba(255, 255, 255, .06); transition: background .2s }
     ul a :global(svg) { color: var(--text-2) }
     ul a span { font-size: 15px; font-weight: 500 }
     ul a small { font-size: 12px; color: var(--text-3); margin-top: -8px }
