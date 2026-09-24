@@ -2,4 +2,6 @@ body { background: #06090f; color: #e6f1f8; font: 14px system-ui; padding: 40px;
 .box { height: 90px; padding: 16px; background: #0b1520; --ns-border: #3de0ff; --ns-accent: #fff; color: inherit; border: 0 }
 #a { --ns-border: linear-gradient(to top, #3de0ff, transparent) }
 .tag { padding: 6px; width: 120px }
+.mo { --ns-areas: 'a a b' 'c a b'; --ns-orb: 2 2 18 hex, 3 3 12; --ns-row: 60px; --ns-gap: 8px }
+.mo > * { background: #0b1520; --ns-border: #3de0ff }
 #result { font: 13px ui-monospace, monospace; color: #3de0ff; white-space: pre-wrap }

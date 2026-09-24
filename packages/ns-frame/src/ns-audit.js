@@ -20,7 +20,11 @@ export function audit({ root = document, mark = false, margin = 2, clearance = 0
       for (const c of n.childNodes) {
         if (c.nodeType == 1 && (c.matches('[data-ns],[data-ns-nest],ns-frame,.ns-svg') || getComputedStyle(c).visibility == 'hidden')) continue
         if (TEXT(c)) { const rg = document.createRange(); rg.selectNodeContents(c); boxes.push(...[...rg.getClientRects()].map(b => [b, c.textContent.trim().slice(0, 40), sc])) }
-        else if (c.nodeType == 1 && c.matches('button,a,input,select,textarea,img,svg')) boxes.push([c.getBoundingClientRect(), '<' + c.localName + '>', sc])
+        else if (c.nodeType == 1 && c.matches('button,a,input,select,textarea,img,svg')) {
+          // una imagen o vídeo que cubre todo el marco es un medio a sangre: recortarlo es la intención
+          const b = c.getBoundingClientRect()
+          if (!(c.matches('img,video') && b.width * b.height >= r.width * r.height * .95)) boxes.push([b, '<' + c.localName + '>', sc])
+        }
         if (c.nodeType == 1) walk(c, /auto|scroll|hidden/.test(getComputedStyle(c).overflow) ? c : sc)
       }
     }

@@ -45,6 +45,7 @@ await open(panel, 'iris', 500)
 | `ns-frame/toast` | `toast(msg, options)` → `{ el, close }` · `config(options)` |
 | `ns-frame/skel` | `refresh(el?)` |
 | `ns-frame/bento` · `ns-frame/link` | `refresh()` |
+| `ns-frame/mosaic` | `refresh()`, `parseAreas(areas)` |
 | `ns-frame/fx` | `decode(el, ms?)` |
 | `ns-frame/audit` | `audit({ root, mark, margin, clearance })` → problemas encontrados |
 | `ns-frame/pop` · `ns-frame/carousel` | Sin exportaciones: se activan con sus atributos |

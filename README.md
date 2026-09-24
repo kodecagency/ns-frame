@@ -3,7 +3,7 @@
 **Formas nativas para la web.** Cortes, chaflanes, notches, scoops, esquinas squircle y radius en **cualquier vértice de cualquier elemento** — con bordes reales que siguen el corte, morph, aperturas y componentes con forma. Sin imágenes, sin dependencias, compatible con CSP estricta.
 
 ```html
-<script type="module" src="https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.8.0/packages/ns-frame/dist/ns-frame.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.9.0/packages/ns-frame/dist/ns-frame.js"></script>
 
 <article data-ns="tl+br bevel 18; radius 3" data-ns-pad>Una tarjeta con dos esquinas cortadas</article>
 <a data-ns="button" data-ns-hover="tl+br bevel 20; radius 2" href="#">Un botón que se transforma</a>
@@ -12,9 +12,10 @@
 
 | | |
 |---|---|
-| **8,2 KB** gzip el núcleo | Módulos opcionales de 0,5 a 2,5 KB que se cargan sólo si se usan |
+| **8,3 KB** gzip el núcleo | Módulos opcionales de 0,5 a 7 KB que se cargan sólo si se usan |
 | **Cualquier forma** | bevel, notch, round, scoop, squircle, rasgos en los bordes, polígonos libres, fillet en cada vértice |
 | **Bordes reales** | color, degradado, doble línea, brackets y 11 animaciones de borde |
+| **Mosaicos libres** | piezas en L, T o U que encajan con hueco constante, orbes con forma (círculo, hexágono, rombo, triángulo) y luz conectada en toda la figura |
 | **Componentes** | toasts, carrusel, skeletons, popovers, View Transitions, bento, callouts |
 | **Cero JS opcional** | formas estáticas compiladas a CSS `shape()` en el build (integración de Astro incluida) |
 | **Accesible y seguro** | foco que sigue la forma, alto contraste, RTL, movimiento reducido, sin `innerHTML`, CSP estricta |

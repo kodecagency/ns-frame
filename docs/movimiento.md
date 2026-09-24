@@ -30,6 +30,9 @@ El morph interpola **vértices**, no el texto del path, así que funciona igual 
 | `twin` | Dos cometas opuestos |
 | `scan` | Barrido de luz que cruza el marco y enciende el borde a su paso |
 | `orbit` | Dos destellos que giran alrededor del centro |
+
+`scan`, `orbit` y el giro de degradados (`data-ns-spin`) se animan con CSS (`transform`), no con SMIL: se pausan fuera de pantalla y funcionan igual en móviles.
+
 | `chase` | Pulsos cortos, tipo flujo de datos |
 | `march` | Borde discontinuo en marcha (selección, zonas para soltar) |
 | `loop` | El borde se dibuja y se borra en bucle |

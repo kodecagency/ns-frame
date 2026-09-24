@@ -8,6 +8,7 @@
 | [Estilo y bordes](estilo.md) | Variables CSS, bordes, degradados, acentos, foco y modo nativo |
 | [Movimiento](movimiento.md) | Morph, estados, bordes animados, aperturas y formas con scroll |
 | [Layout](layout.md) | Padding según la forma, formas concéntricas y bento |
+| [Mosaico](mosaico.md) | Piezas en L, T o U que encajan, orbes con forma y luz conectada |
 | [Componentes](componentes.md) | Popovers, toasts, carrusel, skeletons, View Transitions y callouts |
 | [Efectos](efectos.md) | `ns-fx.css`: luz en U con animaciones, aura, patrones y texto |
 | [Formas sin JS](sin-js.md) | `css()`, `extract()` y la integración de Astro |

@@ -70,10 +70,12 @@ Con dos tamaños, el corte es asimétrico: `tl bevel 44 14` (44 px en horizontal
 ## Polígonos libres
 
 ```
-poly x y [rN], x y [rN], …
+poly x y [rN] [aN], x y [rN] [aN], …
 ```
 
 Cualquier polígono, con radius por vértice: `poly 28 0 r4, 100%-60 0, 100% 50%, 100%-60 100%, 28 100% r4, 0 100%-28, 0 28`.
+
+`aN` hace que se llegue a ese vértice por un arco de radio N (horario; `a-N`, antihorario): `poly 0 0, 40% 0, 50% 20 a-20, 60% 0, 100% 0, 100% 100%, 0 100%` muerde el borde superior con un semicírculo. Así dibuja [el mosaico](mosaico.md) los huecos de sus orbes, y también compila a CSS `shape()`.
 
 ## Consultas por ancho del elemento
 

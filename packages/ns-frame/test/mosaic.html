@@ -16,7 +16,7 @@ h2 { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: #
 .hero { background: linear-gradient(180deg, #6d4cff, #4f35d8) !important; --ns-border: none !important; align-items: center; text-align: center }
 .hero b { font-size: clamp(26px, 4vw, 52px) !important; line-height: 1.05 }
 [data-ns-orb] { background: radial-gradient(circle at 35% 30%, #ff9a5c, #b1339d 45%, #2b1460 75%); box-shadow: 0 0 60px rgba(160, 90, 255, .45) }
-.promp { --ns-areas: 'a h h b' 'a h h c' 'd x y c' 'e x y f'; --ns-row: 150px; --ns-orb: 3 3 92; --ns-round: 22px }
+.promp { --ns-areas: 'a h h b' 'a h h c' 'd x y c' 'e x y f'; --ns-row: 150px; --ns-orb: 3 3 84 hex; --ns-round: 22px }
 @media (max-width: 760px) {
   .promp { --ns-areas: 'h h' 'h h' 'x y' 'x y' 'a b' 'a c' 'd c' 'e f'; --ns-row: 120px; --ns-orb: 2 3 64; --ns-round: 18px; --ns-gap: 10px }
 }
@@ -29,7 +29,7 @@ h2 { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: #
 </head>
 <body>
 <h2>Referencia 03 · orbe central</h2>
-<div class="m promp ns-mosaic" data-ns-mosaic>
+<div class="m promp ns-mosaic" data-ns-mosaic="sweep wave ripple glow">
   <article data-ns-area="a"><b>Effortless Prompt Perfection</b><span>14 días de prueba</span></article>
   <article data-ns-area="h" class="hero"><b>Your AI Prompt Companion</b></article>
   <article data-ns-area="b"><b>✦</b></article>
@@ -43,7 +43,7 @@ h2 { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: #
 </div>
 
 <h2>Referencia 04 · piezas que encajan</h2>
-<div class="m lock ns-mosaic" data-ns-mosaic>
+<div class="m lock ns-mosaic" data-ns-mosaic="sweep">
   <article data-ns-area="t"><b>Rectángulo</b><span>Arriba, de dos columnas.</span></article>
   <article data-ns-area="a"><b>Pieza en L</b><span>Esquina cóncava con radio + hueco.</span></article>
   <article data-ns-area="r"><b>Pieza en T</b><span>Encaja con la L con hueco constante.</span></article>

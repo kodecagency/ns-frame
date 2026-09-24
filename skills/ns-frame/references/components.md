@@ -70,6 +70,28 @@ Cuts keep their px size during the transition; same-structure shapes interpolate
 
 `<div class="ns-bento" data-ns-bento="outer bevel 30; inner round 12; radius 2">` with children classes `ns-big`, `ns-w2`, `ns-h2`, `ns-full`.
 
+## Mosaic — `ns-frame/mosaic`
+
+A bento whose pieces can be L, T, U or staircase shapes. Children need `data-ns-area`; the layout is a CSS variable, so media/container queries can change it.
+
+```html
+<div class="ns-mosaic grid" data-ns-mosaic="wave ripple">
+  <article data-ns-area="h">…</article> <article data-ns-area="a">…</article> …
+  <div data-ns-orb><img src="…" alt="…"></div>
+</div>
+```
+```css
+.grid { --ns-areas: 'a h h b' 'a h h c' 'd x y c'; --ns-row: 150px; --ns-gap: 14px; --ns-round: 22px; --ns-orb: 3 3 90 hex }
+@media (max-width: 760px) { .grid { --ns-areas: 'h h' 'h h' 'x y' 'a b' 'd c'; --ns-orb: 2 3 56 hex } }
+```
+
+- Concave corners = `--ns-round` + gap, so interlocking pieces keep a constant gap around bends.
+- `--ns-orb: col row radius [circle|hex|diamond|square|tri|oct] [deg]`, comma-separated for several; positions are grid LINES (3 = the gap between columns 2 and 3). Each entry pairs with a `[data-ns-orb]` child, which may hold content (photo, stat, button). Put orbs where 3–4 pieces meet.
+- Content is padded into each piece's largest free rectangle automatically; keep rows tall enough.
+- Effects: `wave ripple glow sweep scan` (borders + backgrounds), `trace pulse` (borders), `aurora dots grid` (backgrounds, continuous across pieces, drawn in each piece's `::before` — don't combine with ns-fx pattern classes on the same piece).
+- Keep 2 columns on mobile; never collapse a mosaic to a single-column list.
+- On mobile the bento module also keeps ≥ 2 columns (`--ns-cols-min`).
+
 ## Callouts — `ns-frame/link`
 
 `<div data-ns-link="#target">Label</div>` draws a straight + 45° line to `#target`.

@@ -1,6 +1,6 @@
 ---
 name: ns-frame
-description: Build shaped web UI with the ns-frame library — bevels, notches, scoops, squircles and fillets on any corner of any element, borders that follow the cut, morph, apertures, and shaped components (toasts, carousel, skeletons, popovers, View Transitions). Use when the project imports ns-frame, uses data-ns attributes or <ns-frame>, or the user asks for cut/chamfered/HUD/sci-fi/futuristic corners, squircle corners, shaped cards, buttons, panels or tickets without images.
+description: Build shaped web UI with the ns-frame library — bevels, notches, scoops, squircles and fillets on any corner of any element, borders that follow the cut, morph, apertures, and shaped components (toasts, carousel, skeletons, popovers, View Transitions) and free-form mosaics (L/T/U pieces that interlock with a constant gap, shaped orbs, connected light effects). Use when the project imports ns-frame, uses data-ns attributes or <ns-frame>, or the user asks for cut/chamfered/HUD/sci-fi/futuristic corners, squircle corners, shaped cards, buttons, panels or tickets without images.
 ---
 
 # ns-frame
@@ -24,6 +24,8 @@ ns-frame draws shapes with a small shape language written in HTML attributes. Th
 | Carousel | `data-ns-carousel` + `ns-frame/carousel` |
 | Popover / tooltip with the arrow in the shape | `data-ns-arrow` on a `[popover]` + `ns-frame/pop` |
 | Card → detail view transition | `morph()` from `ns-frame/vt` |
+| Bento whose pieces are L/T/U shapes, or a central orb (circle, hex, diamond, triangle) that cuts its neighbours | `ns-frame/mosaic`: `--ns-areas`, `data-ns-area`, `--ns-orb`, `[data-ns-orb]` |
+| Light/pattern that flows across a whole mosaic | `data-ns-mosaic="wave ripple glow sweep scan trace pulse aurora dots grid"` |
 | Glow / patterns | classes from `ns-fx.css` (`ns-u`, `ns-u-live`, `ns-aura`, `ns-grid`…) |
 
 Read `references/shapes.md` before writing any non-trivial shape and `references/components.md` before using a module.
@@ -35,7 +37,7 @@ Read `references/shapes.md` before writing any non-trivial shape and `references
                                           type:   bevel notch round scoop squircle square
 <edge> <feature> <from> <to> <depth>      edge: top right bottom left | start end ; feature: cut tab scoop
 <edge> <feature> center <width> <depth>
-poly x y [rN], x y [rN], …                free polygon
+poly x y [rN] [aN], …                     free polygon (aN: reach the vertex through an arc of radius N; a-N counter-clockwise)
 @<420 …  /  @>800 …                       only when the ELEMENT (not the viewport) is narrower / wider
 radius N                                  fillet on every vertex
 card button chip soft notch scoop wing panel plate tab ticket media pill hud   (presets)

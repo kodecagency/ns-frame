@@ -13,13 +13,36 @@
 // · El contenido va dentro del mayor rectángulo libre de cada pieza (padding automático).
 // Requiere ns-frame.js (que dibuja las formas). CSP-safe: estilos por constructable stylesheet.
 
-import { styles as inject } from './ns-frame.js'
+import { styles as inject, path } from './ns-frame.js'
 
 const CSS = `@layer ns{
 .ns-mosaic{display:grid;position:relative;gap:var(--ns-gap,14px);grid-template-columns:repeat(var(--ns-cn,3),minmax(0,1fr));grid-template-rows:repeat(var(--ns-rn,2),var(--ns-row,150px))}
 .ns-mosaic>[data-ns-area]{box-sizing:border-box;min-width:0;min-height:0;padding:calc(var(--ns-in-t,0px) + var(--ns-pad,22px)) calc(var(--ns-in-r,0px) + var(--ns-pad,22px)) calc(var(--ns-in-b,0px) + var(--ns-pad,22px)) calc(var(--ns-in-l,0px) + var(--ns-pad,22px))}
 .ns-mosaic>[data-ns-area].ns-off-area{display:none}
+.ns-mosaic>[data-ns-area]{position:relative;isolation:isolate}
+.ns-mosaic:is([data-ns-mosaic~=aurora],[data-ns-mosaic~=dots],[data-ns-mosaic~=grid])>[data-ns-area]::before{content:'';position:absolute;z-index:-1;pointer-events:none;left:calc(-1 * var(--ns-mx,0px));top:calc(-1 * var(--ns-my,0px));width:var(--ns-mw,100%);height:var(--ns-mh,100%);background-image:var(--_d,none),var(--_g,none),var(--_a,none),var(--_b,none);background-size:16px 16px,28px 28px,100% 100%,100% 100%}
+.ns-mosaic[data-ns-mosaic~=dots]>[data-ns-area]{--_d:radial-gradient(circle,var(--ns-mo-dot,rgba(255,255,255,.16)) 1px,transparent 1.6px)}
+.ns-mosaic[data-ns-mosaic~=grid]>[data-ns-area]{--_g:linear-gradient(90deg,var(--ns-mo-line,rgba(255,255,255,.07)) 1px,transparent 1px),linear-gradient(var(--ns-mo-line,rgba(255,255,255,.07)) 1px,transparent 1px)}
+.ns-mosaic[data-ns-mosaic~=grid]:not([data-ns-mosaic~=dots])>[data-ns-area]{--_d:none}
+.ns-mosaic[data-ns-mosaic~=aurora]>[data-ns-area]::before{left:calc(-1 * var(--ns-mx,0px) - var(--ns-mw,100%) * .15);top:calc(-1 * var(--ns-my,0px) - var(--ns-mh,100%) * .15);width:calc(var(--ns-mw,100%) * 1.3);height:calc(var(--ns-mh,100%) * 1.3);animation:ns-mo-au calc(var(--ns-mo-time,5s) * 3) ease-in-out infinite alternate}
+.ns-mosaic[data-ns-mosaic~=aurora]>[data-ns-area]{--_a:radial-gradient(34% 40% at 32% 36%,color-mix(in srgb,var(--ns-mo-a1,#3de0ff) 30%,transparent),transparent);--_b:radial-gradient(34% 40% at 68% 64%,color-mix(in srgb,var(--ns-mo-a2,#8b7bff) 34%,transparent),transparent)}
 .ns-mosaic>[data-ns-orb]{position:absolute;margin:0;border-radius:50%;box-sizing:border-box}
+.ns-mosaic>[data-ns-orb].ns-orb-poly{border-radius:0}
+.ns-mo-fx{position:absolute;z-index:2;pointer-events:none;overflow:visible}
+.ns-mo-sw{transform-box:fill-box;animation:ns-mo-sw var(--ns-mo-time,5s) cubic-bezier(.45,0,.55,1) infinite}
+.ns-mo-wv{animation:ns-mo-wv var(--ns-mo-time,4.5s) cubic-bezier(.2,.6,.3,1) infinite backwards}
+.ns-mo-fx.ns-off *{animation-play-state:paused}
+@keyframes ns-mo-sw{0%{transform:translateX(-50%)}70%,to{transform:translateX(50%)}}
+@keyframes ns-mo-wv{0%{transform:scale(0);opacity:1}70%{opacity:1}to{transform:scale(1);opacity:0}}
+.ns-mo-sc{transform-box:fill-box;animation:ns-mo-sc var(--ns-mo-time,4.5s) cubic-bezier(.45,0,.55,1) infinite}
+.ns-mo-pl{animation:ns-mo-pl var(--ns-mo-time,3.6s) ease-in-out infinite}
+.ns-mo-tr path{fill:none;stroke:var(--ns-mo-light,var(--ns-motion,#fff));stroke-width:calc(var(--ns-mo-width,1.5px) * 1.4);stroke-linecap:round;stroke-dasharray:6 94;animation:ns-mo-tr var(--ns-mo-time,6s) linear infinite}
+@keyframes ns-mo-sc{0%{transform:translateY(-50%)}75%,to{transform:translateY(50%)}}
+@keyframes ns-mo-pl{0%,to{opacity:.1}50%{opacity:.8}}
+@keyframes ns-mo-au{0%{transform:translate(-8%,-5%)}to{transform:translate(8%,5%)}}
+@keyframes ns-mo-tr{to{stroke-dashoffset:-100}}
+@media (prefers-reduced-motion:reduce){.ns-mo-sw,.ns-mo-wv,.ns-mo-sc,.ns-mo-tr{display:none}.ns-mo-pl{animation:none;opacity:.4}.ns-mosaic>[data-ns-area]::before{animation:none!important}}
+@media (forced-colors:active){.ns-mo-fx{display:none}}
 }`
 
 const M = new Map()
@@ -129,6 +152,50 @@ function bite(P, O, Rc, rho) {
   return pend ? null : out
 }
 
+// huecos poligonales: n lados y giro base (triángulo y rombo con punta arriba, hexágono de punta)
+const SIDES = { tri: [3, -90], diamond: [4, -90], square: [4, -45], hex: [6, -90], oct: [8, -67.5] }
+// polígono regular de apotema a (el hueco crece en paralelo a sus lados: gap constante)
+function ngon(O, n, rot, a) {
+  const R = a / Math.cos(Math.PI / n)
+  return Array.from({ length: n }, (_, i) => { const t = (rot + i * 360 / n) * Math.PI / 180; return [O[0] + R * Math.cos(t), O[1] + R * Math.sin(t)] })
+}
+
+// resta el polígono convexo K (vértices en ángulo creciente) al contorno P; las uniones con el
+// borde reciben radio rho y las esquinas del hueco kr (el núcleo redondea cada vértice de poly)
+function biteK(P, K, rho, kr) {
+  const n = P.length, m = K.length
+  const cr = (a, b, p) => (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0])
+  const In = p => K.every((k, i) => cr(k, K[(i + 1) % m], [p.x, p.y]) > 1e-6)
+  const s = P.findIndex(p => !In(p))
+  if (s < 0) return null
+  const out = []
+  let pend = null
+  for (let k = 0; k < n; k++) {
+    const A = P[(s + k) % n], B = P[(s + k + 1) % n]
+    if (!pend) out.push(A)
+    // cortes del segmento AB con cada lado de K, en orden a lo largo de AB
+    const hits = []
+    for (let i = 0; i < m; i++) {
+      const C = K[i], D = K[(i + 1) % m], ex = B.x - A.x, ey = B.y - A.y, fx_ = D[0] - C[0], fy = D[1] - C[1]
+      const den = ex * fy - ey * fx_
+      if (Math.abs(den) < 1e-9) continue
+      const t = ((C[0] - A.x) * fy - (C[1] - A.y) * fx_) / den, u = ((C[0] - A.x) * ey - (C[1] - A.y) * ex) / den
+      if (t > 1e-6 && t < 1 - 1e-6 && u >= 0 && u < 1) hits.push({ t, i, u, x: A.x + t * ex, y: A.y + t * ey })
+    }
+    hits.sort((p, q) => p.t - q.t)
+    for (const h of hits) {
+      if (!pend) { out.push({ x: h.x, y: h.y, r: rho }); pend = h; continue }
+      // se recorre K en sentido contrario (el hueco queda fuera de la pieza) desde el lado de
+      // entrada hasta el de salida; si es el mismo lado y la salida queda "delante", vuelta entera
+      let j = pend.i, steps = pend.i == h.i ? (h.u < pend.u ? 0 : m) : (pend.i - h.i + m) % m
+      for (; steps > 0; steps--, j = (j + m - 1) % m) out.push({ x: K[j][0], y: K[j][1], r: kr })
+      out.push({ x: h.x, y: h.y, r: rho })
+      pend = null
+    }
+  }
+  return pend ? null : out
+}
+
 function layout() {
   raf = 0
   const jobs = []
@@ -157,27 +224,43 @@ function layout() {
     cw.reduce((x, w) => (xs.push(x, x + w), x + w + gx), 0)
     rh.reduce((y, h) => (ys.push(y, y + h), y + h + gy), 0)
     const W = xs[xs.length - 1], H = ys[ys.length - 1]
+    el.style.setProperty('--ns-mw', fx(W) + 'px'); el.style.setProperty('--ns-mh', fx(H) + 'px')
     const r = px(cs.getPropertyValue('--ns-round') || 18), ro_ = px(cs.getPropertyValue('--ns-round-out')) || r
     const concave = cs.getPropertyValue('--ns-round-in') ? px(cs.getPropertyValue('--ns-round-in')) : r + Math.min(gx, gy)
     // orbe: "col fila radio" en líneas de la cuadrícula
     const line = (v, P, gap) => { const k = Math.max(1, Math.min(P.length / 2 + 1, v)), i = Math.floor(k), fr = k - i
       const at = j => j <= 1 ? 0 : j >= P.length / 2 + 1 ? P[P.length - 1] : P[2 * (j - 1)] - gap / 2
       return at(i) + (at(i + 1) - at(i)) * fr }
-    const ob = cs.getPropertyValue('--ns-orb').trim().split(/\s+/).map(parseFloat)
-    const orbEl = el.querySelector(':scope>[data-ns-orb]')
-    let O = null, Ro = 0
-    if (ob.length >= 3 && ob.every(x => !isNaN(x)) && ob[2] > 0) {
-      O = [line(ob[0], xs, gx), line(ob[1], ys, gy)]; Ro = ob[2]
-    }
+    // uno o varios orbes, separados por comas: "col fila radio [circle|tri|diamond|square|hex|oct] [giro°]"
+    // (cada uno se empareja, en orden, con un hijo [data-ns-orb])
     const og = cs.getPropertyValue('--ns-orb-gap') ? px(cs.getPropertyValue('--ns-orb-gap')) : Math.min(gx, gy)
     const orho = cs.getPropertyValue('--ns-orb-round') ? px(cs.getPropertyValue('--ns-orb-round')) : r
-    if (orbEl) {
-      orbEl.hidden = !O
-      if (O) Object.assign(orbEl.style, { left: fx(px(cs.paddingLeft) + O[0] - Ro) + 'px', top: fx(px(cs.paddingTop) + O[1] - Ro) + 'px', width: fx(2 * Ro) + 'px', height: fx(2 * Ro) + 'px' })
-    }
-    const key = [JSON.stringify(G), O && ob.join()].join('|')
+    // radio de las esquinas del orbe poligonal; el hueco las repite concéntricas (+ gap)
+    const okr = cs.getPropertyValue('--ns-orb-corner') ? px(cs.getPropertyValue('--ns-orb-corner')) : 10
+    const spec = cs.getPropertyValue('--ns-orb').trim()
+    const holes = spec.split(',').map(s => {
+      const tok = s.trim().split(/\s+/), ob = tok.slice(0, 3).map(parseFloat)
+      if (ob.length < 3 || ob.some(isNaN) || ob[2] <= 0) return
+      const kind = SIDES[tok[3]] ? tok[3] : 'circle', [n, base] = SIDES[kind] || [0, 0], a = base + (parseFloat(tok[4]) || 0)
+      const O = [line(ob[0], xs, gx), line(ob[1], ys, gy)], Ro = ob[2]
+      // hueco: círculo concéntrico con el orbe, o el mismo polígono con los lados desplazados gap px
+      return { O, Ro, n, K: n && ngon(O, n, a, Ro), Kc: n && ngon(O, n, a, Ro + og), Rc: n ? (Ro + og) / Math.cos(Math.PI / n) : Ro + og }
+    }).filter(Boolean)
+    el.querySelectorAll(':scope>[data-ns-orb]').forEach((orbEl, i) => {
+      const h = holes[i]
+      orbEl.hidden = !h
+      if (!h) return
+      // en un orbe poligonal el radio es la apotema: la caja mide 2 × el radio circunscrito
+      const { O, Ro, K } = h, Rb = K ? Ro / Math.cos(Math.PI / h.n) : Ro
+      Object.assign(orbEl.style, { left: fx(px(cs.paddingLeft) + O[0] - Rb) + 'px', top: fx(px(cs.paddingTop) + O[1] - Rb) + 'px', width: fx(2 * Rb) + 'px', height: fx(2 * Rb) + 'px' })
+      const sh = K && 'poly ' + K.map(([x, y]) => `${fx(x - O[0] + Rb)} ${fx(y - O[1] + Rb)} r${fx(okr)}`).join(', ')
+      orbEl.classList.toggle('ns-orb-poly', !!K)
+      if (sh ? orbEl.getAttribute('data-ns') != sh : orbEl.hasAttribute('data-ns')) sh ? orbEl.setAttribute('data-ns', sh) : orbEl.removeAttribute('data-ns')
+    })
+    const key = [JSON.stringify(G), spec].join('|')
     const same = el._nsk == key
     el._nsk = key
+    const parts = []
     for (const k of el.children) {
       const name = k.getAttribute('data-ns-area')
       if (name == null) continue
@@ -187,6 +270,8 @@ function layout() {
       if (r1 < 0) continue
       k.style.gridArea = `${r0 + 1} / ${c0 + 1} / ${r1 + 2} / ${c1 + 2}`
       const ox = xs[2 * c0], oy = ys[2 * r0]
+      // posición de la pieza en el mosaico: los fondos compartidos (::before) se alinean con ella
+      k.style.setProperty('--ns-mx', fx(ox) + 'px'); k.style.setProperty('--ns-my', fx(oy) + 'px')
       // contorno con radios: convexos r (o --ns-round-out en el perímetro del mosaico), cóncavos r + gap
       const P = outline(G, name, xs, ys), n = P.length
       let V = P.map((p, i) => {
@@ -198,8 +283,8 @@ function layout() {
       // contenido: mayor rectángulo de celdas; si el orbe lo invade, se recorta por el lado que menos pierde
       const [ir0, ic0, ir1, ic1] = inner(G, name)
       let box = [xs[2 * ic0], ys[2 * ir0], xs[2 * ic1 + 1], ys[2 * ir1 + 1]]
-      if (O) {
-        const Rc = Ro + og, bit = bite(V, O, Rc, orho)
+      for (const { O, Rc, Kc } of holes) {
+        const bit = Kc ? biteK(V, Kc, orho, okr + og) : bite(V, O, Rc, orho)
         if (bit) V = bit
         const hit = b => { const qx = Math.max(b[0], Math.min(O[0], b[2])), qy = Math.max(b[1], Math.min(O[1], b[3])); return Math.hypot(qx - O[0], qy - O[1]) < Rc }
         if (hit(box)) {
@@ -208,11 +293,13 @@ function layout() {
           const ry = reach(box[0], box[2], O[0]), rx = reach(box[1], box[3], O[1])
           const opts = [[O[0] + rx, box[1], box[2], box[3]], [box[0], box[1], O[0] - rx, box[3]], [box[0], O[1] + ry, box[2], box[3]], [box[0], box[1], box[2], O[1] - ry]]
             .filter(b => b[2] - b[0] > 0 && b[3] - b[1] > 0)
-          const area = b => (b[2] - b[0]) * (b[3] - b[1])
+          // se prefiere acortar en vertical: un texto corrido de lado se ve desalineado con sus vecinos
+          const area = b => (b[2] - b[0]) * (b[3] - b[1]) * (b[0] == box[0] && b[2] == box[2] ? 1.35 : 1)
           if (opts.length) box = opts.reduce((p, q) => area(q) > area(p) ? q : p)
         }
       }
       const shape = 'poly ' + V.map(v => `${fx(v.x - ox)} ${fx(v.y - oy)}${v.a ? ' a' + fx(v.a) : ''} r${fx(v.r || 0)}`).join(', ')
+      parts.push({ shape, ox, oy, w: xs[2 * c1 + 1] - ox, h: ys[2 * r1 + 1] - oy })
       const ins = [box[1] - oy, xs[2 * c1 + 1] - box[2], ys[2 * r1 + 1] - box[3], box[0] - ox]
       'trbl'.split('').forEach((s, i) => k.style.setProperty('--ns-in-' + s, fx(Math.max(0, ins[i])) + 'px'))
       if (k.getAttribute('data-ns') != shape) {
@@ -221,8 +308,105 @@ function layout() {
         k.setAttribute('data-ns', shape)
       }
     }
+    light(el, parts, W, H, holes, matchMedia('(prefers-reduced-motion: reduce)').matches, px(cs.paddingLeft), px(cs.paddingTop))
   }
 }
+
+// ── Luz conectada: una sola capa SVG sobre todo el mosaico. Sus máscaras son los contornos de
+// todas las piezas (y del orbe), así un barrido o una onda recorre la figura entera como un
+// solo objeto: bordes (máscara de trazo) y fondos (máscara de relleno, tenue).
+// data-ns-mosaic="sweep wave ripple glow" · color --ns-mo-light · grosor --ns-mo-width ·
+// tiempo --ns-mo-time · intensidad del fondo --ns-mo-fill
+const SVG = 'http://www.w3.org/2000/svg'
+let uid = 0
+function mk(tag, a = {}, st = {}, ...kids) {
+  const e = document.createElementNS(SVG, tag)
+  for (const k in a) e.setAttribute(k, a[k])
+  for (const k in st) e.style.setProperty(k, st[k])
+  e.append(...kids)
+  return e
+}
+const LIGHT = 'var(--ns-mo-light,var(--ns-motion,#fff))'
+const stops = (...s) => s.map(([o, a]) => mk('stop', { offset: o }, { 'stop-color': LIGHT, 'stop-opacity': a }))
+
+function light(el, parts, W, H, holes, reduce, pl, pt) {
+  const want = (el.getAttribute('data-ns-mosaic') || '').split(/\s+/).filter(Boolean)
+  let L = el._nsl
+  if (!want.length) { L?.svg.remove(); el._nsl = null; return }
+  if (!L) {
+    const id = 'nsmo' + ++uid, box = { maskUnits: 'userSpaceOnUse', x: -40, y: -40 }
+    const lines = mk('g', {}, { fill: 'none', stroke: '#fff', 'stroke-width': 'var(--ns-mo-width,1.5px)' })
+    const fills = mk('g', {}, { fill: '#fff', stroke: 'none' })
+    const ml = mk('mask', { id: id + 'l', ...box }, { 'mask-type': 'alpha' }, lines)
+    const mf = mk('mask', { id: id + 'f', ...box }, { 'mask-type': 'alpha' }, fills)
+    const gg = mk('radialGradient', { id: id + 'g', gradientUnits: 'userSpaceOnUse', cx: -9e3, cy: -9e3, r: 240 }, {}, ...stops([0, .9], [1, 0]))
+    // capas, de atrás hacia delante: luz de fondo, luz de bordes y trazo libre (aurora, puntos y
+    // retícula van en CSS, en un ::before de cada pieza, por detrás del contenido)
+    const bg = mk('g', { mask: `url(#${id}f)` }, { opacity: 'var(--ns-mo-fill,.07)' })
+    const top = mk('g', { mask: `url(#${id}l)` }), tr = mk('g', { class: 'ns-mo-tr' })
+    const svg = mk('svg', { class: 'ns-mo-fx', 'aria-hidden': 'true', focusable: 'false' }, {},
+      mk('defs', {}, {}, ml, mf, gg,
+        mk('linearGradient', { id: id + 'b', gradientUnits: 'objectBoundingBox', x1: 0, y1: 0, x2: 1, y2: .35 }, {}, ...stops([0, 0], [.47, 0], [.5, 1], [.53, 0], [1, 0])),
+        mk('linearGradient', { id: id + 's', gradientUnits: 'objectBoundingBox', x1: 0, y1: 0, x2: 0, y2: 1 }, {}, ...stops([0, 0], [.46, 0], [.5, 1], [.54, 0], [1, 0])),
+        mk('radialGradient', { id: id + 'r' }, {}, ...stops([0, 0], [.8, 0], [.93, 1], [1, 0]))),
+      bg, top, tr)
+    L = el._nsl = { id, svg, lines, fills, ml, mf, gg, top, bg, tr }
+    el.append(svg)
+    // eventos: una onda nace donde tocas y cruza toda la figura; la luz de fondo sigue al puntero
+    el.addEventListener('pointerdown', e => {
+      if (!L.on.includes('ripple') || matchMedia('(prefers-reduced-motion: reduce)').matches) return
+      const r = svg.getBoundingClientRect()
+      ring(L, e.clientX - r.left, e.clientY - r.top, Math.hypot(L.W, L.H), 1100)
+    })
+    el.addEventListener('pointermove', e => {
+      if (!L.on.includes('glow')) return
+      const r = svg.getBoundingClientRect()
+      L.gg.setAttribute('cx', fx(e.clientX - r.left)); L.gg.setAttribute('cy', fx(e.clientY - r.top))
+    }, { passive: true })
+    el.addEventListener('pointerleave', () => { L.gg.setAttribute('cx', -9e3); L.gg.setAttribute('cy', -9e3) })
+    lightIO.observe(el)
+  }
+  L.on = want; L.W = W; L.H = H
+  Object.assign(L.svg.style, { left: fx(pl) + 'px', top: fx(pt) + 'px', width: fx(W) + 'px', height: fx(H) + 'px' })
+  L.svg.setAttribute('viewBox', `0 0 ${fx(W)} ${fx(H)}`)
+  for (const m of [L.ml, L.mf]) { m.setAttribute('width', fx(W + 80)); m.setAttribute('height', fx(H + 80)) }
+  // contornos: piezas y orbes (los orbes no se repiten en el trazo libre: ya los rodea su hueco)
+  const ds = parts.map(p => [path(p.shape, p.w, p.h), `translate(${fx(p.ox)} ${fx(p.oy)})`])
+  const os = holes.map(({ O, Ro, K }) => [K ? 'M' + K.map(k => k.map(fx).join(' ')).join('L') + 'Z' : `M${fx(O[0] - Ro)} ${fx(O[1])}a${fx(Ro)} ${fx(Ro)} 0 1 0 ${fx(2 * Ro)} 0a${fx(Ro)} ${fx(Ro)} 0 1 0 ${fx(-2 * Ro)} 0Z`, ''])
+  const P = (list, a = {}) => list.map(([d, t]) => mk('path', t ? { d, transform: t, ...a } : { d, ...a }))
+  L.lines.replaceChildren(...P([...ds, ...os])); L.fills.replaceChildren(...P([...ds, ...os]))
+  // trazo libre: una luz corta recorre a la vez el contorno de cada pieza, al mismo ritmo
+  L.tr.replaceChildren(...(want.includes('trace') && !reduce ? P(ds, { pathLength: 100 }) : []))
+  const has = k => want.includes(k), full = (a = {}) => mk('rect', { x: 0, y: 0, width: fx(W), height: fx(H), ...a })
+  const C = holes[0]?.O || [W / 2, H / 2], S = Math.max(...[[0, 0], [W, 0], [0, H], [W, H]].map(([x, y]) => Math.hypot(x - C[0], y - C[1])))
+  const layer = (g, fill) => {
+    const kids = []
+    // barrido: una banda de 2·W que se desplaza su propio ancho (de -W a +W): cruza toda la figura
+    if (has('sweep') && !reduce) kids.push(mk('rect', { class: 'ns-mo-sw', x: fx(-W * .5), y: -40, width: fx(W * 2), height: fx(H + 80), fill: `url(#${L.id}b)` }))
+    // escaneo: una línea horizontal que baja por toda la figura
+    if (has('scan') && !reduce) kids.push(mk('rect', { class: 'ns-mo-sc', x: -40, y: fx(-H * .5), width: fx(W + 80), height: fx(H * 2), fill: `url(#${L.id}s)` }))
+    // ondas: anillos ya a su tamaño final que crecen desde el primer orbe (scale 0 → 1)
+    if (has('wave') && !reduce) for (const d of [0, .5]) kids.push(ringEl(L, C[0], C[1], S, { class: 'ns-mo-wv' }, { 'animation-delay': `calc(${d} * var(--ns-mo-time,4.5s))` }))
+    // pulso: todos los bordes respiran juntos
+    if (has('pulse') && !fill) kids.push(full({ class: 'ns-mo-pl', fill: LIGHT }))
+    if (has('glow')) kids.push(full({ fill: `url(#${L.id}g)`, opacity: fill ? 1 : .8 }))
+    g.replaceChildren(...kids)
+  }
+  layer(L.top, 0); layer(L.bg, 1)
+}
+
+// onda puntual (ripple): mismo anillo en bordes y fondo, con Web Animations (nada que limpiar en CSS)
+const ringEl = (L, x, y, S, a = {}, st = {}) => mk('rect', { x: fx(x - S), y: fx(y - S), width: fx(2 * S), height: fx(2 * S), fill: `url(#${L.id}r)`, ...a }, { 'transform-origin': `${fx(x)}px ${fx(y)}px`, ...st })
+function ring(L, x, y, S, dur) {
+  for (const g of [L.top, L.bg]) {
+    const r = ringEl(L, x, y, S)
+    g.append(r)
+    r.animate([{ transform: 'scale(0)', opacity: 1 }, { transform: 'scale(1)', opacity: 0 }], { duration: dur, easing: 'cubic-bezier(.2,.6,.3,1)' }).onfinish = () => r.remove()
+  }
+}
+
+// fuera de pantalla, las animaciones de la capa se pausan
+const lightIO = typeof IntersectionObserver != 'undefined' && new IntersectionObserver(es => es.forEach(e => e.target._nsl?.svg.classList.toggle('ns-off', !e.isIntersecting)))
 
 const schedule = () => { raf ||= requestAnimationFrame(layout) }
 
@@ -249,7 +433,7 @@ if (typeof document != 'undefined') {
         // piezas añadidas o quitadas, una pieza que cambia de área o el contenedor que cambia de clase
         if (M.has(m.type == 'attributes' && m.attributeName == 'data-ns-area' ? m.target.parentElement : m.target)) schedule()
       }
-    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-ns-area', 'class'] })
+    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-ns-area', 'data-ns-mosaic', 'class'] })
     // las media queries cambian --ns-areas sin cambiar siempre el tamaño
     addEventListener('resize', schedule, { passive: true })
   }

@@ -20,6 +20,7 @@
 <script type="module" src="/ns-frame/ns-fx.js"></script>
 <script type="module" src="/ns-frame/ns-link.js"></script>
 <script type="module" src="/ns-frame/ns-bento.js"></script>
+<script type="module" src="/ns-frame/ns-mosaic.js"></script>
 <script type="module" src="/ns-frame/ns-pop.js"></script>
 <script type="module" src="/ns-frame/ns-skel.js"></script>
 <script type="module" src="/ns-frame/ns-carousel.js"></script>
@@ -30,7 +31,9 @@
   --ink: #e6f1f8;
   --ink-2: #93a7b8;
   --ink-3: #5d7185;
-  --line: rgba(120, 200, 235, .16);
+  --line: rgba(120, 200, 235, .12);
+  --grid: rgba(120, 200, 235, .045);
+  --vi: #8b7bff;
   --cy: #3de0ff;
   --cy-2: rgba(61, 224, 255, .55);
   --cy-3: rgba(61, 224, 255, .08);
@@ -46,10 +49,11 @@ body {
   margin: 0; background: var(--bg); color: var(--ink);
   font: 400 16px/1.6 Inter, system-ui, sans-serif;
   background-image:
-    radial-gradient(1200px 600px at 80% -10%, rgba(61,224,255,.10), transparent 60%),
-    linear-gradient(var(--line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--line) 1px, transparent 1px);
-  background-size: auto, 48px 48px, 48px 48px;
+    radial-gradient(1100px 560px at 78% -12%, rgba(61,224,255,.09), transparent 62%),
+    radial-gradient(900px 500px at -10% 30%, rgba(139,123,255,.06), transparent 60%),
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: auto, auto, 56px 56px, 56px 56px;
   background-attachment: fixed;
   overflow-x: hidden;
 }
@@ -73,21 +77,41 @@ h1, h2, h3 { font-family: var(--disp); letter-spacing: .01em; margin: 0 }
 .glow { filter: drop-shadow(0 0 14px rgba(61,224,255,.28)) }
 
 /* ── Nav ── */
-nav { position: sticky; top: 0; z-index: 10; padding: 12px 0 }
-nav .bar { display: flex; align-items: center; gap: 20px; padding: 10px 18px }
-nav .logo { font: 700 18px var(--disp); display: flex; align-items: center; gap: 10px; text-decoration: none }
-nav .logo i { width: 18px; height: 18px; background: var(--cy); display: block }
-nav .links { margin-left: auto; display: flex; gap: 22px; font-size: 14px; color: var(--ink-2); white-space: nowrap }
-nav .links a { text-decoration: none }
-nav .links a:hover { color: var(--cy) }
-.nav-t { display: none; margin-left: auto; padding: 9px 14px; font: 500 12px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink); background: rgba(61,224,255,.08); border: 0; cursor: pointer; --ns-border: rgba(61,224,255,.35) }
-@media (max-width: 1100px) {
-  nav .bar { position: relative }
-  .nav-t { display: block }
-  nav .links { display: none; position: absolute; top: calc(100% + 8px); right: 0; z-index: 30; flex-direction: column; gap: 0; min-width: 220px; padding: 10px; background: rgba(8,14,22,.97); --ns-border: rgba(61,224,255,.45) }
-  nav .links.open { display: flex }
-  nav .links a { padding: 11px 12px }
+.top { position: sticky; top: 0; z-index: 10; padding: 12px 0 }
+.top .bar { display: flex; align-items: center; gap: 20px; padding: 9px 10px 9px 18px; background: rgba(8,13,21,.72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); --ns-border: rgba(140,210,240,.16) }
+.logo { font: 700 18px var(--disp); display: flex; align-items: center; gap: 10px; text-decoration: none }
+.logo i { width: 18px; height: 18px; background: linear-gradient(135deg, var(--cy), var(--vi)); display: block }
+.top .links { margin-left: auto; display: flex; gap: 4px; font-size: 14px; color: var(--ink-2); white-space: nowrap }
+.top .links a { text-decoration: none; padding: 8px 12px; transition: color .2s }
+.top .links a:hover, .top .links a[aria-current] { color: var(--ink) }
+.top .gh { display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; font: 500 13px/1 var(--mono); text-decoration: none; color: var(--ink); background: rgba(61,224,255,.08); --ns-border: rgba(61,224,255,.3) }
+.top .gh:hover { background: rgba(61,224,255,.16) }
+.top .gh svg { width: 16px; height: 16px }
+@media (max-width: 900px) { .top .links { display: none } .top .gh { margin-left: auto } }
+
+/* ── Dock inferior (móvil): barra con dos cortes finos y un indicador con la misma forma
+   que se desliza bajo la sección activa ── */
+.dock-wrap { display: none }
+@media (max-width: 900px) {
+  body { padding-bottom: calc(92px + env(safe-area-inset-bottom)) }
+  .dock-wrap { display: block; position: fixed; z-index: 20; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); max-width: 460px; margin: 0 auto; filter: drop-shadow(0 12px 28px rgba(0,0,0,.55)) }
+  .dock {
+    position: relative; display: flex; align-items: stretch; height: 62px; padding: 8px 20px;
+    background: rgba(9,14,22,.88); backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4);
+    --ns-border: rgba(140,210,240,.18)
+  }
+  .dock a { position: relative; z-index: 1; flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; text-decoration: none; color: var(--ink-3); font: 500 10px/1 Inter, system-ui, sans-serif; letter-spacing: .02em; -webkit-tap-highlight-color: transparent; transition: color .25s }
+  .dock a svg { width: 20px; height: 20px; transition: transform .35s cubic-bezier(.33,1,.68,1) }
+  .dock a[aria-current] { color: var(--ink) }
+  .dock a[aria-current] svg { color: var(--cy); transform: translateY(-1px) }
+  .dock a:focus-visible { outline: none }
+  .dock a:focus-visible span { text-decoration: underline; text-underline-offset: 3px }
+  .dock-ind { position: absolute; z-index: 0; left: 0; top: 8px; bottom: 8px; width: 20%; pointer-events: none;
+    background: linear-gradient(180deg, rgba(61,224,255,.16), rgba(61,224,255,.06)); --ns-border: rgba(61,224,255,.42);
+    transition: transform .42s cubic-bezier(.33,1,.68,1), width .42s cubic-bezier(.33,1,.68,1) }
+  .dock-ind::after { content: ''; position: absolute; left: 30%; right: 30%; bottom: 0; height: 2px; background: var(--cy); box-shadow: 0 0 10px var(--cy) }
 }
+@media (prefers-reduced-motion: reduce) { .dock a, .dock a svg, .dock-ind { transition: none } }
 
 /* ── Botones ── */
 .btn {
@@ -103,25 +127,51 @@ nav .links a:hover { color: var(--cy) }
 .btn:focus-visible { outline: none; --ns-border: #fff }
 
 /* ── Hero ── */
-.hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 48px; align-items: center; padding: 72px 0 96px }
-.hero h1 { font-size: clamp(40px, 6.4vw, 76px); line-height: .98; margin: 18px 0 20px; font-weight: 700 }
-.hero h1 span { color: var(--cy) }
-.hero p.lead { color: var(--ink-2); font-size: 18px; max-width: 520px; margin: 0 0 30px }
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.02fr); gap: 56px; align-items: center; padding-block: 64px 96px }
+.news { display: inline-flex; align-items: center; gap: 10px; padding: 7px 14px 7px 8px; font: 500 12px/1 var(--mono); color: var(--ink-2); text-decoration: none; background: rgba(139,123,255,.08); --ns-border: rgba(139,123,255,.35); max-width: 100% }
+.news b { font-weight: 600; color: #0b0720; background: linear-gradient(90deg, var(--vi), var(--cy)); padding: 6px 10px; letter-spacing: .08em; border-radius: 99px }
+.news span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.news:hover { color: var(--ink) }
+.hero h1 { font-size: clamp(42px, 6.2vw, 78px); line-height: .98; letter-spacing: -.01em; margin: 22px 0 20px; font-weight: 700; text-wrap: balance }
+.hero h1 span { background: linear-gradient(90deg, var(--cy), var(--vi)); -webkit-background-clip: text; background-clip: text; color: transparent }
+.hero p.lead { color: var(--ink-2); font-size: 18px; max-width: 520px; margin: 0 0 32px; text-wrap: pretty }
 .hero .cta { display: flex; gap: 12px; flex-wrap: wrap }
-.install { margin-top: 28px; display: inline-flex; gap: 12px; padding: 10px 16px; color: var(--ink-2); font: 13px var(--mono) }
+.install { margin-top: 26px; display: flex; gap: 12px; max-width: 100%; width: fit-content; padding: 10px 16px; color: var(--ink-2); font: 13px var(--mono); overflow: hidden }
+.install span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 .install b { color: var(--cy); font-weight: 500 }
-.showcase { position: relative; aspect-ratio: 5/4.3 }
-.showcase .photo { position: absolute; inset: 0 0 18% 12%; object-fit: cover; width: 88%; height: 82% }
-.showcase .stat { position: absolute; left: 0; bottom: 0; width: 58%; padding: 22px 24px }
-.showcase .tag { position: absolute; right: 18px; top: 18px; padding: 8px 14px; font: 500 11px/1 var(--mono); letter-spacing: .14em; color: #031018 }
-.stat-wrap { position: absolute; left: 0; bottom: 0; width: 58% }
-@media (max-width: 560px) { .stat-wrap { width: 86% } }
-.stat .row { display: flex; justify-content: space-between; align-items: baseline; margin-top: 12px }
-.stat .big { font: 700 34px/1 var(--disp) }
-.stat .up { color: var(--cy); font: 500 13px var(--mono) }
-.bars { display: flex; gap: 4px; align-items: flex-end; height: 38px; margin-top: 16px }
-.bars i { flex: 1; background: linear-gradient(var(--cy), rgba(61,224,255,.25)); display: block }
-@media (max-width: 880px) { .hero { grid-template-columns: 1fr; padding-top: 40px } }
+.facts { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 30px; padding: 0; list-style: none; font: 500 12px/1 var(--mono); color: var(--ink-3); letter-spacing: .06em }
+.facts li::before { content: ''; display: inline-block; width: 6px; height: 6px; margin-right: 9px; background: var(--cy); transform: rotate(45deg) translateY(-1px) }
+
+/* composición del hero: un mosaico con orbe (ns-mosaic) */
+.hero-mo { --ns-areas: 'p p s' 'p p s' 'p k k' 'c k k'; --ns-row: 108px; --ns-gap: 10px; --ns-orb: 3 3 38 hex; --ns-orb-corner: 8px; --ns-mo-light: #8cefff; --ns-mo-time: 5.5s; --ns-round: 18px; --ns-pad: 18px }
+.hero-mo > [data-ns-area] { background: linear-gradient(180deg, rgba(61,224,255,.07), rgba(61,224,255,.015)), rgba(9,15,24,.9); --ns-border: rgba(140,210,240,.2); display: flex; flex-direction: column; gap: 8px; position: relative; min-width: 0 }
+.hero-mo .ph { background: #0a1119; margin: 0 }
+.hero-mo .ph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover }
+.hero-mo .ph::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(4,8,14,.25), rgba(4,8,14,.1) 30%, rgba(4,8,14,.82) 78%) }
+.hero-mo .ph .tag { position: relative; z-index: 1; align-self: flex-start; padding: 7px 11px; font: 500 11px/1 var(--mono); letter-spacing: .14em; color: #031018; background: var(--cy) }
+.hero-mo .ph p { position: relative; z-index: 1; margin: auto 0 0; font: 600 18px/1.2 var(--disp); max-width: 70%; text-shadow: 0 1px 14px rgba(0,0,0,.85) }
+.stat .big { font: 700 32px/1 var(--disp); margin-top: 4px }
+.stat .up { color: var(--cy); font: 500 12px var(--mono) }
+.bars { display: flex; gap: 4px; align-items: flex-end; height: 38px; margin-top: auto }
+.bars i { flex: 1; background: linear-gradient(var(--cy), rgba(61,224,255,.2)); display: block }
+.code-t { margin: auto 0 0; font: 13px/1.75 var(--mono); color: var(--ink-2); white-space: pre; overflow: hidden }
+.code-t b { color: var(--cy); font-weight: 400 }
+.code-t i { color: var(--vi); font-style: normal }
+.mini .big { font: 700 26px/1 var(--disp) }
+.mini small { color: var(--ink-3); font: 11px var(--mono) }
+.orb { background: radial-gradient(circle at 36% 30%, #eafcff 0, #6fe9ff 18%, #3a7dff 48%, #5b2bd6 72%, #1a0b4a 100%); box-shadow: 0 0 40px rgba(90,140,255,.55), 0 0 90px rgba(139,123,255,.3) }
+.orb::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, transparent, rgba(255,255,255,.45), transparent 30%); mix-blend-mode: overlay; animation: orb-spin 9s linear infinite }
+@keyframes orb-spin { to { transform: rotate(1turn) } }
+.orb.ns-orb-poly::after { border-radius: 0; inset: -30% }
+@media (prefers-reduced-motion: reduce) { .orb::after { animation: none } }
+@media (max-width: 900px) { .hero { grid-template-columns: minmax(0, 1fr); gap: 44px; padding-block: 36px 72px } }
+@media (max-width: 560px) {
+  .hero-mo { --ns-row: 84px; --ns-gap: 8px; --ns-orb: 3 3 27 hex; --ns-orb-corner: 6px; --ns-round: 14px; --ns-pad: 13px }
+  .hero-mo .ph p { font-size: 15px; max-width: 90% }
+  .stat .big { font-size: 24px }
+  .code-t { font-size: 11px; line-height: 1.7 }
+  .mini .big { font-size: 20px }
+}
 
 /* ── Secciones ── */
 section { padding: 80px 0 }
@@ -389,6 +439,88 @@ kbd { font: 12px var(--mono); padding: 2px 6px; border: 1px solid var(--line); b
 .plan-n { font: 600 13px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--cy); display: flex; align-items: center; gap: 10px; flex-wrap: wrap }
 .badge { font: 600 10px/1 var(--mono); letter-spacing: .12em; padding: 5px 9px; border-radius: 99px; color: #0b0720; background: linear-gradient(90deg, #8b7bff, #ff6bd6) }
 
+/* mosaico: piezas libres */
+.mo-bar { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; margin-bottom: 22px }
+.mo-bar .modes button { min-width: 0 }
+.mo-bar output { font: 12px var(--mono); color: var(--ink-3) }
+.mo { --ns-gap: 14px; --ns-row: 150px; --ns-round: 22px; --ns-pad: 24px }
+.mo > [data-ns-area] { background: linear-gradient(180deg, rgba(61,224,255,.06), rgba(61,224,255,.01)), rgba(9,15,24,.9); --ns-border: rgba(140,210,240,.18); display: flex; flex-direction: column; gap: 8px; min-width: 0; view-transition-class: mo-piece }
+.mo > [data-ns-area] p { margin: 0; color: var(--ink-2); font-size: 15px }
+.mo .hi { background: linear-gradient(180deg, #6a5cff, #3b2fc4) !important; --ns-border: rgba(255,255,255,.18) !important; text-align: center; align-items: center }
+.mo .hi .eyebrow { color: #cfc9ff }
+.mo .hi h3 { font-size: clamp(28px, 4vw, 50px); line-height: 1.02; text-wrap: balance }
+.mo .hi p { color: #d9d5ff; max-width: 440px }
+.mo h3 { font-size: 20px }
+.mo .kpi-v { margin: 0 }
+.mo code { color: var(--cy) }
+.fxbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 22px }
+.fxbar > .mono { color: var(--ink-3); font-size: 12px; margin-right: 6px }
+.fxbar output { flex-basis: 100%; font: 12px var(--mono); color: var(--ink-3); margin-top: 4px }
+.mo .ph { position: relative; background: #0a1119 !important }
+.mo .ph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover }
+.mo .ph::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(4,8,14,.72), rgba(4,8,14,.2) 55%, rgba(4,8,14,.8)) }
+.mo .ph > :not(img) { position: relative; z-index: 1 }
+.mo .ph p { color: #dfe8ef }
+.mo .ph h3, .mo .ph p { text-shadow: 0 1px 12px rgba(0,0,0,.85) }
+/* orbe con contenido: sólido, foto o dato (la forma lo recorta, sea círculo o polígono) */
+.orb { display: grid; place-items: center; overflow: hidden; color: #fff; text-align: center }
+.orb[hidden] { display: none }
+.orb > img, .orb > .ok { grid-area: 1 / 1; opacity: 0; transition: opacity .45s }
+.orb > img { width: 100%; height: 100%; object-fit: cover }
+.orb .ok b { display: block; font: 700 clamp(20px, 2.6vw, 30px)/1 var(--disp) }
+.orb .ok small { font: 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: #d6e8ff }
+.orb.is-photo > img, .orb.is-data > .ok { opacity: 1 }
+.orb.is-photo { box-shadow: 0 0 0 1px rgba(255,255,255,.25) inset }
+.orb.is-data { background: radial-gradient(circle at 50% 35%, #2c4f9e, #16225a 60%, #0c1233) }
+.orb-2 { background: radial-gradient(circle at 36% 30%, #fff1d6, #ffb547 45%, #b3561c) !important; color: #2a1406 }
+.orb-2 svg { width: 42%; height: 42% }
+.orb-2::after { display: none }
+.mo > .orb { view-transition-name: mo-orb }
+.mo > .orb-2 { view-transition-name: mo-orb2 }
+/* plantillas: la variable --ns-areas cambia con la clase y con el ancho */
+.mo.t-orb { --ns-areas: 'a h h b' 'a h h c' 'd x y c' 'e x y f'; --ns-orb: 3 3 var(--hole-r, 96) var(--hole, circle) }
+.mo.t-duo { --ns-areas: 'h h a b' 'h h c b' 'x y c d' 'x y e f'; --ns-orb: 3 3 70 hex, 2 4 44 circle }
+.mo.t-lock { --ns-areas: 'h h h b' 'a x x b' 'a a x c' 'd y e f'; --ns-orb: none }
+.mo.t-step { --ns-areas: 'h h a a' 'x h h a' 'x b h c' 'd y e f'; --ns-orb: none }
+@media (max-width: 900px) {
+  .mo { --ns-row: 112px; --ns-gap: 10px; --ns-round: 16px; --ns-pad: 16px }
+  .mo.t-orb { --ns-areas: 'h h' 'h h' 'x y' 'x y' 'a b' 'a c' 'd c' 'e f'; --ns-orb: 2 3 var(--hole-rm, 62) var(--hole, circle) }
+  .mo.t-duo { --ns-areas: 'h h' 'h h' 'x y' 'x y' 'a b' 'c b' 'c e' 'd e' 'f f'; --ns-orb: 2 3 50 hex, 2 7 34 circle }
+  .mo.t-lock { --ns-areas: 'h h' 'h b' 'a b' 'a a' 'x a' 'x x' 'c y' 'd y' 'e f' }
+  .mo.t-step { --ns-areas: 'h h' 'x h' 'x a' 'b a' 'c y' 'd e' 'f f' }
+  .mo > [data-ns-area] p { font-size: 13px }
+  .mo h3 { font-size: 16px }
+}
+::view-transition-group(*.mo-piece) { animation-duration: .5s; animation-timing-function: cubic-bezier(.33,1,.68,1) }
+
+/* móvil: las cuadrículas siguen siendo cuadrículas (2 columnas), no una lista */
+@media (max-width: 560px) {
+  .shapes, .fxgrid, .ugal, .perf, .enter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px }
+  .shapes > :nth-last-child(-n+2) { grid-column: auto }
+  .shape { padding: 20px 18px; min-height: 150px }
+  .shape h3 { font-size: 16px; flex-direction: column; align-items: flex-start; gap: 4px }
+  .shape[data-ns=pill] { padding-left: 46px }
+  .shape code { font-size: 10.5px }
+  .fx { min-height: 150px; padding: 22px 18px 18px }
+  .kpi-v { font-size: 30px !important }
+  .tile-h { font-size: 22px }
+  .hero-mo .stat .eyebrow { font-size: 9.5px; letter-spacing: .1em }
+  .fx .big { font-size: 21px }
+  .fx b { font-size: 14px }
+  .fx code { font-size: 10px; word-break: break-word }
+  #prog { grid-column: 1 / -1 }
+  .ucard { min-height: 170px; --ns-pad: 18px }
+  .ugal-3 > :last-child:nth-child(odd) { grid-column: 1 / -1 }
+  .ucard b { font-size: 16px }
+  .ucard span { font-size: 12.5px }
+  .ucard code { font-size: 10px }
+  .kpi { padding: 16px }
+  .kpi .v { font-size: 26px }
+  .kpi p { font-size: 12.5px }
+  .head { margin-bottom: 26px }
+  section { padding: 64px 0 }
+}
+
 .foot { margin-top: 40px; border-top: 1px solid var(--line); background: linear-gradient(rgba(61,224,255,.03), transparent 70%) }
 .foot-in { display: grid; grid-template-columns: 1fr auto; gap: 18px 40px; padding: 44px 16px 56px }
 .foot-logo { font: 700 18px var(--disp); display: inline-flex; align-items: center; gap: 10px; text-decoration: none }
@@ -403,43 +535,49 @@ kbd { font: 12px var(--mono); padding: 2px 6px; border: 1px solid var(--line); b
 </head>
 <body>
 
-<nav aria-label="Principal">
+<header class="top">
   <div class="wrap">
-    <div class="bar hud" data-ns="tl+br bevel 14; bottom cut center 28% 4; radius 2">
-      <a class="logo" href="#"><i data-ns="all bevel 5"></i>ns-frame</a>
-      <button class="nav-t" id="nav-t" aria-expanded="false" aria-controls="nav-links" data-ns="chip">Menú</button>
-      <div class="links" id="nav-links">
-        <a href="#formas">Formas</a><a href="#pricing">Luz en U</a><a href="#movimiento">Movimiento</a><a href="#componentes">Componentes</a><a href="#skeletons">Skeletons</a><a href="#toasts">Toasts</a><a href="#carrusel">Carrusel</a><a href="#playground">Playground</a><a href="#sintaxis">Sintaxis</a><a href="/docs/introduccion">Docs</a>
-      </div>
-    </div>
-  </div>
-</nav>
-
-<main>
-<header class="wrap hero">
-  <div>
-    <div class="eyebrow">// geometry engine · 8 KB gzip · 0 deps · MIT</div>
-    <h1>Cortes <span>futuristas</span>, sin imágenes.</h1>
-    <p class="lead">Chaflanes, notches, scoops e incluso <em>radius dentro del corte</em>, sobre cualquier elemento. Cortes en píxeles exactos que no se deforman, bordes reales y morph animado.</p>
-    <div class="cta">
-      <a class="btn solid" href="#playground" data-ns="tl+br bevel 12; radius 2" data-ns-hover="tl+br bevel 20; radius 2">Probar en vivo →</a>
-      <a class="btn ghost" href="/docs/introduccion" data-ns="tl+br bevel 12; radius 2" data-ns-hover="all bevel 12; radius 2">Documentación</a>
-    </div>
-    <div class="install ghost" data-ns="chip"><b>$</b> &lt;script type="module" src="ns-frame.js"&gt;</div>
-  </div>
-
-  <div class="showcase">
-    <img class="photo" src="https://picsum.photos/seed/nsframe-city/900/760" alt="Ciudad de noche" data-ns="tl round 40; br round 40; tr+bl bevel 26; top cut 55% 80% 10; radius 4">
-    <span class="tag solid" data-ns="tl+br bevel 8">LIVE · 04</span>
-    <div class="glow stat-wrap">
-      <div class="stat hud" style="position:relative;width:100%" data-ns="tl bevel 18; br bevel 18; top tab 0 46% 8; radius 3" data-ns-draw data-ns-trace>
-        <div class="eyebrow">Throughput</div>
-        <div class="row"><span class="big">98.4%</span><span class="up">▲ 12.6</span></div>
-        <div class="bars"><i style="height:30%"></i><i style="height:45%"></i><i style="height:38%"></i><i style="height:62%"></i><i style="height:55%"></i><i style="height:74%"></i><i style="height:68%"></i><i style="height:90%"></i><i style="height:84%"></i><i style="height:100%"></i></div>
-      </div>
+    <div class="bar" data-ns="all round 16">
+      <a class="logo" href="#inicio" aria-label="ns-frame, inicio"><i data-ns="all bevel 5"></i>ns-frame</a>
+      <nav class="links" aria-label="Principal">
+        <a href="#formas">Formas</a><a href="#mosaico">Mosaico</a><a href="#movimiento">Movimiento</a><a href="#componentes">Componentes</a><a href="#playground">Playground</a><a href="/docs/introduccion">Docs</a>
+      </nav>
+      <a class="gh" href="https://github.com/kodecagency/ns-frame" data-ns="all round 10"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.34c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.05-.49.05-.49.8.06 1.23.83 1.23.83.72 1.22 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.65-.89-3.65-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.66 3.95.29.25.54.73.54 1.48v2.19c0 .21.15.46.55.38A8 8 0 0 0 8 0Z"/></svg>GitHub</a>
     </div>
   </div>
 </header>
+
+<main>
+<section class="wrap hero" id="inicio" aria-labelledby="hero-t">
+  <div>
+    <a class="news" href="#mosaico" data-ns="all round 50%"><b>0.9</b><span>Nuevo: mosaicos con piezas libres</span></a>
+    <h1 id="hero-t">UI con forma. <span>Sin imágenes.</span></h1>
+    <p class="lead">Chaflanes, muescas, squircles y mosaicos de piezas que encajan, sobre cualquier elemento HTML. Bordes reales, morph y componentes accesibles en 8 KB.</p>
+    <div class="cta">
+      <a class="btn solid" href="/docs/instalacion" data-ns="tl+br bevel 12; radius 2" data-ns-hover="tl+br bevel 20; radius 2">Empezar →</a>
+      <a class="btn ghost" href="#playground" data-ns="tl+br bevel 12; radius 2" data-ns-hover="all bevel 12; radius 2">Probar en vivo</a>
+    </div>
+    <div class="install ghost" data-ns="all round 10"><b>$</b><span>&lt;script type="module" src="ns-frame.js"&gt;</span></div>
+    <ul class="facts"><li>0 dependencias</li><li>CSP estricta</li><li>MIT</li></ul>
+  </div>
+
+  <div class="hero-mo ns-mosaic" data-ns-mosaic="wave ripple">
+    <figure data-ns-area="p" class="ph">
+      <img src="https://picsum.photos/seed/nsframe-city/900/760" alt="Ciudad de noche" width="900" height="760">
+      <span class="tag" data-ns="tl+br bevel 6">LIVE · 04</span>
+      <p>Una pieza en L que abraza a sus vecinas</p>
+    </figure>
+    <div data-ns-area="s" class="stat">
+      <div class="eyebrow">Throughput</div>
+      <span class="big">98.4%</span><span class="up">▲ 12.6</span>
+      <div class="bars" aria-hidden="true"><i style="height:30%"></i><i style="height:52%"></i><i style="height:44%"></i><i style="height:70%"></i><i style="height:62%"></i><i style="height:88%"></i><i style="height:100%"></i></div>
+    </div>
+    <div data-ns-area="k"><div class="eyebrow">Una línea</div><pre class="code-t">&lt;div <b>data-ns</b>=<i>"tl+br bevel 18;
+     radius 3"</i>&gt;</pre></div>
+    <div data-ns-area="c" class="mini"><span class="big">8 KB</span><small>gzip</small></div>
+    <div data-ns-orb class="orb" aria-hidden="true"></div>
+  </div>
+</section>
 
 <section id="aura" class="ns-aura aura-sec">
   <div class="wrap aura-in">
@@ -483,7 +621,7 @@ kbd { font: 12px var(--mono); padding: 2px 6px; border: 1px solid var(--line); b
         <p>Cortes en px exactos, bordes reales, aperturas y morph. Pon aquí lo más importante: es la celda que se lee primero.</p>
         <a class="btn solid" href="#playground" data-ns="button">Probar ahora</a>
       </article>
-      <article class="tile hud" data-ns-motion="spot"><div class="eyebrow">Peso</div><p class="kpi-v">8.0 KB</p><p>núcleo completo, gzip</p></article>
+      <article class="tile hud" data-ns-motion="spot"><div class="eyebrow">Peso</div><p class="kpi-v">8.3 KB</p><p>núcleo completo, gzip</p></article>
       <article class="tile hud" data-ns-motion="spot"><div class="eyebrow">Seguridad</div><p class="kpi-v">0</p><p>innerHTML · CSP estricta</p></article>
       <article class="ns-w2 tile hud" data-ns-motion="spot"><div class="eyebrow">Responsivo</div><h3 class="tile-h sm">Consultas de forma por elemento</h3><p><code>@&lt;420</code> cambia la forma según el ancho del propio componente.</p></article>
       <article class="tile hud ns-dots" data-ns-motion="spot"><div class="eyebrow">Accesible</div><p>Foco que sigue la forma y <code>prefers-reduced-motion</code>.</p></article>
@@ -493,10 +631,44 @@ kbd { font: 12px var(--mono); padding: 2px 6px; border: 1px solid var(--line); b
   </div>
 </section>
 
+<section id="mosaico">
+  <div class="wrap">
+    <div class="head">
+      <div><div class="eyebrow">04 · Mosaico</div><h2>Piezas libres que encajan</h2></div>
+      <p>Cada área puede tener forma de L, T o escalera, no sólo de rectángulo. Las esquinas cóncavas crecen lo mismo que el hueco, así dos piezas encajadas mantienen la misma distancia también en la curva. Un orbe opcional recorta a sus vecinas con arcos concéntricos. La plantilla es una variable CSS: en móvil se reorganiza en dos columnas, no en una lista.</p>
+    </div>
+    <div class="mo-bar">
+      <div class="modes hud" data-ns="all bevel 10; radius 2" id="mo-modes" role="group" aria-label="Plantilla del mosaico">
+        <button data-ns-nest="round 2" data-t="t-orb" aria-pressed="true">Orbe</button><button data-ns-nest="round 2" data-t="t-duo" aria-pressed="false">Dúo</button><button data-ns-nest="round 2" data-t="t-lock" aria-pressed="false">Encaje</button><button data-ns-nest="round 2" data-t="t-step" aria-pressed="false">Escalera</button>
+      </div>
+      <div class="modes hud" data-ns="all bevel 10; radius 2" id="mo-fill" role="group" aria-label="Contenido del orbe"><button data-ns-nest="round 2" data-c="" aria-pressed="false">Sólido</button><button data-ns-nest="round 2" data-c="is-photo" aria-pressed="true">Foto</button><button data-ns-nest="round 2" data-c="is-data" aria-pressed="false">Dato</button></div>
+      <div class="modes hud" data-ns="all bevel 10; radius 2" id="mo-hole" role="group" aria-label="Forma del hueco"><button data-ns-nest="round 2" data-h="circle 96 62" aria-pressed="true" aria-label="Círculo">○</button><button data-ns-nest="round 2" data-h="hex 86 56" aria-pressed="false" aria-label="Hexágono">⬡</button><button data-ns-nest="round 2" data-h="diamond 78 50" aria-pressed="false" aria-label="Rombo">◇</button><button data-ns-nest="round 2" data-h="tri 56 38" aria-pressed="false" aria-label="Triángulo">△</button></div>
+    </div>
+    <div class="fxbar" id="mo-fx" role="group" aria-label="Efectos conectados del mosaico">
+      <span class="mono">Efectos</span>
+      <button class="chip" data-ns="chip" data-fx="wave" aria-pressed="true">onda</button><button class="chip" data-ns="chip" data-fx="ripple" aria-pressed="true">toque</button><button class="chip" data-ns="chip" data-fx="glow" aria-pressed="true">luz</button><button class="chip" data-ns="chip" data-fx="trace" aria-pressed="false">trazo</button><button class="chip" data-ns="chip" data-fx="sweep" aria-pressed="false">barrido</button><button class="chip" data-ns="chip" data-fx="scan" aria-pressed="false">escaneo</button><button class="chip" data-ns="chip" data-fx="pulse" aria-pressed="false">pulso</button><button class="chip" data-ns="chip" data-fx="aurora" aria-pressed="false">aurora</button><button class="chip" data-ns="chip" data-fx="dots" aria-pressed="false">puntos</button><button class="chip" data-ns="chip" data-fx="grid" aria-pressed="false">retícula</button>
+      <output id="mo-out" class="mono">data-ns-mosaic="wave ripple glow"</output>
+    </div>
+    <div class="mo ns-mosaic t-orb" id="mo" data-ns-mosaic="wave ripple glow">
+      <article data-ns-area="h" class="hi"><div class="eyebrow">ns-frame/mosaic</div><h3>Formas que se abrazan</h3><p>Plantilla en CSS, hueco constante y morph entre plantillas.</p></article>
+      <article data-ns-area="a" class="ph"><img src="https://picsum.photos/seed/ns-mosaic-a/700/800" alt="" width="700" height="800" loading="lazy"><div class="eyebrow">Fotos con forma</div><h3>L, T, U o escalera</h3><p>La imagen se recorta con la pieza.</p></article>
+      <article data-ns-area="b"><div class="eyebrow">Peso</div><p class="kpi-v">3.4 KB</p></article>
+      <article data-ns-area="c"><div class="eyebrow">Hueco</div><h3>Constante en la curva</h3><p>Radio cóncavo = radio + gap.</p></article>
+      <article data-ns-area="d"><div class="eyebrow">Móvil</div><p class="kpi-v">2 col</p></article>
+      <article data-ns-area="x"><div class="eyebrow">Orbe</div><h3>Recortes concéntricos</h3><p><code>--ns-orb: 3 3 96 hex</code>: círculo, hexágono, rombo o triángulo.</p></article>
+      <article data-ns-area="y"><div class="eyebrow">Contenido</div><h3>En el mayor rectángulo</h3><p>El padding se ajusta solo a la forma.</p></article>
+      <article data-ns-area="e"><div class="eyebrow">Sin framework</div><p class="kpi-v">HTML</p><p>atributos y CSS</p></article>
+      <article data-ns-area="f"><div class="eyebrow">Accesible</div><p>El orden del DOM no cambia.</p></article>
+      <div data-ns-orb class="orb is-photo" id="mo-orb"><img src="https://picsum.photos/seed/ns-orb-city/400/400" alt="Ciudad de noche" width="400" height="400" loading="lazy"><div class="ok"><b>99.9%</b><small>uptime</small></div></div>
+      <div data-ns-orb class="orb orb-2" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3 5 13h6l-1 8 8-10h-6Z"/></svg></div>
+    </div>
+  </div>
+</section>
+
 <section id="imagenes">
   <div class="wrap">
     <div class="head">
-      <div><div class="eyebrow">04 · Media</div><h2>Recorta imágenes directamente</h2></div>
+      <div><div class="eyebrow">05 · Media</div><h2>Recorta imágenes directamente</h2></div>
       <p><code>data-ns</code> funciona en <code>&lt;img&gt;</code>, <code>&lt;video&gt;</code> o cualquier bloque. El corte recorta el contenido real, no una máscara pegada encima.</p>
     </div>
     <div class="media-grid">
@@ -510,7 +682,7 @@ kbd { font: 12px var(--mono); padding: 2px 6px; border: 1px solid var(--line); b
 <section id="innovacion">
   <div class="wrap">
     <div class="head">
-      <div><div class="eyebrow">05 · Qué la hace distinta</div><h2>Más allá de clip-path</h2></div>
+      <div><div class="eyebrow">06 · Qué la hace distinta</div><h2>Más allá de clip-path</h2></div>
       <p>Lo que hoy hace falta resolver con imágenes, SVG a mano o varias librerías, aquí sale de una sola línea.</p>
     </div>
     <div class="features">
@@ -527,7 +699,7 @@ kbd { font: 12px var(--mono); padding: 2px 6px; border: 1px solid var(--line); b
 <section id="pricing">
   <div class="wrap">
     <div class="head">
-      <div><div class="eyebrow">06 · Borde en U</div><h2>Pricing con borde en U</h2></div>
+      <div><div class="eyebrow">07 · Borde en U</div><h2>Pricing con borde en U</h2></div>
       <div>
         <p style="margin-bottom:14px">La luz llena la base, esquinas incluidas, y se desvanece de abajo hacia arriba y de afuera hacia adentro, abrazando la base y los costados. Una clase, <code>ns-u</code>, con cualquier forma; <code>ns-u-top</code> la hace descender. Sin blur: se pinta una sola vez.</p>
         <div class="switch hud" data-ns="all bevel 10; radius 2" id="uswitch">
@@ -569,7 +741,7 @@ kbd { font: 12px var(--mono); padding: 2px 6px; border: 1px solid var(--line); b
 <section id="u-combos">
   <div class="wrap">
     <div class="head">
-      <div><div class="eyebrow">07 · Luz en U × todo</div><h2>Combinaciones</h2></div>
+      <div><div class="eyebrow">08 · Luz en U × todo</div><h2>Combinaciones</h2></div>
       <p>La luz en U se combina con cualquier forma, dirección, textura, borde y animación, porque cada capa es independiente: la forma recorta, la textura va en <code>::before</code>, la luz en <code>::after</code> y el borde en SVG. Pasa el mouse por las tarjetas.</p>
     </div>
     <div class="ugal">
@@ -597,7 +769,7 @@ kbd { font: 12px var(--mono); padding: 2px 6px; border: 1px solid var(--line); b
 <section id="efectos">
   <div class="wrap">
     <div class="head">
-      <div><div class="eyebrow">08 · Efectos y patrones</div><h2>Animaciones que siguen la forma</h2></div>
+      <div><div class="eyebrow">09 · Efectos y patrones</div><h2>Animaciones que siguen la forma</h2></div>
       <p>Módulo opcional <code>ns-fx.css</code>: son clases de CSS puro y cualquier marco los recorta con su forma. Las animaciones se pausan solas fuera de pantalla.</p>
     </div>
     <div class="fxgrid">
@@ -620,7 +792,7 @@ kbd { font: 12px var(--mono); padding: 2px 6px; border: 1px solid var(--line); b
 <section id="movimiento">
   <div class="wrap">
     <div class="head">
-      <div><div class="eyebrow">09 · Bordes en movimiento</div><h2>Luz que recorre el borde</h2></div>
+      <div><div class="eyebrow">10 · Bordes en movimiento</div><h2>Luz que recorre el borde</h2></div>
       <p>Un atributo, <code>data-ns-motion</code>. Se combinan (<code>"scan march"</code>), se colorean con <code>--ns-motion</code> y se ajustan con <code>--ns-motion-time</code>. Añade <code>hover</code> para que sólo aparezcan al pasar el mouse.</p>
     </div>
     <div class="fxgrid motion-grid">
@@ -648,7 +820,7 @@ kbd { font: 12px var(--mono); padding: 2px 6px; border: 1px solid var(--line); b
 <section id="aperturas">
   <div class="wrap">
     <div class="head">
-      <div><div class="eyebrow">10 · Aperturas</div><h2>Paneles que se despliegan</h2></div>
+      <div><div class="eyebrow">11 · Aperturas</div><h2>Paneles que se despliegan</h2></div>
       <p>Abrir y cerrar <em>respetando la forma</em>: los cortes mantienen sus px mientras el panel se despliega, el borde lo sigue y el contenido se revela recortado. Sirve para modales, menús, toasts y contenido que entra con el scroll.</p>
     </div>
     <div class="ap-row">
@@ -682,7 +854,7 @@ kbd { font: 12px var(--mono); padding: 2px 6px; border: 1px solid var(--line); b
 <section id="componentes">
   <div class="wrap">
     <div class="head">
-      <div><div class="eyebrow">11 · Componentes</div><h2>Tooltips, botones y más</h2></div>
+      <div><div class="eyebrow">12 · Componentes</div><h2>Tooltips, botones y más</h2></div>
       <p>Piezas de interfaz reales construidas sobre la misma geometría: popovers con la flecha dentro de la forma, botones con estado presionado, modo nativo con sombras que siguen el corte y formas que responden al scroll.</p>
     </div>
     <div class="comp">
@@ -722,7 +894,7 @@ kbd { font: 12px var(--mono); padding: 2px 6px; border: 1px solid var(--line); b
 <section id="skeletons">
   <div class="wrap">
     <div class="head">
-      <div><div class="eyebrow">12 · Skeletons</div><h2>Cargas con la forma real</h2></div>
+      <div><div class="eyebrow">13 · Skeletons</div><h2>Cargas con la forma real</h2></div>
       <p>Los huesos se miden sobre el propio componente: cada línea de texto, imagen y botón, con sus cortes. Al llegar los datos, el contenido aparece en su sitio y nada se mueve.</p>
     </div>
     <div class="skel-bar">
@@ -758,7 +930,7 @@ kbd { font: 12px var(--mono); padding: 2px 6px; border: 1px solid var(--line); b
 <section id="toasts">
   <div class="wrap">
     <div class="head">
-      <div><div class="eyebrow">13 · Toasts</div><h2>Avisos con su propio reloj</h2></div>
+      <div><div class="eyebrow">14 · Toasts</div><h2>Avisos con su propio reloj</h2></div>
       <p>Viven en la capa superior nativa (Popover API), entran con una apertura y el tiempo restante se consume en el propio borde. Pasa el puntero o enfoca uno para pausarlo.</p>
     </div>
     <div class="toast-demo hud" data-ns="tl+br bevel 18; radius 3" data-ns-pad>
@@ -782,7 +954,7 @@ kbd { font: 12px var(--mono); padding: 2px 6px; border: 1px solid var(--line); b
 <section id="carrusel">
   <div class="wrap">
     <div class="head">
-      <div><div class="eyebrow">14 · Carrusel</div><h2>Desliza, con forma</h2></div>
+      <div><div class="eyebrow">15 · Carrusel</div><h2>Desliza, con forma</h2></div>
       <p>El desplazamiento y el snap son nativos (<code>scroll-snap</code>), así que el gesto táctil es el del sistema. ns-carousel sólo añade flechas e indicadores con forma, teclado y accesibilidad.</p>
     </div>
     <div class="car" data-ns-carousel aria-label="Proyectos destacados">
@@ -798,7 +970,7 @@ kbd { font: 12px var(--mono); padding: 2px 6px; border: 1px solid var(--line); b
 <section id="vistas">
   <div class="wrap">
     <div class="head">
-      <div><div class="eyebrow">15 · View Transitions</div><h2>La tarjeta se convierte en la vista</h2></div>
+      <div><div class="eyebrow">16 · View Transitions</div><h2>La tarjeta se convierte en la vista</h2></div>
       <p>Con la View Transitions API del navegador, la tarjeta se transforma en el detalle. Los cortes no se estiran: el recorrido se recorta con <code>shape()</code> en píxeles reales.</p>
     </div>
     <div class="vt-stage">
@@ -823,7 +995,7 @@ kbd { font: 12px var(--mono); padding: 2px 6px; border: 1px solid var(--line); b
 <section id="callouts">
   <div class="wrap">
     <div class="head">
-      <div><div class="eyebrow">16 · Callouts HUD</div><h2>Anota cualquier cosa</h2></div>
+      <div><div class="eyebrow">17 · Callouts HUD</div><h2>Anota cualquier cosa</h2></div>
       <p>Módulo opcional <code>ns-link.js</code>: <code>data-ns-link="#destino"</code> une dos elementos con una línea recta + diagonal a 45°. Es responsivo, el scroll no cuesta nada y se ilumina al pasar el mouse por cualquiera de los dos extremos.</p>
     </div>
     <div class="anno">
@@ -849,7 +1021,7 @@ kbd { font: 12px var(--mono); padding: 2px 6px; border: 1px solid var(--line); b
 <section id="libertad">
   <div class="wrap">
     <div class="head">
-      <div><div class="eyebrow">17 · Libertad total</div><h2>Cualquier forma, cualquier tamaño</h2></div>
+      <div><div class="eyebrow">18 · Libertad total</div><h2>Cualquier forma, cualquier tamaño</h2></div>
       <p>Si los presets se quedan cortos, dibuja tu polígono con radius por vértice. Y la forma puede cambiar según el ancho del propio elemento, sin media queries.</p>
     </div>
     <div class="free">
@@ -873,18 +1045,18 @@ kbd { font: 12px var(--mono); padding: 2px 6px; border: 1px solid var(--line); b
 <section id="rendimiento">
   <div class="wrap">
     <div class="head">
-      <div><div class="eyebrow">18 · Rendimiento</div><h2>Casi no pesa</h2></div>
+      <div><div class="eyebrow">19 · Rendimiento</div><h2>Casi no pesa</h2></div>
       <p>Tamaños minificados + gzip. Un solo ResizeObserver, IntersectionObserver y MutationObserver para toda la página; las capas SVG sólo se crean si se usan, nada se repinta si no cambió y las animaciones se pausan fuera de pantalla.</p>
     </div>
     <div class="perf">
-      <div class="kpi hud" data-ns="card"><div class="eyebrow">núcleo</div><div class="v">8.0<small> KB</small></div><p>formas, bordes, morph, foco · lite <b style="color:var(--cy);font-weight:500">5.6 KB</b></p></div>
-      <div class="kpi hud" data-ns="card"><div class="eyebrow">extras</div><div class="v">3.2<small> KB</small></div><p>degradados, animaciones y aperturas · se cargan solos, sólo si se usan</p></div>
+      <div class="kpi hud" data-ns="card"><div class="eyebrow">núcleo</div><div class="v">8.3<small> KB</small></div><p>formas, bordes, morph, foco · lite <b style="color:var(--cy);font-weight:500">6.1 KB</b></p></div>
+      <div class="kpi hud" data-ns="card"><div class="eyebrow">extras</div><div class="v">3.8<small> KB</small></div><p>degradados, animaciones y aperturas · se cargan solos, sólo si se usan</p></div>
+      <div class="kpi hud" data-ns="card"><div class="eyebrow">mosaico</div><div class="v">3.4<small> KB</small></div><p>ns-mosaic.js · piezas libres y orbe · opcional</p></div>
       <div class="kpi hud" data-ns="card"><div class="eyebrow">skeletons</div><div class="v">2.5<small> KB</small></div><p>ns-skel.js · opcional</p></div>
-      <div class="kpi hud" data-ns="card"><div class="eyebrow">toasts</div><div class="v">2.2<small> KB</small></div><p>ns-toast.js · opcional</p></div>
+      <div class="kpi hud" data-ns="card"><div class="eyebrow">toasts</div><div class="v">2.1<small> KB</small></div><p>ns-toast.js · opcional</p></div>
       <div class="kpi hud" data-ns="card"><div class="eyebrow">efectos</div><div class="v">2.0<small> KB</small></div><p>ns-fx.css · luz en U, patrones · opcional</p></div>
-      <div class="kpi hud" data-ns="card"><div class="eyebrow">carrusel</div><div class="v">1.7<small> KB</small></div><p>ns-carousel.js · opcional</p></div>
-      <div class="kpi hud" data-ns="card"><div class="eyebrow">popovers</div><div class="v">1.5<small> KB</small></div><p>ns-pop.js · opcional</p></div>
-      <div class="kpi hud" data-ns="card"><div class="eyebrow">bento · callouts</div><div class="v">1.5<small> KB</small></div><p>ns-bento.js · ns-link.js · cada uno</p></div>
+      <div class="kpi hud" data-ns="card"><div class="eyebrow">carrusel</div><div class="v">1.6<small> KB</small></div><p>ns-carousel.js · opcional</p></div>
+      <div class="kpi hud" data-ns="card"><div class="eyebrow">bento · pop · callouts</div><div class="v">1.5<small> KB</small></div><p>ns-bento.js · ns-pop.js · ns-link.js · cada uno</p></div>
     </div>
     <div class="bench hud" data-ns="tl+br bevel 16; radius 2">
       <button class="btn solid" data-ns="button" id="benchbtn">Medir en este dispositivo</button>
@@ -898,7 +1070,7 @@ kbd { font: 12px var(--mono); padding: 2px 6px; border: 1px solid var(--line); b
 <section id="seguridad">
   <div class="wrap">
     <div class="head">
-      <div><div class="eyebrow">19 · Seguridad y accesibilidad</div><h2>Seguro por diseño</h2></div>
+      <div><div class="eyebrow">20 · Seguridad y accesibilidad</div><h2>Seguro por diseño</h2></div>
       <p>Pensado para producción: se puede usar en sitios con contenido de usuarios y con políticas de seguridad estrictas.</p>
     </div>
     <div class="features">
@@ -915,7 +1087,7 @@ kbd { font: 12px var(--mono); padding: 2px 6px; border: 1px solid var(--line); b
 <section id="playground">
   <div class="wrap">
     <div class="head">
-      <div><div class="eyebrow">20 · Playground</div><h2>Diseña tu forma</h2></div>
+      <div><div class="eyebrow">21 · Playground</div><h2>Diseña tu forma</h2></div>
       <p>Escribe la forma, arrastra la esquina de la vista previa para redimensionarla y copia el resultado como SVG o como CSS puro.</p>
     </div>
     <div class="play">
@@ -947,7 +1119,7 @@ radius 4</textarea>
 <section id="sintaxis">
   <div class="wrap">
     <div class="head">
-      <div><div class="eyebrow">21 · Sintaxis</div><h2>Un mini lenguaje de formas</h2></div>
+      <div><div class="eyebrow">22 · Sintaxis</div><h2>Un mini lenguaje de formas</h2></div>
       <p>Declaraciones separadas por <code>;</code> o saltos de línea. Los valores van en px; <code>%</code> es relativo al lado; un negativo se mide desde el final.</p>
     </div>
     <div class="syntax hud tscroll" data-ns="tl+br bevel 16; radius 2">
@@ -1013,6 +1185,17 @@ radius 4</textarea>
   </div>
 </footer>
 
+<div class="dock-wrap" id="dock-wrap">
+  <nav class="dock" id="dock" aria-label="Secciones" data-ns="tl+br bevel 14; radius 3">
+    <span class="dock-ind" id="dock-ind" data-ns="tl+br bevel 9; radius 2" aria-hidden="true"></span>
+    <a href="#inicio" aria-current="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7v8.5a.5.5 0 0 1-.5.5H15v-6H9v6H4.5a.5.5 0 0 1-.5-.5Z"/></svg><span>Inicio</span></a>
+    <a href="#formas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M8 3h8l5 5v8l-5 5H8l-5-5V8Z"/></svg><span>Formas</span></a>
+    <a href="#mosaico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h9v5H9v6H4Z"/><path d="M16 4h4v11h-8v-3h4Z"/><path d="M4 18h16v2H4Z"/></svg><span>Mosaico</span></a>
+    <a href="#componentes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5Z"/><path d="m3 13 9 5 9-5"/></svg><span>Piezas</span></a>
+    <a href="#playground"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 7-5 5 5 5M16 7l5 5-5 5M13.5 5l-3 14"/></svg><span>Código</span></a>
+  </nav>
+</div>
+
 <script type="module">
 import { PRESETS, path, geometry, open, close } from '/ns-frame/ns-frame.js'
 import { css } from '/ns-frame/ns-css.js'
@@ -1020,7 +1203,7 @@ import { css } from '/ns-frame/ns-css.js'
 const DESC = {
   card: 'Cards / paneles', button: 'Botones', chip: 'Chips, tags', soft: 'Chaflán suave',
   notch: 'Escalón + radius', scoop: 'Radius invertido', panel: 'Panel con muesca', tab: 'Pestaña / folder',
-  ticket: 'Tickets, cupones', media: 'Imágenes', pill: 'Mixto round + bevel', hud: 'Dashboards',
+  ticket: 'Tickets, cupones', media: 'Imágenes', pill: 'Round + bevel', hud: 'Dashboards',
   wing: 'Chaflán largo', plate: 'Placa técnica'
 }
 const grid = document.getElementById('shapes'), chips = document.getElementById('chips')
@@ -1074,23 +1257,102 @@ sw.onclick = e => {
   document.querySelectorAll('.uplan').forEach(el => el.dataset.ns = b.dataset.shape)
 }
 
-// Nav compacto (< 1100px): panel que se despliega con la apertura "drop"
-const navT = document.getElementById('nav-t'), navL = document.getElementById('nav-links')
-// la forma sólo existe mientras el panel está abierto (en escritorio los enlaces van en línea)
-const navOff = () => { navL.classList.remove('open'); navL.removeAttribute('data-ns'); navT.setAttribute('aria-expanded', false) }
-navT.onclick = async () => {
-  if (navT.getAttribute('aria-expanded') == 'true') { await close(navL, 'drop', 240); return navOff() }
-  navT.setAttribute('aria-expanded', true)
-  navL.classList.add('open')
-  navL.dataset.ns = 'tl bevel 12; br bevel 12; radius 2'
-  open(navL, 'drop', 360)
+// ── Dock inferior (móvil): el indicador (misma forma que la barra, a escala) se desliza
+// bajo la sección activa; el activo sigue al scroll y a los toques.
+{
+  const dock = document.getElementById('dock'), ind = document.getElementById('dock-ind')
+  const items = [...dock.querySelectorAll('a')], top = [...document.querySelectorAll('.top .links a[href^="#"]')]
+  let cur
+  const place = a => {
+    if (!dock.offsetWidth) return
+    ind.style.width = a.offsetWidth + 'px'
+    ind.style.transform = `translateX(${a.offsetLeft}px)`
+  }
+  const mark = h => top.forEach(x => x.getAttribute('href') == h ? x.setAttribute('aria-current', 'true') : x.removeAttribute('aria-current'))
+  const set = a => {
+    if (!a || a == cur) return
+    cur = a
+    items.forEach(x => x == a ? x.setAttribute('aria-current', 'true') : x.removeAttribute('aria-current'))
+    place(a)
+  }
+  // primera posición sin animación
+  ind.style.transition = 'none'
+  set(items[0])
+  requestAnimationFrame(() => requestAnimationFrame(() => ind.style.transition = ''))
+  dock.addEventListener('click', e => { const a = e.target.closest('a'); a && set(a) })
+  new ResizeObserver(() => cur && place(cur)).observe(dock)
+  // la última sección que cruzó la parte alta de la pantalla marca el ítem activo
+  const secs = [...new Set([...items, ...top].map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean))]
+  const vis = new Map()
+  const spy = new IntersectionObserver(es => {
+    for (const e of es) vis.set(e.target, e.isIntersecting)
+    const on = secs.filter(s => vis.get(s)).sort((p, q) => q.getBoundingClientRect().top - p.getBoundingClientRect().top)[0]
+    if (!on) return
+    const id = '#' + on.id
+    set(items.find(a => a.getAttribute('href') == id))
+    mark(id)
+  }, { rootMargin: '0px 0px -55% 0px' })
+  secs.forEach(s => spy.observe(s))
 }
-navL.addEventListener('click', e => { if (e.target.closest('a') && navT.getAttribute('aria-expanded') == 'true') navT.click() })
-addEventListener('resize', () => { if (innerWidth > 1100) navOff() })
+
+// ── Mosaico: cambiar de plantilla (View Transitions si el navegador las tiene) ──
+{
+  const mo = document.getElementById('mo'), modes = document.getElementById('mo-modes'), out = document.getElementById('mo-out')
+  const show = () => { out.textContent = `data-ns-mosaic="${mo.getAttribute('data-ns-mosaic')}" · --ns-orb: ${getComputedStyle(mo).getPropertyValue('--ns-orb').trim()}` }
+  modes.onclick = e => {
+    const b = e.target.closest('button[data-t]')
+    if (!b || b.getAttribute('aria-pressed') == 'true') return
+    const go = () => {
+      for (const x of modes.children) x.setAttribute('aria-pressed', x == b)
+      mo.classList.remove('t-orb', 't-duo', 't-lock', 't-step')
+      mo.classList.add(b.dataset.t)
+      show()
+    }
+    if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) return go()
+    const pieces = [...mo.querySelectorAll(':scope > [data-ns-area], :scope > [data-ns-orb]')]
+    pieces.forEach((p, i) => p.style.viewTransitionName = p.dataset.nsArea ? 'mo-' + p.dataset.nsArea : 'mo-orb' + i)
+    // actualización síncrona: durante ella no hay frames; el mosaico recalcula en el rAF previo a la captura
+    document.startViewTransition(go)
+      .finished.finally(() => pieces.forEach(p => p.style.viewTransitionName = ''))
+  }
+  show()
+  // forma del hueco: círculo, hexágono, rombo o triángulo (el radio es la apotema)
+  const hole = document.getElementById('mo-hole'), { refresh: moRefresh } = await import('/ns-frame/ns-mosaic.js')
+  hole.onclick = e => {
+    const b = e.target.closest('button[data-h]')
+    if (!b) return
+    const [k, r, rm] = b.dataset.h.split(' ')
+    for (const x of hole.children) x.setAttribute('aria-pressed', x == b)
+    Object.entries({ '--hole': k, '--hole-r': r, '--hole-rm': rm }).forEach(([p, v]) => mo.style.setProperty(p, v))
+    if (!mo.classList.contains('t-orb')) modes.querySelector('[data-t=t-orb]').click()
+    else moRefresh()
+    show()
+  }
+  // contenido del orbe: sólido, foto o dato
+  const fill = document.getElementById('mo-fill'), orb = document.getElementById('mo-orb')
+  fill.onclick = e => {
+    const b = e.target.closest('button[data-c]')
+    if (!b) return
+    for (const x of fill.children) x.setAttribute('aria-pressed', x == b)
+    orb.classList.remove('is-photo', 'is-data')
+    b.dataset.c && orb.classList.add(b.dataset.c)
+    // un orbe sólido es decoración; con foto o dato, su contenido se anuncia
+    b.dataset.c ? orb.removeAttribute('aria-hidden') : orb.setAttribute('aria-hidden', 'true')
+  }
+  // efectos conectados: se combinan libremente (data-ns-mosaic admite varios)
+  const fxb = document.getElementById('mo-fx')
+  fxb.onclick = e => {
+    const b = e.target.closest('button[data-fx]')
+    if (!b) return
+    b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') != 'true')
+    mo.setAttribute('data-ns-mosaic', [...fxb.querySelectorAll('[aria-pressed=true]')].map(x => x.dataset.fx).join(' '))
+    show()
+  }
+}
 
 // Aperturas: modal y menú
 let mode = 'open'
-const modes = document.querySelector('.modes')
+const modes = document.querySelector('.ap-row .modes')
 modes.onclick = e => { const b = e.target.closest('button'); if (!b) return; mode = b.dataset.mode; for (const x of modes.children) x.setAttribute('aria-pressed', x == b) }
 const dlg = document.getElementById('dlg'), panel = document.getElementById('dlg-panel')
 document.getElementById('dlg-open').onclick = () => { dlg.showModal(); open(panel, mode) }

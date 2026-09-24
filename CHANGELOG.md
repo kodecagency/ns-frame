@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.9.0 — mosaicos de piezas libres
+
+### Nuevo: `ns-frame/mosaic`
+- **Piezas en L, T, U o escalera** a partir de una plantilla tipo `grid-template-areas` en una variable CSS (`--ns-areas`), que se cambia con media queries o container queries.
+- **Hueco constante también en las curvas**: las esquinas cóncavas miden el radio más el hueco, así dos piezas encajadas mantienen la misma distancia.
+- **Orbes con forma**: círculo, hexágono, rombo, cuadrado, triángulo u octógono, uno o varios a la vez (`--ns-orb: 3 3 70 hex, 2 4 44 circle`). Recortan a sus vecinas con un hueco concéntrico y curvas de enlace, y pueden tener contenido (foto, dato, botón).
+- El contenido de cada pieza va en su mayor rectángulo libre (padding automático).
+- **Luz conectada** en toda la figura con `data-ns-mosaic`: `wave`, `ripple` (onda donde tocas), `glow`, `sweep`, `scan`, `trace`, `pulse`, `aurora`, `dots` y `grid`, combinables. Se pausan fuera de pantalla y respetan `prefers-reduced-motion`.
+
+### Núcleo
+- `poly` admite arcos: `aN` llega al vértice por un arco de radio N (`a-N`, antihorario). También compila a CSS `shape()`.
+- `--ns-morph-time: 0` aplica el cambio de forma al instante.
+- **Arreglo:** las animaciones de borde `scan` y `orbit` y el giro de degradados (`data-ns-spin`) pasan de SMIL a animaciones CSS; ya no se quedan congeladas en móviles.
+
+### Bento y auditoría
+- El bento sigue siendo bento en móvil: al menos `--ns-cols-min` columnas (2 por defecto).
+- `audit()` ignora las imágenes y vídeos a sangre (recortarlos es la intención).
+
+### Sitio
+- Landing rediseñada: hero con mosaico, barra de navegación inferior en móvil, cuadrículas de 2 columnas en móvil y demo interactiva del mosaico.
+
 ## 0.8.0 — primera versión pública
 
 ### Formas

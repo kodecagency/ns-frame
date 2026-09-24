@@ -46,8 +46,10 @@ Ideal para controles segmentados, botones dentro de tarjetas, imágenes dentro d
 ```
 
 - **Un solo objeto:** las esquinas que tocan el contorno del conjunto reciben el corte `outer` y las interiores el `inner`; la cuadrícula se lee como una pieza esculpida.
-- **Se reacomoda, no se encoge:** columnas según el ancho real del contenedor (`--ns-min`, `--ns-cols-max`). A 2 columnas, el ancla ocupa todo el ancho; a 1, pasa primero.
+- **Se reacomoda, no se encoge:** columnas según el ancho real del contenedor (`--ns-min`, `--ns-cols-max`). En móvil sigue siendo un bento: nunca baja de `--ns-cols-min` columnas (2 por defecto) mientras cada una mida al menos 130 px. A 2 columnas, el ancla ocupa todo el ancho; a 1, pasa primero.
 - **Espaciado con proporción:** padding interno = 2 × `--ns-gap`, más el margen seguro de los cortes.
 - Tamaños: `ns-big` (2×2), `ns-w2`, `ns-h2`, `ns-full`. Por celda, `data-ns-add` agrega declaraciones a la forma calculada.
+
+¿Piezas en L, T o escalera, o un orbe que recorta a sus vecinas? Usa [el mosaico](mosaico.md).
 
 Buenas prácticas: una celda ancla clara (al menos 1,5 veces la siguiente), una idea por celda, 20–30 % de aire interno y entre 5 y 9 celdas.
