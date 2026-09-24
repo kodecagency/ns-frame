@@ -16,5 +16,4 @@ export const LINKS = {
   github: 'https://github.com/kodecagency/ns-frame',
   docs: '/docs/introduccion',
   install: '/docs/instalacion',
-  gallery: '/galeria.html',
 }
