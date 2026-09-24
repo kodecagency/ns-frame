@@ -1,0 +1,126 @@
+---
+// Hero: el titular y, debajo, el producto en uso — un tablero de piezas hechas con ns-frame/mosaic,
+// con un orbe de metal mecanizado en el cruce central. Cada pieza demuestra algo real de la librería.
+import Arrow from '../Arrow.astro'
+import { LINKS } from '../../data/sections'
+---
+<section class="sec hero" id="inicio" aria-labelledby="t-hero">
+  <div class="wrap">
+    <h1 id="t-hero">Dale forma a<br>cualquier elemento.</h1>
+    <p class="lede">Chaflanes, muescas, squircles y mosaicos de piezas que encajan, con una línea de HTML. <b>8&nbsp;KB, sin imágenes y sin dependencias.</b></p>
+    <div class="cta"><a class="btn" href={LINKS.install}>Empezar</a><a class="more" href={LINKS.github}>Ver el código en GitHub<Arrow /></a></div>
+
+    <div class="board ns-mosaic" id="board" data-ns-mosaic="glow ripple">
+      <figure data-ns-area="h" class="ph">
+        <img src="https://picsum.photos/seed/nsframe-coast/1100/700" alt="Valle con montañas al amanecer" width="1100" height="700" fetchpriority="high">
+        <figcaption><span class="lbl">Vista previa</span><strong>Costa norte, 06:12</strong></figcaption>
+      </figure>
+      <div data-ns-area="a" class="spec">
+        <span class="lbl">Este hueco</span>
+        <strong>Hexágono</strong>
+        <dl class="num">
+          <div><dt>Radio</dt><dd>48 px</dd></div>
+          <div><dt>Hueco</dt><dd>12 px</dd></div>
+          <div><dt>Esquinas</dt><dd>12 px</dd></div>
+        </dl>
+        <code>--ns-orb: 3 3 48 hex</code>
+      </div>
+      <div data-ns-area="b">
+        <span class="lbl">Editando ahora</span>
+        <div class="faces" role="img" aria-label="Ana, Luis y Marta"><i>A</i><i>L</i><i>M</i></div>
+      </div>
+      <div data-ns-area="c">
+        <span class="lbl">Una línea</span>
+        <pre class="code">&lt;article
+  <b>data-ns</b>="all squircle 28"&gt;</pre>
+      </div>
+      <div data-ns-area="d" class="press">
+        <span class="lbl">Al pulsar</span>
+        <button type="button" class="shape-btn" data-ns="tl+br bevel 14; radius 2" data-ns-hover="tl+br bevel 22; radius 2" data-ns-press="all bevel 5; radius 2">Mantén pulsado</button>
+      </div>
+      <label data-ns-area="x" class="sw"><span><span class="lbl">Modo foco</span><span class="sub">Silencia los avisos</span></span><input type="checkbox" checked></label>
+      <div data-ns-area="y">
+        <span class="lbl">Reproduciendo</span>
+        <span class="track">Geometría nocturna</span>
+        <div class="play"><button type="button" id="play" aria-label="Reproducir"><svg viewBox="0 0 14 14" fill="currentColor" aria-hidden="true"><path d="M3 1.5v11l9-5.5Z" /></svg></button><span class="bar"><i></i></span></div>
+      </div>
+      <div data-ns-orb class="orb-metal" aria-hidden="true"><i></i></div>
+    </div>
+  </div>
+</section>
+
+<script>
+  import 'ns-frame/mosaic'
+  // el reproductor del tablero funciona de verdad
+  const b = document.getElementById('play')!, board = document.getElementById('board')!
+  b.addEventListener('click', () => {
+    const on = board.classList.toggle('playing')
+    b.setAttribute('aria-label', on ? 'Pausar' : 'Reproducir')
+    b.querySelector('path')!.setAttribute('d', on ? 'M3 2h3v10H3zM8 2h3v10H8z' : 'M3 1.5v11l9-5.5Z')
+  })
+</script>
+
+<style>
+  .hero { padding: clamp(64px, 10vw, 120px) 0 clamp(96px, 11vw, 150px); text-align: center; overflow: hidden }
+  .lede { margin-inline: auto }
+  .cta { justify-content: center }
+
+  .board { --ns-areas: 'a h h b' 'a h h c' 'd x x y'; --ns-row: 148px; --ns-gap: 12px; --ns-round: 26px; --ns-orb: 3 3 48 hex; --ns-orb-corner: 12px; --ns-pad: 22px; --ns-mo-light: #fff; --ns-mo-fill: .05;
+    max-width: 1100px; margin: clamp(64px, 8vw, 96px) auto 0; text-align: left }
+  .board > [data-ns-area] { background: #151515; --ns-border: rgba(255, 255, 255, .08); display: flex; flex-direction: column; gap: 6px; min-width: 0 }
+  .lbl { font: 500 13px/1.2 var(--body); color: var(--text-3) }
+  .sub { font-size: 14px; color: var(--text-2) }
+  .track { font-weight: 500 }
+
+  .ph { background: #0a0a0a !important; margin: 0; justify-content: flex-end }
+  .ph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover }
+  .ph::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 50%, rgba(0, 0, 0, .66)) }
+  figcaption { position: relative; z-index: 1; display: grid; gap: 4px }
+  .ph .lbl { color: rgba(255, 255, 255, .78) }
+  .ph strong { font: 700 24px/1.1 var(--display); font-stretch: 108%; letter-spacing: -.02em }
+
+  .spec strong { font: 700 26px/1.1 var(--display); font-stretch: 108%; letter-spacing: -.02em }
+  .spec dl { margin: auto 0 0; display: grid }
+  .spec dl div { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--line); font-size: 14px }
+  .spec dt { color: var(--text-2) }
+  .spec dd { margin: 0; font-family: var(--mono); font-size: 13px }
+  .spec code { font: 12px var(--mono); color: var(--signal); margin-top: 10px }
+
+  .faces { display: flex; margin-top: auto }
+  .faces i { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #151515; margin-left: -9px; display: grid; place-items: center; font: 600 13px/1 var(--body); font-style: normal; color: #0a0a0a; background: #e5e5e5 }
+  .faces i:first-child { margin-left: 0 }
+  .faces i:nth-child(2) { background: #bdbdbd }
+  .faces i:nth-child(3) { background: #8f8f8f; color: #fff }
+
+  .code { font: 13px/1.75 var(--mono); color: var(--text-2); white-space: pre; margin: auto 0 0; overflow: hidden }
+  .code b { color: var(--signal); font-weight: 400 }
+
+  .shape-btn { margin-top: auto; align-self: flex-start; min-height: 44px; padding: 0 20px; border: 0; background: var(--text); color: #0a0a0a; font: 500 15px/1 var(--body); cursor: pointer }
+
+  .board > .sw { flex-direction: row; align-items: flex-end; justify-content: space-between; gap: 16px; cursor: pointer }
+  .sw > span { display: grid; gap: 4px }
+  .sw input { appearance: none; width: 51px; height: 31px; border-radius: 99px; background: #3a3a3a; position: relative; cursor: pointer; transition: background-color .25s; margin: 0; flex: none }
+  .sw input::after { content: ''; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .35); transition: transform .35s var(--ease) }
+  .sw input:checked { background: var(--signal) }
+  .sw input:checked::after { transform: translateX(20px) }
+
+  .play { display: flex; align-items: center; gap: 12px; margin-top: auto }
+  .play button { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--text); color: #0a0a0a; display: grid; place-items: center; cursor: pointer; flex: none }
+  .play button svg { width: 14px; height: 14px }
+  .bar { flex: 1; height: 4px; border-radius: 4px; background: rgba(255, 255, 255, .14); overflow: hidden }
+  .bar i { display: block; height: 100%; width: 38%; background: var(--text); border-radius: 4px }
+  .board.playing .bar i { animation: prog 24s linear infinite }
+  @keyframes prog { to { width: 100% } }
+
+  /* orbe: aluminio mecanizado (sólo neutros) con un punto de señal */
+  .orb-metal { display: grid; place-items: center; background:
+      radial-gradient(circle at 50% 38%, rgba(255, 255, 255, .55), transparent 45%),
+      conic-gradient(from 210deg, #6b6b6b, #e8e8e8 18%, #8a8a8a 32%, #f2f2f2 50%, #7a7a7a 66%, #d6d6d6 82%, #6b6b6b) }
+  .orb-metal i { width: 10px; height: 10px; border-radius: 50%; background: var(--signal); box-shadow: 0 0 0 3px rgba(10, 10, 10, .85), 0 0 14px rgba(0, 230, 118, .8) }
+
+  @media (max-width: 900px) {
+    .board { --ns-areas: 'h h' 'h h' 'x x' 'a b' 'a d' 'y y' 'c c'; --ns-row: 122px; --ns-gap: 10px; --ns-round: 22px; --ns-orb: 2 3 38 hex; --ns-orb-corner: 9px; --ns-pad: 16px }
+    .ph strong, .spec strong { font-size: 20px }
+    .code { font-size: 12px }
+  }
+</style>

@@ -348,8 +348,12 @@ function light(el, parts, W, H, holes, reduce, pl, pt) {
       mk('defs', {}, {}, ml, mf, gg,
         mk('linearGradient', { id: id + 'b', gradientUnits: 'objectBoundingBox', x1: 0, y1: 0, x2: 1, y2: .35 }, {}, ...stops([0, 0], [.47, 0], [.5, 1], [.53, 0], [1, 0])),
         mk('linearGradient', { id: id + 's', gradientUnits: 'objectBoundingBox', x1: 0, y1: 0, x2: 0, y2: 1 }, {}, ...stops([0, 0], [.46, 0], [.5, 1], [.54, 0], [1, 0])),
-        mk('radialGradient', { id: id + 'r' }, {}, ...stops([0, 0], [.8, 0], [.93, 1], [1, 0]))),
-      bg, top, tr)
+        mk('radialGradient', { id: id + 'r' }, {}, ...stops([0, 0], [.8, 0], [.93, 1], [1, 0])),
+        // resplandor: la luz del borde es un núcleo nítido más un halo difuminado, no una línea plana
+        mk('filter', { id: id + 'o', x: '-5%', y: '-5%', width: '110%', height: '110%' }, {},
+          mk('feGaussianBlur', { in: 'SourceGraphic', stdDeviation: 3.5, result: 'b' }),
+          mk('feMerge', {}, {}, mk('feMergeNode', { in: 'b' }), mk('feMergeNode', { in: 'b' }), mk('feMergeNode', { in: 'SourceGraphic' })))),
+      bg, mk('g', { class: 'ns-mo-glow', filter: `url(#${id}o)` }, {}, top, tr))
     L = el._nsl = { id, svg, lines, fills, ml, mf, gg, top, bg, tr }
     el.append(svg)
     // eventos: una onda nace donde tocas y cruza toda la figura; la luz de fondo sigue al puntero

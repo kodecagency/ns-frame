@@ -1,0 +1,25 @@
+---
+import { LINKS } from '../../data/sections'
+---
+<footer>
+  <div class="wrap">
+    <a class="by" href="https://kodec.agency" aria-label="Un proyecto de Kodec Agency">
+      <span>Un proyecto de</span>
+      <img src="/brand/kodec-agency-negro.svg" alt="Kodec Agency" width="120" height="36">
+    </a>
+    <nav aria-label="Pie"><a href={LINKS.docs}>Documentación</a><a href={LINKS.gallery}>Galería</a><a href={LINKS.github}>GitHub</a></nav>
+    <p>ns-frame es software libre con licencia MIT.</p>
+  </div>
+</footer>
+
+<style>
+  footer { background: var(--l-bg); color: var(--l-text-2); font-size: 13px; border-top: 1px solid var(--l-line) }
+  .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 32px; padding-top: 28px; padding-bottom: 32px }
+  .by { display: inline-flex; align-items: center; gap: 12px; color: var(--l-text-2) }
+  .by img { height: 30px; width: auto }
+  nav { display: flex; gap: 22px }
+  nav a { padding: 12px 0; color: var(--l-text) }
+  nav a:hover { text-decoration: underline; text-underline-offset: 4px }
+  p { margin: 0 0 0 auto }
+  @media (max-width: 700px) { p { margin: 0 } }
+</style>

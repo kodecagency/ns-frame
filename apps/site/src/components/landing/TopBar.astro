@@ -1,0 +1,26 @@
+---
+import { SECTIONS, LINKS } from '../../data/sections'
+---
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#inicio" aria-label="ns-frame, inicio"><i data-ns="tl+br bevel 5"></i>ns-frame<span class="num">0.9</span></a>
+    <nav aria-label="Principal">
+      {SECTIONS.filter(s => s.nav).map(s => <a href={`#${s.id}`}>{s.name}</a>)}
+      <a href={LINKS.gallery}>Galería</a><a href={LINKS.docs}>Docs</a><a href={LINKS.github}>GitHub</a>
+    </nav>
+    <a class="get" href={LINKS.install}>Empezar</a>
+  </div>
+</header>
+
+<style>
+  .top { position: sticky; top: 0; z-index: 30; height: 56px; background: rgba(10, 10, 10, .78); backdrop-filter: saturate(1.6) blur(18px); -webkit-backdrop-filter: saturate(1.6) blur(18px); border-bottom: 1px solid var(--line) }
+  .wrap { height: 100%; display: flex; align-items: center; gap: 28px }
+  .brand { display: flex; align-items: center; gap: 10px; font: 700 17px/1 var(--display); font-stretch: 110%; letter-spacing: -.02em; min-height: 44px }
+  .brand i { width: 15px; height: 15px; background: var(--text) }
+  .brand span { font: 500 11px/1 var(--mono); color: var(--text-3); padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; letter-spacing: 0 }
+  nav { margin-left: auto; display: flex; gap: 4px; font-size: 14px; color: var(--text-2) }
+  nav a { padding: 12px 11px; transition: color .2s }
+  nav a:hover { color: var(--text) }
+  .get { min-height: 34px; padding: 0 16px; font-size: 14px; border-radius: 980px; background: var(--text); color: #0a0a0a; display: inline-flex; align-items: center; font-weight: 500 }
+  @media (max-width: 900px) { nav { display: none } .get { margin-left: auto; min-height: 40px } }
+</style>

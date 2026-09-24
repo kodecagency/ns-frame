@@ -1,0 +1,68 @@
+---
+// Una línea, cualquier forma: la tarjeta cambia de forma y el código muestra lo que se escribió.
+// Todas las formas tienen la misma estructura (4 esquinas + una muesca arriba + mordidas a los
+// lados, a 0 cuando no se usan): así el núcleo interpola vértice a vértice y el cambio es suave.
+import SectionHead from '../SectionHead.astro'
+import Arrow from '../Arrow.astro'
+
+const tail = { cut: 'top cut center 30% 0', scoop: 'left+right scoop center 40 0' }
+const SHAPES = [
+  { name: 'Chaflán', code: 'tl+br bevel 36', full: `tl bevel 36; tr round 0; br bevel 36; bl round 0; ${tail.cut}; ${tail.scoop}` },
+  { name: 'Squircle', code: 'all squircle 44', full: `all squircle 44; ${tail.cut}; ${tail.scoop}` },
+  { name: 'Muesca', code: 'all round 22; top cut center 34% 14 r5', full: `all round 22; top cut center 34% 14 r5; ${tail.scoop}` },
+  { name: 'Ticket', code: 'all round 18; left+right scoop center 44 20', full: `all round 18; ${tail.cut}; left+right scoop center 44 20` },
+  { name: 'Placa', code: 'tl+br bevel 22; tr+bl round 8; top cut center 40% 8 8', full: `tl bevel 22; tr round 8; br bevel 22; bl round 8; top cut center 40% 8 8; ${tail.scoop}` },
+]
+---
+<section class="sec light" id="forma" aria-labelledby="t-forma">
+  <div class="wrap">
+    <SectionHead id="t-forma">
+      <Fragment slot="title">Una línea.<br>Cualquier forma.</Fragment>
+      Escribe la forma en un atributo y el elemento la toma: esquinas, muescas en los bordes, radios en cada vértice. Los cortes se miden en píxeles y no se deforman al cambiar de tamaño. <b>Al cambiar de forma, se anima sola.</b>
+    </SectionHead>
+    <div class="grid">
+      <div>
+        <pre class="snippet">&lt;<b>article</b> data-ns="<em id="shape-code">{SHAPES[0].code}</em>"&gt;</pre>
+        <div class="tabs" id="shape-tabs" role="group" aria-label="Forma de la tarjeta">
+          {SHAPES.map((s, i) => <button type="button" data-full={s.full} data-code={s.code} aria-pressed={String(i == 0)}>{s.name}</button>)}
+        </div>
+        <p class="after"><a class="more" href="/docs/sintaxis">Toda la sintaxis<Arrow /></a></p>
+      </div>
+      <div class="stage">
+        <article class="card" id="shape-card" data-ns={SHAPES[0].full}>
+          <img src="https://picsum.photos/seed/nsframe-dune/720/450" alt="Dunas al atardecer" width="720" height="450" loading="lazy">
+          <div><b>Dunas de Médanos</b><span>Recorrido de 12 km · 4 h</span></div>
+        </article>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  const card = document.getElementById('shape-card')!, code = document.getElementById('shape-code')!, tabs = document.getElementById('shape-tabs')!
+  const btns = [...tabs.querySelectorAll('button')]
+  // la forma sólo cambia cuando la persona la elige (nada avanza solo)
+  btns.forEach((b, k) => b.addEventListener('click', () => {
+    card.setAttribute('data-ns', b.dataset.full!)
+    code.textContent = b.dataset.code!
+    btns.forEach((x, j) => x.setAttribute('aria-pressed', String(j == k)))
+  }))
+</script>
+
+<style>
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; margin-top: 64px }
+  .snippet { font: 500 clamp(17px, 2vw, 24px)/1.5 var(--mono); letter-spacing: -.02em; color: var(--l-text-2); white-space: pre-wrap; word-break: break-word; margin: 0 }
+  .snippet b { color: var(--l-text); font-weight: 500 }
+  .snippet em { font-style: normal; color: var(--signal-ink); font-weight: 500 }
+  .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 28px }
+  .tabs button { min-height: 44px; padding: 0 18px; border-radius: 980px; border: 1px solid var(--l-line); background: transparent; color: var(--l-text-2); font-size: 15px; cursor: pointer; transition: color .2s, background-color .2s, border-color .2s }
+  .tabs button:hover { color: var(--l-text); border-color: rgba(0, 0, 0, .2) }
+  .tabs button[aria-pressed=true] { background: var(--l-text); color: #fff; border-color: var(--l-text) }
+  .stage { display: grid; place-items: center; min-height: 460px; border-radius: 32px; background: #e9e9e9 }
+  .card { width: min(360px, 82%); background: #fff; --ns-border: rgba(0, 0, 0, .1); --ns-morph-time: 520; filter: drop-shadow(0 30px 40px rgba(0, 0, 0, .14)) drop-shadow(0 2px 4px rgba(0, 0, 0, .06)); display: flex; flex-direction: column }
+  .card img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover }
+  .card div { padding: 20px 26px 28px }
+  .card b { display: block; font: 700 21px/1.2 var(--display); font-stretch: 106%; letter-spacing: -.02em }
+  .card span { font-size: 15px; color: var(--l-text-2) }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; gap: 40px } .stage { min-height: 380px } }
+</style>

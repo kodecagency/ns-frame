@@ -11,7 +11,8 @@ export function audit({ root = document, mark = false, margin = 2, clearance = 0
   for (const el of root.querySelectorAll('[data-ns],[data-ns-nest],ns-frame')) {
     const shape = shapeOf(el) ?? el.getAttribute('data-ns') ?? el.getAttribute('shape') ?? ''
     const r = el.getBoundingClientRect()
-    if (!r.width || !r.height || /^(img|video|canvas|input|textarea|select)$/i.test(el.localName)) continue
+    // un marco oculto (visibility: hidden, p. ej. un menú cerrado) no se ve: no puede verse recortado
+    if (!r.width || !r.height || /^(img|video|canvas|input|textarea|select)$/i.test(el.localName) || getComputedStyle(el).visibility == 'hidden') continue
     const p = new Path2D(path(shape, r.width, r.height))
     const inside = (x, y) => ctx.isPointInPath(p, x - r.left, y - r.top)
     // cajas de texto y de controles descendientes (sin entrar en otros marcos)
@@ -21,9 +22,11 @@ export function audit({ root = document, mark = false, margin = 2, clearance = 0
         if (c.nodeType == 1 && (c.matches('[data-ns],[data-ns-nest],ns-frame,.ns-svg') || getComputedStyle(c).visibility == 'hidden')) continue
         if (TEXT(c)) { const rg = document.createRange(); rg.selectNodeContents(c); boxes.push(...[...rg.getClientRects()].map(b => [b, c.textContent.trim().slice(0, 40), sc])) }
         else if (c.nodeType == 1 && c.matches('button,a,input,select,textarea,img,svg')) {
-          // una imagen o vídeo que cubre todo el marco es un medio a sangre: recortarlo es la intención
-          const b = c.getBoundingClientRect()
-          if (!(c.matches('img,video') && b.width * b.height >= r.width * r.height * .95)) boxes.push([b, '<' + c.localName + '>', sc])
+          // recortes intencionados: un medio que va de borde a borde del marco (a sangre, o la foto
+          // de cabecera de una tarjeta redondeada) y un control que llena el marco (la forma es el botón)
+          const b = c.getBoundingClientRect(), E = 1.5
+          const wide = b.left <= r.left + E && b.right >= r.right - E, tall = b.top <= r.top + E && b.bottom >= r.bottom - E
+          if (!(c.matches('img,video') ? wide || tall : wide && tall)) boxes.push([b, '<' + c.localName + '>', sc])
         }
         if (c.nodeType == 1) walk(c, /auto|scroll|hidden/.test(getComputedStyle(c).overflow) ? c : sc)
       }

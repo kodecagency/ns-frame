@@ -1,0 +1,34 @@
+---
+// Layout de las páginas de marketing: meta, fuentes, tokens y el núcleo de ns-frame.
+import '../styles/tokens.css'
+
+interface Props { title: string; description: string }
+const { title, description } = Astro.props
+---
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>{title}</title>
+  <meta name="description" content={description}>
+  <meta name="theme-color" content="#0a0a0a">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content={title}>
+  <meta property="og:description" content={description}>
+  <meta name="twitter:card" content="summary">
+  <script type="application/ld+json" set:html={JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareSourceCode', name: 'ns-frame', description, programmingLanguage: 'JavaScript', license: 'https://opensource.org/licenses/MIT', codeRepository: 'https://github.com/kodecagency/ns-frame', author: { '@type': 'Organization', name: 'Kodec Agency' } })} />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mona+Sans:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <a class="skip" href="#contenido">Saltar al contenido</a>
+  <slot />
+  <script>
+    // núcleo: activa todos los data-ns de la página (y los que se añadan después)
+    import 'ns-frame'
+  </script>
+</body>
+</html>

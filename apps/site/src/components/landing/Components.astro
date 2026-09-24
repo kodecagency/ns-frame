@@ -1,0 +1,88 @@
+---
+// Componentes en uso: avisos, carga sin saltos y carrusel, sobre fondo claro.
+import SectionHead from '../SectionHead.astro'
+import Arrow from '../Arrow.astro'
+
+const SLIDES = [
+  ['ns-c1', 'Sendero de montaña', 'Pico Espejo', '9 km · difícil'],
+  ['ns-c2', 'Lago entre montañas', 'Laguna Negra', '6 km · media'],
+  ['ns-c3', 'Costa rocosa', 'Playa Medina', '3 km · fácil'],
+  ['ns-c4', 'Bosque nublado', 'Bosque de Niebla', '7 km · media'],
+]
+---
+<section class="sec light" id="componentes" aria-labelledby="t-comp">
+  <div class="wrap">
+    <SectionHead id="t-comp">
+      <Fragment slot="title">Piezas listas,<br>con su forma.</Fragment>
+      Avisos, carruseles y estados de carga que respetan los cortes. Usan lo que el navegador ya sabe hacer: la capa superior, el desplazamiento nativo y la accesibilidad del sistema.
+    </SectionHead>
+    <div class="grid">
+      <div class="card" data-ns="all squircle 30">
+        <h3>Avisos</h3>
+        <p>Entran con la forma, el tiempo restante se consume en el borde y se pausan al pasar el puntero.</p>
+        <div class="acts"><button type="button" data-toast="ok">Guardar cambios</button><button type="button" data-toast="error">Simular un error</button></div>
+      </div>
+      <div class="card" data-ns="all squircle 30">
+        <h3>Carga sin saltos</h3>
+        <p>El esqueleto se mide sobre el componente real, con sus cortes. Cuando llegan los datos, nada se mueve.</p>
+        <div class="sk" id="sk" data-ns="all squircle 18" data-ns-skeleton><img src="https://picsum.photos/seed/ns-sk/128/128" alt="" width="64" height="64" data-ns="all squircle 16" loading="lazy"><div><b>Informe semanal</b><span>Latencia media: 84 ms</span></div></div>
+        <div class="acts"><button type="button" id="sk-run">Volver a cargar</button></div>
+      </div>
+      <div class="card wide" data-ns="all squircle 30">
+        <h3>Carrusel</h3>
+        <p>Desliza con el gesto del sistema; las flechas y los indicadores tienen forma y funcionan con teclado.</p>
+        <div class="car" data-ns-carousel aria-label="Rutas destacadas">
+          {SLIDES.map(([seed, alt, t, s]) => (
+            <article class="slide" data-ns="all squircle 22"><img src={`https://picsum.photos/seed/${seed}/480/360`} alt={alt} width="480" height="360" loading="lazy"><div><b>{t}</b><span>{s}</span></div></article>
+          ))}
+        </div>
+      </div>
+    </div>
+    <p class="after"><a class="more" href="/docs/componentes">Todos los componentes<Arrow /></a></p>
+  </div>
+</section>
+
+<script>
+  import 'ns-frame/skel'
+  import 'ns-frame/carousel'
+  import { toast } from 'ns-frame/toast'
+
+  const MSG: Record<string, () => void> = {
+    ok: () => toast('Los cambios del informe quedaron guardados.', { type: 'ok', title: 'Guardado' }),
+    error: () => toast('No se pudo enviar el formulario.', {
+      type: 'error', title: 'Sin conexión', time: 0,
+      action: { label: 'Reintentar', onClick: () => toast('El formulario se envió.', { type: 'ok', title: 'Enviado' }) },
+    }),
+  }
+  document.querySelectorAll<HTMLElement>('[data-toast]').forEach(b => b.addEventListener('click', () => MSG[b.dataset.toast!]()))
+
+  // carga simulada: el esqueleto aparece con la forma real y se va sin mover nada
+  const sk = document.getElementById('sk')!
+  let t = 0
+  const load = () => { clearTimeout(t); sk.setAttribute('data-ns-skeleton', ''); t = setTimeout(() => sk.removeAttribute('data-ns-skeleton'), 1800) }
+  document.getElementById('sk-run')!.addEventListener('click', load)
+  const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { io.disconnect(); load() } }, { threshold: .5 })
+  io.observe(sk)
+</script>
+
+<style>
+  .grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 16px; margin-top: 64px }
+  .card { background: var(--l-surface); --ns-border: var(--l-line); padding: 32px; display: flex; flex-direction: column; gap: 10px; min-width: 0 }
+  .card h3 { font-size: 26px; letter-spacing: -.02em }
+  .card > p { margin: 0; color: var(--l-text-2) }
+  .wide { grid-column: 1 / -1; --ns-car: #0a0a0a; --ns-car-bg: #f5f5f5; --ns-car-dot: rgba(0, 0, 0, .18) }
+  .acts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: auto; padding-top: 18px }
+  .acts button { min-height: 44px; padding: 0 18px; border-radius: 980px; border: 1px solid var(--l-line); background: #f5f5f7; color: var(--l-text); cursor: pointer; font-size: 15px }
+  .acts button:hover { background: #ebebeb }
+  .car { --ns-slide: calc((100% - 32px) / 3); margin-top: 18px }
+  .slide { background: #f5f5f7; --ns-border: var(--l-line); display: flex; flex-direction: column }
+  .slide img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover }
+  .slide div { padding: 14px 18px 18px }
+  .slide b { display: block; font: 700 18px/1.2 var(--display); font-stretch: 106% }
+  .slide span, .sk span { font-size: 14px; color: var(--l-text-2) }
+  .sk { margin-top: 8px; display: flex; gap: 14px; align-items: center; background: #f5f5f7; --ns-border: var(--l-line); padding: 14px }
+  .sk img { width: 64px; height: 64px; object-fit: cover; flex: none }
+  .sk b { display: block; font-size: 16px }
+  :global(.ns-toasts) { font-family: var(--body) }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr } .car { --ns-slide: 78% } .card { padding: 24px } }
+</style>

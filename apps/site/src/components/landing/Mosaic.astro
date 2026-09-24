@@ -1,0 +1,162 @@
+---
+// Mosaico interactivo: plantilla, forma del hueco, contenido del orbe y luz conectada.
+import SectionHead from '../SectionHead.astro'
+import Arrow from '../Arrow.astro'
+
+const TEMPLATES = [['t-orb', 'Orbe'], ['t-duo', 'Dúo'], ['t-lock', 'Encaje'], ['t-step', 'Escalera']]
+// forma del hueco · radio en escritorio · radio en móvil (el radio es la apotema) · icono
+const HOLES = [
+  ['circle 96 62', 'Círculo', 'M10 3.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Z'],
+  ['hex 86 56', 'Hexágono', 'M10 3 16 6.5v7L10 17l-6-3.5v-7Z'],
+  ['diamond 78 50', 'Rombo', 'M10 2.5 17.5 10 10 17.5 2.5 10Z'],
+  ['tri 56 38', 'Triángulo', 'M10 3.5 17 16H3Z'],
+]
+const FILLS = [['', 'Sólido'], ['is-photo', 'Foto'], ['is-data', 'Dato']]
+const FX = [['glow', 'Luz', true], ['ripple', 'Toque', true], ['trace', 'Trazo'], ['wave', 'Onda'], ['pulse', 'Pulso'], ['aurora', 'Aurora'], ['dots', 'Puntos'], ['grid', 'Retícula']] as const
+const on = FX.filter(f => f[2]).map(f => f[0]).join(' ')
+---
+<section class="sec dark2" id="mosaico" aria-labelledby="t-mo">
+  <div class="wrap">
+    <SectionHead id="t-mo">
+      <Fragment slot="title">Piezas que encajan.</Fragment>
+      Un bento donde cada pieza puede ser una L, una T o una escalera. Las curvas guardan el mismo hueco que las rectas, y un orbe recorta a sus vecinas. <b>En el móvil sigue siendo un mosaico, no una lista.</b>
+    </SectionHead>
+
+    <div class="controls">
+      <div class="seg" id="mo-modes" role="group" aria-label="Plantilla">{TEMPLATES.map(([t, n], i) => <button type="button" data-t={t} aria-pressed={String(!i)}>{n}</button>)}</div>
+      <div class="seg" id="mo-hole" role="group" aria-label="Forma del hueco">{HOLES.map(([h, n, d], i) => <button type="button" class="ico" data-h={h} aria-pressed={String(!i)} aria-label={n} title={n}><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d={d} /></svg></button>)}</div>
+      <div class="seg" id="mo-fill" role="group" aria-label="Contenido del orbe">{FILLS.map(([c, n]) => <button type="button" data-c={c} aria-pressed={String(c == 'is-photo')}>{n}</button>)}</div>
+    </div>
+    <div class="fx" id="mo-fx" role="group" aria-label="Luz en toda la figura">
+      <span>Luz en toda la figura</span>
+      {FX.map(([k, n, d]) => <button type="button" data-fx={k} aria-pressed={String(!!d)}>{n}</button>)}
+    </div>
+
+    <div class="mo ns-mosaic t-orb" id="mo" data-ns-mosaic={on}>
+      <article data-ns-area="h" class="hi"><h3>Formas que se abrazan.</h3><p>La plantilla vive en CSS: cámbiala con una media query y las piezas se reacomodan.</p></article>
+      <article data-ns-area="a" class="ph"><img src="https://picsum.photos/seed/ns-mosaic-a/700/800" alt="Fachada de edificios antiguos" width="700" height="800" loading="lazy"><h3>Fotos con forma</h3><p>La imagen se recorta con la pieza.</p></article>
+      <article data-ns-area="b"><p>Módulo</p><span class="big num">6,7 KB</span></article>
+      <article data-ns-area="c"><h3>Hueco constante</h3><p>La esquina cóncava mide el radio más el hueco.</p></article>
+      <article data-ns-area="d"><p>En el móvil</p><span class="big">2 columnas</span></article>
+      <article data-ns-area="x"><h3>Orbes con forma</h3><p><code>--ns-orb: 3 3 96 hex</code></p></article>
+      <article data-ns-area="y"><h3>Texto a salvo</h3><p>El contenido va en el mayor rectángulo libre.</p></article>
+      <article data-ns-area="e"><p>Sin framework</p><span class="big">HTML</span></article>
+      <article data-ns-area="f"><p>El orden del DOM no cambia: se lee igual con lector de pantalla.</p></article>
+      <div data-ns-orb class="orb is-photo" id="mo-orb"><img src="https://picsum.photos/seed/ns-orb-city/400/400" alt="Ciudad de noche" width="400" height="400" loading="lazy"><div class="ok"><b class="num">99,9 %</b><small>disponibilidad</small></div></div>
+      <div data-ns-orb class="orb orb-2" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3 5 13h6l-1 8 8-10h-6Z" /></svg></div>
+    </div>
+    <p class="after"><a class="more" href="/docs/mosaico">Cómo funciona el mosaico<Arrow /></a></p>
+  </div>
+</section>
+
+<script>
+  import { refresh } from 'ns-frame/mosaic'
+
+  const $ = (id: string) => document.getElementById(id)!
+  const mo = $('mo'), modes = $('mo-modes'), hole = $('mo-hole'), fill = $('mo-fill'), fx = $('mo-fx'), orb = $('mo-orb')
+  const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches
+  const press = (g: HTMLElement, b: Element) => { for (const x of g.querySelectorAll('button')) x.setAttribute('aria-pressed', String(x == b)) }
+  const pick = (e: Event, attr: string) => (e.target as Element).closest<HTMLElement>(`button[${attr}]`)
+
+  // plantilla: con View Transitions las piezas viajan a su nuevo sitio
+  const TEMPLATES = ['t-orb', 't-duo', 't-lock', 't-step']
+  modes.addEventListener('click', e => {
+    const b = pick(e, 'data-t')
+    if (!b || b.getAttribute('aria-pressed') == 'true') return
+    const go = () => { press(modes, b); mo.classList.remove(...TEMPLATES); mo.classList.add(b.dataset.t!) }
+    if (!document.startViewTransition || reduced()) return go()
+    const pieces = [...mo.querySelectorAll<HTMLElement>(':scope > [data-ns-area], :scope > [data-ns-orb]')]
+    pieces.forEach((p, i) => p.style.viewTransitionName = p.dataset.nsArea ? 'mo-' + p.dataset.nsArea : 'mo-orb' + i)
+    // actualización síncrona: durante ella no hay frames; el mosaico recalcula antes de la captura
+    document.startViewTransition(go).finished.finally(() => pieces.forEach(p => p.style.viewTransitionName = ''))
+  })
+
+  hole.addEventListener('click', e => {
+    const b = pick(e, 'data-h')
+    if (!b) return
+    const [k, r, rm] = b.dataset.h!.split(' ')
+    press(hole, b)
+    Object.entries({ '--hole': k, '--hole-r': r, '--hole-rm': rm }).forEach(([p, v]) => mo.style.setProperty(p, v))
+    mo.classList.contains('t-orb') ? refresh() : modes.querySelector<HTMLElement>('[data-t=t-orb]')!.click()
+  })
+
+  // contenido del orbe; si sólo es decoración, se oculta a los lectores de pantalla
+  fill.addEventListener('click', e => {
+    const b = pick(e, 'data-c')
+    if (!b) return
+    press(fill, b)
+    orb.classList.remove('is-photo', 'is-data')
+    if (b.dataset.c) { orb.classList.add(b.dataset.c); orb.removeAttribute('aria-hidden') } else orb.setAttribute('aria-hidden', 'true')
+  })
+
+  // luz en toda la figura: los efectos se combinan libremente
+  fx.addEventListener('click', e => {
+    const b = pick(e, 'data-fx')
+    if (!b) return
+    b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') != 'true'))
+    mo.setAttribute('data-ns-mosaic', [...fx.querySelectorAll<HTMLElement>('[aria-pressed=true]')].map(x => x.dataset.fx).join(' '))
+  })
+</script>
+
+<style>
+  .dark2 { background: var(--bg-2) }
+  .controls { display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: center; margin: 64px 0 14px }
+  .seg { display: inline-flex; padding: 4px; gap: 2px; border-radius: 980px; background: var(--surface); border: 1px solid var(--line) }
+  .seg button { min-height: 40px; padding: 0 16px; border: 0; border-radius: 980px; background: transparent; color: var(--text-2); font-size: 14px; cursor: pointer; transition: background-color .25s var(--ease), color .2s }
+  .seg button:hover { color: var(--text) }
+  .seg button[aria-pressed=true] { background: var(--text); color: #0a0a0a }
+  .seg .ico { width: 44px; padding: 0; display: grid; place-items: center }
+  .seg .ico svg { width: 18px; height: 18px }
+  .fx { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 28px }
+  .fx span { font-size: 13px; color: var(--text-3); margin-right: 6px }
+  .fx button { min-height: 36px; padding: 0 14px; border-radius: 980px; border: 1px solid var(--line); background: transparent; color: var(--text-2); font-size: 13px; cursor: pointer; transition: color .2s, border-color .2s, background-color .2s }
+  .fx button:hover { color: var(--text); border-color: var(--line-2) }
+  .fx button[aria-pressed=true] { color: var(--text); border-color: rgba(0, 230, 118, .55); background: rgba(0, 230, 118, .08) }
+
+  .mo { --ns-gap: 14px; --ns-row: 150px; --ns-round: 26px; --ns-pad: 24px; --ns-mo-light: #fff }
+  .mo > [data-ns-area] { background: #181818; --ns-border: rgba(255, 255, 255, .08); display: flex; flex-direction: column; gap: 6px; min-width: 0; view-transition-class: mo-piece }
+  .mo p { margin: 0; color: var(--text-2); font-size: 15px }
+  .mo h3 { font-size: 21px }
+  .hi { background: #f5f5f5 !important; --ns-border: none !important; text-align: center; align-items: center }
+  .hi h3 { color: #0a0a0a; font-size: clamp(30px, 4vw, 52px); line-height: 1; letter-spacing: -.035em; font-stretch: 110% }
+  .mo .hi p { max-width: 420px; color: #525252 }
+  .ph { background: #0a0a0a !important }
+  .ph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover }
+  .ph::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0, 0, 0, .6), rgba(0, 0, 0, .05) 50%, rgba(0, 0, 0, .6)) }
+  .ph > :not(img) { position: relative; z-index: 1 }
+  .mo .ph p { color: #e5e5e5 }
+  .ph h3, .ph p { text-shadow: 0 1px 12px rgba(0, 0, 0, .7) }
+  code { font: 13px var(--mono); color: var(--signal) }
+  .big { font: 700 clamp(26px, 2.6vw, 34px)/1 var(--display); font-stretch: 108%; letter-spacing: -.035em }
+
+  .orb { display: grid; place-items: center; overflow: hidden; color: #0a0a0a; text-align: center; background:
+      radial-gradient(circle at 50% 36%, rgba(255, 255, 255, .6), transparent 50%),
+      conic-gradient(from 210deg, #6b6b6b, #ededed 18%, #8a8a8a 32%, #f5f5f5 50%, #7a7a7a 66%, #dadada 82%, #6b6b6b) }
+  .orb[hidden] { display: none }
+  .orb > img, .orb > .ok { grid-area: 1 / 1; opacity: 0; transition: opacity .45s }
+  .orb > img { width: 100%; height: 100%; object-fit: cover }
+  .ok b { display: block; font: 700 clamp(22px, 2.6vw, 32px)/1 var(--display); letter-spacing: -.03em }
+  .ok small { font-size: 12px; color: #a3a3a3 }
+  .orb.is-photo > img, .orb.is-data > .ok { opacity: 1 }
+  .orb.is-data { background: #0a0a0a; color: var(--text); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14) }
+  .orb.is-data .ok b { color: var(--signal) }
+  .orb-2 { background: var(--signal) !important; color: #0a0a0a }
+  .orb-2 svg { width: 42%; height: 42% }
+
+  /* plantillas: --ns-areas cambia con la clase y con el ancho */
+  .t-orb { --ns-areas: 'a h h b' 'a h h c' 'd x y c' 'e x y f'; --ns-orb: 3 3 var(--hole-r, 96) var(--hole, circle) }
+  .t-duo { --ns-areas: 'h h a b' 'h h c b' 'x y c d' 'x y e f'; --ns-orb: 3 3 70 hex, 2 4 44 circle }
+  .t-lock { --ns-areas: 'h h h b' 'a x x b' 'a a x c' 'd y e f'; --ns-orb: none }
+  .t-step { --ns-areas: 'h h a a' 'x h h a' 'x b h c' 'd y e f'; --ns-orb: none }
+  @media (max-width: 900px) {
+    .mo { --ns-row: 112px; --ns-gap: 10px; --ns-round: 20px; --ns-pad: 16px }
+    .t-orb { --ns-areas: 'h h' 'h h' 'x y' 'x y' 'a b' 'a c' 'd c' 'e f'; --ns-orb: 2 3 var(--hole-rm, 62) var(--hole, circle) }
+    .t-duo { --ns-areas: 'h h' 'h h' 'x y' 'x y' 'a b' 'c b' 'c e' 'd e' 'f f'; --ns-orb: 2 3 50 hex, 2 7 34 circle }
+    .t-lock { --ns-areas: 'h h' 'h b' 'a b' 'a a' 'x a' 'x x' 'c y' 'd y' 'e f' }
+    .t-step { --ns-areas: 'h h' 'x h' 'x a' 'b a' 'c y' 'd e' 'f f' }
+    .mo p { font-size: 13px }
+    .mo h3 { font-size: 16px }
+    .big { font-size: 26px }
+  }
+  :global(::view-transition-group(*.mo-piece)) { animation-duration: .55s; animation-timing-function: var(--ease) }
+</style>

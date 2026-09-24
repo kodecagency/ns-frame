@@ -96,9 +96,12 @@ function gradient(str, w, h, id, spin) {
 }
 
 // Animaciones de borde: cada una devuelve sus nodos; las que dependen del tamaño reciben (id, w, h, t).
-// estela: tres trazos con la cabeza alineada (retraso negativo = adelantado) y opacidad decreciente
-const tail = (P, n = 1) => mk('g', { class: 'ns-t' }, {}, ...[[16, 0, .22], [8, 8, .5], [3, 13, 1]].map(([l, o, a]) =>
-  mk('path', { pathLength: 100 }, { '--d': -o / n / 100, 'stroke-dasharray': `${l / n} ${P - l / n}`, opacity: a })))
+// estela: tres trazos con la cabeza alineada (retraso negativo = adelantado) y opacidad decreciente.
+// k escala la estela: mide unos 100–130 px sea cual sea el marco (en uno grande, el 16 % del
+// perímetro era una línea de cientos de píxeles)
+const tail = (P, n = 1, k = 1) => mk('g', { class: 'ns-t' }, {}, ...[[16, 0, .22], [8, 8, .5], [3, 13, 1]].map(([l, o, a]) =>
+  mk('path', { pathLength: 100 }, { '--d': f(-o * k / n / 100), 'stroke-dasharray': `${f(l * k / n)} ${f(P - l * k / n)}`, opacity: a })))
+const span = (w, h) => Math.max(.3, Math.min(1, 640 / (2 * (w + h))))
 const paint_ = 'var(--ns-motion,var(--ns-accent,currentColor))'
 const grad = (tag, id, geo, stops, ...anim) => mk('defs', {}, {}, mk(tag, { id, gradientUnits: 'userSpaceOnUse', ...geo }, {},
   ...stops.map(([o, a]) => mk('stop', { offset: o }, { 'stop-color': paint_, 'stop-opacity': a })), ...anim))
@@ -111,8 +114,8 @@ const band = (id, w, h, geo, rect, cls, t, css, stops = [[0, 0], [.5, 1], [1, 0]
   mk('g', { mask: `url(#${id}m)` }, {}, mk('rect', { class: cls, ...rect }, { fill: `url(#${id})`, stroke: 'none', 'animation-duration': t, ...css }))]
 let MOTION
 const motions = () => MOTION ||= {
-  comet: () => [tail(100)],                                          // cometa con estela
-  twin: () => [tail(50, 2)],                                          // dos cometas opuestos
+  comet: (id, w, h) => [tail(100, 1, span(w, h))],                   // cometa con estela
+  twin: (id, w, h) => [tail(50, 2, span(w, h))],                     // dos cometas opuestos
   chase: () => [mk('path', { class: 'ns-mc', pathLength: 100 })],    // pulsos de datos
   march: () => [mk('path', { class: 'ns-mm' })],                     // hormigas en marcha
   loop: () => [mk('path', { class: 'ns-ml', pathLength: 100 })],     // se dibuja y se borra

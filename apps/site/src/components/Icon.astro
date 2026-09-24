@@ -1,0 +1,6 @@
+---
+// Icono de trazo (20×20) a partir de un path.
+interface Props { d: string; size?: number; class?: string }
+const { d, size = 20, class: cls } = Astro.props
+---
+<svg class={cls} width={size} height={size} viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={d} /></svg>

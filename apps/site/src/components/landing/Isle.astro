@@ -1,0 +1,133 @@
+---
+// Isla (móvil): una sola pieza que se transforma.
+// · Plegada muestra la sección actual y su posición; su borde es el progreso de lectura.
+// · Al bajar se encoge a un icono; al subir vuelve.
+// · Al tocarla crece (ancho y alto animados, la forma se recalcula en cada frame) hasta ser el menú.
+// · Deslizar a los lados salta a la sección anterior o siguiente.
+import Icon from '../Icon.astro'
+import { SECTIONS, LINKS } from '../../data/sections'
+---
+<div class="scrim" id="isle-scrim"></div>
+<nav class="isle" id="isle" aria-label="Secciones" data-ns="all squircle 27" data-ns-motion="progress" style="--ns-progress:0">
+  <button type="button" class="pill" id="isle-btn" aria-expanded="false" aria-controls="isle-panel">
+    <span class="ico" id="isle-ico" aria-hidden="true"><Icon d={SECTIONS[0].icon} size={17} /></span>
+    <span class="txt"><b id="isle-name">{SECTIONS[0].name}</b><small id="isle-pos">1 de {SECTIONS.length} · desliza</small></span>
+    <span class="chev" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 9l4-4 4 4" /></svg></span>
+  </button>
+  <div class="panel" id="isle-panel" inert>
+    <header><b>ns-frame</b><button type="button" id="isle-close" aria-label="Cerrar"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 3l8 8M11 3l-8 8" /></svg></button></header>
+    <ul id="isle-list">
+      {SECTIONS.map((s, i) => (
+        <li><a href={`#${s.id}`} data-ns="all squircle 16" data-name={s.name} aria-current={i == 0 ? 'true' : undefined}><Icon d={s.icon} /><span>{s.name}</span><small>{s.sub}</small></a></li>
+      ))}
+    </ul>
+    <div class="acts"><a href={LINKS.install}>Empezar</a><a href={LINKS.github}>GitHub</a></div>
+  </div>
+</nav>
+
+<script>
+  const $ = (id: string) => document.getElementById(id)!
+  const isle = $('isle'), btn = $('isle-btn'), panel = $('isle-panel'), scrim = $('isle-scrim'), ico = $('isle-ico'), name = $('isle-name'), pos = $('isle-pos')
+  const links = [...$('isle-list').querySelectorAll<HTMLAnchorElement>('a')]
+  const secs = links.map(a => document.querySelector<HTMLElement>(a.hash)!)
+  const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches
+  let cur = 0, open = false
+
+  const setCur = (k: number) => {
+    if (k == cur) return
+    cur = k
+    // el icono de la isla es el mismo del menú (sin construir SVG a mano)
+    ico.replaceChildren(links[k].querySelector('svg')!.cloneNode(true))
+    name.textContent = links[k].dataset.name!
+    pos.textContent = `${k + 1} de ${links.length} · desliza`
+    links.forEach((a, j) => j == k ? a.setAttribute('aria-current', 'true') : a.removeAttribute('aria-current'))
+  }
+
+  // tamaño abierto = el del contenido: la transición va entre medidas reales
+  const openSize = () => { isle.style.setProperty('--w', Math.min(innerWidth - 24, 430) + 'px'); isle.style.setProperty('--h', panel.scrollHeight + 2 + 'px') }
+  const setOpen = (on: boolean) => {
+    open = on
+    btn.setAttribute('aria-expanded', String(on))
+    isle.classList.toggle('open', on)
+    isle.classList.remove('mini')
+    scrim.classList.toggle('on', on)
+    panel.inert = !on
+    if (on) { openSize(); setTimeout(() => links[cur].focus({ preventScroll: true }), 320); navigator.vibrate?.(6) }
+    else { isle.style.removeProperty('--w'); isle.style.removeProperty('--h'); btn.focus({ preventScroll: true }) }
+  }
+
+  // deslizar: sección anterior o siguiente; tocar: abrir
+  let x0: number | null = null, swiped = false
+  btn.addEventListener('pointerdown', e => { x0 = e.clientX; swiped = false })
+  btn.addEventListener('pointerup', e => {
+    if (x0 == null) return
+    const dx = e.clientX - x0
+    x0 = null
+    if (Math.abs(dx) < 40) return
+    swiped = true
+    const k = Math.max(0, Math.min(links.length - 1, cur + (dx < 0 ? 1 : -1)))
+    secs[k].scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth' })
+    navigator.vibrate?.(4)
+  })
+  btn.addEventListener('click', () => { if (!swiped) setOpen(true); swiped = false })
+  $('isle-close').addEventListener('click', () => setOpen(false))
+  scrim.addEventListener('click', () => setOpen(false))
+  $('isle-list').addEventListener('click', e => { if ((e.target as Element).closest('a')) setOpen(false) })
+  addEventListener('keydown', e => { if (e.key == 'Escape' && open) setOpen(false) })
+
+  // sección actual, progreso de lectura en el borde y pliegue al bajar
+  let y0 = scrollY, raf = 0
+  const onScroll = () => {
+    raf = 0
+    const max = document.documentElement.scrollHeight - innerHeight, y = scrollY
+    isle.style.setProperty('--ns-progress', String(Math.round(Math.max(0, Math.min(1, y / (max || 1))) * 100)))
+    let k = 0
+    secs.forEach((s, j) => { if (s.getBoundingClientRect().top < innerHeight * .45) k = j })
+    setCur(k)
+    if (!open && Math.abs(y - y0) > 6) { isle.classList.toggle('mini', y > y0 && y > 200); y0 = y }
+  }
+  addEventListener('scroll', () => { raf ||= requestAnimationFrame(onScroll) }, { passive: true })
+  addEventListener('resize', () => open && openSize())
+  onScroll()
+</script>
+
+<style>
+  .scrim, .isle { display: none }
+  @media (max-width: 900px) {
+    :global(body) { padding-bottom: calc(84px + env(safe-area-inset-bottom)) }
+    .scrim { display: block; position: fixed; inset: 0; z-index: 39; background: rgba(0, 0, 0, .45); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; pointer-events: none; transition: opacity .4s var(--ease) }
+    .scrim.on { opacity: 1; pointer-events: auto }
+    .isle { display: block; position: fixed; z-index: 40; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); width: var(--w, 212px); height: var(--h, 54px); transform: translateX(-50%);
+      background: rgba(24, 24, 24, .86); backdrop-filter: blur(22px) saturate(1.8); -webkit-backdrop-filter: blur(22px) saturate(1.8);
+      --ns-border: rgba(255, 255, 255, .14); --ns-motion: var(--signal); --ns-accent-width: 1.5px; color: var(--text);
+      contain: layout style; transition: width .55s var(--ease), height .55s var(--ease); filter: drop-shadow(0 16px 30px rgba(0, 0, 0, .5)) }
+    .pill { position: absolute; inset: 0; display: flex; align-items: center; gap: 11px; padding: 0 8px 0 9px; border: 0; background: none; cursor: pointer; text-align: left; transition: opacity .25s; touch-action: pan-y }
+    .ico { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; flex: none; background: var(--text); color: #0a0a0a }
+    .ico :global(svg) { width: 17px; height: 17px }
+    .txt { flex: 1; min-width: 0; overflow: hidden; display: grid; transition: opacity .2s, visibility .2s }
+    .txt b { font: 700 15px/1.15 var(--display); font-stretch: 106%; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+    .txt small { font: 11px/1.3 var(--mono); color: var(--text-2); white-space: nowrap }
+    .chev { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, .1); flex: none; transition: opacity .2s, visibility .2s }
+    .chev svg { width: 14px; height: 14px }
+    .isle.mini { --w: 54px }
+    .isle.mini .txt, .isle.mini .chev { opacity: 0; visibility: hidden }
+    .isle.open .pill { opacity: 0; pointer-events: none }
+    .panel { position: absolute; left: 0; right: 0; top: 0; padding: 18px 16px 16px; display: flex; flex-direction: column; gap: 14px; opacity: 0; visibility: hidden; transition: opacity .2s, visibility 0s .2s }
+    .isle.open .panel { opacity: 1; visibility: visible; transition: opacity .35s .15s }
+    header { display: flex; align-items: center; justify-content: space-between; padding: 0 6px }
+    header b { font: 700 20px/1 var(--display); font-stretch: 108%; letter-spacing: -.02em }
+    header button { width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, .1); display: grid; place-items: center; cursor: pointer }
+    header svg { width: 14px; height: 14px }
+    ul { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0; padding: 0; list-style: none }
+    ul a { display: flex; flex-direction: column; gap: 10px; padding: 14px; min-height: 86px; background: rgba(255, 255, 255, .06); --ns-border: rgba(255, 255, 255, .06); transition: background .2s }
+    ul a :global(svg) { color: var(--text-2) }
+    ul a span { font-size: 15px; font-weight: 500 }
+    ul a small { font-size: 12px; color: var(--text-3); margin-top: -8px }
+    ul a[aria-current] { background: rgba(255, 255, 255, .12); --ns-border: rgba(255, 255, 255, .28) }
+    ul a[aria-current] :global(svg) { color: var(--signal) }
+    .acts { display: flex; gap: 8px }
+    .acts a { flex: 1; min-height: 48px; border-radius: 980px; display: grid; place-items: center; font-size: 15px; font-weight: 500; background: rgba(255, 255, 255, .1) }
+    .acts a:first-child { background: var(--text); color: #000 }
+  }
+  @media (max-width: 900px) and (prefers-reduced-motion: reduce) { .isle, .scrim { transition: none } }
+</style>

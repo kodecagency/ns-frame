@@ -1,0 +1,9 @@
+---
+// Encabezado de sección: titular grande y entrada. Sin rótulos encima: el titular habla solo.
+interface Props { id: string; center?: boolean }
+const { id, center } = Astro.props
+---
+<div class:list={['head', { center }]}>
+  <h2 id={id}><slot name="title" /></h2>
+  {Astro.slots.has('default') && <p class="lede"><slot /></p>}
+</div>

@@ -1,0 +1,35 @@
+---
+// Ficha técnica: sólo datos medidos o verificables (docs/rendimiento.md, docs/seguridad.md).
+import SectionHead from '../SectionHead.astro'
+import Arrow from '../Arrow.astro'
+
+const SPECS: [string, string, string?][] = [
+  ['Núcleo', '8,3 KB', 'comprimido con gzip; los módulos se cargan sólo si se usan'],
+  ['Dependencias', 'Ninguna', 'ni peticiones de red en tiempo de ejecución'],
+  ['4.000 marcos en pantalla', '< 50 ms', 'la tarea más larga al montarlos'],
+  ['Seguridad', 'Sin innerHTML', 'funciona con una CSP estricta, sin unsafe-inline'],
+  ['Accesibilidad', 'De serie', 'foco que sigue la forma, alto contraste, movimiento reducido y RTL'],
+  ['Licencia', 'MIT', 'software libre, de Kodec Agency'],
+]
+---
+<section class="sec" id="cifras" aria-labelledby="t-cifras">
+  <div class="wrap">
+    <SectionHead id="t-cifras">
+      <Fragment slot="title">Pequeña, rápida<br>y segura.</Fragment>
+    </SectionHead>
+    <dl class="specs">
+      {SPECS.map(([k, v, d]) => <div><dt>{k}</dt><dd><b class="num">{v}</b>{d && <span>{d}</span>}</dd></div>)}
+    </dl>
+    <p class="after"><a class="more" href="/docs/rendimiento">Cómo se midió<Arrow /></a></p>
+  </div>
+</section>
+
+<style>
+  .specs { margin: 64px 0 0; border-top: 1px solid var(--line-2) }
+  .specs div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 8px 32px; padding: 22px 0; border-bottom: 1px solid var(--line) }
+  dt { color: var(--text-2); font-size: 17px }
+  dd { margin: 0; display: grid; gap: 4px }
+  dd b { font: 700 clamp(22px, 2.4vw, 30px)/1.1 var(--display); font-stretch: 108%; letter-spacing: -.02em }
+  dd span { color: var(--text-2); font-size: 15px }
+  @media (max-width: 700px) { .specs div { grid-template-columns: 1fr } }
+</style>

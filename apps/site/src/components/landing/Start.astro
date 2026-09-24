@@ -1,0 +1,34 @@
+---
+// Cierre: el snippet para copiar y los dos caminos siguientes.
+import SectionHead from '../SectionHead.astro'
+import { LINKS } from '../../data/sections'
+import Arrow from '../Arrow.astro'
+const CDN = 'https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.9.0/packages/ns-frame/dist/ns-frame.js'
+---
+<section class="sec light start" id="empezar" aria-labelledby="t-start">
+  <div class="wrap">
+    <SectionHead id="t-start" center>
+      <Fragment slot="title">Empieza en un minuto.</Fragment>
+      Un script y un atributo. Funciona con HTML plano, Astro, React, Vue o Svelte.
+    </SectionHead>
+    <div class="install" data-ns="all squircle 22"><code id="snip">&lt;<b>script</b> type="module" src="{CDN}"&gt;&lt;/<b>script</b>&gt;</code><button type="button" id="copy">Copiar</button></div>
+    <div class="cta"><a class="btn" href={LINKS.docs}>Leer la documentación</a><a class="more" href={LINKS.gallery}>Explorar la galería completa<Arrow /></a></div>
+  </div>
+</section>
+
+<script>
+  const copy = document.getElementById('copy')!
+  copy.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(document.getElementById('snip')!.textContent!); copy.textContent = 'Copiado' } catch { copy.textContent = 'No se pudo copiar' }
+    setTimeout(() => (copy.textContent = 'Copiar'), 1600)
+  })
+</script>
+
+<style>
+  .start { text-align: center }
+  .install { display: flex; align-items: center; gap: 14px; max-width: 720px; margin: 44px auto 0; padding: 18px 20px 18px 24px; background: var(--l-surface); --ns-border: var(--l-line); text-align: left }
+  code { flex: 1; min-width: 0; font: 14px/1.5 var(--mono); color: var(--l-text-2); overflow-x: auto; white-space: nowrap }
+  code b { color: var(--l-text); font-weight: 500 }
+  button { flex: none; min-height: 44px; padding: 0 16px; border-radius: 980px; border: 0; background: var(--l-text); color: #fff; font-size: 14px; cursor: pointer }
+  .cta { justify-content: center }
+</style>
