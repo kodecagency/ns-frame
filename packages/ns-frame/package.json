@@ -25,6 +25,7 @@
     "./carousel": { "types": "./types/modules.d.ts", "default": "./dist/ns-carousel.js" },
     "./pop": { "types": "./types/modules.d.ts", "default": "./dist/ns-pop.js" },
     "./bento": { "types": "./types/modules.d.ts", "default": "./dist/ns-bento.js" },
+    "./mosaic": { "types": "./types/modules.d.ts", "default": "./dist/ns-mosaic.js" },
     "./link": { "types": "./types/modules.d.ts", "default": "./dist/ns-link.js" },
     "./fx": { "types": "./types/modules.d.ts", "default": "./dist/ns-fx.js" },
     "./audit": { "types": "./types/modules.d.ts", "default": "./dist/ns-audit.js" },

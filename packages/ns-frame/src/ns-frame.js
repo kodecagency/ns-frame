@@ -90,7 +90,12 @@ export function geometry(shape, w, h) {
   const spec = resolve(typeof shape == 'string' ? parsed(shape) : shape, w)
   const R = spec.r, ins = {}, V = [], cv = {}
   const vx = (x, y, r = 0, rx = 0, ry = 0, sw = 1, c = -1) => ({ x, y, r, rx, ry, sw, c })
-  if (spec.poly) return spec.poly.map(([x, y, r], i) => vx(num(x, w, 1), num(y, h, 1), r ? +r.slice(1) : R, 0, 0, 1, i))
+  // poly: "x y [rN] [aN]" · rN redondea el vértice · aN llega a él por un arco de radio N (negativo = antihorario)
+  if (spec.poly) return spec.poly.map(([x, y, ...o], i) => {
+    let r = R, a = 0
+    for (const t of o) t[0] == 'r' ? (r = +t.slice(1) || 0) : t[0] == 'a' && (a = +t.slice(1) || 0)
+    return vx(num(x, w, 1), num(y, h, 1), r, Math.abs(a), Math.abs(a), +(a > 0), i)
+  })
 
   for (const k of EDGES) ins[k] = Math.max(0, ...spec.e[k].filter(f => f.type == 'tab').map(f => num(f.a[2])))
   const x0 = ins.left, y0 = ins.top, x1 = w - ins.right, y1 = h - ins.bottom
@@ -410,14 +415,16 @@ function decorate(s, V, d, T, at) {
 }
 
 function morph(s) {
-  const from = s.cur, t0 = performance.now(), dur = parseFloat(getComputedStyle(s.el).getPropertyValue('--ns-morph-time')) || 320
+  const from = s.cur, t0 = performance.now(), v = parseFloat(getComputedStyle(s.el).getPropertyValue('--ns-morph-time')), dur = isNaN(v) ? 320 : v
+  cancelAnimationFrame(s.anim)
+  // --ns-morph-time: 0 = cambio instantáneo
+  if (!(dur > 0)) return (s.anim = 0, paint(s, geometry(s.src, s.w, s.h), 1))
   const tick = now => {
     const p = Math.min(1, (now - t0) / dur)
     const G = geometry(s.src, s.w, s.h)
     paint(s, p < 1 ? lerp(from, G, 1 - (1 - p) ** 3) : G, p >= 1)
     s.anim = p < 1 ? requestAnimationFrame(tick) : 0
   }
-  cancelAnimationFrame(s.anim)
   s.anim = requestAnimationFrame(tick)
 }
 

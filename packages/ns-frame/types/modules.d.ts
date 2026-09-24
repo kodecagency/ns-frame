@@ -1,6 +1,6 @@
 // Tipos de los módulos opcionales de ns-frame. Cada módulo se importa por su ruta:
 // ns-frame/css, ns-frame/static, ns-frame/vt, ns-frame/toast, ns-frame/skel, ns-frame/carousel,
-// ns-frame/pop, ns-frame/bento, ns-frame/link, ns-frame/fx, ns-frame/audit.
+// ns-frame/pop, ns-frame/bento, ns-frame/mosaic, ns-frame/link, ns-frame/fx, ns-frame/audit.
 import type { Shape } from './ns-frame'
 
 // ── ns-frame/css ──
@@ -34,9 +34,13 @@ export interface ToastOptions {
 export function toast(message: string, options?: ToastOptions): { el: HTMLElement; close: () => void }
 export function config(options: { x?: 'start' | 'center' | 'end'; y?: 'top' | 'bottom'; max?: number; time?: number; shape?: Shape; enter?: ToastEnter }): void
 
-// ── ns-frame/skel, ns-frame/bento, ns-frame/link ──
-/** Vuelve a medir (skeletons: uno o todos; bento y callouts: todos). */
+// ── ns-frame/skel, ns-frame/bento, ns-frame/mosaic, ns-frame/link ──
+/** Vuelve a medir (skeletons: uno o todos; bento, mosaicos y callouts: todos). */
 export function refresh(el?: Element): void
+
+// ── ns-frame/mosaic ──
+/** Lee una plantilla `--ns-areas` ("'a a b' 'c d b'") como matriz de celdas ('.' = vacía). */
+export function parseAreas(areas: string): string[][]
 
 // ── ns-frame/fx ──
 /** Efecto de texto que se "descifra". */

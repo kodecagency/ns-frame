@@ -5,6 +5,7 @@ import * as lite from '../dist/ns-frame.lite.js'
 import { css as cssSrc } from '../src/ns-css.js'
 import { css as cssMin } from '../dist/ns-css.js'
 import { extract } from '../src/ns-static.js'
+import { parseAreas } from '../src/ns-mosaic.js'
 
 let seed = 7
 const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647)
@@ -22,6 +23,7 @@ for (let i = 0; i < 400; i++) {
   shapes.push(st.join('; '))
 }
 shapes.push('poly 28 0 r4, 100%-60 0 r4, 100% 50% r3, 100%-60 100% r4, 28 100% r4, 0 100%-28 r3, 0 28 r3', '', 'nada válido')
+shapes.push('poly 0 0 r12, 40% 0 r0, 50% 20 a-20 r0, 60% 0 r0, 100% 0 r12, 100% 100% r12, 0 100% r12') // mordida con arco (mosaico)
 
 let checks = 0, fails = 0
 const eq = (a, b, what) => { checks++; if (a !== b) { fails++; if (fails < 6) console.log('✗', what, '\n  src:', a, '\n  min:', b) } }
@@ -42,6 +44,12 @@ same('dir rtl; start cut center 30% 6', 'right cut center 30% 6', 'borde lógico
 eq(/C/.test(src.path('all squircle 30', 300, 200)), true, 'squircle usa cúbicos')
 eq(/^shape\(from .*curve to .* with .* \/ .*close\)$/.test(cssSrc('all squircle 24') || ''), true, 'squircle compila a shape() con curve')
 eq(src.geometry('all squircle 24', 300, 200).length, src.geometry('all round 24', 300, 200).length, 'squircle se interpola con round')
+// poly con arcos: "aN" llega al vértice por un arco (negativo = antihorario) y compila a shape()
+eq(/A20 20 0 0 0 /.test(src.path('poly 0 0, 80 0, 100 20 a-20, 120 0, 200 0, 200 100, 0 100', 200, 100)), true, 'poly: arco antihorario')
+eq(/A20 20 0 0 1 /.test(src.path('poly 0 0, 80 0, 100 20 a20, 120 0, 200 0, 200 100, 0 100', 200, 100)), true, 'poly: arco horario')
+eq(/arc to .* of 20px 20px ccw/.test(cssSrc('poly 0 0, 40% 0, 40%+20 20 a-20, 40%+40 0, 100% 0, 100% 100%, 0 100%') || ''), true, 'poly: arco compila a CSS')
+// mosaico: plantilla de áreas
+eq(JSON.stringify(parseAreas(`'a a b' "c d"`)), '[["a","a","b"],["c","d","."]]', 'mosaic: parseAreas')
 // formas sin JS: data-ns-static se compila a una clase + CSS shape()
 const X = extract('<div class="a" data-ns-static="card">x</div><p data-ns-static="card"></p><i data-ns-static="tl bevel 30%"></i>')
 eq(/^<div class="a ns-s-\w+">x<\/div><p class="ns-s-\w+"><\/p><i data-ns="tl bevel 30%"><\/i>$/.test(X.html), true, 'static: html')

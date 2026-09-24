@@ -17,7 +17,7 @@ bundle('ns-frame.js', 'ns-frame.lite.js', { define: { NS_LITE: 'true' } })
 // no importan el núcleo: van empaquetados
 for (const m of ['ns-extra.js', 'ns-fx.js', 'ns-link.js']) bundle(m, m)
 // importan ./ns-frame.js: no se empaquetan, así comparten la instancia del núcleo que cargó la página
-esb({ entryPoints: ['ns-css.js', 'ns-audit.js', 'ns-skel.js', 'ns-toast.js', 'ns-pop.js', 'ns-bento.js', 'ns-carousel.js', 'ns-vt.js', 'ns-static.js', 'ns-astro.js', 'ns-fx.css'].map(f => `${dir}/${f}`), outdir: out })
+esb({ entryPoints: ['ns-css.js', 'ns-audit.js', 'ns-skel.js', 'ns-toast.js', 'ns-pop.js', 'ns-bento.js', 'ns-mosaic.js', 'ns-carousel.js', 'ns-vt.js', 'ns-static.js', 'ns-astro.js', 'ns-fx.css'].map(f => `${dir}/${f}`), outdir: out })
 
 // segunda pasada con terser; se queda la versión más pequeña en gzip (a veces esbuild gana)
 const gz = b => gzipSync(b, { level: 9 }).length

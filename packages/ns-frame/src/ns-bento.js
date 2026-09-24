@@ -48,7 +48,9 @@ function layout() {
     const cs = getComputedStyle(el), kids = [...el.children].filter(k => k.offsetParent !== null || cs.display == 'contents')
     const min = parseFloat(cs.getPropertyValue('--ns-min')) || 240, max = parseInt(cs.getPropertyValue('--ns-cols-max')) || 4
     const gap = parseFloat(cs.columnGap) || 0, w = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
-    jobs.push({ el, kids, cols: Math.max(1, Math.min(max, Math.floor((w + gap) / (min + gap)))), rects: kids.map(k => k.getBoundingClientRect()) })
+    // un bento sigue siendo bento en móvil: al menos --ns-cols-min columnas (2) mientras cada una mida ≥ 130 px
+    const lo = Math.min(max, parseInt(cs.getPropertyValue('--ns-cols-min')) || 2), fit = Math.floor((w + gap) / (min + gap))
+    jobs.push({ el, kids, cols: Math.max(w + gap >= lo * (130 + gap) ? lo : 1, Math.min(max, fit)), rects: kids.map(k => k.getBoundingClientRect()) })
   }
   // 2) columnas (puede cambiar el layout: se vuelve a medir en el siguiente frame)
   let again = 0

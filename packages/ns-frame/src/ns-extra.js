@@ -16,6 +16,11 @@ const CSS = `@layer ns{
 .ns-mg{stroke:var(--ns-motion,#ff3df0)!important;opacity:0;animation:ns-mg var(--ns-motion-time,3s) steps(1) infinite}
 .ns-mr{stroke-dasharray:var(--ns-progress,0) 100;transition:stroke-dasharray .6s cubic-bezier(.3,.7,.3,1)}
 :is([data-ns-motion~=hover],ns-frame[motion~=hover]):not(:hover,:focus-within) .ns-m{opacity:0}
+.ns-sc{animation:ns-sc 3.2s linear infinite}
+.ns-or{animation:ns-or 4s linear infinite}
+@keyframes ns-sc{0%{transform:translate(var(--a),0)}62%,to{transform:translate(var(--b),0)}}
+@keyframes ns-or{to{transform:rotate(1turn)}}
+@keyframes ns-sp{from{transform:translate(var(--c)) rotate(0) translate(var(--nc)) var(--t0)}to{transform:translate(var(--c)) rotate(1turn) translate(var(--nc)) var(--t0)}}
 @keyframes ns-t{to{stroke-dashoffset:-100}}
 @keyframes ns-mm{to{stroke-dashoffset:-12}}
 @keyframes ns-ml{from{stroke-dashoffset:100}to{stroke-dashoffset:-100}}
@@ -48,7 +53,7 @@ function gradient(str, w, h, id, spin) {
   const m = /^(linear|radial)-gradient\((.*)\)$/s.exec(str)
   if (!m) return
   const parts = split(m[2]), head = parts[0]
-  let cx = w / 2, cy = h / 2, a = Math.PI, len, geo
+  let cx = w / 2, cy = h / 2, a = Math.PI, len, geo, t0
   if (m[1] == 'linear') {
     if (/^to\s/.test(head)) {
       const dx = /right/.test(head) - /left/.test(head), dy = /bottom/.test(head) - /top/.test(head)
@@ -72,6 +77,7 @@ function gradient(str, w, h, id, spin) {
     len = rx ? Math.max(rx, ry) : Math.max(...[[0, 0], [w, 0], [0, h], [w, h]].map(([x, y]) => Math.hypot(x - cx, y - cy)))
     // la elipse se hace con un círculo unitario escalado (SVG sólo tiene gradientes circulares)
     geo = rx ? { cx: 0, cy: 0, r: 1, gradientTransform: `translate(${f(cx)} ${f(cy)}) scale(${f(rx)} ${f(ry)})` } : { cx: f(cx), cy: f(cy), r: f(len) }
+    if (rx) t0 = `translate(${f(cx)}px, ${f(cy)}px) scale(${f(rx)}, ${f(ry)})`
   }
   const st = parts.map(p => { const q = /\s(-?[\d.]+)(%|px)$/.exec(p); return q ? [p.slice(0, q.index), q[2] == 'px' ? q[1] / len : q[1] / 100] : [p, null] })
   st[0][1] ??= 0
@@ -81,10 +87,12 @@ function gradient(str, w, h, id, spin) {
     while (st[j][1] == null) j++
     for (let k = i; k < j; k++) st[k][1] = st[i - 1][1] + (st[j][1] - st[i - 1][1]) * (k - i + 1) / (j - i + 1)
   }
-  const c = `${f(w / 2)} ${f(h / 2)}`
-  return mk(m[1] + 'Gradient', { id, gradientUnits: 'userSpaceOnUse', ...geo }, {},
-    ...st.map(([col, o]) => mk('stop', { offset: o }, { 'stop-color': col })),
-    ...(spin ? [mk('animateTransform', { attributeName: 'gradientTransform', type: 'rotate', from: '0 ' + c, to: '360 ' + c, dur: spin, repeatCount: 'indefinite', additive: 'sum' })] : []))
+  // giro con una animación CSS (transform sobre el degradado, SVG 2) en vez de SMIL:
+  // se pausa fuera de pantalla con .ns-off y no se congela en móviles
+  return mk(m[1] + 'Gradient', { id, gradientUnits: 'userSpaceOnUse', ...geo }, spin ? {
+    animation: `ns-sp ${spin} linear infinite`, 'transform-origin': '0 0',
+    '--c': `${f(w / 2)}px, ${f(h / 2)}px`, '--nc': `${f(-w / 2)}px, ${f(-h / 2)}px`, '--t0': t0 || 'translate(0)',
+  } : {}, ...st.map(([col, o]) => mk('stop', { offset: o }, { 'stop-color': col })))
 }
 
 // Animaciones de borde: cada una devuelve sus nodos; las que dependen del tamaño reciben (id, w, h, t).
@@ -94,8 +102,13 @@ const tail = (P, n = 1) => mk('g', { class: 'ns-t' }, {}, ...[[16, 0, .22], [8, 
 const paint_ = 'var(--ns-motion,var(--ns-accent,currentColor))'
 const grad = (tag, id, geo, stops, ...anim) => mk('defs', {}, {}, mk(tag, { id, gradientUnits: 'userSpaceOnUse', ...geo }, {},
   ...stops.map(([o, a]) => mk('stop', { offset: o }, { 'stop-color': paint_, 'stop-opacity': a })), ...anim))
-const band = (id, geo, anim, stops = [[0, 0], [.5, 1], [1, 0]]) => [grad('linearGradient', id, geo, stops, anim), mk('path', {}, { stroke: `url(#${id})` })]
-const loop = (type, a) => mk('animateTransform', { attributeName: 'gradientTransform', type, repeatCount: 'indefinite', ...a })
+// banda de luz: un rectángulo con el degradado, movido por una animación CSS (transform) y
+// enmascarado por el trazo del borde. Sin SMIL: se pausa con .ns-off como el resto y no se
+// queda congelado en WebKit/iOS, donde animar gradientTransform no siempre repinta el trazo.
+const band = (id, w, h, geo, rect, cls, t, css, stops = [[0, 0], [.5, 1], [1, 0]]) => [
+  grad('linearGradient', id, geo, stops),
+  mk('mask', { id: id + 'm', maskUnits: 'userSpaceOnUse', x: -20, y: -20, width: f(w + 40), height: f(h + 40) }, { 'mask-type': 'alpha' }, mk('path', {}, { fill: 'none', stroke: '#fff' })),
+  mk('g', { mask: `url(#${id}m)` }, {}, mk('rect', { class: cls, ...rect }, { fill: `url(#${id})`, stroke: 'none', 'animation-duration': t, ...css }))]
 let MOTION
 const motions = () => MOTION ||= {
   comet: () => [tail(100)],                                          // cometa con estela
@@ -107,11 +120,13 @@ const motions = () => MOTION ||= {
   glitch: () => [mk('path', { class: 'ns-mg' })],                    // parpadeo desplazado
   progress: () => [mk('path', { class: 'ns-mr', pathLength: 100 })], // --ns-progress: 0–100
   // barrido de luz que cruza el marco y enciende el borde a su paso
-  scan: (id, w, h, t) => band(id, { x1: 0, y1: 0, x2: f(w * .22), y2: f(w * .07) },
-    loop('translate', { values: `${f(-w * .3)} 0;${f(w * 1.05)} 0;${f(w * 1.05)} 0`, keyTimes: '0;.62;1', dur: t || '3.2s' })),
+  scan: (id, w, h, t) => band(id, w, h, { x1: 0, y1: 0, x2: f(w * .22), y2: f(w * .07) },
+    { x: f(-w * 1.2), y: f(-h - 20), width: f(w * 2.6), height: f(h * 3 + 40) }, 'ns-sc', t || '3.2s',
+    { '--a': f(-w * .3) + 'px', '--b': f(w * 1.05) + 'px' }),
   // banda que gira sobre el centro: dos destellos orbitando
-  orbit: (id, w, h, t) => band(id, { x1: 0, y1: f(h / 2), x2: f(w), y2: f(h / 2) },
-    loop('rotate', { from: `0 ${f(w / 2)} ${f(h / 2)}`, to: `360 ${f(w / 2)} ${f(h / 2)}`, dur: t || '4s' }), [[.38, 0], [.5, 1], [.62, 0]]),
+  orbit: (id, w, h, t) => { const D = Math.hypot(w, h) + 40; return band(id, w, h, { x1: 0, y1: f(h / 2), x2: f(w), y2: f(h / 2) },
+    { x: f(w / 2 - D / 2), y: f(h / 2 - D / 2), width: f(D), height: f(D) }, 'ns-or', t || '4s',
+    { 'transform-origin': `${f(w / 2)}px ${f(h / 2)}px` }, [[.38, 0], [.5, 1], [.62, 0]]) },
   // foco de luz que sigue al puntero sobre el borde
   // (el relleno tenue ilumina el interior cerca del puntero; --ns-spot-fill: 0 lo desactiva)
   spot: (id, w, h, t, r) => [grad('radialGradient', id, { cx: -9e3, cy: -9e3, r }, [[0, 1], [1, 0]]),
