@@ -86,13 +86,13 @@ const MEDIA = [
   .stage { position: relative; display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 16px 16px 20px; min-width: 0;
     background: radial-gradient(60% 60% at 50% 45%, rgba(0, 230, 118, .08), transparent 70%), radial-gradient(circle, rgba(255, 255, 255, .08) 1px, transparent 1.5px) 0 0 / 16px 16px, var(--bg-2); --ns-border: var(--line-2) }
   .bar { align-self: stretch; display: flex; justify-content: center }
-  .card { width: min(340px, 90%); background: #fafafa; color: #0a0a0a; --ns-border: rgba(255, 255, 255, .5); --ns-morph-time: 520; filter: drop-shadow(0 24px 34px rgba(0, 0, 0, .55)); display: flex; flex-direction: column }
+  .card { width: min(340px, 90%); background: #fafafa; color: #0a0a0a; --ns-border: rgba(255, 255, 255, .5); --ns-morph-time: 520; filter: drop-shadow(0 24px 34px var(--veil-2)); display: flex; flex-direction: column }
   .card img { width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover }
   .meta { padding: 14px 22px 22px; display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: center }
-  .meta b { font: 700 18px/1.2 var(--display); font-stretch: 106%; letter-spacing: -.02em }
-  .meta span { grid-row: 2; font-size: 13px; color: #52525b }
-  .pill { grid-row: 1 / 3; grid-column: 2; font: 500 13px/1 var(--body); font-style: normal; background: #0a0a0a; color: #fff; padding: 10px 14px; border-radius: 99px }
-  .snippet { margin: 0; font: 13px/1.5 var(--mono); color: var(--text-2); text-align: center; white-space: pre-wrap; word-break: break-word }
+  .meta b { font: 700 var(--t-title)/1.2 var(--display); font-stretch: 106%; letter-spacing: -.02em }
+  .meta span { grid-row: 2; font-size: var(--t-small); color: var(--ink-2) }
+  .pill { grid-row: 1 / 3; grid-column: 2; font: 500 var(--t-small)/1 var(--body); font-style: normal; background: #0a0a0a; color: #fff; padding: 10px 14px; border-radius: 99px }
+  .snippet { margin: 0; font: var(--t-small)/1.5 var(--mono); color: var(--text-2); text-align: center; white-space: pre-wrap; word-break: break-word }
   .snippet b { color: var(--text); font-weight: 500 }
   .snippet i { font-style: normal; color: var(--signal) }
   .snippet em { font-style: normal; color: var(--text) }
@@ -101,21 +101,21 @@ const MEDIA = [
   .m { margin: 0; position: relative; min-height: 0 }
   .m0 { grid-column: 1 / -1 }
   .m img { width: 100%; height: 100%; min-height: 150px; object-fit: cover; --ns-border: rgba(255, 255, 255, .18) }
-  .m figcaption { position: absolute; left: 14px; bottom: 12px; padding: 5px 9px; border-radius: 8px; background: rgba(10, 10, 12, .72); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px) }
+  .m figcaption { position: absolute; left: 14px; bottom: 12px; padding: 5px 9px; border-radius: var(--r-sm); background: rgba(10, 10, 12, .72); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px) }
 
-  .sub { margin: 44px 0 14px; font-size: 17px; color: var(--text) }
+  .sub { margin: 44px 0 14px; font-size: var(--t-title); color: var(--text) }
   .wall { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px }
   .pre { all: unset; box-sizing: border-box; cursor: pointer; min-height: 112px; padding: 20px 24px; display: flex; flex-direction: column; justify-content: space-between; gap: 8px; background: var(--surface); --ns-border: var(--line-2); --ns-morph-time: 300; transition: background-color .25s }
   .pre[data-p=pill] { padding-left: 44px }
   .pre:hover { background: var(--surface-2); --ns-border: var(--tone) }
   .pre:focus-visible { outline: none }
-  .nm { font: 600 15px/1 var(--display); font-stretch: 106% }
-  .pre .tag { font-size: 10.5px }
+  .nm { font: 600 var(--t-control)/1 var(--display); font-stretch: 106% }
+  .pre .tag { font-size: var(--t-micro) }
   .k0 { --tone: #00e676; background-image: linear-gradient(160deg, rgba(0, 230, 118, .1), transparent 60%) }
   .k1 { --tone: #d4d4d8 }
   .k2 { --tone: #ffb547; background-image: linear-gradient(160deg, rgba(255, 181, 71, .09), transparent 60%) }
   .k3 { --tone: #b8f36b }
   .k4 { --tone: #ff7a59; background-image: linear-gradient(160deg, rgba(255, 122, 89, .09), transparent 60%) }
   @media (max-width: 1000px) { .play { grid-template-columns: 1fr } .wall { grid-template-columns: repeat(4, minmax(0, 1fr)) } }
-  @media (max-width: 560px) { .wall { grid-template-columns: repeat(2, minmax(0, 1fr)) } .media { grid-template-rows: auto } .m0 img { height: 210px } .m1 img, .m2 img { height: 170px } .stage .seg button { padding: 0 10px; font-size: 13px } }
+  @media (max-width: 560px) { .wall { grid-template-columns: repeat(2, minmax(0, 1fr)) } .media { grid-template-rows: auto } .m0 img { height: 210px } .m1 img, .m2 img { height: 170px } .stage .seg button { padding: 0 10px; font-size: var(--t-small) } }
 </style>

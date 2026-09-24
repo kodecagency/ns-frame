@@ -24,6 +24,42 @@
   --display: var(--font-mona);
   --body: var(--font-mona);
   --mono: var(--font-mono);
+  /* neutros de apoyo: tintas sobre claro, velos y tonos de demo */
+  --graphite: #0a0a0a;
+  --ink-go: #04210f;          /* texto sobre el verde de señal */
+  --ink-2: #52525b;           /* texto secundario sobre claro */
+  --ash: #a1a1aa;
+  --silver-2: #bdbdbd;
+  --coral-ink: #c2703d;       /* comentarios del código "antes" */
+  --surface-signal: #1f2a22;  /* superficie con un toque de señal */
+  --veil-1: rgba(0, 0, 0, .35);
+  --veil-2: rgba(0, 0, 0, .55);
+  --veil-3: rgba(0, 0, 0, .7);
+  /* escala tipográfica: cada tamaño de la página sale de aquí */
+  --t-micro: 11px;
+  --t-label: 11.5px;
+  --t-caption: 12.5px;
+  --t-small: 13.5px;
+  --t-ui: 14.5px;
+  --t-control: 15px;
+  --t-body: 16px;
+  --t-title: 17.5px;
+  --t-title-lg: 20px;
+  --t-heading: 26px;
+  --t-lede: clamp(16px, 1.3vw, 18px);
+  --t-lede-lg: clamp(16px, 1.5vw, 20px);
+  --t-lede-hero: var(--t-lede-lg);
+  --t-title-fluid: clamp(17.5px, 1.6vw, 20px);
+  --t-heading-fluid: clamp(20px, 3vw, 34px);
+  --t-number: clamp(40px, 5vw, 64px);
+  --t-h2: clamp(30px, 3.6vw, 46px);
+  --t-h1: clamp(40px, 5.6vw, 72px);
+  /* radios pequeños (las formas grandes van por data-ns) */
+  --r-2xs: 4px;
+  --r-xs: 6px;
+  --r-sm: 8px;
+  --r-md: 10px;
+  --r-lg: 14px;
   --ease: cubic-bezier(.22, 1, .36, 1);
   --ns-focus: #00e676;
 }

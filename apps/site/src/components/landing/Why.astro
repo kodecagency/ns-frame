@@ -60,29 +60,29 @@ const GAINS = [
 <style>
   .vs { display: grid; grid-template-columns: 1.05fr 1fr; gap: 14px }
   .code { margin: 0; background: var(--surface); --ns-border: var(--line-2); padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0 }
-  figcaption { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; font-weight: 500 }
-  figcaption .dim { font: 12px var(--mono) }
-  pre { margin: 0; font: 12.5px/1.7 var(--mono); color: var(--text-2); white-space: pre-wrap; overflow-wrap: anywhere }
-  .before pre :global(.c) { color: #c2703d }
+  figcaption { display: flex; justify-content: space-between; gap: 12px; font-size: var(--t-small); font-weight: 500 }
+  figcaption .dim { font: var(--t-caption) var(--mono) }
+  pre { margin: 0; font: var(--t-caption)/1.7 var(--mono); color: var(--text-2); white-space: pre-wrap; overflow-wrap: anywhere }
+  .before pre :global(.c) { color: var(--coral-ink) }
   .before { --ns-border: rgba(255, 122, 89, .28) }
   .after { --ns-border: linear-gradient(135deg, rgba(0, 230, 118, .6), rgba(255, 255, 255, .08) 45%, rgba(0, 230, 118, .25)) }
   .after pre b { color: var(--text); font-weight: 500 }
   .after pre i { font-style: normal; color: var(--signal) }
-  .after pre em { font-style: normal; color: #e8e8e8 }
+  .after pre em { font-style: normal; color: var(--silver) }
   .live { flex: 1; display: grid; place-items: center; padding: 18px; border-radius: 12px; background: radial-gradient(circle, rgba(255, 255, 255, .07) 1px, transparent 1.5px) 0 0 / 14px 14px }
-  .demo { width: min(320px, 100%); padding: 22px 24px; display: grid; gap: 6px; background: linear-gradient(160deg, #1f2a22, #141416 60%); --ns-border: linear-gradient(120deg, #00e676, rgba(255, 255, 255, .15) 50%, #b8f36b); --ns-motion: #fff; --ns-spot-size: 160; --ns-spot-fill: .08; --ns-morph-time: 380; cursor: default }
-  .demo strong { font: 600 17px/1.25 var(--display) }
+  .demo { width: min(320px, 100%); padding: 22px 24px; display: grid; gap: 6px; background: linear-gradient(160deg, var(--surface-signal), #141416 60%); --ns-border: linear-gradient(120deg, #00e676, rgba(255, 255, 255, .15) 50%, #b8f36b); --ns-motion: #fff; --ns-spot-size: 160; --ns-spot-fill: .08; --ns-morph-time: 380; cursor: default }
+  .demo strong { font: 600 var(--t-title)/1.25 var(--display) }
 
   .gains { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 14px }
   .gain { background: var(--surface); --ns-border: var(--line-2); padding: 22px 22px 20px; display: flex; flex-direction: column; gap: 8px; min-height: 210px; position: relative; overflow: hidden }
   .gain::after { content: ''; position: absolute; inset: auto -20% -40% -20%; height: 70%; background: radial-gradient(50% 60% at 50% 100%, var(--glow), transparent); opacity: .5; pointer-events: none; z-index: 0 }
   .gain > * { position: relative; z-index: 1 }
-  .gain h3 { font-size: 17px }
-  .gain p { margin: 0; color: var(--text-2); font-size: 14px; flex: 1 }
+  .gain h3 { font-size: var(--t-title) }
+  .gain p { margin: 0; color: var(--text-2); font-size: var(--t-ui); flex: 1 }
   .d { --glow: rgba(0, 230, 118, .35) }
   .v { --glow: rgba(212, 212, 216, .25) }
   .r { --glow: rgba(255, 181, 71, .3) }
   .a { --glow: rgba(255, 122, 89, .3) }
   @media (max-width: 960px) { .vs { grid-template-columns: 1fr } .gains { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
-  @media (max-width: 520px) { .gains { gap: 10px } .gain { padding: 22px 20px; min-height: 0 } .gain p { font-size: 13px } .gain code { font-size: 10.5px } }
+  @media (max-width: 520px) { .gains { gap: 10px } .gain { padding: 22px 20px; min-height: 0 } .gain p { font-size: var(--t-small) } .gain code { font-size: var(--t-micro) } }
 </style>

@@ -9,7 +9,7 @@ import { LINKS } from '../../data/sections'
     <h1 id="t-hero">Dale forma a<br>cualquier elemento.</h1>
     <p class="lede">Chaflanes, muescas, squircles y mosaicos de piezas que encajan, con una línea de HTML. <b>8&nbsp;KB, sin imágenes y sin dependencias.</b></p>
     <div class="cta"><a class="btn" href={LINKS.install} data-ns="all round 50%" data-ns-hover="tl+br bevel 14; tr+bl round 22; radius 2">Empezar</a><a class="more" href={LINKS.github}>Ver el código en GitHub<Arrow /></a></div>
-    <ul class="facts"><li><b>0</b> dependencias</li><li><b>8,5 KB</b> gzip</li><li>CSP estricta, <b>sin innerHTML</b></li><li>HTML, Astro, React, Vue, Svelte</li><li><b>MIT</b></li></ul>
+    <ul class="facts"><li><b>0</b> dependencias</li><li><b>8,7 KB</b> gzip</li><li>CSP estricta, <b>sin innerHTML</b></li><li>HTML, Astro, React, Vue, Svelte</li><li><b>MIT</b></li></ul>
 
     <div class="board ns-mosaic" id="board" data-ns-flow="off" data-ns-mosaic="glow ripple">
       <figure data-ns-area="h" class="ph">
@@ -63,56 +63,56 @@ import { LINKS } from '../../data/sections'
 
 <style>
   .hero { padding: clamp(48px, 7vw, 88px) 0 clamp(64px, 8vw, 104px); text-align: center; overflow: hidden }
-  .lede { margin-inline: auto; font-size: clamp(16px, 1.5vw, 19px) }
+  .lede { margin-inline: auto; font-size: var(--t-lede-lg) }
   .cta { justify-content: center }
-  .facts { list-style: none; padding: 0; margin: 22px 0 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; font-size: 13px; color: var(--text-3) }
+  .facts { list-style: none; padding: 0; margin: 22px 0 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; font-size: var(--t-small); color: var(--text-3) }
   .facts li + li::before { content: ''; display: inline-block; width: 4px; height: 4px; border-radius: 50%; background: var(--line-2); margin: 0 14px 2px 0; vertical-align: middle }
   .facts b { color: var(--text-2); font-weight: 500 }
 
   .board { --ns-areas: 'a h h b' 'a h h c' 'd x x y'; --ns-row: 138px; --ns-gap: 12px; --ns-round: 24px; --ns-orb: 3 3 46 hex; --ns-orb-corner: 12px; --ns-pad: 20px; --ns-mo-light: #fff; --ns-mo-fill: .05;
-    max-width: 1100px; margin: clamp(40px, 5vw, 64px) auto 0; text-align: left }
+    max-width: 1100px; margin: var(--t-number) auto 0; text-align: left }
   .board > [data-ns-area] { background: rgba(22, 22, 25, .92); --ns-border: rgba(255, 255, 255, .09); display: flex; flex-direction: column; gap: 6px; min-width: 0 }
-  .lbl { font: 500 13px/1.2 var(--body); color: var(--text-3) }
-  .sub { font-size: 14px; color: var(--text-2) }
+  .lbl { font: 500 var(--t-small)/1.2 var(--body); color: var(--text-3) }
+  .sub { font-size: var(--t-ui); color: var(--text-2) }
   .track { font-weight: 500 }
 
   .ph { background: #0a0a0a !important; margin: 0; justify-content: flex-end }
   .ph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover }
-  .ph::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 50%, rgba(0, 0, 0, .66)) }
+  .ph::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 50%, var(--veil-3)) }
   figcaption { position: relative; z-index: 1; display: grid; gap: 4px }
   .ph .lbl { color: rgba(255, 255, 255, .78) }
-  .ph strong { font: 700 24px/1.1 var(--display); font-stretch: 108%; letter-spacing: -.02em }
+  .ph strong { font: 700 var(--t-heading)/1.1 var(--display); font-stretch: 108%; letter-spacing: -.02em }
 
-  .spec strong { font: 700 26px/1.1 var(--display); font-stretch: 108%; letter-spacing: -.02em }
+  .spec strong { font: 700 var(--t-heading)/1.1 var(--display); font-stretch: 108%; letter-spacing: -.02em }
   .spec dl { margin: auto 0 0; display: grid }
-  .spec dl div { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--line); font-size: 14px }
+  .spec dl div { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--line); font-size: var(--t-ui) }
   .spec dt { color: var(--text-2) }
-  .spec dd { margin: 0; font-family: var(--mono); font-size: 13px }
-  .spec code { font: 12px var(--mono); color: var(--signal); margin-top: 10px }
+  .spec dd { margin: 0; font-family: var(--mono); font-size: var(--t-small) }
+  .spec code { font: var(--t-caption) var(--mono); color: var(--signal); margin-top: 10px }
 
   .faces { display: flex; margin-top: auto }
-  .faces i { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #151515; margin-left: -9px; display: grid; place-items: center; font: 600 13px/1 var(--body); font-style: normal; color: #0a0a0a; background: #e5e5e5 }
+  .faces i { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #151515; margin-left: -9px; display: grid; place-items: center; font: 600 var(--t-small)/1 var(--body); font-style: normal; color: #0a0a0a; background: var(--silver) }
   .faces i:first-child { margin-left: 0 }
-  .faces i:nth-child(2) { background: #bdbdbd }
+  .faces i:nth-child(2) { background: var(--silver-2) }
   .faces i:nth-child(3) { background: #8f8f8f; color: #fff }
 
-  .code { font: 13px/1.75 var(--mono); color: var(--text-2); white-space: pre; margin: auto 0 0; overflow: hidden }
+  .code { font: var(--t-small)/1.75 var(--mono); color: var(--text-2); white-space: pre; margin: auto 0 0; overflow: hidden }
   .code b { color: var(--signal); font-weight: 400 }
 
-  .shape-btn { margin-top: auto; align-self: flex-start; min-height: 44px; padding: 0 26px; border: 0; background: var(--text); color: #0a0a0a; font: 500 15px/1 var(--body); cursor: pointer; white-space: nowrap }
+  .shape-btn { margin-top: auto; align-self: flex-start; min-height: 44px; padding: 0 26px; border: 0; background: var(--text); color: #0a0a0a; font: 500 var(--t-control)/1 var(--body); cursor: pointer; white-space: nowrap }
 
   .board > .sw { flex-direction: row; align-items: flex-end; justify-content: space-between; gap: 16px; cursor: pointer }
   .sw > span { display: grid; gap: 4px }
   .sw input { appearance: none; width: 51px; height: 31px; border-radius: 99px; background: #3a3a3a; position: relative; cursor: pointer; transition: background-color .25s; margin: 0; flex: none }
-  .sw input::after { content: ''; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .35); transition: transform .35s var(--ease) }
+  .sw input::after { content: ''; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 2px 6px var(--veil-1); transition: transform .35s var(--ease) }
   .sw input:checked { background: var(--signal) }
   .sw input:checked::after { transform: translateX(20px) }
 
   .play { display: flex; align-items: center; gap: 12px; margin-top: auto }
   .play button { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--text); color: #0a0a0a; display: grid; place-items: center; cursor: pointer; flex: none }
   .play button svg { width: 14px; height: 14px }
-  .bar { flex: 1; height: 4px; border-radius: 4px; background: rgba(255, 255, 255, .14); overflow: hidden }
-  .bar i { display: block; height: 100%; width: 38%; background: var(--text); border-radius: 4px }
+  .bar { flex: 1; height: 4px; border-radius: var(--r-2xs); background: rgba(255, 255, 255, .14); overflow: hidden }
+  .bar i { display: block; height: 100%; width: 38%; background: var(--text); border-radius: var(--r-2xs) }
   .board.playing .bar i { animation: prog 24s linear infinite }
   @keyframes prog { to { width: 100% } }
 
@@ -122,8 +122,8 @@ import { LINKS } from '../../data/sections'
 
   @media (max-width: 900px) {
     .board { --ns-areas: 'h h' 'h h' 'x x' 'a b' 'a d' 'y y' 'c c'; --ns-row: 122px; --ns-gap: 10px; --ns-round: 22px; --ns-orb: 2 3 38 hex; --ns-orb-corner: 9px; --ns-pad: 16px }
-    .ph strong, .spec strong { font-size: 20px }
-    .code { font-size: 12px }
-    .shape-btn { padding: 0 18px; font-size: 14px }
+    .ph strong, .spec strong { font-size: var(--t-title-lg) }
+    .code { font-size: var(--t-caption) }
+    .shape-btn { padding: 0 18px; font-size: var(--t-ui) }
   }
 </style>

@@ -79,9 +79,9 @@ const PATTERNS = [
 <style>
   .bento { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: minmax(170px, auto); gap: 14px }
   .b { background: var(--surface); --ns-border: var(--line-2); --ns-u-bg: var(--surface); padding: 22px; display: flex; flex-direction: column; gap: 6px; min-width: 0; height: 100% }
-  .b h3 { font-size: 17px }
-  .b p { margin: 0; color: var(--text-2); font-size: 14px; flex: 1 }
-  .b code:not(.tag) { font-size: 12.5px; color: var(--text) }
+  .b h3 { font-size: var(--t-title) }
+  .b p { margin: 0; color: var(--text-2); font-size: var(--t-ui); flex: 1 }
+  .b code:not(.tag) { font-size: var(--t-caption); color: var(--text) }
   .b1 { grid-column: span 2; --ns-border: linear-gradient(90deg, #00e676, #b8f36b 30%, rgba(255, 255, 255, .06) 55%, #ffb547); --ns-border-width: 1.5px; background: radial-gradient(80% 90% at 0% 0%, rgba(0, 230, 118, .12), transparent 60%), var(--surface) }
   .b2 { --ns-u: #00e676; --ns-u-glow: .75 }
   .b3 { --ns-border: rgba(212, 212, 216, .35); --ns-inner: 6px }
@@ -93,11 +93,11 @@ const PATTERNS = [
 
   .plans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 14px; align-items: stretch }
   .plan { --ns-u-bg: var(--surface); --ns-u-glow: .55; --ns-border: var(--line-2); padding: 26px 24px 24px; display: flex; flex-direction: column; gap: 10px; min-width: 0 }
-  .plan h3 { font-size: 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; color: var(--tone) }
-  .badge { font: 600 11px/1 var(--body); padding: 6px 9px; border-radius: 99px; background: var(--signal); color: #04210f }
+  .plan h3 { font-size: var(--t-control); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; color: var(--tone) }
+  .badge { font: 600 var(--t-micro)/1 var(--body); padding: 6px 9px; border-radius: 99px; background: var(--signal); color: var(--ink-go) }
   .price { margin: 0; font: 700 40px/1 var(--display); font-stretch: 108%; letter-spacing: -.03em }
-  .price small { font-size: 14px; font-weight: 500; color: var(--text-3); letter-spacing: 0 }
-  .plan ul { list-style: none; padding: 0; margin: 6px 0 12px; display: grid; gap: 8px; align-content: start; color: var(--text-2); font-size: 14px; flex: 1 }
+  .price small { font-size: var(--t-ui); font-weight: 500; color: var(--text-3); letter-spacing: 0 }
+  .plan ul { list-style: none; padding: 0; margin: 6px 0 12px; display: grid; gap: 8px; align-content: start; color: var(--text-2); font-size: var(--t-ui); flex: 1 }
   .plan li { display: flex; gap: 10px; align-items: baseline }
   .plan li::before { content: ''; flex: none; width: 10px; height: 6px; border-left: 1.5px solid var(--tone); border-bottom: 1.5px solid var(--tone); transform: rotate(-45deg) translateY(-2px) }
   .plan .btn { width: 100% }
@@ -108,7 +108,7 @@ const PATTERNS = [
 
   .pats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-top: 14px }
   .pat { min-height: 104px; padding: 18px 22px; display: flex; flex-direction: column; justify-content: space-between; gap: 8px; background: var(--surface); --ns-border: var(--line-2); --ns-pat: rgba(255, 255, 255, .12); min-width: 0 }
-  .pat b { font: 600 15px/1.2 var(--display); font-stretch: 106% }
+  .pat b { font: 600 var(--t-control)/1.2 var(--display); font-stretch: 106% }
   .ns-stripes { --ns-pat: rgba(255, 181, 71, .16) }
   .ns-scan { --ns-pat: rgba(0, 230, 118, .1) }
   .ns-pulse { --ns-pat: rgba(0, 230, 118, .35) }
@@ -121,7 +121,7 @@ const PATTERNS = [
     .bento, .pats { gap: 10px }
     .pats { grid-template-columns: repeat(2, minmax(0, 1fr)) }
     .b { padding: 22px 22px 20px }
-    .b p { font-size: 13px }
-    .b .tag { font-size: 10.5px }
+    .b p { font-size: var(--t-small) }
+    .b .tag { font-size: var(--t-micro) }
   }
 </style>

@@ -73,36 +73,36 @@ const NOTES = [
 </script>
 
 <style>
-  code { font: 12px var(--mono); color: var(--text-2) }
+  code { font: var(--t-caption) var(--mono); color: var(--text-2) }
   .anno { display: grid; grid-template-columns: 1fr minmax(0, 1.25fr) 1fr; gap: 56px; align-items: center; margin-bottom: 14px; --ns-link-width: 1.25px }
   .side { display: grid; gap: 64px }
   .note { position: relative; z-index: 1; padding: 14px 18px; display: grid; gap: 4px; background: var(--surface); --ns-border: color-mix(in srgb, var(--k) 45%, transparent) }
   .k-green { --k: #00e676; --ns-link: #00e676 } .k-amber { --k: #ffb547; --ns-link: #ffb547 } .k-silver { --k: #d4d4d8; --ns-link: #d4d4d8 } .k-lime { --k: #b8f36b; --ns-link: #b8f36b }
   #an-a { left: 7%; top: 8% } #an-b { left: 94%; top: 50% } #an-c { left: 91%; top: 92% } #an-d { left: 7%; top: 87% }
-  .note b { font: 600 15px/1.2 var(--display); font-stretch: 104%; display: flex; align-items: center; gap: 8px }
-  .nb { display: none; flex: none; width: 20px; height: 20px; border-radius: 50%; place-items: center; background: var(--k); color: #0a0a0a; font: 700 11px/1 var(--mono); font-style: normal }
-  .note code { color: var(--k); font-size: 11.5px; word-break: break-word }
+  .note b { font: 600 var(--t-control)/1.2 var(--display); font-stretch: 104%; display: flex; align-items: center; gap: 8px }
+  .nb { display: none; flex: none; width: 20px; height: 20px; border-radius: 50%; place-items: center; background: var(--k); color: #0a0a0a; font: 700 var(--t-micro)/1 var(--mono); font-style: normal }
+  .note code { color: var(--k); font-size: var(--t-label); word-break: break-word }
   .stage { display: grid; place-items: center; padding: 24px 0 }
-  .card { position: relative; width: 100%; max-width: 380px; background: #151517; --ns-border: linear-gradient(140deg, #00e676, rgba(255, 255, 255, .12) 45%, #b8f36b); --ns-border-width: 1.5px; padding: 12px 12px 18px; display: flex; flex-direction: column; gap: 12px; filter: drop-shadow(0 30px 40px rgba(0, 0, 0, .55)) }
+  .card { position: relative; width: 100%; max-width: 380px; background: #151517; --ns-border: linear-gradient(140deg, #00e676, rgba(255, 255, 255, .12) 45%, #b8f36b); --ns-border-width: 1.5px; padding: 12px 12px 18px; display: flex; flex-direction: column; gap: 12px; filter: drop-shadow(0 30px 40px var(--veil-2)) }
   .card img { width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover }
   .body { display: grid; gap: 2px; padding: 0 8px }
-  .body b { font: 700 18px/1.2 var(--display); font-stretch: 106% }
-  .body span { font-size: 13px; color: var(--text-2) }
-  .body .btn { justify-self: start; margin-top: 12px; font-size: 14px; min-height: 42px }
+  .body b { font: 700 var(--t-title)/1.2 var(--display); font-stretch: 106% }
+  .body span { font-size: var(--t-small); color: var(--text-2) }
+  .body .btn { justify-self: start; margin-top: 12px; font-size: var(--t-ui); min-height: 42px }
   .pt { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 5px rgba(255, 255, 255, .12); pointer-events: none }
 
   .free { display: grid; grid-template-columns: 1fr 1fr; gap: 14px }
   .box { background: var(--surface); --ns-border: var(--line-2); padding: 24px; display: flex; flex-direction: column; gap: 10px; min-width: 0 }
-  .box h3 { font-size: 17px }
-  .box p { margin: 0; color: var(--text-2); font-size: 14px }
-  .range { display: grid; gap: 6px; font-size: 13px; color: var(--text-2) }
+  .box h3 { font-size: var(--t-title) }
+  .box p { margin: 0; color: var(--text-2); font-size: var(--t-ui) }
+  .range { display: grid; gap: 6px; font-size: var(--t-small); color: var(--text-2) }
   .range b { color: var(--text); font-weight: 500 }
   .range input { width: 100%; accent-color: var(--signal); height: 24px; margin: 0 }
   .qbox { resize: horizontal; overflow: hidden; width: 100%; min-width: 160px; max-width: 100% }
-  .q { height: 150px; display: grid; place-items: center; background: linear-gradient(180deg, rgba(255, 181, 71, .1), rgba(20, 20, 22, .6)); --ns-border: rgba(255, 181, 71, .55); --ns-inner: 5px; --ns-morph-time: 360; font: 12.5px var(--mono); color: var(--text-2) }
+  .q { height: 150px; display: grid; place-items: center; background: linear-gradient(180deg, rgba(255, 181, 71, .1), rgba(20, 20, 22, .6)); --ns-border: rgba(255, 181, 71, .55); --ns-inner: 5px; --ns-morph-time: 360; font: var(--t-caption) var(--mono); color: var(--text-2) }
   .poly { display: grid; place-items: center; min-height: 150px; border-radius: 12px; background: radial-gradient(circle, rgba(255, 255, 255, .07) 1px, transparent 1.5px) 0 0 / 14px 14px }
-  .arrow { display: inline-grid; place-items: center; min-height: 64px; padding: 0 64px 0 34px; background: var(--signal); color: #04210f; font: 600 16px var(--display); font-stretch: 106%; --ns-morph-time: 300 }
-  pre { margin: auto 0 0; padding: 12px 14px; border-radius: 10px; background: rgba(0, 0, 0, .35); color: var(--text-2); font: 12px/1.6 var(--mono); white-space: pre-wrap; word-break: break-word }
+  .arrow { display: inline-grid; place-items: center; min-height: 64px; padding: 0 64px 0 34px; background: var(--signal); color: var(--ink-go); font: 600 var(--t-body) var(--display); font-stretch: 106%; --ns-morph-time: 300 }
+  pre { margin: auto 0 0; padding: 12px 14px; border-radius: 10px; background: var(--veil-1); color: var(--text-2); font: var(--t-caption)/1.6 var(--mono); white-space: pre-wrap; word-break: break-word }
   pre b { color: var(--signal); font-weight: 500 }
   @media (max-width: 960px) {
     .anno { grid-template-columns: 1fr; gap: 28px }
@@ -111,9 +111,9 @@ const NOTES = [
     /* en pantallas estrechas las líneas cruzarían la tarjeta: marcadores numerados en su lugar */
     :global(.ns-links) { display: none }
     .nb { display: grid }
-    .pt { width: 22px; height: 22px; margin: -11px 0 0 -11px; display: grid; place-items: center; background: #fff; box-shadow: 0 0 0 4px rgba(0, 0, 0, .35) }
-    .pt::after { content: attr(data-n); font: 700 11px/1 var(--mono); color: #0a0a0a }
+    .pt { width: 22px; height: 22px; margin: -11px 0 0 -11px; display: grid; place-items: center; background: #fff; box-shadow: 0 0 0 4px var(--veil-1) }
+    .pt::after { content: attr(data-n); font: 700 var(--t-micro)/1 var(--mono); color: #0a0a0a }
     .free { grid-template-columns: 1fr }
   }
-  @media (max-width: 560px) { .note { padding: 12px 14px } .note code { font-size: 10.5px } }
+  @media (max-width: 560px) { .note { padding: 12px 14px } .note code { font-size: var(--t-micro) } }
 </style>

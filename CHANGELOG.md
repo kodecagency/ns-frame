@@ -18,6 +18,12 @@
 ### Nuevo: `ns-frame/sheet` (1,2 KB)
 - Hoja que se arrastra como en una app nativa: sigue al dedo arriba (con resistencia elástica) y abajo, y al soltarla vuelve o sale según la distancia y la velocidad. Sólo mueve `translate`, expone el progreso (`--ns-sheet-p`, `onProgress`) para atenuar el fondo y no convierte un arrastre en clic.
 
+### Motor más rápido
+- **Memo de geometría** por (forma, ancho, alto): los marcos que comparten forma y tamaño reutilizan geometría, comandos y path.
+- **Repintado perezoso:** al redimensionar sólo se recalculan los marcos en pantalla o cerca; el resto se pinta al acercarse. Con 4.000 marcos, redimensionar pasa de ~283 a ~105 ms.
+- El texto que fluye del mosaico no vuelve a medirse si la silueta, el tamaño y el margen no cambiaron.
+- Build: el CSS que inyectan los módulos se minifica, y cada archivo se queda con la combinación de terser que da menos bytes en brotli.
+
 ### Vía rápida nativa
 - Las formas sólo de esquinas (redondas; con `corner-shape`, también chaflanes, scoops, notches y squircles) con borde liso y sin capas extra se dibujan con `border-radius` + una sombra interior como borde, sin `clip-path` ni capa SVG. Pasan solas a SVG si un hover o un pulsado las convierte en una forma compleja. `--ns-shadow` añade sombras propias; el foco usa `outline` (`--ns-focus`). En la landing: 45 capas SVG menos y ~140 ms menos de LCP en un móvil emulado.
 

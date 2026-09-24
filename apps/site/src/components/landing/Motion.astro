@@ -48,7 +48,7 @@ const M = [
 </script>
 
 <style>
-  code { font: 13px var(--mono); color: var(--text) }
+  code { font: var(--t-small) var(--mono); color: var(--text) }
   .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px }
   .mv { min-height: 150px; padding: 20px; display: flex; flex-direction: column; gap: 4px; min-width: 0;
     background: radial-gradient(90% 70% at 50% 120%, color-mix(in srgb, var(--c) 10%, transparent), transparent 70%), var(--surface);
@@ -56,11 +56,11 @@ const M = [
   .c-white { --c: #ffffff } .c-green { --c: #00e676 } .c-amber { --c: #ffb547 } .c-lime { --c: #b8f36b } .c-silver { --c: #d4d4d8 } .c-coral { --c: #ff7a59 }
   .mv { --ns-motion: var(--c) }
   .prog { --ns-progress: 64 }
-  .mv b { font: 600 17px/1.2 var(--display); font-stretch: 106% }
-  .mv span { font-size: 13.5px; color: var(--text-2) }
+  .mv b { font: 600 var(--t-title)/1.2 var(--display); font-stretch: 106% }
+  .mv span { font-size: var(--t-small); color: var(--text-2) }
   .mv .tag { margin-top: auto; padding-top: 12px }
-  .range { display: grid; gap: 6px; font-size: 13px; color: var(--text-2) }
+  .range { display: grid; gap: 6px; font-size: var(--t-small); color: var(--text-2) }
   .range input { width: 100%; accent-color: var(--signal); height: 24px; margin: 0 }
   @media (max-width: 960px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)) } }
-  @media (max-width: 640px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px } .mv { min-height: 128px; padding: 20px 18px } .mv b { font-size: 15px } .mv span { font-size: 12.5px } }
+  @media (max-width: 640px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px } .mv { min-height: 128px; padding: 20px 18px } .mv b { font-size: var(--t-control) } .mv span { font-size: var(--t-caption) } }
 </style>

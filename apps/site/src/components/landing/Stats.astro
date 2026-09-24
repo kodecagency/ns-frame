@@ -4,8 +4,8 @@
 // así la rejilla se lee como una sola pieza. Sólo datos medidos (docs/rendimiento.md).
 import Arrow from '../Arrow.astro'
 
-const SIZES: [string, number][] = [['núcleo', 8.5], ['mosaico', 8.1], ['lite', 6.3], ['extras', 3.8], ['skeleton', 2.5], ['toast', 2.1], ['fx.css', 2.0], ['carrusel', 1.6]]
-const max = 8.5 // el núcleo es el módulo más grande
+const SIZES: [string, number][] = [['núcleo', 8.7], ['mosaico', 8.1], ['lite', 6.5], ['extras', 3.8], ['skeleton', 2.5], ['toast', 2.1], ['fx.css', 2.0], ['carrusel', 1.6]]
+const max = 8.7 // el núcleo es el módulo más grande
 ---
 <section class="sec aura ns-aura" id="cifras" aria-labelledby="t-cifras">
   <div class="wrap">
@@ -17,7 +17,7 @@ const max = 8.5 // el núcleo es el módulo más grande
     <div class="ns-bento bn" data-ns-bento="outer bevel 30; inner round 12; radius 2">
       <article class="ns-big t" data-ns-motion="spot">
         <span class="k">Núcleo, con gzip</span>
-        <b class="v num">8,5 KB</b>
+        <b class="v num">8,7 KB</b>
         <p>Formas, bordes, morph y foco. Cada módulo se carga sólo si se usa.</p>
         <ul class="bars" aria-label="Tamaño de cada módulo en KB">
           {SIZES.map(([n, v], k) => <li><span>{n}</span><svg viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><rect width={(v / max * 100).toFixed(1)} height="6" rx="3" class:list={[{ hi: k < 3 }]} /></svg><b class="num">{v.toFixed(1).replace('.', ',')}</b></li>)}
@@ -40,21 +40,21 @@ const max = 8.5 // el núcleo es el módulo más grande
 
 <style>
   .aura { --ns-aura-1: #00e676; --ns-aura-2: #ffb547; --ns-aura-o: .42; padding-bottom: clamp(96px, 12vw, 160px) }
-  code { font: 13px var(--mono); color: var(--text) }
+  code { font: var(--t-small) var(--mono); color: var(--text) }
   .center { text-align: center }
   .bn { --ns-gap: 12px; --ns-row: 150px; --ns-min: 220px; --ns-motion: rgba(255, 255, 255, .85); --ns-spot-size: 180; --ns-spot-fill: .06 }
   .t { background: rgba(20, 20, 22, .9); --ns-border: rgba(255, 255, 255, .12); display: flex; flex-direction: column; gap: 6px; min-width: 0 }
-  .k { font-size: 13px; color: var(--text-3) }
+  .k { font-size: var(--t-small); color: var(--text-3) }
   .v { font: 700 clamp(26px, 2.6vw, 34px)/1.05 var(--display); font-stretch: 108%; letter-spacing: -.025em }
-  .v.sm { font-size: clamp(22px, 2.2vw, 28px) }
-  .t p { margin: 0; color: var(--text-2); font-size: 13.5px }
-  .t h3 { font-size: clamp(18px, 1.6vw, 21px); font-stretch: 106%; letter-spacing: -.015em }
-  .ns-big .v { font-size: clamp(40px, 5vw, 64px) }
+  .v.sm { font-size: var(--t-heading-fluid) }
+  .t p { margin: 0; color: var(--text-2); font-size: var(--t-small) }
+  .t h3 { font-size: var(--t-title-fluid); font-stretch: 106%; letter-spacing: -.015em }
+  .ns-big .v { font-size: var(--t-number) }
   .bars { list-style: none; margin: auto 0 0; padding: 12px 0 0; display: grid; gap: 7px }
-  .bars li { display: grid; grid-template-columns: 76px 1fr 34px; gap: 10px; align-items: center; font: 11.5px var(--mono); color: var(--text-3) }
+  .bars li { display: grid; grid-template-columns: 76px 1fr 34px; gap: 10px; align-items: center; font: var(--t-label) var(--mono); color: var(--text-3) }
   .bars svg { width: 100%; height: 6px; overflow: visible }
   .bars rect { fill: #8b8b94 }
   .bars rect.hi { fill: #00e676 }
   .bars b { text-align: right; font-weight: 500; color: var(--text-2) }
-  @media (max-width: 560px) { .t p { font-size: 12.5px } .bars li { grid-template-columns: 64px 1fr 30px } }
+  @media (max-width: 560px) { .t p { font-size: var(--t-caption) } .bars li { grid-template-columns: 64px 1fr 30px } }
 </style>

@@ -4,29 +4,29 @@ html { scroll-padding-top: 76px }
 /* barra superior */
 .dtop { position: sticky; top: 0; z-index: 30; height: 56px; background: rgba(11, 11, 12, .82); backdrop-filter: saturate(1.6) blur(18px); -webkit-backdrop-filter: saturate(1.6) blur(18px); border-bottom: 1px solid var(--line) }
 .dtop .wrap { height: 100%; display: flex; align-items: center; gap: 24px }
-.brand { display: flex; align-items: center; gap: 10px; white-space: nowrap; font: 700 17px/1 var(--display); font-stretch: 110%; letter-spacing: -.02em; min-height: 44px }
+.brand { display: flex; align-items: center; gap: 10px; white-space: nowrap; font: 700 var(--t-title)/1 var(--display); font-stretch: 110%; letter-spacing: -.02em; min-height: 44px }
 .brand i { width: 15px; height: 15px; background: var(--text) }
-.brand span { font: 500 11px/1 var(--mono); color: var(--text-3); padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; letter-spacing: 0 }
-.dtop nav { margin-left: auto; display: flex; gap: 4px; font-size: 14px; color: var(--text-2) }
+.brand span { font: 500 var(--t-micro)/1 var(--mono); color: var(--text-3); padding: 4px 6px; border: 1px solid var(--line); border-radius: var(--r-xs); letter-spacing: 0 }
+.dtop nav { margin-left: auto; display: flex; gap: 4px; font-size: var(--t-ui); color: var(--text-2) }
 .dtop nav a { padding: 12px 11px; transition: color .2s }
 .dtop nav a:hover, .dtop nav a[aria-current] { color: var(--text) }
 
 /* estructura */
 .layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 56px; padding-top: 40px; padding-bottom: 72px }
 .side nav { position: sticky; top: 88px }
-.side-h { font-size: 13px; color: var(--text-3); margin: 0 0 10px }
+.side-h { font-size: var(--t-small); color: var(--text-3); margin: 0 0 10px }
 .side ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px }
-.side a { display: block; padding: 8px 12px; border-radius: 10px; color: var(--text-2); font-size: 14.5px; transition: color .2s, background-color .2s }
+.side a { display: block; padding: 8px 12px; border-radius: 10px; color: var(--text-2); font-size: var(--t-ui); transition: color .2s, background-color .2s }
 .side a:hover { color: var(--text); background: rgba(255, 255, 255, .04) }
 /* la guía actual es una pieza con forma (chaflán de ns-frame), no una franja lateral */
 .side a[aria-current] { color: var(--text); background: linear-gradient(100deg, rgba(0, 230, 118, .14), rgba(255, 255, 255, .05) 70%); --ns-border: rgba(0, 230, 118, .45); border-radius: 0; font-weight: 500 }
 
 /* contenido */
 .doc { min-width: 0; max-width: 780px }
-.prose { font-size: 16px; line-height: 1.7 }
-.prose h1 { font-size: clamp(32px, 4.4vw, 46px); line-height: 1.05; font-weight: 700; font-stretch: 108%; letter-spacing: -.03em; margin: 0 0 20px }
-.prose h2 { font-size: 26px; line-height: 1.2; font-weight: 700; font-stretch: 106%; letter-spacing: -.02em; margin: 52px 0 14px }
-.prose h3 { font-size: 19px; margin: 34px 0 10px }
+.prose { font-size: var(--t-body); line-height: 1.7 }
+.prose h1 { font-size: var(--t-h2); line-height: 1.05; font-weight: 700; font-stretch: 108%; letter-spacing: -.03em; margin: 0 0 20px }
+.prose h2 { font-size: var(--t-heading); line-height: 1.2; font-weight: 700; font-stretch: 106%; letter-spacing: -.02em; margin: 52px 0 14px }
+.prose h3 { font-size: var(--t-lede); margin: 34px 0 10px }
 .prose p, .prose li { color: var(--text-2) }
 .prose strong { color: var(--text); font-weight: 600 }
 .prose a { color: var(--text); text-decoration: underline; text-decoration-color: rgba(0, 230, 118, .5); text-underline-offset: 4px }
@@ -34,20 +34,20 @@ html { scroll-padding-top: 76px }
 .prose ul, .prose ol { padding-left: 22px }
 .prose li { margin: 6px 0 }
 .prose li::marker { color: var(--text-3) }
-.prose code { font: 13.5px var(--mono); color: var(--text); background: rgba(255, 255, 255, .06); padding: 2px 6px; border-radius: 6px }
-.prose pre { font: 13.5px/1.65 var(--mono); background: var(--surface) !important; border: 1px solid var(--line-2); padding: 18px 20px; overflow-x: auto; border-radius: 14px }
+.prose code { font: var(--t-small) var(--mono); color: var(--text); background: rgba(255, 255, 255, .06); padding: 2px 6px; border-radius: var(--r-xs) }
+.prose pre { font: var(--t-small)/1.65 var(--mono); background: var(--surface) !important; border: 1px solid var(--line-2); padding: 18px 20px; overflow-x: auto; border-radius: 14px }
 .prose pre code { background: none; padding: 0; color: #d4d4d8 }
-.prose table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14.5px; display: block; overflow-x: auto }
-.prose th { text-align: left; font-size: 13px; font-weight: 500; color: var(--text-3); padding: 10px 12px; border-bottom: 1px solid var(--line-2) }
+.prose table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: var(--t-ui); display: block; overflow-x: auto }
+.prose th { text-align: left; font-size: var(--t-small); font-weight: 500; color: var(--text-3); padding: 10px 12px; border-bottom: 1px solid var(--line-2) }
 .prose td { padding: 10px 12px; border-bottom: 1px solid var(--line); color: var(--text-2); vertical-align: top }
 .prose blockquote { margin: 18px 0; padding: 14px 18px; border-radius: 14px; background: rgba(0, 230, 118, .06); border: 1px solid rgba(0, 230, 118, .22) }
 .prose blockquote p { margin: 0 }
 
 /* anterior / siguiente */
 .pager { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 64px }
-.pg { display: grid; gap: 4px; padding: 18px 22px; background: var(--surface); --ns-border: var(--line-2); font: 600 17px/1.2 var(--display); font-stretch: 104%; transition: background-color .2s }
+.pg { display: grid; gap: 4px; padding: 18px 22px; background: var(--surface); --ns-border: var(--line-2); font: 600 var(--t-title)/1.2 var(--display); font-stretch: 104%; transition: background-color .2s }
 .pg:hover { background: var(--surface-2) }
-.pg small { font: 400 13px var(--body); color: var(--text-3) }
+.pg small { font: 400 var(--t-small) var(--body); color: var(--text-3) }
 .pg-next { text-align: right }
 
 @media (max-width: 900px) {

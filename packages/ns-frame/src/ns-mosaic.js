@@ -258,6 +258,10 @@ function profile(d, w, h, pad) {
 // escalera o una T se describen con dos o tres franjas.
 function flow({ k, d, w, h }, pad) {
   if (w < 4 * pad || h < 2 * pad) return false
+  // misma silueta, mismo tamaño y mismo margen: los flotantes ya están bien (no se vuelve a medir)
+  const key = d + '|' + w + '|' + h + '|' + pad
+  if (k._nsFK == key && k._nsF && k.classList.contains('ns-flow')) return true
+  k._nsFK = key
   const rows = profile(d, w, h, pad), S = 2
   if (!rows.some(Boolean)) return false
   const bands = []
@@ -298,6 +302,7 @@ function unflow(k) {
   if (!k._nsF) return
   k._nsF.forEach(e => e.remove())
   k._nsF = null
+  k._nsFK = ''
   k.classList.remove('ns-flow')
 }
 

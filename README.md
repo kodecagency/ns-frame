@@ -12,7 +12,7 @@
 
 | | |
 |---|---|
-| **8,5 KB** gzip el núcleo | Módulos opcionales de 0,5 a 8 KB que se cargan sólo si se usan |
+| **8,7 KB** gzip el núcleo | Módulos opcionales de 0,5 a 8 KB que se cargan sólo si se usan |
 | **Cualquier forma** | bevel, notch, round, scoop, squircle, rasgos en los bordes, polígonos libres, fillet en cada vértice |
 | **Bordes reales** | color, degradado, doble línea, brackets y 11 animaciones de borde |
 | **Mosaicos libres** | piezas en L, T o U que encajan con hueco constante, orbes con forma (círculo, hexágono, rombo, triángulo) y luz conectada en toda la figura |

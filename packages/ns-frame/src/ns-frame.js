@@ -249,8 +249,23 @@ export function commands(V) {
 const f = n => Math.round(n * 10) / 10
 const svgD = C => C.length ? C.map(([c, p, rx, ry, sw]) => (c == 'A' ? `A${f(rx)} ${f(ry)} 0 0 ${sw} ` : c == 'C' ? 'C' + rx.map(f).join(' ') + ' ' : c) + f(p[0]) + ' ' + f(p[1])).join('') + 'Z' : ''
 
+// Memo por (forma, ancho, alto): en una página real muchos marcos comparten forma y tamaño (listas,
+// rejillas, bentos); la geometría, los comandos y la cadena del path se calculan una vez y se
+// reutilizan. Acotado: al pasar de 400 entradas se vacía (barato y sin crecer sin límite).
+// Nadie muta estas geometrías (el morph y las aperturas crean arrays nuevos).
+const GC = new Map()
+function geo(src, w, h) {
+  const k = src + '|' + w + '|' + h
+  let G = GC.get(k)
+  if (!G) { if (GC.size > 400) GC.clear(); GC.set(k, G = geometry(src, w, h)) }
+  return G
+}
+// comandos + path `d` de una geometría, guardados en la propia geometría
+const cmds = V => V._c ||= Object.assign(commands(V), { d: '' })
+const dOf = V => { const c = cmds(V); return c.d ||= svgD(c.C) }
+
 /** SVG path `d` para una caja w×h (útil en <svg>, canvas Path2D, React, etc). */
-export const path = (shape, w, h) => svgD(commands(geometry(shape, w, h)).C)
+export const path = (shape, w, h) => dOf(geo(shape, w, h))
 
 export const lerp = (A, B, t) => A.length != B.length ? B : B.map((q, i) => {
   const p = A[i], m = k => p[k] + (q[k] - p[k]) * t
@@ -299,7 +314,7 @@ const DOM = typeof window != 'undefined' && typeof document != 'undefined'
 const NOKIDS = /^(img|video|canvas|input|textarea|select|iframe|audio|object|embed|progress|meter|svg|picture)$/i
 const ATTRS = ['shape', 'hover', 'press', 'accent', 'trace', 'draw', 'spin', 'motion', 'enter', 'nest', 'native', 'scroll']
 const S = new WeakMap()
-let ro, vo, styled, uid = 0
+let ro, vo, lo, styled, uid = 0
 
 const attr = (el, k) => el.getAttribute(el.localName == 'ns-frame' ? k : k == 'shape' ? 'data-ns' : 'data-ns-' + k)
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -390,7 +405,7 @@ function paint(s, V, fin) {
   if (q || s.fast) fast(s, V, q)
   if (q) { s.el.style.clipPath = ''; if (s.svg) s.svg.style.display = 'none'; return }
   if (s.svg) s.svg.style.display = ''
-  const { C, T, at } = commands(V), d = svgD(C), nat = !!(fin && s.nat && NATIVE && V.simple && !s.ap)
+  const { T, at } = cmds(V), d = dOf(V), nat = !!(fin && s.nat && NATIVE && V.simple && !s.ap)
   if (nat || s.nt) native(s, V, nat)
   s.el.style.clipPath = nat ? '' : d ? `path('${d}')` : s.ap ? 'inset(50%)' : ''
   if (typeof NS_LITE == 'undefined') decorate(s, V, d, T, at)
@@ -441,10 +456,10 @@ function morph(s) {
   const from = s.cur, t0 = performance.now(), v = parseFloat(getComputedStyle(s.el).getPropertyValue('--ns-morph-time')), dur = isNaN(v) ? 320 : v
   cancelAnimationFrame(s.anim)
   // --ns-morph-time: 0 = cambio instantáneo
-  if (!(dur > 0)) return (s.anim = 0, paint(s, geometry(s.src, s.w, s.h), 1))
+  if (!(dur > 0)) return (s.anim = 0, paint(s, geo(s.src, s.w, s.h), 1))
   const tick = now => {
     const p = Math.min(1, (now - t0) / dur)
-    const G = geometry(s.src, s.w, s.h)
+    const G = geo(s.src, s.w, s.h)
     paint(s, p < 1 ? lerp(from, G, 1 - (1 - p) ** 3) : G, p >= 1)
     s.anim = p < 1 ? requestAnimationFrame(tick) : 0
   }
@@ -502,7 +517,7 @@ function write(s, r, animate) {
   const moved = src != s.src
   Object.assign(s, r)
   s.key = key
-  const G = geometry(src, s.w, s.h), sa = r.pad ? safe(G, r.pad) : [], sk = sa.join()
+  const G = geo(src, s.w, s.h), sa = r.pad ? safe(G, r.pad) : [], sk = sa.join()
   // si cambian las esquinas, los hijos concéntricos se recalculan
   const ck = JSON.stringify(G.cn)
   if (ck != s.ck) { s.ck = ck; s.cn = G.cn; s.el.querySelectorAll('[data-ns-nest]').forEach(k => { const q = S.get(k); q && requestAnimationFrame(() => refresh(q, 1)) }) }
@@ -528,12 +543,26 @@ async function onResize(es) {
     s.w = b ? b.inlineSize : s.el.offsetWidth
     s.h = b ? b.blockSize : s.el.offsetHeight
   }
-  const todo = es.map(e => S.get(e.target)).filter(s => s?.w)
-  // por lotes de 150: cada lote lee todo y luego escribe todo (1 recálculo de estilo por lote)
+  // lejos de la pantalla (near === false): se aplaza hasta que se acerque (onNear)
+  const todo = es.map(e => S.get(e.target)).filter(s => s?.w && (s.near !== false || (LATE.add(s), 0)))
+  // por lotes de 150: cada lote lee todo y luego escribe todo (1 recálculo de estilo por lote), y
+  // cede el hilo entre lotes para que un montaje grande no bloquee la interacción
   for (let i = 0; i < todo.length; i += 150) {
     if (i) await pause()
     const part = todo.slice(i, i + 150)
     part.map(read).forEach((r, k) => write(part[k], r))
+  }
+}
+
+const LATE = new Set()
+// un marco pendiente que la API necesita ya (open, close…) se pinta en el acto
+const ready = s => { if (s && LATE.delete(s)) refresh(s); return s }
+function onNear(es) {
+  for (const e of es) {
+    const s = S.get(e.target)
+    if (!s) continue
+    s.near = e.isIntersecting
+    if (s.near && LATE.delete(s)) refresh(s)
   }
 }
 
@@ -543,10 +572,12 @@ function onView(es) {
     if (s?.enter == 1 && e.intersectionRatio >= .2) {
       // IntersectionObserver ignora elementos recortados a área cero, así que la espera
       // se hace con opacity:0 y la forma completa; al entrar, se recorta y se despliega.
+      // (un salto directo puede traer este aviso antes que el de proximidad: se pinta ya)
+      ready(s)
       s.enter = 2
       need().then(E => {
         s.enter = 0
-        if (s.w) paint(s, geometry(s.src, s.w, s.h))
+        if (s.w && s.src) paint(s, geo(s.src, s.w, s.h))
         s.el.style.opacity = s.op
         E.play(s, s.ap?.mode, 1, undefined, s.delay)
       })
@@ -583,10 +614,15 @@ export function attach(el) {
     styles('@layer ns{' + BASE + (typeof NS_LITE == 'undefined' ? STYLE : '') + '}')
     ro = new ResizeObserver(onResize)
     if (typeof NS_LITE == 'undefined') vo = new IntersectionObserver(onView, { threshold: [0, .2] })
+    // repintado perezoso: al cambiar de tamaño sólo se recalculan los marcos en pantalla o a menos
+    // de una pantalla de distancia; el resto queda pendiente y se pinta al acercarse (antes de verse)
+    lo = new IntersectionObserver(onNear, { rootMargin: '100% 0px' })
+    addEventListener('beforeprint', () => { for (const s of LATE) refresh(s); LATE.clear() })
   }
   let s = S.get(el)
   if (!s) {
     S.set(el, (s = { el, w: 0, h: 0 }))
+    lo.observe(el)
     const hot = () => { s.hot = s.ptr || el.matches(':focus-within'); refresh(s, 1) }
     // hover sólo con ratón o lápiz: en táctil el pointerleave casi nunca llega y la forma
     // se quedaba "pegada" en su estado hover (para el dedo está data-ns-press)
@@ -625,13 +661,15 @@ export function detach(el, clear) {
   if (!s) return
   ro.unobserve(el)
   vo?.unobserve(el)
+  lo.unobserve(el)
+  LATE.delete(s)
   cancelAnimationFrame(s.anim)
   s.anim = 0
   if (clear) { el.style.clipPath = ''; s.svg?.remove(); S.delete(el) }
 }
 
 /** Forma efectiva que ns-frame está usando en un elemento (incluye data-ns-nest y --ns-shape). */
-export const shapeOf = el => S.get(el)?.src
+export const shapeOf = el => ready(S.get(el))?.src
 
 /** Fuerza una relectura (p. ej. tras cambiar variables CSS por JS). */
 export const update = el => { const s = S.get(el); s && refresh(s, 1) }
@@ -642,12 +680,12 @@ export const update = el => { const s = S.get(el); s && refresh(s, 1) }
  */
 export function open(el, mode, dur) {
   if (typeof NS_LITE != 'undefined') return Promise.resolve()
-  const s = S.get(attach(el))
+  const s = ready(S.get(attach(el)))
   // se oculta ya (síncrono) para que no se vea el panel completo mientras carga el módulo
   if (!s.ap) { s.ap = { mode: mode || 'open', p: 0 }; s.el.style.clipPath = 'inset(50%)' }
   return need().then(E => E.play(s, mode, 1, dur))
 }
-export const close = (el, mode, dur) => typeof NS_LITE == 'undefined' ? need().then(E => E.play(S.get(attach(el)), mode, -1, dur)) : Promise.resolve()
+export const close = (el, mode, dur) => typeof NS_LITE == 'undefined' ? need().then(E => E.play(ready(S.get(attach(el))), mode, -1, dur)) : Promise.resolve()
 
 if (DOM) {
   const sel = '[data-ns],[data-ns-nest],ns-frame'

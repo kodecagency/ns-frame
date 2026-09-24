@@ -92,17 +92,17 @@ const CARDS = [
 </script>
 
 <style>
-  code { font: 12.5px var(--mono); color: var(--text) }
+  code { font: var(--t-caption) var(--mono); color: var(--text) }
   .enter { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px }
   .en { background: var(--surface); --ns-border: var(--line-2); padding: 26px 26px 22px; display: flex; flex-direction: column; gap: 6px; min-height: 190px; min-width: 0 }
   .e0 { --ns-border: rgba(0, 230, 118, .45); background: linear-gradient(180deg, rgba(0, 230, 118, .08), transparent 70%), var(--surface) }
   .e1 { --ns-border: rgba(255, 181, 71, .45); background: linear-gradient(180deg, rgba(255, 181, 71, .08), transparent 70%), var(--surface) }
   .e2 { --ns-border: rgba(212, 212, 216, .4); background: linear-gradient(180deg, rgba(212, 212, 216, .07), transparent 70%), var(--surface) }
-  .n { font: 500 13px var(--mono); color: var(--text-3) }
-  .en h3 { font-size: 18px }
-  .en p { margin: 0; color: var(--text-2); font-size: 14px; flex: 1 }
+  .n { font: 500 var(--t-small) var(--mono); color: var(--text-3) }
+  .en h3 { font-size: var(--t-title) }
+  .en p { margin: 0; color: var(--text-2); font-size: var(--t-ui); flex: 1 }
   .replay { display: flex; justify-content: flex-end; margin: 12px 0 28px }
-  .replay .btn { font-size: 14px; min-height: 42px }
+  .replay .btn { font-size: var(--t-ui); min-height: 42px }
 
   .vt-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px }
   .vt-grid[hidden], .vt-detail[hidden] { display: none }
@@ -110,13 +110,13 @@ const CARDS = [
   .vt-card:hover { background: var(--surface-2) }
   .vt-card img, .vt-detail img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; background: var(--bg-2) }
   .vt-card img { margin-bottom: 10px }
-  .vt-card b { font: 600 17px/1.2 var(--display); font-stretch: 106%; padding: 0 6px }
-  .vt-card span { color: var(--text-2); font-size: 13.5px; padding: 0 6px }
+  .vt-card b { font: 600 var(--t-title)/1.2 var(--display); font-stretch: 106%; padding: 0 6px }
+  .vt-card span { color: var(--text-2); font-size: var(--t-small); padding: 0 6px }
   .vt-detail { display: grid; grid-template-columns: 1.2fr 1fr; gap: 28px; padding: 22px; background: var(--surface); --ns-border: linear-gradient(120deg, rgba(0, 230, 118, .6), rgba(255, 255, 255, .1) 50%, rgba(184, 243, 107, .5)) }
   .vt-body { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; padding: 12px 8px }
-  .vt-body h3 { font-size: clamp(24px, 3vw, 34px); letter-spacing: -.02em; outline: none }
+  .vt-body h3 { font-size: var(--t-heading-fluid); letter-spacing: -.02em; outline: none }
   .vt-body p { margin: 0; color: var(--text-2) }
-  .vt-body .btn { margin-top: auto; font-size: 14px }
+  .vt-body .btn { margin-top: auto; font-size: var(--t-ui) }
   @media (max-width: 900px) { .enter { grid-template-columns: 1fr } .vt-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) } .vt-grid > :last-child { grid-column: 1 / -1 } .vt-detail { grid-template-columns: 1fr } .replay { justify-content: flex-start } }
-  @media (max-width: 560px) { .vt-grid { gap: 10px } .vt-card { padding: 10px 10px 16px } .vt-card b { font-size: 15px } .vt-card span { font-size: 12.5px } }
+  @media (max-width: 560px) { .vt-grid { gap: 10px } .vt-card { padding: 10px 10px 16px } .vt-card b { font-size: var(--t-control) } .vt-card span { font-size: var(--t-caption) } }
 </style>

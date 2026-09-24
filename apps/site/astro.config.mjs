@@ -30,12 +30,14 @@ export default defineConfig({
   // formas estáticas (data-ns-static) compiladas a CSS en el build: sin JS en el navegador
   integrations: [nsStatic(), docLinks()],
   // fuentes autoalojadas (sin petición a Google en cada visita) y con fallback de métricas ajustadas
-  // (menos salto al cargar). Mona Sans es variable: un solo archivo con pesos 400–800 y anchos 75–125 %
+  // (menos salto al cargar). Mona Sans es variable: un solo archivo con pesos 400–700 y anchos 100–112 %
   fonts: [
     // el proveedor de Google entrega Mona Sans sin el eje de anchura (wdth), que usan los titulares:
-    // se sirve el archivo variable completo (latin, pesos 400–800, anchos 75–125 %; licencia OFL)
+    // se sirve un archivo variable propio, recortado a lo que usa el sitio con fontTools (ejes: peso
+    // 400–700 y anchura 100–112 %; caracteres: Latin-1 y la tipografía de las páginas): 98 → 54 KB.
+    // Se regenera con scripts/font-slim.py si se añaden pesos, anchos o caracteres (licencia OFL)
     { provider: fontProviders.local(), name: 'Mona Sans', cssVariable: '--font-mona', fallbacks: ['system-ui', 'sans-serif'],
-      options: { variants: [{ src: ['./src/assets/fonts/MonaSans-latin.woff2'], weight: '400 800', style: 'normal', stretch: '75% 125%' }] } },
+      options: { variants: [{ src: ['./src/assets/fonts/MonaSans-latin.woff2'], weight: '400 700', style: 'normal', stretch: '100% 112%' }] } },
     { provider: fontProviders.google(), name: 'JetBrains Mono', cssVariable: '--font-mono', weights: ['400', '500'], styles: ['normal'], subsets: ['latin'], fallbacks: ['ui-monospace', 'monospace'] },
   ],
   // CSP estricta: Astro añade el hash de cada script y estilo que genera (sin 'unsafe-inline').

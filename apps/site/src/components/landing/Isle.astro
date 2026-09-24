@@ -120,18 +120,18 @@ const CUR = 'tl+br bevel 14; tr+bl round 16; radius 2'
   .scrim, .isle { display: none }
   @media (max-width: 900px) {
     :global(body) { padding-bottom: calc(84px + env(safe-area-inset-bottom)) }
-    .scrim { display: block; position: fixed; inset: 0; z-index: 39; background: rgba(0, 0, 0, .45); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; pointer-events: none; transition: opacity .4s var(--ease) }
+    .scrim { display: block; position: fixed; inset: 0; z-index: 39; background: var(--veil-2); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; pointer-events: none; transition: opacity .4s var(--ease) }
     .scrim.on { opacity: 1; pointer-events: auto }
     .isle { display: block; position: fixed; z-index: 40; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); width: var(--w, 212px); height: var(--h, 54px); transform: translateX(-50%);
       background: rgba(18, 18, 20, .97); backdrop-filter: blur(22px) saturate(1.8); -webkit-backdrop-filter: blur(22px) saturate(1.8);
       --ns-border: rgba(255, 255, 255, .14); --ns-morph-time: 420; color: var(--text);
-      contain: layout style; transition: width .55s var(--ease), height .55s var(--ease); filter: drop-shadow(0 16px 30px rgba(0, 0, 0, .5)) }
+      contain: strict; /* tamaño explícito (--w/--h): su animación no recalcula nada fuera de la isla */ transition: width .55s var(--ease), height .55s var(--ease); filter: drop-shadow(0 16px 30px rgba(0, 0, 0, .5)) }
     .pill { position: absolute; inset: 0; display: flex; align-items: center; gap: 11px; padding: 0 8px 0 9px; border: 0; background: none; cursor: pointer; text-align: left; transition: opacity .25s; touch-action: pan-y }
     .ico { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; flex: none; background: var(--text); color: #0a0a0a }
     .ico :global(svg) { width: 17px; height: 17px }
     .txt { flex: 1; min-width: 0; overflow: hidden; display: grid; transition: opacity .2s, visibility .2s }
-    .txt b { font: 700 15px/1.15 var(--display); font-stretch: 106%; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
-    .txt small { font: 11px/1.3 var(--mono); color: var(--text-2); white-space: nowrap }
+    .txt b { font: 700 var(--t-control)/1.15 var(--display); font-stretch: 106%; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+    .txt small { font: var(--t-micro)/1.3 var(--mono); color: var(--text-2); white-space: nowrap }
     .chev { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, .1); flex: none; transition: opacity .2s, visibility .2s }
     .chev svg { width: 14px; height: 14px }
     .isle.mini { --w: 54px }
@@ -140,21 +140,21 @@ const CUR = 'tl+br bevel 14; tr+bl round 16; radius 2'
     .panel { position: absolute; left: 0; right: 0; top: 0; padding: 18px 16px 16px; display: flex; flex-direction: column; gap: 14px; opacity: 0; visibility: hidden; transition: opacity .2s, visibility 0s .2s }
     .isle.open .panel { opacity: 1; visibility: visible; transition: opacity .35s .15s }
     header { display: flex; align-items: center; justify-content: space-between; padding: 4px 6px 0; touch-action: none }
-    .handle { position: absolute; top: 12px; left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: 4px; background: rgba(255, 255, 255, .22) }
+    .handle { position: absolute; top: 12px; left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: var(--r-2xs); background: rgba(255, 255, 255, .22) }
     header { position: relative; padding-top: 14px !important; cursor: grab }
-    header b { font: 700 20px/1 var(--display); font-stretch: 108%; letter-spacing: -.02em }
+    header b { font: 700 var(--t-title-lg)/1 var(--display); font-stretch: 108%; letter-spacing: -.02em }
     header button { width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, .1); display: grid; place-items: center; cursor: pointer }
     header svg { width: 14px; height: 14px }
     ul { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none }
     ul a { display: flex; flex-direction: column; justify-content: space-between; gap: 10px; padding: 12px; min-height: 78px; background: rgba(255, 255, 255, .06); --ns-border: rgba(255, 255, 255, .06); --ns-morph-time: 320; transition: background .2s }
     ul a :global(svg) { color: var(--text-2); width: 22px; height: 22px }
-    ul a span { font-size: 13.5px; font-weight: 500; line-height: 1.2 }
+    ul a span { font-size: var(--t-small); font-weight: 500; line-height: 1.2 }
     ul a small { display: none }
     ul a[aria-current] { background: rgba(255, 255, 255, .1); --ns-u-bg: rgba(255, 255, 255, .1); --ns-u: #00e676; --ns-u-glow: .45; --ns-border: rgba(0, 230, 118, .45) }
     ul a[aria-current] :global(svg) { color: var(--signal) }
     .acts { display: flex; gap: 8px }
-    .acts a { flex: 1; min-height: 48px; border-radius: 980px; display: grid; place-items: center; font-size: 15px; font-weight: 500; background: rgba(255, 255, 255, .1) }
-    .acts a:first-child { background: var(--text); color: #000 }
+    .acts a { flex: 1; min-height: 48px; border-radius: 980px; display: grid; place-items: center; font-size: var(--t-control); font-weight: 500; background: rgba(255, 255, 255, .1) }
+    .acts a:first-child { background: var(--text); color: var(--graphite) }
   }
   @media (max-width: 900px) and (prefers-reduced-motion: reduce) { .isle, .scrim { transition: none } }
   /* al salir por abajo, la isla vuelve a ser cápsula sin animar el tamaño */
