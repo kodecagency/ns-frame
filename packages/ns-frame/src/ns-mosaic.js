@@ -50,6 +50,7 @@ const CSS = `@layer ns{
 }`
 
 const M = new Map()
+const TOUCH = typeof matchMedia == 'function' ? matchMedia('(hover: none) and (pointer: coarse)') : { matches: false }
 let ro, raf, styled
 const TAU = Math.PI * 2, STEP = Math.PI * 4 / 9 // arcos en tramos de ≤ 80° (el núcleo dibuja cada tramo con un arco SVG)
 const fx = n => Math.round(n * 100) / 100 || 0   // sin "-0": un negativo en poly se mediría desde el final
@@ -328,8 +329,14 @@ function layout() {
   for (const { el, cs, G } of jobs) {
     if (!G.length) continue
     const px = v => parseFloat(v) || 0, tr = v => v.split(/\s+/).map(parseFloat).filter(x => !isNaN(x))
-    const cw = tr(cs.gridTemplateColumns), rh = tr(cs.gridTemplateRows), gx = px(cs.columnGap), gy = px(cs.rowGap)
-    if (cw.length != G[0].length || rh.length != G.length) { schedule(); continue }
+    // pistas explícitas: las piezas aún colocadas según la plantilla anterior pueden crear filas o
+    // columnas implícitas de más (se van al recolocarlas aquí mismo); con menos, aún no llegó el estilo
+    let cw = tr(cs.gridTemplateColumns), rh = tr(cs.gridTemplateRows)
+    const gx = px(cs.columnGap), gy = px(cs.rowGap)
+    // (reintento acotado: si el CSS nunca define las pistas, no se queda un bucle de frames)
+    if (cw.length < G[0].length || rh.length < G.length) { if ((el._nst = (el._nst || 0) + 1) < 30) schedule(); continue }
+    el._nst = 0
+    cw = cw.slice(0, G[0].length); rh = rh.slice(0, G.length)
     const xs = [], ys = []
     cw.reduce((x, w) => (xs.push(x, x + w), x + w + gx), 0)
     rh.reduce((y, h) => (ys.push(y, y + h), y + h + gy), 0)
@@ -457,9 +464,13 @@ const LIGHT = 'var(--ns-mo-light,var(--ns-motion,#fff))'
 const stops = (...s) => s.map(([o, a]) => mk('stop', { offset: o }, { 'stop-color': LIGHT, 'stop-opacity': a }))
 
 function light(el, parts, W, H, holes, reduce, pl, pt) {
-  const want = (el.getAttribute('data-ns-mosaic') || '').split(/\s+/).filter(Boolean)
+  // efectos por tipo de pantalla: en táctil manda data-ns-mosaic-touch si existe; si no, se quitan
+  // los que dependen de un puntero que flota (glow sigue al cursor; ripple es una onda al tocar,
+  // incómoda en el móvil, donde cada toque también es scroll)
+  const touch = TOUCH.matches, tl = el.getAttribute('data-ns-mosaic-touch')
+  const want = (touch && tl != null ? tl : el.getAttribute('data-ns-mosaic') || '').split(/\s+/).filter(k => k && !(touch && tl == null && (k == 'glow' || k == 'ripple')))
   let L = el._nsl
-  if (!want.length) { L?.svg.remove(); el._nsl = null; return }
+  if (!want.length) { if (L) { L.svg.remove(); lightIO.unobserve?.(el) } el._nsl = null; return }
   if (!L) {
     const id = 'nsmo' + ++uid, box = { maskUnits: 'userSpaceOnUse', x: -40, y: -40 }
     const lines = mk('g', {}, { fill: 'none', stroke: '#fff', 'stroke-width': 'var(--ns-mo-width,1.5px)' })
@@ -483,19 +494,25 @@ function light(el, parts, W, H, holes, reduce, pl, pt) {
       bg, mk('g', { class: 'ns-mo-glow', filter: `url(#${id}o)` }, {}, top, tr))
     L = el._nsl = { id, svg, lines, fills, ml, mf, gg, top, bg, tr }
     el.append(svg)
-    // eventos: una onda nace donde tocas y cruza toda la figura; la luz de fondo sigue al puntero
+    lightIO.observe(el)
+  }
+  // eventos (una vez por contenedor; leen la capa actual, que puede quitarse y volver): una onda
+  // nace donde tocas y cruza toda la figura; la luz de fondo sigue al puntero
+  if (!el._nse) {
+    el._nse = 1
     el.addEventListener('pointerdown', e => {
-      if (!L.on.includes('ripple') || matchMedia('(prefers-reduced-motion: reduce)').matches) return
-      const r = svg.getBoundingClientRect()
+      const L = el._nsl
+      if (!L?.on.includes('ripple') || matchMedia('(prefers-reduced-motion: reduce)').matches) return
+      const r = L.svg.getBoundingClientRect()
       ring(L, e.clientX - r.left, e.clientY - r.top, Math.hypot(L.W, L.H), 1100)
     })
     el.addEventListener('pointermove', e => {
-      if (!L.on.includes('glow')) return
-      const r = svg.getBoundingClientRect()
+      const L = el._nsl
+      if (!L?.on.includes('glow')) return
+      const r = L.svg.getBoundingClientRect()
       L.gg.setAttribute('cx', fx(e.clientX - r.left)); L.gg.setAttribute('cy', fx(e.clientY - r.top))
     }, { passive: true })
-    el.addEventListener('pointerleave', () => { L.gg.setAttribute('cx', -9e3); L.gg.setAttribute('cy', -9e3) })
-    lightIO.observe(el)
+    el.addEventListener('pointerleave', () => { const L = el._nsl; L?.gg.setAttribute('cx', -9e3); L?.gg.setAttribute('cy', -9e3) })
   }
   L.on = want; L.W = W; L.H = H
   Object.assign(L.svg.style, { left: fx(pl) + 'px', top: fx(pt) + 'px', width: fx(W) + 'px', height: fx(H) + 'px' })
@@ -565,7 +582,9 @@ if (typeof document != 'undefined') {
         // piezas añadidas o quitadas, una pieza que cambia de área o el contenedor que cambia de clase
         if (M.has(m.type == 'attributes' && m.attributeName == 'data-ns-area' ? m.target.parentElement : m.target)) schedule()
       }
-    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-ns-area', 'data-ns-mosaic', 'data-ns-flow', 'class'] })
+    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-ns-area', 'data-ns-mosaic', 'data-ns-mosaic-touch', 'data-ns-flow', 'class'] })
+    // pasar de ratón a táctil (tabletas con teclado, modo escritorio) cambia la lista de efectos
+    TOUCH.addEventListener?.('change', schedule)
     // las media queries cambian --ns-areas sin cambiar siempre el tamaño
     addEventListener('resize', schedule, { passive: true })
   }

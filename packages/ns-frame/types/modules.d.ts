@@ -1,6 +1,6 @@
 // Tipos de los módulos opcionales de ns-frame. Cada módulo se importa por su ruta:
 // ns-frame/css, ns-frame/static, ns-frame/vt, ns-frame/toast, ns-frame/skel, ns-frame/carousel,
-// ns-frame/pop, ns-frame/bento, ns-frame/mosaic, ns-frame/sheet, ns-frame/link, ns-frame/fx, ns-frame/audit.
+// ns-frame/pop, ns-frame/bento, ns-frame/mosaic, ns-frame/sheet, ns-frame/isle, ns-frame/link, ns-frame/fx, ns-frame/audit.
 import type { Shape } from './ns-frame'
 
 // ── ns-frame/css ──
@@ -61,10 +61,34 @@ export function rubber(x: number, h: number): number
 /** ¿Se cierra al soltar? y: desplazamiento (px), v: velocidad (px/ms), h: altura. */
 export function release(y: number, v: number, h: number): boolean
 
+// ── ns-frame/isle ──
+export interface IsleOptions {
+  /** La hoja (por defecto, el aria-controls del botón o [data-ns-isle-panel]). */
+  panel?: HTMLElement
+  /** Enlaces a secciones (por defecto, los a[href^="#"] de la hoja). */
+  links?: Iterable<HTMLAnchorElement>
+  /** px de scroll desde los que la cápsula se pliega al bajar (200); false = nunca. */
+  collapse?: number | false
+  /** Deslizar la cápsula cambia de sección (true). */
+  swipe?: boolean
+  /** Línea de lectura en fracción de la ventana (.45): la sección que la cruza es la actual. */
+  line?: number
+  /** Cómo ir a una sección (por defecto, scrollIntoView suave). */
+  go?: (target: HTMLElement, link: HTMLAnchorElement) => void
+  /** Texto de posición ("2 / 7"). */
+  pos?: (index: number, count: number) => string
+  onChange?: (index: number, link: HTMLAnchorElement) => void
+  onOpen?: () => void
+  onClose?: () => void
+}
+export interface Isle { open(): void; close(): void; toggle(): void; go(index: number): void; readonly index: number; destroy(): void }
+/** Isla de navegación: cápsula que sigue la sección actual y abre una hoja arrastrable. */
+export function isle(el: HTMLElement, options?: IsleOptions): Isle
+
 // ── ns-frame/fx ──
 /** Efecto de texto que se "descifra". */
 export function decode(el: HTMLElement, duration?: number): void
 
 // ── ns-frame/audit (sólo desarrollo) ──
-export interface AuditIssue { el: Element; what: string; shape: Shape; type: 'clipped' | 'tight' }
+export interface AuditIssue { el: Element; what: string; shape: Shape; type: 'clipped' | 'tight' | 'unanchored' | 'reset' }
 export function audit(options?: { root?: ParentNode; mark?: boolean; margin?: number; clearance?: number }): AuditIssue[]

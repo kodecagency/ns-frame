@@ -46,7 +46,7 @@ export function sheet(el, { handle = el, onClose, onProgress, threshold = 6 } = 
   const down = e => {
     if (e.button > 0 || id != null) return
     // atrapar el panel a medio camino: se sigue desde donde está, sin saltos
-    if (anim) { const v = parseFloat(getComputedStyle(el).translate.split(' ')[1]) || 0; anim.cancel(); anim = null; put(v) }
+    if (anim) { const v = anim.from + (anim.to - anim.from) * (anim.effect?.getComputedTiming().progress ?? 1); anim.cancel(); anim = null; put(v) }
     id = e.pointerId; y0 = e.clientY - y; drag = false; samples.length = 0
     h = el.getBoundingClientRect().height || 1
   }
@@ -71,11 +71,13 @@ export function sheet(el, { handle = el, onClose, onProgress, threshold = 6 } = 
     if (reduced() || Math.abs(target - from) < 1) { put(target); done?.(); return }
     const dur = clamp(Math.abs(target - from) * 1.1, 180, 420)
     const a = anim = el.animate([{ translate: `0 ${from}px` }, { translate: `0 ${target}px` }], { duration: dur, easing: EASE, fill: 'forwards' })
+    a.from = from; a.to = target
     a.onfinish = () => { if (anim != a) return; anim = null; put(target); a.cancel(); done?.() }
-    // el progreso (para atenuar el fondo) se lee de la posición real de la animación
+    // el progreso (para atenuar el fondo) sale de la temporización de la animación, ya con su curva:
+    // leer getComputedStyle en cada frame forzaría un recálculo de estilos (micro-parones)
     const tick = () => {
       if (anim != a) return
-      const v = parseFloat(getComputedStyle(el).translate.split(' ')[1]) || 0, p = clamp(1 - v / h, 0, 1)
+      const v = from + (target - from) * (a.effect?.getComputedTiming().progress ?? 1), p = clamp(1 - v / h, 0, 1)
       el.style.setProperty('--ns-sheet-p', p.toFixed(3)); onProgress?.(p)
       requestAnimationFrame(tick)
     }

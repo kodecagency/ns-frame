@@ -105,7 +105,7 @@ const MEDIA = [
 
   .sub { margin: 44px 0 14px; font-size: var(--t-title); color: var(--text) }
   .wall { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px }
-  .pre { all: unset; box-sizing: border-box; cursor: pointer; min-height: 112px; padding: 20px 24px; display: flex; flex-direction: column; justify-content: space-between; gap: 8px; background: var(--surface); --ns-border: var(--line-2); --ns-morph-time: 300; transition: background-color .25s }
+  .pre { appearance: none; border: 0; margin: 0; font: inherit; color: inherit; text-align: left; position: relative; box-sizing: border-box; cursor: pointer; min-height: 112px; padding: 20px 24px; display: flex; flex-direction: column; justify-content: space-between; gap: 8px; background: var(--surface); --ns-border: color-mix(in srgb, var(--tone, #fff) 30%, rgba(255, 255, 255, .16)); --ns-morph-time: 300; transition: background-color .25s }
   .pre[data-p=pill] { padding-left: 44px }
   .pre:hover { background: var(--surface-2); --ns-border: var(--tone) }
   .pre:focus-visible { outline: none }

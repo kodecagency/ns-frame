@@ -10,9 +10,9 @@ order: 13
 
 | Archivo | gzip | brotli | |
 |---|---|---|---|
-| `ns-frame.js` | 8,7 KB | 8,0 KB | Núcleo |
-| `ns-mosaic.js` | 8,1 KB | 7,3 KB | Mosaicos de piezas libres, orbes, luz conectada y texto que fluye por la figura |
-| `ns-frame.lite.js` | 6,5 KB | 5,9 KB | Sólo recortes |
+| `ns-frame.js` | 8,9 KB | 8,1 KB | Núcleo |
+| `ns-mosaic.js` | 8,2 KB | 7,5 KB | Mosaicos de piezas libres, orbes, luz conectada y texto que fluye por la figura |
+| `ns-frame.lite.js` | 6,7 KB | 6,1 KB | Sólo recortes |
 | `ns-extra.js` | 3,8 KB | 3,6 KB | **Bajo demanda**: degradados, animaciones de borde, acentos, aperturas, formas con scroll |
 | `ns-skel.js` | 2,5 KB | 2,2 KB | Skeletons |
 | `ns-toast.js` | 2,1 KB | 1,8 KB | Toasts |
@@ -20,8 +20,9 @@ order: 13
 | `ns-carousel.js` | 1,6 KB | 1,4 KB | Carrusel |
 | `ns-link.js` · `ns-bento.js` | 1,5 KB | 1,3 KB | Callouts HUD · bento |
 | `ns-pop.js` | 1,4 KB | 1,2 KB | Popovers |
-| `ns-sheet.js` | 1,2 KB | 1,1 KB | Hoja arrastrable |
-| `ns-audit.js` | 1,0 KB | 0,9 KB | Sólo desarrollo |
+| `ns-isle.js` | 2,3 KB | 2,0 KB | Isla de navegación (usa `ns-sheet.js`) |
+| `ns-sheet.js` | 1,3 KB | 1,1 KB | Hoja arrastrable |
+| `ns-audit.js` | 1,3 KB | 1,2 KB | Sólo desarrollo |
 | `ns-css.js` · `ns-vt.js` · `ns-fx.js` | 0,7 KB | 0,6 KB | Compilador · View Transitions · decode |
 | `ns-static.js` | 0,5 KB | 0,5 KB | Build (Node) |
 
@@ -38,14 +39,17 @@ Como referencia (bundlephobia, gzip): `@floating-ui/dom` 8,2 KB sólo para posic
 
 ## Trabajo en ejecución
 
-- Un único `ResizeObserver`, `IntersectionObserver` y `MutationObserver` para toda la página.
+- Un único `ResizeObserver` y `MutationObserver` para toda la página, y dos `IntersectionObserver` (visibilidad y cercanía), compartidos por todos los marcos.
+- **Eventos delegados.** Hover, pulsado y foco se escuchan con 6 listeners en el documento, no con varios por marco: montar miles de marcos no añade listeners. El hover sólo se activa con un puntero que flota (ratón o lápiz), nunca con el dedo.
 - Lectura y escritura del DOM por lotes: N elementos cuestan un recálculo de estilo, no N.
 - **En cambios masivos, el trabajo se reparte en lotes de 150 y cede el hilo principal** entre lotes (`scheduler.yield()` donde existe), para no bloquear la interacción (INP).
 - Las capas SVG sólo existen si se usan; nada se repinta si tamaño, forma y estilo no cambiaron.
 - **Memo de geometría por (forma, ancho, alto).** Marcos con la misma forma y el mismo tamaño (listas, rejillas, bentos) comparten la geometría, los comandos y la cadena del path: se calculan una vez. La caché está acotada (se vacía al pasar de 400 entradas).
 - **Repintado perezoso.** Al cambiar de tamaño sólo se recalculan los marcos en pantalla o a menos de una pantalla de distancia; los demás quedan pendientes y se pintan al acercarse, antes de verse. `open()`, `close()`, `shapeOf()` y las aperturas de `data-ns-enter` pintan en el acto un marco pendiente; antes de imprimir se pinta todo.
 - **Vía rápida nativa** para formas sólo de esquinas con borde liso (ver arriba).
-- Las animaciones se pausan fuera de pantalla (CSS y SMIL).
+- Las animaciones se pausan fuera de pantalla (son CSS y Web Animations: no hay SMIL).
+- **Mosaico:** la luz que sigue al puntero y la onda al tocar no se crean en táctil; los reintentos mientras llega el estilo de una plantilla nueva están acotados (nunca un bucle de frames).
+- **Hoja e isla:** sólo animan `translate` y `opacity`; el progreso del gesto se calcula de la temporización de la animación, sin leer estilos en cada frame.
 - El morph interpola vértices, no texto de path.
 
 ## Benchmark

@@ -12,7 +12,7 @@
     "directory": "packages/ns-frame"
   },
   "bugs": "https://github.com/kodecagency/ns-frame/issues",
-  "keywords": ["clip-path", "shape", "bevel", "chamfer", "notch", "squircle", "corner-shape", "hud", "sci-fi", "ui", "css", "web-components", "view-transitions", "skeleton", "toast", "carousel", "bento", "mosaic", "bottom-sheet"],
+  "keywords": ["clip-path", "shape", "bevel", "chamfer", "notch", "squircle", "corner-shape", "hud", "sci-fi", "ui", "css", "web-components", "view-transitions", "skeleton", "toast", "carousel", "bento", "mosaic", "bottom-sheet", "navigation"],
   "exports": {
     ".": { "types": "./types/ns-frame.d.ts", "default": "./dist/ns-frame.js" },
     "./lite": { "types": "./types/ns-frame.d.ts", "default": "./dist/ns-frame.lite.js" },
@@ -27,6 +27,7 @@
     "./bento": { "types": "./types/modules.d.ts", "default": "./dist/ns-bento.js" },
     "./mosaic": { "types": "./types/modules.d.ts", "default": "./dist/ns-mosaic.js" },
     "./sheet": { "types": "./types/modules.d.ts", "default": "./dist/ns-sheet.js" },
+    "./isle": { "types": "./types/modules.d.ts", "default": "./dist/ns-isle.js" },
     "./link": { "types": "./types/modules.d.ts", "default": "./dist/ns-link.js" },
     "./fx": { "types": "./types/modules.d.ts", "default": "./dist/ns-fx.js" },
     "./audit": { "types": "./types/modules.d.ts", "default": "./dist/ns-audit.js" },

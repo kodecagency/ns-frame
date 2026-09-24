@@ -1,132 +1,68 @@
 ---
-// Isla (móvil): una sola pieza que se transforma.
-// · Plegada muestra la sección actual y su posición. Sin bordes animados: nada compite con la lectura.
-// · Al bajar se encoge a un icono; al subir vuelve.
-// · Al tocarla crece (ancho y alto animados) hasta ser el menú, y su forma cambia: la muesca de
-//   arriba es el asa (deslizar hacia abajo la cierra). La forma comunica el estado.
-// · En el menú, la sección actual es la única pieza con chaflán y luz en U.
-// · Deslizar a los lados salta a la sección anterior o siguiente.
+// Isla (móvil), hecha con ns-frame/isle: una cápsula y una hoja.
+// · La cápsula muestra la sección actual y su posición; al bajar se encoge a un icono. Es un
+//   redondeo simple (vía rápida nativa de ns-frame): plegarla no recalcula ninguna forma.
+// · Al tocarla, la hoja sube desde abajo (sólo `translate`) y la cápsula se desvanece. La hoja ya
+//   tiene su tamaño final y se prepara al apoyar el dedo: al abrirse ya está pintada.
+// · La hoja se arrastra como en una app nativa y se cierra al soltarla o lanzarla.
+// · En la hoja, la sección actual es la única pieza con chaflán y luz en U.
+// · Deslizar la cápsula a los lados salta a la sección anterior o siguiente.
 import Icon from '../Icon.astro'
 import { SECTIONS, LINKS } from '../../data/sections'
 const CUR = 'tl+br bevel 14; tr+bl round 16; radius 2'
 ---
-<div class="scrim" id="isle-scrim"></div>
-<nav class="isle" id="isle" aria-label="Secciones" data-ns="all squircle 27">
-  <button type="button" class="pill" id="isle-btn" aria-expanded="false" aria-controls="isle-panel">
-    <span class="ico" id="isle-ico" aria-hidden="true"><Icon d={SECTIONS[0].icon} size={17} /></span>
-    <span class="txt"><b id="isle-name">{SECTIONS[0].name}</b><small id="isle-pos">1 de {SECTIONS.length} · desliza</small></span>
+<nav class="isle" id="isle" aria-label="Secciones" data-ns="all round 27" data-ns-isle>
+  <button type="button" class="pill" data-ns-isle-toggle aria-controls="isle-panel">
+    <span class="ico" data-ns-isle-icon aria-hidden="true"><Icon d={SECTIONS[0].icon} size={17} /></span>
+    <span class="txt"><b data-ns-isle-label>{SECTIONS[0].name}</b><small data-ns-isle-pos>1 de {SECTIONS.length} · desliza</small></span>
     <span class="chev" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 9l4-4 4 4" /></svg></span>
   </button>
-  <div class="panel" id="isle-panel" inert>
-    <header id="isle-grip"><i class="handle" aria-hidden="true"></i><b>ns-frame</b><button type="button" id="isle-close" aria-label="Cerrar"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 3l8 8M11 3l-8 8" /></svg></button></header>
-    <ul id="isle-list">
-      {SECTIONS.map((s, i) => (
-        <li><a href={`#${s.id}`} data-ns={i == 0 ? CUR : 'all squircle 16'} class:list={[{ 'ns-u': i == 0 }]} data-name={s.name} aria-current={i == 0 ? 'true' : undefined}><Icon d={s.icon} /><span>{s.name}</span><small>{s.sub}</small></a></li>
-      ))}
-    </ul>
-    <div class="acts"><a href={LINKS.install}>Empezar</a><a href={LINKS.github}>GitHub</a></div>
-  </div>
 </nav>
+<div class="panel" id="isle-panel" role="dialog" aria-modal="true" aria-label="Secciones" data-ns-isle-panel data-ns="all squircle 30; top cut center 22% 7 r3">
+  <header data-ns-isle-handle><i class="handle" aria-hidden="true"></i><b>ns-frame</b><button type="button" data-ns-isle-close aria-label="Cerrar"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 3l8 8M11 3l-8 8" /></svg></button></header>
+  <ul>
+    {SECTIONS.map((s, i) => (
+      <li><a href={`#${s.id}`} data-ns={i == 0 ? CUR : 'all squircle 16'} class:list={[{ 'ns-u': i == 0 }]}><Icon d={s.icon} /><span>{s.name}</span></a></li>
+    ))}
+  </ul>
+  <div class="acts"><a href={LINKS.install}>Empezar</a><a href={LINKS.github}>GitHub</a></div>
+</div>
 
 <script>
-  import { sheet } from 'ns-frame/sheet'
+  import { isle } from 'ns-frame/isle'
   import { jump } from '../../scripts/jump'
-  const $ = (id: string) => document.getElementById(id)!
-  const isle = $('isle'), btn = $('isle-btn'), panel = $('isle-panel'), scrim = $('isle-scrim'), ico = $('isle-ico'), name = $('isle-name'), pos = $('isle-pos')
-  const links = [...$('isle-list').querySelectorAll<HTMLAnchorElement>('a')]
-  const secs = links.map(a => document.querySelector<HTMLElement>(a.hash)!)
-  const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches
-  let cur = 0, open = false
-  // formas: cerrada (cápsula), abierta (panel con muesca-asa), pieza actual y pieza normal
-  const SHUT = 'all squircle 27', OPEN = 'all squircle 30; top cut center 22% 7 r3', CUR = 'tl+br bevel 14; tr+bl round 16; radius 2', TILE = 'all squircle 16'
-
-  const setCur = (k: number) => {
-    if (k == cur) return
-    cur = k
-    // el icono de la isla es el mismo del menú (sin construir SVG a mano)
-    ico.replaceChildren(links[k].querySelector('svg')!.cloneNode(true))
-    name.textContent = links[k].dataset.name!
-    pos.textContent = `${k + 1} de ${links.length} · desliza`
-    links.forEach((a, j) => {
-      j == k ? a.setAttribute('aria-current', 'true') : a.removeAttribute('aria-current')
-      a.classList.toggle('ns-u', j == k)
-      a.setAttribute('data-ns', j == k ? CUR : TILE)
+  const CUR = 'tl+br bevel 14; tr+bl round 16; radius 2', TILE = 'all squircle 16'
+  // sólo en pantallas donde la isla se ve (en escritorio manda la barra superior)
+  const mq = matchMedia('(max-width: 900px)')
+  let nav: ReturnType<typeof isle> | null = null
+  const init = () => {
+    if (!mq.matches) { nav?.destroy(); nav = null; return }
+    nav ||= isle(document.getElementById('isle')!, {
+      pos: (i, n) => `${i + 1} de ${n} · desliza`,
+      go: t => jump(t, { smooth: true, focus: true }),
+      // la sección actual cambia de forma en la hoja
+      onChange: (i, a) => a.closest('ul')!.querySelectorAll('a').forEach((x, j) => {
+        x.classList.toggle('ns-u', j == i)
+        x.setAttribute('data-ns', j == i ? CUR : TILE)
+      }),
+      onOpen: () => navigator.vibrate?.(6),
     })
   }
-
-  // tamaño abierto = el del contenido: la transición va entre medidas reales
-  const openSize = () => { isle.style.setProperty('--w', Math.min(innerWidth - 24, 430) + 'px'); isle.style.setProperty('--h', panel.scrollHeight + 2 + 'px') }
-  const setOpen = (on: boolean) => {
-    open = on
-    btn.setAttribute('aria-expanded', String(on))
-    isle.classList.toggle('open', on)
-    isle.setAttribute('data-ns', on ? OPEN : SHUT)
-    isle.classList.remove('mini')
-    scrim.classList.toggle('on', on)
-    panel.inert = !on
-    if (on) { openSize(); setTimeout(() => links[cur].focus({ preventScroll: true }), 320); navigator.vibrate?.(6) }
-    else { isle.style.removeProperty('--w'); isle.style.removeProperty('--h'); btn.focus({ preventScroll: true }) }
-  }
-
-  // deslizar: sección anterior o siguiente; tocar: abrir
-  let x0: number | null = null, swiped = false
-  btn.addEventListener('pointerdown', e => { x0 = e.clientX; swiped = false })
-  btn.addEventListener('pointerup', e => {
-    if (x0 == null) return
-    const dx = e.clientX - x0
-    x0 = null
-    if (Math.abs(dx) < 40) return
-    swiped = true
-    const k = Math.max(0, Math.min(links.length - 1, cur + (dx < 0 ? 1 : -1)))
-    jump(secs[k])
-    navigator.vibrate?.(4)
-  })
-  btn.addEventListener('click', () => { if (!swiped) setOpen(true); swiped = false })
-  // el panel abierto es una hoja (ns-frame/sheet): sigue al dedo arriba y abajo, el fondo se aclara
-  // a la vez y, al soltarla, vuelve o sale según la distancia y la velocidad. Al salir, la isla
-  // vuelve a ser la cápsula sin animar el tamaño (el panel ya se fue por abajo).
-  const shut = () => {
-    isle.classList.add('snap')
-    setOpen(false)
-    scrim.style.removeProperty('opacity'); scrim.style.removeProperty('transition')
-    requestAnimationFrame(() => requestAnimationFrame(() => isle.classList.remove('snap')))
-  }
-  const sh = sheet(isle, {
-    handle: panel,
-    onProgress: p => { scrim.style.transition = 'none'; scrim.style.opacity = String(p) },
-    onClose: shut,
-  })
-  $('isle-close').addEventListener('click', () => sh.close())
-  scrim.addEventListener('click', () => sh.close())
-  $('isle-list').addEventListener('click', e => { if ((e.target as Element).closest('a')) setOpen(false) })
-  addEventListener('keydown', e => { if (e.key == 'Escape' && open) sh.close() })
-
-  // sección actual y pliegue al bajar
-  let y0 = scrollY, raf = 0
-  const onScroll = () => {
-    raf = 0
-    const y = scrollY
-    let k = 0
-    secs.forEach((s, j) => { if (s.getBoundingClientRect().top < innerHeight * .45) k = j })
-    setCur(k)
-    if (!open && Math.abs(y - y0) > 6) { isle.classList.toggle('mini', y > y0 && y > 200); y0 = y }
-  }
-  addEventListener('scroll', () => { raf ||= requestAnimationFrame(onScroll) }, { passive: true })
-  addEventListener('resize', () => open && openSize())
-  onScroll()
+  mq.addEventListener('change', init)
+  init()
 </script>
 
 <style>
-  .scrim, .isle { display: none }
+  .isle, .panel { display: none }
   @media (max-width: 900px) {
     :global(body) { padding-bottom: calc(84px + env(safe-area-inset-bottom)) }
-    .scrim { display: block; position: fixed; inset: 0; z-index: 39; background: var(--veil-2); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; pointer-events: none; transition: opacity .4s var(--ease) }
-    .scrim.on { opacity: 1; pointer-events: auto }
-    .isle { display: block; position: fixed; z-index: 40; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); width: var(--w, 212px); height: var(--h, 54px); transform: translateX(-50%);
-      background: rgba(18, 18, 20, .97); backdrop-filter: blur(22px) saturate(1.8); -webkit-backdrop-filter: blur(22px) saturate(1.8);
-      --ns-border: rgba(255, 255, 255, .14); --ns-morph-time: 420; color: var(--text);
-      contain: strict; /* tamaño explícito (--w/--h): su animación no recalcula nada fuera de la isla */ transition: width .55s var(--ease), height .55s var(--ease); filter: drop-shadow(0 16px 30px rgba(0, 0, 0, .5)) }
-    .pill { position: absolute; inset: 0; display: flex; align-items: center; gap: 11px; padding: 0 8px 0 9px; border: 0; background: none; cursor: pointer; text-align: left; transition: opacity .25s; touch-action: pan-y }
+    :global(.ns-isle-scrim) { --ns-isle-scrim: var(--veil-2) }
+
+    /* cápsula: redondeo simple (vía rápida nativa); plegarla sólo cambia su ancho */
+    .isle { display: block; position: fixed; z-index: 40; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); width: 212px; height: 54px; translate: -50% 0;
+      background: rgba(18, 18, 20, .97); --ns-border: rgba(255, 255, 255, .14); color: var(--text); contain: layout paint style; view-transition-name: ns-isle }
+    .isle:global(.ns-mini) { width: 54px }
+    .pill { position: absolute; inset: 0; display: flex; align-items: center; gap: 11px; padding: 0 8px 0 9px; border: 0; background: none; cursor: pointer; text-align: left }
     .ico { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; flex: none; background: var(--text); color: #0a0a0a }
     .ico :global(svg) { width: 17px; height: 17px }
     .txt { flex: 1; min-width: 0; overflow: hidden; display: grid; transition: opacity .2s, visibility .2s }
@@ -134,30 +70,23 @@ const CUR = 'tl+br bevel 14; tr+bl round 16; radius 2'
     .txt small { font: var(--t-micro)/1.3 var(--mono); color: var(--text-2); white-space: nowrap }
     .chev { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, .1); flex: none; transition: opacity .2s, visibility .2s }
     .chev svg { width: 14px; height: 14px }
-    .isle.mini { --w: 54px }
-    .isle.mini .txt, .isle.mini .chev { opacity: 0; visibility: hidden }
-    .isle.open .pill { opacity: 0; pointer-events: none }
-    .panel { position: absolute; left: 0; right: 0; top: 0; padding: 18px 16px 16px; display: flex; flex-direction: column; gap: 14px; opacity: 0; visibility: hidden; transition: opacity .2s, visibility 0s .2s }
-    .isle.open .panel { opacity: 1; visibility: visible; transition: opacity .35s .15s }
-    header { display: flex; align-items: center; justify-content: space-between; padding: 4px 6px 0; touch-action: none }
-    .handle { position: absolute; top: 12px; left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: var(--r-2xs); background: rgba(255, 255, 255, .22) }
-    header { position: relative; padding-top: 14px !important; cursor: grab }
+    .isle:global(.ns-mini) .txt, .isle:global(.ns-mini) .chev { opacity: 0; visibility: hidden }
+
+    /* hoja: posición y animación las pone ns-frame/isle; aquí sólo el aspecto */
+    .panel { display: flex; flex-direction: column; gap: 14px; padding: 18px 16px 16px; background: rgba(18, 18, 20, .98); --ns-border: rgba(255, 255, 255, .16); color: var(--text); contain: layout paint style }
+    header { position: relative; display: flex; align-items: center; justify-content: space-between; padding: 14px 6px 0; cursor: grab }
+    .handle { position: absolute; top: 0; left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: var(--r-2xs); background: rgba(255, 255, 255, .22) }
     header b { font: 700 var(--t-title-lg)/1 var(--display); font-stretch: 108%; letter-spacing: -.02em }
     header button { width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, .1); display: grid; place-items: center; cursor: pointer }
     header svg { width: 14px; height: 14px }
     ul { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none }
-    ul a { display: flex; flex-direction: column; justify-content: space-between; gap: 10px; padding: 12px; min-height: 78px; background: rgba(255, 255, 255, .06); --ns-border: rgba(255, 255, 255, .06); --ns-morph-time: 320; transition: background .2s }
+    ul a { display: flex; flex-direction: column; justify-content: space-between; gap: 10px; padding: 12px; min-height: 78px; background: rgba(255, 255, 255, .06); --ns-border: rgba(255, 255, 255, .06); --ns-morph-time: 320; transition: background-color .2s }
     ul a :global(svg) { color: var(--text-2); width: 22px; height: 22px }
     ul a span { font-size: var(--t-small); font-weight: 500; line-height: 1.2 }
-    ul a small { display: none }
     ul a[aria-current] { background: rgba(255, 255, 255, .1); --ns-u-bg: rgba(255, 255, 255, .1); --ns-u: #00e676; --ns-u-glow: .45; --ns-border: rgba(0, 230, 118, .45) }
     ul a[aria-current] :global(svg) { color: var(--signal) }
     .acts { display: flex; gap: 8px }
     .acts a { flex: 1; min-height: 48px; border-radius: 980px; display: grid; place-items: center; font-size: var(--t-control); font-weight: 500; background: rgba(255, 255, 255, .1) }
     .acts a:first-child { background: var(--text); color: var(--graphite) }
   }
-  @media (max-width: 900px) and (prefers-reduced-motion: reduce) { .isle, .scrim { transition: none } }
-  /* al salir por abajo, la isla vuelve a ser cápsula sin animar el tamaño */
-  .isle.snap, .isle.snap :global(*) { transition: none !important }
-  .isle:global(.ns-sheet-drag) header { cursor: grabbing }
 </style>

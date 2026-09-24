@@ -64,3 +64,10 @@ En los navegadores sin soporte, o con formas complejas, se usa `clip-path` autom
 ## Cascada predecible
 
 Los estilos del runtime van en `@layer ns`: **tu CSS siempre gana**, sin importar el orden de carga ni la especificidad.
+
+La otra cara: un reset total también gana. `all: unset` (habitual para limpiar un `<button>`) quita dos cosas que el borde necesita:
+
+- `position: relative` en el marco: la capa del borde se coloca respecto a otro contenedor y el recorte la oculta.
+- `box-shadow` en la vía rápida nativa, donde el borde es una sombra interior.
+
+Resetea sólo lo que quieres quitar (`appearance: none; border: 0; font: inherit; color: inherit; …`) o vuelve a poner `position: relative` y no toques `box-shadow`. `audit()` (de `ns-frame/audit`) avisa de ambos casos: tipos `unanchored` y `reset`.

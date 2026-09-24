@@ -132,6 +132,45 @@ dialog::backdrop { opacity: var(--p, 1) }                 /* el fondo se aclara 
 - Con `prefers-reduced-motion`, el cierre y el regreso son inmediatos. Devuelve `{ close(), reset(), destroy() }`.
 - Escape y el clic en el fondo los decides tú (en un `<dialog>`: evento `cancel` → `s.close()`).
 
+## Isla de navegación (`ns-frame/isle`)
+
+Una cápsula flotante que dice en qué sección estás y, al tocarla, abre una hoja con todas. Pensada para el móvil (en escritorio suele bastar una barra), pero funciona en cualquier pantalla. El marcado y las formas son tuyos:
+
+```html
+<nav data-ns-isle data-ns="all round 27" aria-label="Secciones">
+  <button data-ns-isle-toggle aria-controls="menu">
+    <span data-ns-isle-icon></span>
+    <b data-ns-isle-label>Inicio</b> <small data-ns-isle-pos>1 / 6</small>
+  </button>
+</nav>
+<div id="menu" data-ns-isle-panel data-ns="all squircle 30" role="dialog" aria-modal="true" aria-label="Secciones">
+  <header data-ns-isle-handle>Secciones <button data-ns-isle-close aria-label="Cerrar">×</button></header>
+  <a href="#inicio"><svg>…</svg>Inicio</a>
+  <a href="#precios"><svg>…</svg>Precios</a>
+  …
+</div>
+```
+
+```js
+import { isle } from 'ns-frame/isle'
+
+const nav = isle(document.querySelector('[data-ns-isle]'), {
+  pos: (i, n) => `${i + 1} de ${n}`,          // texto de posición
+  onChange: (i, link) => { /* la sección actual cambió */ },
+})
+```
+
+- **Sigue la sección en pantalla** con `IntersectionObserver` (la que cruza la línea de lectura, `line: .45` de la ventana): nada se mide en cada scroll. Actualiza el nombre, la posición, el icono (clona el `svg`/`img` del enlace) y `aria-current`.
+- **La cápsula se pliega al bajar** (clase `.ns-mini`, a partir de `collapse: 200` px; `false` = nunca) y vuelve al subir. Plegada, anima sólo su ancho: con una forma de redondeo simple va por la vía rápida nativa y no recalcula nada.
+- **Deslizar la cápsula** a los lados va a la sección anterior o siguiente (`swipe: false` lo desactiva). Un toque la abre.
+- **La hoja entra moviendo sólo `translate`**, en el compositor: ni su tamaño ni su forma cambian durante la animación. Se prepara al apoyar el dedo (o al pasar el ratón o enfocar el botón), así que al abrirse ya está pintada: sin parón en el primer frame.
+- **Se arrastra como una hoja nativa** (usa `ns-frame/sheet`, con el asa en `[data-ns-isle-handle]` o todo el panel) y se cierra al soltarla o lanzarla, con Escape, con el fondo o con `[data-ns-isle-close]`.
+- **Accesible**: `aria-expanded` en el botón; la hoja es `inert` mientras está cerrada; al abrir, el foco va a la sección actual y al cerrar vuelve al botón.
+- **Elegir una sección** cierra la hoja, actualiza la URL (`pushState`) y va hasta ella con `go(target, link)`; por defecto `scrollIntoView` suave, que respeta `scroll-padding-top` y `scroll-margin`.
+- `data-ns-isle-panel="top"`: la hoja baja desde arriba.
+- Variables: `--ns-isle-time` (.4s), `--ns-isle-ease`, `--ns-isle-scrim` (color del fondo), `--ns-isle-w` (ancho máximo de la hoja, 430px), `--ns-isle-z` (40). Clases: `.ns-hide` en la cápsula mientras la hoja está abierta, `.ns-open` en la hoja y el fondo.
+- Devuelve `{ open(), close(), toggle(), go(i), index, destroy() }`. Con `prefers-reduced-motion`, todo es instantáneo.
+
 ## Callouts HUD (`ns-frame/link`)
 
 ```html

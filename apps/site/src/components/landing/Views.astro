@@ -106,7 +106,7 @@ const CARDS = [
 
   .vt-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px }
   .vt-grid[hidden], .vt-detail[hidden] { display: none }
-  .vt-card { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; gap: 4px; padding: 14px 14px 20px; background: var(--surface); --ns-border: var(--line-2); transition: background-color .25s }
+  .vt-card { appearance: none; border: 0; margin: 0; font: inherit; color: inherit; text-align: left; position: relative; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; gap: 4px; padding: 14px 14px 20px; background: var(--surface); --ns-border: var(--line-2); transition: background-color .25s }
   .vt-card:hover { background: var(--surface-2) }
   .vt-card img, .vt-detail img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; background: var(--bg-2) }
   .vt-card img { margin-bottom: 10px }

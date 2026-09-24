@@ -22,14 +22,15 @@ const on = FX.filter(f => f[2]).map(f => f[0]).join(' ')
       Un bento donde cada pieza puede ser una L, una T o una escalera. Las curvas guardan el mismo hueco que las rectas, y un orbe recorta a sus vecinas. <b>En el móvil sigue siendo un mosaico, no una lista.</b>
     </SectionHead>
 
-    <div class="controls">
+    <!-- barra fija: mientras el mosaico está en pantalla, los controles siguen a mano (sin subir
+         y bajar para probar otra opción). En el móvil es una sola fila que se desliza de lado. -->
+    <div class="bar" role="group" aria-label="Opciones del mosaico">
       <div class="seg" id="mo-modes" role="group" aria-label="Plantilla">{TEMPLATES.map(([t, n], i) => <button type="button" data-t={t} aria-pressed={String(!i)}>{n}</button>)}</div>
       <div class="seg" id="mo-hole" role="group" aria-label="Forma del hueco">{HOLES.map(([h, n, d], i) => <button type="button" class="ico" data-h={h} aria-pressed={String(!i)} aria-label={n} title={n}><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d={d} /></svg></button>)}</div>
       <div class="seg" id="mo-fill" role="group" aria-label="Contenido del orbe">{FILLS.map(([c, n]) => <button type="button" data-c={c} aria-pressed={String(c == 'is-photo')}>{n}</button>)}</div>
-    </div>
-    <div class="fx" id="mo-fx" role="group" aria-label="Luz en toda la figura">
-      <span>Luz en toda la figura</span>
-      {FX.map(([k, n, d]) => <button type="button" data-fx={k} aria-pressed={String(!!d)}>{n}</button>)}
+      <div class="fx" id="mo-fx" role="group" aria-label="Luz en toda la figura">
+        {FX.map(([k, n, d]) => <button type="button" data-fx={k} aria-pressed={String(!!d)}>{n}</button>)}
+      </div>
     </div>
 
     <div class="mo ns-mosaic t-orb" id="mo" data-ns-mosaic={on}>
@@ -60,6 +61,7 @@ const on = FX.filter(f => f[2]).map(f => f[0]).join(' ')
 
   // plantilla: con View Transitions las piezas viajan a su nuevo sitio
   const TEMPLATES = ['t-orb', 't-duo', 't-lock', 't-step']
+  let vt: ViewTransition | undefined
   modes.addEventListener('click', e => {
     const b = pick(e, 'data-t')
     if (!b || b.getAttribute('aria-pressed') == 'true') return
@@ -67,8 +69,14 @@ const on = FX.filter(f => f[2]).map(f => f[0]).join(' ')
     if (!document.startViewTransition || reduced()) return go()
     const pieces = [...mo.querySelectorAll<HTMLElement>(':scope > [data-ns-area], :scope > [data-ns-orb]')]
     pieces.forEach((p, i) => p.style.viewTransitionName = p.dataset.nsArea ? 'mo-' + p.dataset.nsArea : 'mo-orb' + i)
-    // actualización síncrona: durante ella no hay frames; el mosaico recalcula antes de la captura
-    document.startViewTransition(go).finished.finally(() => pieces.forEach(p => p.style.viewTransitionName = ''))
+    // actualización síncrona: durante ella no hay frames; el mosaico recalcula antes de la captura.
+    // La clase quita el fundido del resto de la página (no cambia): sólo se mueven las piezas.
+    const root = document.documentElement
+    root.classList.add('mo-vt')
+    // (con clics seguidos, la transición nueva salta la anterior: sólo la última limpia)
+    const t = vt = document.startViewTransition(go)
+    t.ready.catch(() => {}) // saltada por la siguiente: no es un error
+    t.finished.finally(() => { if (vt != t) return; root.classList.remove('mo-vt'); pieces.forEach(p => p.style.viewTransitionName = '') })
   })
 
   hole.addEventListener('click', e => {
@@ -99,12 +107,12 @@ const on = FX.filter(f => f[2]).map(f => f[0]).join(' ')
 </script>
 
 <style>
-  .controls { display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: center; margin: 0 0 12px }
-  .seg .ico { width: 44px; padding: 0; display: grid; place-items: center }
+  .bar { position: sticky; top: 56px; z-index: 5; display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; margin: 0 0 16px; padding: 8px; border-radius: 18px; border: 1px solid var(--line); background: #0e0e10; view-transition-name: mo-bar }
+  .bar .seg button { min-height: 36px; padding: 0 12px }
+  .seg .ico { width: 40px; padding: 0 !important; display: grid; place-items: center }
   .seg .ico svg { width: 18px; height: 18px }
-  .fx { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 28px }
-  .fx span { font-size: var(--t-small); color: var(--text-3); margin-right: 6px }
-  .fx button { min-height: 36px; padding: 0 14px; border-radius: 980px; border: 1px solid var(--line); background: transparent; color: var(--text-2); font-size: var(--t-small); cursor: pointer; transition: color .2s, border-color .2s, background-color .2s }
+  .fx { display: flex; flex-wrap: wrap; gap: 6px; align-items: center }
+  .fx button { min-height: 36px; padding: 0 12px; border-radius: 980px; border: 1px solid var(--line); background: transparent; color: var(--text-2); font-size: var(--t-small); cursor: pointer; transition: color .2s, border-color .2s, background-color .2s }
   .fx button:hover { color: var(--text); border-color: var(--line-2) }
   .fx button[aria-pressed=true] { color: var(--text); border-color: rgba(0, 230, 118, .55); background: rgba(0, 230, 118, .08) }
 
@@ -144,7 +152,13 @@ const on = FX.filter(f => f[2]).map(f => f[0]).join(' ')
   .t-duo { --ns-areas: 'h h a b' 'h h c b' 'x y c d' 'x y e f'; --ns-orb: 3 3 70 hex, 2 4 44 circle }
   .t-lock { --ns-areas: 'h h h b' 'a x x b' 'a a x c' 'd y e f'; --ns-orb: none }
   .t-step { --ns-areas: 'h h a a' 'x h h a' 'x b h c' 'd y e f'; --ns-orb: none }
+  /* en táctil la luz que sigue al puntero y la onda al tocar no existen (la librería las quita) */
+  @media (hover: none) and (pointer: coarse) { .fx [data-fx=glow], .fx [data-fx=ripple] { display: none } }
   @media (max-width: 900px) {
+    /* una fila que se desliza de lado, de borde a borde */
+    .bar { flex-wrap: nowrap; overflow-x: auto; margin: 0 -24px 12px; padding: 8px 24px; border-radius: 0; border-width: 1px 0; scrollbar-width: none; overscroll-behavior-x: contain }
+    .bar::-webkit-scrollbar { display: none }
+    .bar > *, .fx { flex: none; flex-wrap: nowrap }
     .mo { --ns-row: 112px; --ns-gap: 10px; --ns-round: 20px; --ns-pad: 16px }
     .t-orb { --ns-areas: 'h h' 'h h' 'x y' 'x y' 'a b' 'a c' 'd c' 'e f'; --ns-orb: 2 3 var(--hole-rm, 62) var(--hole, circle) }
     .t-duo { --ns-areas: 'h h' 'h h' 'x y' 'x y' 'a b' 'c b' 'c e' 'd e' 'f f'; --ns-orb: 2 3 50 hex, 2 7 34 circle }
@@ -155,5 +169,9 @@ const on = FX.filter(f => f[2]).map(f => f[0]).join(' ')
     .mo .hi h3 { font-size: var(--t-heading) }
     .big { font-size: var(--t-heading) }
   }
-  :global(::view-transition-group(*.mo-piece)) { animation-duration: .55s; animation-timing-function: var(--ease) }
+  :global(::view-transition-group(*.mo-piece)) { animation-duration: .5s; animation-timing-function: var(--ease) }
+  :global(html.mo-vt::view-transition-old(root)), :global(html.mo-vt::view-transition-new(root)) { animation: none }
+  /* la pieza nueva llega pronto (su forma cambia con el tamaño; la vieja estirada se nota) */
+  :global(::view-transition-old(*.mo-piece)) { animation-duration: .18s }
+  :global(::view-transition-new(*.mo-piece)) { animation-duration: .26s }
 </style>

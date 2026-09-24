@@ -86,6 +86,14 @@ Efectos que tratan todo el mosaico como una sola figura. Se combinan libremente:
 
 Ajustes: `--ns-mo-light` (color de la luz), `--ns-mo-width` (grosor en los bordes), `--ns-mo-time` (duración), `--ns-mo-fill` (intensidad sobre los fondos), `--ns-mo-a1` y `--ns-mo-a2` (colores de la aurora), `--ns-mo-dot` y `--ns-mo-line` (color de los patrones).
 
+**Móvil y escritorio por separado.** En pantallas táctiles (`hover: none` y `pointer: coarse`) no hay un puntero que flote: `glow` no tiene a quién seguir y `ripple` convierte cada toque, que casi siempre es para hacer scroll, en una onda. Por eso en táctil se quitan esos dos por defecto. Para elegir tú qué efectos se ven en táctil, usa `data-ns-mosaic-touch` (vacío = ninguno):
+
+```html
+<div class="ns-mosaic" data-ns-mosaic="glow ripple trace" data-ns-mosaic-touch="trace">
+```
+
+Si el dispositivo cambia de modo (una tableta a la que se conecta un ratón), la lista se vuelve a elegir sola.
+
 - Los bordes y las luces usan una sola capa SVG sobre el mosaico, con los contornos de todas las piezas como máscara. La aurora y los patrones van en un `::before` de cada pieza, por detrás del contenido, alineados en coordenadas del mosaico.
 - Todo se anima con `transform` y `opacity`. Las animaciones se pausan fuera de pantalla y se desactivan con `prefers-reduced-motion`; en alto contraste la capa desaparece.
 - Como `::before` queda para los fondos compartidos, no combines `aurora`, `dots` o `grid` con las clases de patrón de `ns-fx.css` en la misma pieza.

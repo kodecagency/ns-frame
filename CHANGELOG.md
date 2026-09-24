@@ -15,8 +15,12 @@
 - `--ns-morph-time: 0` aplica el cambio de forma al instante.
 - **Arreglo:** las animaciones de borde `scan` y `orbit` y el giro de degradados (`data-ns-spin`) pasan de SMIL a animaciones CSS; ya no se quedan congeladas en móviles.
 
-### Nuevo: `ns-frame/sheet` (1,2 KB)
+### Nuevo: `ns-frame/sheet` (1,3 KB)
 - Hoja que se arrastra como en una app nativa: sigue al dedo arriba (con resistencia elástica) y abajo, y al soltarla vuelve o sale según la distancia y la velocidad. Sólo mueve `translate`, expone el progreso (`--ns-sheet-p`, `onProgress`) para atenuar el fondo y no convierte un arrastre en clic.
+
+### Nuevo: `ns-frame/isle` (2,3 KB)
+- **Isla de navegación**: una cápsula flotante con la sección actual (icono, nombre y posición, seguidos con `IntersectionObserver`) que se pliega al bajar, cambia de sección al deslizarla y abre una hoja con todas. La hoja entra moviendo sólo `translate`, se prepara al apoyar el dedo (al abrirse ya está pintada) y se arrastra con `ns-frame/sheet`. Accesible (`aria-expanded`, `aria-current`, `inert`, foco que entra y vuelve) y con el marcado y las formas del usuario.
+- `sheet`: el progreso del gesto se calcula de la temporización de la animación, sin leer estilos en cada frame (sin micro-parones al cerrar).
 
 ### Motor más rápido
 - **Memo de geometría** por (forma, ancho, alto): los marcos que comparten forma y tamaño reutilizan geometría, comandos y path.
@@ -31,15 +35,24 @@
 - **Arreglo:** en pantallas táctiles la forma de hover (`data-ns-hover`) ya no se queda pegada: el hover sólo se activa con ratón o lápiz (para el dedo está `data-ns-press`).
 - En táctil (`hover: none` y `pointer: coarse`), el resplandor `--ns-glow` de las animaciones de borde y el del mosaico se desactivan (filtros que repintan cada frame y podían congelar la animación). `--ns-glow-touch` permite fijar uno propio.
 - El foco `spot` no se registra en táctil: ya no recalcula los marcos en cada scroll.
+- Mosaico: en táctil se quitan `glow` (sigue a un puntero que no existe) y `ripple` (cada toque, que casi siempre es scroll, era una onda). `data-ns-mosaic-touch` elige los efectos para táctil.
+- Hover, pulsado y foco con 6 listeners delegados en el documento en vez de varios por marco.
 - `ns-fx.css`: en táctil, la luz en U en movimiento (`ns-u-live`, `ns-u-tide`, `ns-u-surge`), `ns-u-hue` y `ns-scan` quedan fijos, y `ns-pulse` anima sólo la opacidad.
 
 ### Bento y auditoría
 - El bento sigue siendo bento en móvil: al menos `--ns-cols-min` columnas (2 por defecto).
-- `audit()` ignora las imágenes y vídeos a sangre (recortarlos es la intención).
+- `audit()` ignora las imágenes y vídeos a sangre (recortarlos es la intención), y avisa cuando un reset como `all: unset` deja el borde sin dibujar (tipos `unanchored` y `reset`).
+
+### Arreglos del mosaico
+- Al cambiar a una plantilla con menos filas, las piezas aún colocadas según la anterior creaban filas implícitas y el mosaico reintentaba en cada frame sin terminar: se quedaba con la plantilla vieja, dejaba de responder y podía verse con piezas superpuestas. Ahora sólo cuentan las pistas explícitas y los reintentos están acotados.
+- Los listeners de la luz conectada se registran una vez por mosaico y leen la capa actual (antes se duplicaban si la capa se quitaba y volvía).
 
 ### Sitio
 - Landing rediseñada en Astro, por componentes: hero con mosaico, antes y después, muro de presets, playground (atributo, ruta SVG y CSS `shape()`), bordes en degradado y luz en U (con una tabla de precios real), mosaico interactivo, las 12 animaciones de borde, componentes funcionando, aperturas y View Transitions, anatomía con callouts y formas responsive, ficha técnica en bento unificado sobre fondo aura y la isla de navegación en móvil. Firmada por Kodec Agency.
 - La galería antigua (`galeria.html`) se retira: todas las demos viven en la landing.
+- Los controles del mosaico van en una barra fija (en el móvil, una fila que se desliza): se cambia de opción sin subir y bajar. Al cambiar de plantilla sólo se animan las piezas; la barra superior y la isla quedan por encima durante la transición.
+- La isla usa `ns-frame/isle` y el menú lleva suave hasta la sección elegida.
+- Contorno suave, teñido con el tono de cada pieza, en el muro de formas y en las tarjetas de aperturas.
 - Sitio más ligero y seguro: secciones con `content-visibility: auto` (saltos a anclas exactos con `scripts/jump.ts`), fuentes autoalojadas con la API de fuentes de Astro (Mona Sans variable con su eje de anchura), fotos de demostración en WebP, sin `backdrop-filter` en táctil, CSP estricta generada por Astro con hashes (sin `unsafe-inline`; en las guías sólo se permiten atributos de estilo para el resaltado de código), caché inmutable para `/_astro/*`, HSTS y COOP. En un móvil emulado (CPU ×4): bloqueo del hilo principal de ~700 a ~290 ms y LCP de ~1,65 a ~1,2 s.
 
 ## 0.8.0 — primera versión pública

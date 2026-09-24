@@ -13,6 +13,19 @@ export function audit({ root = document, mark = false, margin = 2, clearance = 0
     const r = el.getBoundingClientRect()
     // un marco oculto (visibility: hidden, p. ej. un menú cerrado) no se ve: no puede verse recortado
     if (!r.width || !r.height || /^(img|video|canvas|input|textarea|select)$/i.test(el.localName) || getComputedStyle(el).visibility == 'hidden') continue
+    // la capa de borde y foco se coloca respecto al marco; un reset como `all: unset` le quita el
+    // position: relative y la capa acaba en otro sitio (el recorte la oculta: el borde "no sale")
+    const svg = el.querySelector(':scope > .ns-svg')?.getBoundingClientRect()
+    if (svg && (Math.abs(svg.left - r.left - el.clientLeft) > 1.5 || Math.abs(svg.top - r.top - el.clientTop) > 1.5)) {
+      issues.push({ el, what: 'capa de borde fuera del marco: ¿position: static? (p. ej. por all: unset)', shape, type: 'unanchored' })
+      if (mark) el.style.outline = '2px dashed #ff3d6e'
+    }
+    // vía rápida nativa: el borde es una sombra interior; un box-shadow propio (o all: unset) lo tapa
+    const cs = getComputedStyle(el), bd = cs.getPropertyValue('--ns-border').trim()
+    if (el.classList.contains('ns-fast') && bd && bd != 'none' && bd != 'transparent' && cs.boxShadow == 'none') {
+      issues.push({ el, what: 'borde anulado: box-shadow: none sobre la vía rápida (¿all: unset?)', shape, type: 'reset' })
+      if (mark) el.style.outline = '2px dashed #ff3d6e'
+    }
     const p = new Path2D(path(shape, r.width, r.height))
     const inside = (x, y) => ctx.isPointInPath(p, x - r.left, y - r.top)
     // cajas de texto y de controles descendientes (sin entrar en otros marcos)

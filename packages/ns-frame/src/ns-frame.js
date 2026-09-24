@@ -605,6 +605,30 @@ export function styles(css) {
   }
 }
 
+// Eventos delegados: seis listeners en el documento para todos los marcos, en vez de once por
+// marco (con miles de marcos eran decenas de miles de listeners). Se recorre la cadena de marcos
+// que contienen al objetivo (los anidados reaccionan todos, como antes) y sólo se recalcula un
+// marco si tiene forma de hover o de pulsado: pasar el puntero por los demás no cuesta nada.
+const SEL = '[data-ns],[data-ns-nest],ns-frame', DOWN = new Set()
+const chain = t => { const a = []; for (let n = t?.closest?.(SEL); n; n = n.parentElement?.closest(SEL)) { const s = S.get(n); s && a.push(s) } return a }
+// hover sólo con ratón o lápiz: en táctil el pointerleave casi nunca llega y la forma se quedaba
+// "pegada" (para el dedo está data-ns-press). El foco dentro también cuenta como hover.
+const hot = s => { const h = !!(s.ptr || s.el.matches(':focus-within')); if (h != !!s.hot) { s.hot = h; attr(s.el, 'hover') != null && refresh(s, 1) } }
+const up = s => { if (DOWN.delete(s)) { s.dn = 0; refresh(s, 1) } }
+function delegate() {
+  const on = (type, fn) => document.addEventListener(type, fn, true)
+  const cross = (e, v) => { for (const s of chain(e.target)) if (!s.el.contains(e.relatedTarget)) { s.ptr = v; hot(s); v || up(s) } }
+  on('pointerover', e => e.pointerType != 'touch' && cross(e, 1))
+  on('pointerout', e => cross(e, 0))
+  // estado presionado (data-ns-press): mouse, dedo o teclado (Enter / Espacio)
+  const down = e => { for (const s of chain(e.target)) if (attr(s.el, 'press') != null && !DOWN.has(s)) { s.dn = 1; DOWN.add(s); refresh(s, 1) } }
+  on('pointerdown', down)
+  on('keydown', e => (e.key == 'Enter' || e.key == ' ') && !e.repeat && down(e))
+  for (const t of ['pointerup', 'pointercancel', 'keyup']) on(t, () => DOWN.forEach(up))
+  on('focusin', e => chain(e.target).forEach(hot))
+  on('focusout', e => { const a = chain(e.target); a.forEach(up); requestAnimationFrame(() => a.forEach(hot)) })
+}
+
 /** Activa ns-frame sobre cualquier elemento (normalmente vía data-ns / <ns-frame>). */
 export function attach(el) {
   if (!DOM) return el
@@ -618,23 +642,12 @@ export function attach(el) {
     // de una pantalla de distancia; el resto queda pendiente y se pinta al acercarse (antes de verse)
     lo = new IntersectionObserver(onNear, { rootMargin: '100% 0px' })
     addEventListener('beforeprint', () => { for (const s of LATE) refresh(s); LATE.clear() })
+    delegate()
   }
   let s = S.get(el)
   if (!s) {
     S.set(el, (s = { el, w: 0, h: 0 }))
     lo.observe(el)
-    const hot = () => { s.hot = s.ptr || el.matches(':focus-within'); refresh(s, 1) }
-    // hover sólo con ratón o lápiz: en táctil el pointerleave casi nunca llega y la forma
-    // se quedaba "pegada" en su estado hover (para el dedo está data-ns-press)
-    el.addEventListener('pointerenter', e => { if (e.pointerType != 'touch') { s.ptr = 1; hot() } })
-    el.addEventListener('pointerleave', () => { if (s.ptr) { s.ptr = 0; hot() } })
-    // estado presionado (data-ns-press): mouse, dedo o teclado (Enter / Espacio)
-    const down = v => () => { if (!v || attr(el, 'press') != null) { s.dn = v; refresh(s, 1) } }
-    el.addEventListener('pointerdown', down(1))
-    for (const e of ['pointerup', 'pointercancel', 'pointerleave', 'keyup', 'blur']) el.addEventListener(e, down(0))
-    el.addEventListener('keydown', e => (e.key == 'Enter' || e.key == ' ') && !e.repeat && down(1)())
-    el.addEventListener('focusin', hot)
-    el.addEventListener('focusout', () => requestAnimationFrame(hot))
     if (typeof NS_LITE == 'undefined') {
       const en = attr(el, 'enter')
       if (en != null && !reduced()) {
