@@ -1,18 +1,20 @@
 ---
-// Cierre: el snippet para copiar y los dos caminos siguientes.
+// Cierre: el snippet para copiar y los dos caminos siguientes, sobre una luz en U.
 import SectionHead from '../SectionHead.astro'
 import { LINKS } from '../../data/sections'
 import Arrow from '../Arrow.astro'
 const CDN = 'https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.9.0/packages/ns-frame/dist/ns-frame.js'
 ---
-<section class="sec light start" id="empezar" aria-labelledby="t-start">
+<section class="sec start" id="empezar" aria-labelledby="t-start">
   <div class="wrap">
-    <SectionHead id="t-start" center>
-      <Fragment slot="title">Empieza en un minuto.</Fragment>
-      Un script y un atributo. Funciona con HTML plano, Astro, React, Vue o Svelte.
-    </SectionHead>
-    <div class="install" data-ns="all squircle 22"><code id="snip">&lt;<b>script</b> type="module" src="{CDN}"&gt;&lt;/<b>script</b>&gt;</code><button type="button" id="copy">Copiar</button></div>
-    <div class="cta"><a class="btn" href={LINKS.docs}>Leer la documentación</a><a class="more" href={LINKS.gallery}>Explorar la galería completa<Arrow /></a></div>
+    <div class="box ns-u" data-ns="tl bevel 40; br bevel 40; tr+bl round 24; top cut center 30% 8 r4; radius 4">
+      <SectionHead id="t-start" center>
+        <Fragment slot="title">Empieza en un minuto.</Fragment>
+        Un script y un atributo. Funciona con HTML plano, Astro, React, Vue o Svelte.
+      </SectionHead>
+      <div class="install" data-ns="all round 14"><code id="snip">&lt;<b>script</b> type="module" src="{CDN}"&gt;&lt;/<b>script</b>&gt;</code><button type="button" id="copy" class="btn" data-ns="all round 10">Copiar</button></div>
+      <div class="cta"><a class="btn go" href={LINKS.docs} data-ns="all round 50%">Leer la documentación</a><a class="more" href={LINKS.gallery}>Explorar la galería completa<Arrow /></a></div>
+    </div>
   </div>
 </section>
 
@@ -25,10 +27,11 @@ const CDN = 'https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.9.0/packages/ns
 </script>
 
 <style>
-  .start { text-align: center }
-  .install { display: flex; align-items: center; gap: 14px; max-width: 720px; margin: 44px auto 0; padding: 18px 20px 18px 24px; background: var(--l-surface); --ns-border: var(--l-line); text-align: left }
-  code { flex: 1; min-width: 0; font: 14px/1.5 var(--mono); color: var(--l-text-2); overflow-x: auto; white-space: nowrap }
-  code b { color: var(--l-text); font-weight: 500 }
-  button { flex: none; min-height: 44px; padding: 0 16px; border-radius: 980px; border: 0; background: var(--l-text); color: #fff; font-size: 14px; cursor: pointer }
+  .box { padding: clamp(40px, 6vw, 72px) clamp(20px, 5vw, 64px); text-align: center; --ns-u: #00e676; --ns-u-glow: .6; --ns-u-bg: var(--surface); --ns-border: linear-gradient(180deg, rgba(255, 255, 255, .06), rgba(0, 230, 118, .55)) }
+  .box :global(.head) { margin-bottom: 28px }
+  .install { display: flex; align-items: center; gap: 12px; max-width: 760px; margin: 0 auto; padding: 10px 10px 10px 18px; background: rgba(10, 10, 12, .8); --ns-border: var(--line-2); text-align: left }
+  code { flex: 1; min-width: 0; font: 13px/1.5 var(--mono); color: var(--text-2); overflow-x: auto; white-space: nowrap }
+  code b { color: var(--text); font-weight: 500 }
+  .install .btn { flex: none; font-size: 14px; min-height: 44px; padding: 0 16px }
   .cta { justify-content: center }
 </style>

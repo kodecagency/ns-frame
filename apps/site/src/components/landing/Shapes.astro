@@ -1,68 +1,121 @@
 ---
-// Una línea, cualquier forma: la tarjeta cambia de forma y el código muestra lo que se escribió.
-// Todas las formas tienen la misma estructura (4 esquinas + una muesca arriba + mordidas a los
-// lados, a 0 cuando no se usan): así el núcleo interpola vértice a vértice y el cambio es suave.
+// Formas: la tarjeta cambia de forma (morph), la imagen se recorta sin máscara y el muro de presets
+// enseña los 14 que trae la librería. Pulsar un preset lo aplica a la tarjeta.
+// Las formas de las pestañas comparten estructura (4 esquinas + muesca + mordidas a 0 cuando no
+// se usan): así el núcleo interpola vértice a vértice y el cambio es suave.
 import SectionHead from '../SectionHead.astro'
 import Arrow from '../Arrow.astro'
 
 const tail = { cut: 'top cut center 30% 0', scoop: 'left+right scoop center 40 0' }
 const SHAPES = [
-  { name: 'Chaflán', code: 'tl+br bevel 36', full: `tl bevel 36; tr round 0; br bevel 36; bl round 0; ${tail.cut}; ${tail.scoop}` },
+  { name: 'Chaflán', code: 'tl+br bevel 36; radius 4', full: `tl bevel 36; tr round 0; br bevel 36; bl round 0; ${tail.cut}; ${tail.scoop}; radius 4` },
   { name: 'Squircle', code: 'all squircle 44', full: `all squircle 44; ${tail.cut}; ${tail.scoop}` },
   { name: 'Muesca', code: 'all round 22; top cut center 34% 14 r5', full: `all round 22; top cut center 34% 14 r5; ${tail.scoop}` },
   { name: 'Ticket', code: 'all round 18; left+right scoop center 44 20', full: `all round 18; ${tail.cut}; left+right scoop center 44 20` },
   { name: 'Placa', code: 'tl+br bevel 22; tr+bl round 8; top cut center 40% 8 8', full: `tl bevel 22; tr round 8; br bevel 22; bl round 8; top cut center 40% 8 8; ${tail.scoop}` },
 ]
+const PRESETS = ['card', 'button', 'chip', 'soft', 'notch', 'scoop', 'wing', 'panel', 'plate', 'tab', 'ticket', 'media', 'pill', 'hud']
+const MEDIA = [
+  { seed: 'nsframe-a', alt: 'Costa al atardecer', s: 'tl bevel 40; br round 40; top cut 58% 88% 12 r6; radius 4', c: 'bevel + round + cut' },
+  { seed: 'nsframe-b', alt: 'Montañas con niebla', s: 'all scoop 30; left+right scoop center 44 16', c: 'scoop: radio invertido' },
+  { seed: 'nsframe-c', alt: 'Calle de noche', s: 'all notch 22; radius 8', c: 'notch con radio' },
+]
 ---
-<section class="sec light" id="forma" aria-labelledby="t-forma">
+<section class="sec" id="forma" aria-labelledby="t-forma">
   <div class="wrap">
     <SectionHead id="t-forma">
       <Fragment slot="title">Una línea.<br>Cualquier forma.</Fragment>
-      Escribe la forma en un atributo y el elemento la toma: esquinas, muescas en los bordes, radios en cada vértice. Los cortes se miden en píxeles y no se deforman al cambiar de tamaño. <b>Al cambiar de forma, se anima sola.</b>
+      Esquinas, muescas en los bordes y radios en cada vértice, sobre cualquier elemento: <b>una tarjeta, un botón, una imagen o un vídeo.</b> Al cambiar de forma, se anima sola.
     </SectionHead>
-    <div class="grid">
-      <div>
-        <pre class="snippet">&lt;<b>article</b> data-ns="<em id="shape-code">{SHAPES[0].code}</em>"&gt;</pre>
-        <div class="tabs" id="shape-tabs" role="group" aria-label="Forma de la tarjeta">
-          {SHAPES.map((s, i) => <button type="button" data-full={s.full} data-code={s.code} aria-pressed={String(i == 0)}>{s.name}</button>)}
+
+    <div class="play">
+      <div class="stage" data-ns="all round 22">
+        <div class="bar">
+          <div class="seg" id="shape-tabs" role="group" aria-label="Forma de la tarjeta">
+            {SHAPES.map((s, i) => <button type="button" data-full={s.full} data-code={s.code} aria-pressed={String(i == 0)}>{s.name}</button>)}
+          </div>
         </div>
-        <p class="after"><a class="more" href="/docs/sintaxis">Toda la sintaxis<Arrow /></a></p>
-      </div>
-      <div class="stage">
         <article class="card" id="shape-card" data-ns={SHAPES[0].full}>
           <img src="https://picsum.photos/seed/nsframe-dune/720/450" alt="Dunas al atardecer" width="720" height="450" loading="lazy">
-          <div><b>Dunas de Médanos</b><span>Recorrido de 12 km · 4 h</span></div>
+          <div class="meta"><b>Dunas de Médanos</b><span>Recorrido de 12 km · 4 h</span><i class="pill">Reservar</i></div>
         </article>
+        <pre class="snippet">&lt;<b>article</b> <i>data-ns</i>="<em id="shape-code">{SHAPES[0].code}</em>"&gt;</pre>
+      </div>
+      <div class="media">
+        {MEDIA.map((m, i) => (
+          <figure class:list={['m', 'm' + i]}>
+            <img src={`https://picsum.photos/seed/${m.seed}/800/600`} alt={m.alt} width="800" height="600" loading="lazy" data-ns={m.s}>
+            <figcaption class="tag"><b>{m.c}</b></figcaption>
+          </figure>
+        ))}
       </div>
     </div>
+
+    <h3 class="sub">14 formas listas, o la tuya en una línea</h3>
+    <div class="wall" id="presets">
+      {PRESETS.map((p, i) => (
+        <button type="button" class:list={['pre', 'k' + (i % 5)]} data-ns={p} data-p={p} aria-label={`Aplicar la forma ${p} a la tarjeta`}>
+          <span class="nm">{p}</span><code class="tag">data-ns="{p}"</code>
+        </button>
+      ))}
+    </div>
+    <p class="after"><a class="more" href="/docs/sintaxis">Toda la sintaxis<Arrow /></a></p>
   </div>
 </section>
 
 <script>
   const card = document.getElementById('shape-card')!, code = document.getElementById('shape-code')!, tabs = document.getElementById('shape-tabs')!
   const btns = [...tabs.querySelectorAll('button')]
+  const set = (shape: string, label: string) => { card.setAttribute('data-ns', shape); code.textContent = label }
   // la forma sólo cambia cuando la persona la elige (nada avanza solo)
   btns.forEach((b, k) => b.addEventListener('click', () => {
-    card.setAttribute('data-ns', b.dataset.full!)
-    code.textContent = b.dataset.code!
+    set(b.dataset.full!, b.dataset.code!)
     btns.forEach((x, j) => x.setAttribute('aria-pressed', String(j == k)))
   }))
+  document.getElementById('presets')!.addEventListener('click', e => {
+    const b = (e.target as Element).closest<HTMLElement>('[data-p]')
+    if (!b) return
+    set(b.dataset.p!, b.dataset.p!)
+    btns.forEach(x => x.setAttribute('aria-pressed', 'false'))
+    card.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+  })
 </script>
 
 <style>
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; margin-top: 64px }
-  .snippet { font: 500 clamp(17px, 2vw, 24px)/1.5 var(--mono); letter-spacing: -.02em; color: var(--l-text-2); white-space: pre-wrap; word-break: break-word; margin: 0 }
-  .snippet b { color: var(--l-text); font-weight: 500 }
-  .snippet em { font-style: normal; color: var(--signal-ink); font-weight: 500 }
-  .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 28px }
-  .tabs button { min-height: 44px; padding: 0 18px; border-radius: 980px; border: 1px solid var(--l-line); background: transparent; color: var(--l-text-2); font-size: 15px; cursor: pointer; transition: color .2s, background-color .2s, border-color .2s }
-  .tabs button:hover { color: var(--l-text); border-color: rgba(0, 0, 0, .2) }
-  .tabs button[aria-pressed=true] { background: var(--l-text); color: #fff; border-color: var(--l-text) }
-  .stage { display: grid; place-items: center; min-height: 460px; border-radius: 32px; background: #e9e9e9 }
-  .card { width: min(360px, 82%); background: #fff; --ns-border: rgba(0, 0, 0, .1); --ns-morph-time: 520; filter: drop-shadow(0 30px 40px rgba(0, 0, 0, .14)) drop-shadow(0 2px 4px rgba(0, 0, 0, .06)); display: flex; flex-direction: column }
-  .card img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover }
-  .card div { padding: 20px 26px 28px }
-  .card b { display: block; font: 700 21px/1.2 var(--display); font-stretch: 106%; letter-spacing: -.02em }
-  .card span { font-size: 15px; color: var(--l-text-2) }
-  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; gap: 40px } .stage { min-height: 380px } }
+  .play { display: grid; grid-template-columns: 1.15fr 1fr; gap: 14px }
+  .stage { position: relative; display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 16px 16px 20px; min-width: 0;
+    background: radial-gradient(60% 60% at 50% 45%, rgba(0, 230, 118, .08), transparent 70%), radial-gradient(circle, rgba(255, 255, 255, .08) 1px, transparent 1.5px) 0 0 / 16px 16px, var(--bg-2); --ns-border: var(--line-2) }
+  .bar { align-self: stretch; display: flex; justify-content: center }
+  .card { width: min(340px, 90%); background: #fafafa; color: #0a0a0a; --ns-border: rgba(255, 255, 255, .5); --ns-morph-time: 520; filter: drop-shadow(0 24px 34px rgba(0, 0, 0, .55)); display: flex; flex-direction: column }
+  .card img { width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover }
+  .meta { padding: 14px 22px 22px; display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: center }
+  .meta b { font: 700 18px/1.2 var(--display); font-stretch: 106%; letter-spacing: -.02em }
+  .meta span { grid-row: 2; font-size: 13px; color: #52525b }
+  .pill { grid-row: 1 / 3; grid-column: 2; font: 500 13px/1 var(--body); font-style: normal; background: #0a0a0a; color: #fff; padding: 10px 14px; border-radius: 99px }
+  .snippet { margin: 0; font: 13px/1.5 var(--mono); color: var(--text-2); text-align: center; white-space: pre-wrap; word-break: break-word }
+  .snippet b { color: var(--text); font-weight: 500 }
+  .snippet i { font-style: normal; color: var(--signal) }
+  .snippet em { font-style: normal; color: var(--text) }
+
+  .media { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1.25fr 1fr; gap: 14px; min-width: 0 }
+  .m { margin: 0; position: relative; min-height: 0 }
+  .m0 { grid-column: 1 / -1 }
+  .m img { width: 100%; height: 100%; min-height: 150px; object-fit: cover; --ns-border: rgba(255, 255, 255, .18) }
+  .m figcaption { position: absolute; left: 14px; bottom: 12px; padding: 5px 9px; border-radius: 8px; background: rgba(10, 10, 12, .72); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px) }
+
+  .sub { margin: 44px 0 14px; font-size: 17px; color: var(--text) }
+  .wall { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px }
+  .pre { all: unset; box-sizing: border-box; cursor: pointer; min-height: 112px; padding: 20px 24px; display: flex; flex-direction: column; justify-content: space-between; gap: 8px; background: var(--surface); --ns-border: var(--line-2); --ns-morph-time: 300; transition: background-color .25s }
+  .pre[data-p=pill] { padding-left: 44px }
+  .pre:hover { background: var(--surface-2); --ns-border: var(--tone) }
+  .pre:focus-visible { outline: none }
+  .nm { font: 600 15px/1 var(--display); font-stretch: 106% }
+  .pre .tag { font-size: 10.5px }
+  .k0 { --tone: #00e676; background-image: linear-gradient(160deg, rgba(0, 230, 118, .1), transparent 60%) }
+  .k1 { --tone: #d4d4d8 }
+  .k2 { --tone: #ffb547; background-image: linear-gradient(160deg, rgba(255, 181, 71, .09), transparent 60%) }
+  .k3 { --tone: #b8f36b }
+  .k4 { --tone: #ff7a59; background-image: linear-gradient(160deg, rgba(255, 122, 89, .09), transparent 60%) }
+  @media (max-width: 1000px) { .play { grid-template-columns: 1fr } .wall { grid-template-columns: repeat(4, minmax(0, 1fr)) } }
+  @media (max-width: 560px) { .wall { grid-template-columns: repeat(2, minmax(0, 1fr)) } .media { grid-template-rows: auto } .m0 img { height: 210px } .m1 img, .m2 img { height: 170px } .stage .seg button { padding: 0 10px; font-size: 13px } }
 </style>

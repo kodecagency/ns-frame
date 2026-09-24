@@ -8,9 +8,10 @@ import { LINKS } from '../../data/sections'
   <div class="wrap">
     <h1 id="t-hero">Dale forma a<br>cualquier elemento.</h1>
     <p class="lede">Chaflanes, muescas, squircles y mosaicos de piezas que encajan, con una línea de HTML. <b>8&nbsp;KB, sin imágenes y sin dependencias.</b></p>
-    <div class="cta"><a class="btn" href={LINKS.install}>Empezar</a><a class="more" href={LINKS.github}>Ver el código en GitHub<Arrow /></a></div>
+    <div class="cta"><a class="btn" href={LINKS.install} data-ns="all round 50%" data-ns-hover="tl+br bevel 14; tr+bl round 22; radius 2">Empezar</a><a class="more" href={LINKS.github}>Ver el código en GitHub<Arrow /></a></div>
+    <ul class="facts"><li><b>0</b> dependencias</li><li><b>8,3 KB</b> gzip</li><li>CSP estricta, <b>sin innerHTML</b></li><li>HTML, Astro, React, Vue, Svelte</li><li><b>MIT</b></li></ul>
 
-    <div class="board ns-mosaic" id="board" data-ns-mosaic="glow ripple">
+    <div class="board ns-mosaic" id="board" data-ns-flow="off" data-ns-mosaic="glow ripple">
       <figure data-ns-area="h" class="ph">
         <img src="https://picsum.photos/seed/nsframe-coast/1100/700" alt="Valle con montañas al amanecer" width="1100" height="700" fetchpriority="high">
         <figcaption><span class="lbl">Vista previa</span><strong>Costa norte, 06:12</strong></figcaption>
@@ -61,13 +62,16 @@ import { LINKS } from '../../data/sections'
 </script>
 
 <style>
-  .hero { padding: clamp(64px, 10vw, 120px) 0 clamp(96px, 11vw, 150px); text-align: center; overflow: hidden }
-  .lede { margin-inline: auto }
+  .hero { padding: clamp(48px, 7vw, 88px) 0 clamp(64px, 8vw, 104px); text-align: center; overflow: hidden }
+  .lede { margin-inline: auto; font-size: clamp(16px, 1.5vw, 19px) }
   .cta { justify-content: center }
+  .facts { list-style: none; padding: 0; margin: 22px 0 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; font-size: 13px; color: var(--text-3) }
+  .facts li + li::before { content: ''; display: inline-block; width: 4px; height: 4px; border-radius: 50%; background: var(--line-2); margin: 0 14px 2px 0; vertical-align: middle }
+  .facts b { color: var(--text-2); font-weight: 500 }
 
-  .board { --ns-areas: 'a h h b' 'a h h c' 'd x x y'; --ns-row: 148px; --ns-gap: 12px; --ns-round: 26px; --ns-orb: 3 3 48 hex; --ns-orb-corner: 12px; --ns-pad: 22px; --ns-mo-light: #fff; --ns-mo-fill: .05;
-    max-width: 1100px; margin: clamp(64px, 8vw, 96px) auto 0; text-align: left }
-  .board > [data-ns-area] { background: #151515; --ns-border: rgba(255, 255, 255, .08); display: flex; flex-direction: column; gap: 6px; min-width: 0 }
+  .board { --ns-areas: 'a h h b' 'a h h c' 'd x x y'; --ns-row: 138px; --ns-gap: 12px; --ns-round: 24px; --ns-orb: 3 3 46 hex; --ns-orb-corner: 12px; --ns-pad: 20px; --ns-mo-light: #fff; --ns-mo-fill: .05;
+    max-width: 1100px; margin: clamp(40px, 5vw, 64px) auto 0; text-align: left }
+  .board > [data-ns-area] { background: rgba(22, 22, 25, .92); --ns-border: rgba(255, 255, 255, .09); display: flex; flex-direction: column; gap: 6px; min-width: 0 }
   .lbl { font: 500 13px/1.2 var(--body); color: var(--text-3) }
   .sub { font-size: 14px; color: var(--text-2) }
   .track { font-weight: 500 }
@@ -95,7 +99,7 @@ import { LINKS } from '../../data/sections'
   .code { font: 13px/1.75 var(--mono); color: var(--text-2); white-space: pre; margin: auto 0 0; overflow: hidden }
   .code b { color: var(--signal); font-weight: 400 }
 
-  .shape-btn { margin-top: auto; align-self: flex-start; min-height: 44px; padding: 0 20px; border: 0; background: var(--text); color: #0a0a0a; font: 500 15px/1 var(--body); cursor: pointer }
+  .shape-btn { margin-top: auto; align-self: flex-start; min-height: 44px; padding: 0 26px; border: 0; background: var(--text); color: #0a0a0a; font: 500 15px/1 var(--body); cursor: pointer; white-space: nowrap }
 
   .board > .sw { flex-direction: row; align-items: flex-end; justify-content: space-between; gap: 16px; cursor: pointer }
   .sw > span { display: grid; gap: 4px }
@@ -122,5 +126,6 @@ import { LINKS } from '../../data/sections'
     .board { --ns-areas: 'h h' 'h h' 'x x' 'a b' 'a d' 'y y' 'c c'; --ns-row: 122px; --ns-gap: 10px; --ns-round: 22px; --ns-orb: 2 3 38 hex; --ns-orb-corner: 9px; --ns-pad: 16px }
     .ph strong, .spec strong { font-size: 20px }
     .code { font-size: 12px }
+    .shape-btn { padding: 0 18px; font-size: 14px }
   }
 </style>

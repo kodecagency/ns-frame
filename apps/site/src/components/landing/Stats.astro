@@ -3,33 +3,34 @@
 import SectionHead from '../SectionHead.astro'
 import Arrow from '../Arrow.astro'
 
-const SPECS: [string, string, string?][] = [
-  ['Núcleo', '8,3 KB', 'comprimido con gzip; los módulos se cargan sólo si se usan'],
-  ['Dependencias', 'Ninguna', 'ni peticiones de red en tiempo de ejecución'],
-  ['4.000 marcos en pantalla', '< 50 ms', 'la tarea más larga al montarlos'],
-  ['Seguridad', 'Sin innerHTML', 'funciona con una CSP estricta, sin unsafe-inline'],
-  ['Accesibilidad', 'De serie', 'foco que sigue la forma, alto contraste, movimiento reducido y RTL'],
-  ['Licencia', 'MIT', 'software libre, de Kodec Agency'],
+const SPECS: [string, string, string, string][] = [
+  ['Núcleo', '8,3 KB', 'con gzip; los módulos se cargan sólo si se usan', 'tl+br bevel 20; radius 3'],
+  ['Dependencias', 'Ninguna', 'ni peticiones de red en tiempo de ejecución', 'all round 18'],
+  ['4.000 marcos', '< 50 ms', 'la tarea más larga al montarlos', 'all squircle 32'],
+  ['Seguridad', 'Sin innerHTML', 'funciona con una CSP estricta, sin unsafe-inline', 'all round 18; top cut center 36% 7 r3'],
+  ['Accesibilidad', 'De serie', 'foco con forma, alto contraste, movimiento reducido y RTL', 'left+right scoop center 24 12; all round 14'],
+  ['Licencia', 'MIT', 'software libre, de Kodec Agency', 'tl bevel 24; br bevel 24; tr+bl round 12; radius 3'],
 ]
 ---
 <section class="sec" id="cifras" aria-labelledby="t-cifras">
   <div class="wrap">
     <SectionHead id="t-cifras">
-      <Fragment slot="title">Pequeña, rápida<br>y segura.</Fragment>
+      <Fragment slot="title">Pequeña, rápida y segura.</Fragment>
+      Medido con 4.000 marcos en pantalla y probado con una política de seguridad de contenido estricta.
     </SectionHead>
     <dl class="specs">
-      {SPECS.map(([k, v, d]) => <div><dt>{k}</dt><dd><b class="num">{v}</b>{d && <span>{d}</span>}</dd></div>)}
+      {SPECS.map(([k, v, d, s]) => <div data-ns={s}><dt>{k}</dt><dd><b class="num">{v}</b><span>{d}</span></dd></div>)}
     </dl>
     <p class="after"><a class="more" href="/docs/rendimiento">Cómo se midió<Arrow /></a></p>
   </div>
 </section>
 
 <style>
-  .specs { margin: 64px 0 0; border-top: 1px solid var(--line-2) }
-  .specs div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 8px 32px; padding: 22px 0; border-bottom: 1px solid var(--line) }
-  dt { color: var(--text-2); font-size: 17px }
+  .specs { margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px }
+  .specs div { background: var(--surface); --ns-border: var(--line-2); padding: 20px 22px; display: grid; gap: 10px; align-content: start; min-width: 0 }
+  dt { color: var(--text-3); font-size: 13px }
   dd { margin: 0; display: grid; gap: 4px }
-  dd b { font: 700 clamp(22px, 2.4vw, 30px)/1.1 var(--display); font-stretch: 108%; letter-spacing: -.02em }
-  dd span { color: var(--text-2); font-size: 15px }
-  @media (max-width: 700px) { .specs div { grid-template-columns: 1fr } }
+  dd b { font: 700 clamp(22px, 2.2vw, 28px)/1.1 var(--display); font-stretch: 108%; letter-spacing: -.02em }
+  dd span { color: var(--text-2); font-size: 13.5px }
+  @media (max-width: 860px) { .specs { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px } .specs div { padding: 20px 18px } dd span { font-size: 12.5px } }
 </style>

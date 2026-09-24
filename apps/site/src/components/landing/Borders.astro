@@ -1,0 +1,127 @@
+---
+// Bordes y luz: todo lo que se pinta sobre la forma. Degradados en el borde (también girando),
+// doble línea, luz en U, halo y patrones de ns-fx.css; y un caso real: una tabla de precios.
+import SectionHead from '../SectionHead.astro'
+import Arrow from '../Arrow.astro'
+
+const PLANS = [
+  { n: 'Starter', p: '0', f: ['3 proyectos', 'Todas las formas', 'Soporte de la comunidad'], cls: 'silver', cta: 'Empezar' },
+  { n: 'Pro', p: '12', f: ['Proyectos ilimitados', 'Formas propias con define()', 'Exportar a CSS shape()', 'Soporte prioritario'], cls: 'green', cta: 'Elegir Pro', top: true },
+  { n: 'Equipo', p: '39', f: ['Todo lo de Pro', 'Tokens de diseño compartidos', 'Inicio de sesión único'], cls: 'amber', cta: 'Hablar con ventas' },
+]
+const PATTERNS = [
+  ['ns-dots', 'Puntos', 'soft'], ['ns-grid', 'Retícula', 'notch'], ['ns-scales', 'Escamas', 'plate'], ['ns-stripes', 'Rayas', 'wing'],
+  ['ns-scan', 'Barrido', 'hud'], ['ns-shimmer', 'Destello', 'media'], ['ns-pulse', 'Pulso', 'scoop'], ['ns-lines', 'Líneas', 'card'],
+]
+---
+<section class="sec" id="bordes" aria-labelledby="t-bordes">
+  <div class="wrap">
+    <SectionHead id="t-bordes">
+      <Fragment slot="title">Bordes y luz que siguen la forma.</Fragment>
+      <code>--ns-border</code> acepta un color o un degradado, y puede girar. La luz en U abraza la base, el halo sale por el contorno y los patrones quedan recortados por la pieza. <b>Todo es CSS: sin imágenes y sin repintar.</b>
+    </SectionHead>
+
+    <div class="bento">
+      <article class="b b1" data-ns="tl+br bevel 26; radius 3" data-ns-spin="7s">
+        <h3>Degradado que gira</h3>
+        <p>Un <code>linear-gradient()</code> en el borde, girando sobre el contorno exacto.</p>
+        <code class="tag">--ns-border: linear-gradient(…) · <b>data-ns-spin</b></code>
+      </article>
+      <article class="b b2 ns-u" data-ns="all round 22">
+        <h3>Luz en U</h3>
+        <p>Llena la base con las esquinas y se desvanece hacia arriba.</p>
+        <code class="tag"><b>ns-u</b></code>
+      </article>
+      <article class="b b3" data-ns="panel" style="--ns-inner:6px">
+        <h3>Doble línea</h3>
+        <p>Un segundo contorno, paralelo al primero.</p>
+        <code class="tag"><b>--ns-inner</b>: 6px</code>
+      </article>
+      <div class="ns-halo b4w"><article class="b b4" data-ns="all squircle 40">
+        <h3>Halo</h3>
+        <p>La sombra también sigue la forma.</p>
+        <code class="tag"><b>ns-halo</b></code>
+      </article></div>
+      <article class="b b5 ns-u-top ns-grid" data-ns="hud">
+        <h3>Luz que desciende</h3>
+        <p>Desde arriba, sobre una retícula recortada.</p>
+        <code class="tag"><b>ns-u-top · ns-grid</b></code>
+      </article>
+      <article class="b b6 ns-u ns-u-surge" data-ns="tl bevel 30; br bevel 30; tr+bl round 14; radius 3">
+        <h3>La luz trepa por los bordes</h3>
+        <p>Base, costados y esquinas se mueven a la vez, con curvas suaves.</p>
+        <code class="tag"><b>ns-u-surge</b></code>
+      </article>
+    </div>
+
+    <div class="plans">
+      {PLANS.map(pl => (
+        <article class:list={['plan', 'ns-u', pl.cls, { top: pl.top }]} data-ns={pl.top ? 'tl+br bevel 28; tr+bl round 16; radius 3' : 'all round 18'} data-ns-spin={pl.top ? '8s' : undefined}>
+          <h3>{pl.n}{pl.top && <span class="badge">Recomendado</span>}</h3>
+          <p class="price num">{pl.p} €<small> / mes</small></p>
+          <ul>{pl.f.map(f => <li>{f}</li>)}</ul>
+          <a href="#empezar" class:list={['btn', { ghost: !pl.top, go: pl.top }]} data-ns="all round 12">{pl.cta}</a>
+        </article>
+      ))}
+    </div>
+
+    <div class="pats">
+      {PATTERNS.map(([c, n, s]) => (
+        <div class:list={['pat', c]} data-ns={s}><b>{n}</b><code class="tag">{c}</code></div>
+      ))}
+      <div class="pat" data-ns="ticket"><b class="ns-text-shimmer">Texto con brillo</b><code class="tag">ns-text-shimmer</code></div>
+      <div class="pat" data-ns="card"><b data-ns-decode="hover">DESCIFRA_42</b><code class="tag">data-ns-decode</code></div>
+    </div>
+    <p class="after"><a class="more" href="/docs/efectos">Todos los efectos<Arrow /></a></p>
+  </div>
+</section>
+
+<style>
+  .bento { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: minmax(170px, auto); gap: 14px }
+  .b { background: var(--surface); --ns-border: var(--line-2); --ns-u-bg: var(--surface); padding: 22px; display: flex; flex-direction: column; gap: 6px; min-width: 0; height: 100% }
+  .b h3 { font-size: 17px }
+  .b p { margin: 0; color: var(--text-2); font-size: 14px; flex: 1 }
+  .b code:not(.tag) { font-size: 12.5px; color: var(--text) }
+  .b1 { grid-column: span 2; --ns-border: linear-gradient(90deg, #00e676, #b8f36b 30%, rgba(255, 255, 255, .06) 55%, #ffb547); --ns-border-width: 1.5px; background: radial-gradient(80% 90% at 0% 0%, rgba(0, 230, 118, .12), transparent 60%), var(--surface) }
+  .b2 { --ns-u: #00e676; --ns-u-glow: .75 }
+  .b3 { --ns-border: rgba(212, 212, 216, .35) }
+  .b4w { --ns-halo: rgba(255, 181, 71, .35) }
+  .b4 { --ns-border: rgba(255, 181, 71, .5); background: linear-gradient(180deg, rgba(255, 181, 71, .08), transparent), var(--surface) }
+  .b5 { --ns-u: #d4d4d8; --ns-u-glow: .5; --ns-pat: rgba(255, 255, 255, .06) }
+  .b6 { grid-column: span 2; --ns-u: #b8f36b; --ns-border: rgba(184, 243, 107, .3) }
+  .code, code { font-family: var(--mono) }
+
+  .plans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 14px; align-items: stretch }
+  .plan { --ns-u-bg: var(--surface); --ns-u-glow: .55; --ns-border: var(--line-2); padding: 26px 24px 24px; display: flex; flex-direction: column; gap: 10px; min-width: 0 }
+  .plan h3 { font-size: 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; color: var(--tone) }
+  .badge { font: 600 11px/1 var(--body); padding: 6px 9px; border-radius: 99px; background: var(--signal); color: #04210f }
+  .price { margin: 0; font: 700 40px/1 var(--display); font-stretch: 108%; letter-spacing: -.03em }
+  .price small { font-size: 14px; font-weight: 500; color: var(--text-3); letter-spacing: 0 }
+  .plan ul { list-style: none; padding: 0; margin: 6px 0 12px; display: grid; gap: 8px; align-content: start; color: var(--text-2); font-size: 14px; flex: 1 }
+  .plan li { display: flex; gap: 10px; align-items: baseline }
+  .plan li::before { content: ''; flex: none; width: 10px; height: 6px; border-left: 1.5px solid var(--tone); border-bottom: 1.5px solid var(--tone); transform: rotate(-45deg) translateY(-2px) }
+  .plan .btn { width: 100% }
+  .silver { --ns-u: #d4d4d8; --tone: #d4d4d8 }
+  .green { --ns-u: #00e676; --tone: #00e676; --ns-u-glow: .8; --ns-border: linear-gradient(120deg, #00e676, rgba(255, 255, 255, .1) 45%, #b8f36b); --ns-border-width: 1.5px }
+  .amber { --ns-u: #ffb547; --tone: #ffb547 }
+  .plan .btn.ghost { --ns-border: color-mix(in srgb, var(--tone) 45%, transparent) }
+
+  .pats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-top: 14px }
+  .pat { min-height: 104px; padding: 18px 22px; display: flex; flex-direction: column; justify-content: space-between; gap: 8px; background: var(--surface); --ns-border: var(--line-2); --ns-pat: rgba(255, 255, 255, .12); min-width: 0 }
+  .pat b { font: 600 15px/1.2 var(--display); font-stretch: 106% }
+  .ns-stripes { --ns-pat: rgba(255, 181, 71, .16) }
+  .ns-scan { --ns-pat: rgba(0, 230, 118, .1) }
+  .ns-pulse { --ns-pat: rgba(0, 230, 118, .35) }
+  @media (max-width: 960px) {
+    .bento { grid-template-columns: repeat(2, minmax(0, 1fr)) }
+    .plans { grid-template-columns: 1fr }
+    .pats { grid-template-columns: repeat(3, minmax(0, 1fr)) }
+  }
+  @media (max-width: 560px) {
+    .bento, .pats { gap: 10px }
+    .pats { grid-template-columns: repeat(2, minmax(0, 1fr)) }
+    .b { padding: 22px 22px 20px }
+    .b p { font-size: 13px }
+    .b .tag { font-size: 10.5px }
+  }
+</style>

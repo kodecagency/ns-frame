@@ -49,7 +49,8 @@ Un bento donde las piezas no tienen que ser rectángulos. Cada área se dibuja c
 
 - **Hueco constante:** las esquinas cóncavas miden el radio más el hueco, así que una esquina convexa que encaja en una cóncava deja la misma distancia en la curva.
 - **Responsive con CSS:** la plantilla es una variable. Cámbiala con media queries o container queries; al cambiar, las piezas se reubican (y con View Transitions se animan).
-- **Contenido en el mayor rectángulo:** cada pieza recibe un padding automático para que el texto viva en el mayor rectángulo de su área, lejos de los huecos de los orbes. Se prefiere acortar en vertical para que el texto quede alineado con sus vecinas.
+- **El texto recorre toda la figura:** en una pieza que no es un rectángulo (L, T, escalera o mordida por un orbe), el texto fluye línea a línea por todo el contorno real, curvas incluidas, con `--ns-pad` de margen en cada punto del borde. Se hace con `shape-outside` nativo: el motor mide la silueta y coloca unos flotantes invisibles (`.ns-fl` y `.ns-fr`, con `aria-hidden`) al principio de la pieza. En este modo la pieza lleva la clase `.ns-flow` y `display: flow-root`, así que su contenido debe ser de bloque o en línea: un hijo con `display: flex`, `grid` u `overflow: hidden` se coloca como un rectángulo entero debajo de los flotantes. Para piezas que maquetas tú (por ejemplo, alineadas abajo con flex), usa `data-ns-flow="off"` en el mosaico o en la pieza.
+- **Rectángulos:** en las piezas rectangulares, y con `data-ns-flow="off"`, el contenido va en un rectángulo de celdas. Si el mayor no basta, el motor prueba los demás (en una L, el brazo largo y el ancho) y elige el primero donde el contenido cabe entero. Al cargar las fuentes web se vuelve a medir.
 - **Accesible:** el orden del DOM no cambia; sólo cambia dónde se dibuja cada pieza.
 - Cada hijo necesita `data-ns-area`. Un área que no aparece en la plantilla se oculta.
 

@@ -6,7 +6,8 @@
 - **Piezas en L, T, U o escalera** a partir de una plantilla tipo `grid-template-areas` en una variable CSS (`--ns-areas`), que se cambia con media queries o container queries.
 - **Hueco constante también en las curvas**: las esquinas cóncavas miden el radio más el hueco, así dos piezas encajadas mantienen la misma distancia.
 - **Orbes con forma**: círculo, hexágono, rombo, cuadrado, triángulo u octógono, uno o varios a la vez (`--ns-orb: 3 3 70 hex, 2 4 44 circle`). Recortan a sus vecinas con un hueco concéntrico y curvas de enlace, y pueden tener contenido (foto, dato, botón).
-- El contenido de cada pieza va en su mayor rectángulo libre (padding automático).
+- **El texto recorre toda la figura**: en piezas en L, T, escalera o mordidas por un orbe, el texto fluye por el contorno real con `--ns-pad` de margen en cada punto, usando `shape-outside` nativo (`data-ns-flow="off"` lo desactiva). En los rectángulos, el contenido va al primer rectángulo de celdas en el que cabe entero.
+- La luz conectada dibuja los orbes poligonales con sus esquinas redondeadas, igual que el relleno.
 - **Luz conectada** en toda la figura con `data-ns-mosaic`: `wave`, `ripple` (onda donde tocas), `glow`, `sweep`, `scan`, `trace`, `pulse`, `aurora`, `dots` y `grid`, combinables. Se pausan fuera de pantalla y respetan `prefers-reduced-motion`.
 
 ### Núcleo
@@ -19,7 +20,7 @@
 - `audit()` ignora las imágenes y vídeos a sangre (recortarlos es la intención).
 
 ### Sitio
-- Landing rediseñada: hero con mosaico, barra de navegación inferior en móvil, cuadrículas de 2 columnas en móvil y demo interactiva del mosaico.
+- Landing rediseñada en Astro, por componentes: hero con mosaico, antes y después, muro de presets, bordes en degradado y luz en U (con una tabla de precios real), mosaico interactivo, las 12 animaciones de borde, componentes funcionando y la isla de navegación en móvil. Firmada por Kodec Agency.
 
 ## 0.8.0 — primera versión pública
 

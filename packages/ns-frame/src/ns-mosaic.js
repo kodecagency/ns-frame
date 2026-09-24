@@ -19,6 +19,9 @@ const CSS = `@layer ns{
 .ns-mosaic{display:grid;position:relative;gap:var(--ns-gap,14px);grid-template-columns:repeat(var(--ns-cn,3),minmax(0,1fr));grid-template-rows:repeat(var(--ns-rn,2),var(--ns-row,150px))}
 .ns-mosaic>[data-ns-area]{box-sizing:border-box;min-width:0;min-height:0;padding:calc(var(--ns-in-t,0px) + var(--ns-pad,22px)) calc(var(--ns-in-r,0px) + var(--ns-pad,22px)) calc(var(--ns-in-b,0px) + var(--ns-pad,22px)) calc(var(--ns-in-l,0px) + var(--ns-pad,22px))}
 .ns-mosaic>[data-ns-area].ns-off-area{display:none}
+.ns-mosaic>.ns-flow{display:flow-root;padding:0}
+.ns-flow>.ns-fl,.ns-flow>.ns-fr{display:block;pointer-events:none;margin:0}
+.ns-flow>.ns-fl{float:left;clear:left}.ns-flow>.ns-fr{float:right;clear:right}
 .ns-mosaic>[data-ns-area]{position:relative;isolation:isolate}
 .ns-mosaic:is([data-ns-mosaic~=aurora],[data-ns-mosaic~=dots],[data-ns-mosaic~=grid])>[data-ns-area]::before{content:'';position:absolute;z-index:-1;pointer-events:none;left:calc(-1 * var(--ns-mx,0px));top:calc(-1 * var(--ns-my,0px));width:var(--ns-mw,100%);height:var(--ns-mh,100%);background-image:var(--_d,none),var(--_g,none),var(--_a,none),var(--_b,none);background-size:16px 16px,28px 28px,100% 100%,100% 100%}
 .ns-mosaic[data-ns-mosaic~=dots]>[data-ns-area]{--_d:radial-gradient(circle,var(--ns-mo-dot,rgba(255,255,255,.16)) 1px,transparent 1.6px)}
@@ -86,16 +89,18 @@ function outline(G, name, xs, ys) {
 }
 
 // mayor rectángulo de celdas del área (para el contenido)
+// rectángulos de celdas maximales del área (ninguno cabe dentro de otro), de mayor a menor:
+// son los sitios candidatos para el contenido (en una L, el brazo largo y el brazo ancho)
 function inner(G, name) {
-  let best, ba = -1
-  const R = G.length, C = G[0].length
+  const R = G.length, C = G[0].length, all = []
   for (let r0 = 0; r0 < R; r0++) for (let c0 = 0; c0 < C; c0++) for (let r1 = r0; r1 < R; r1++) for (let c1 = c0; c1 < C; c1++) {
     let ok = 1
     for (let r = r0; ok && r <= r1; r++) for (let c = c0; ok && c <= c1; c++) ok = G[r][c] == name
-    const a = (r1 - r0 + 1) * (c1 - c0 + 1)
-    if (ok && a > ba) { ba = a; best = [r0, c0, r1, c1] }
+    if (ok) all.push([r0, c0, r1, c1])
   }
-  return best
+  const inside = (p, q) => p != q && q[0] <= p[0] && q[1] <= p[1] && q[2] >= p[2] && q[3] >= p[3]
+  const size = b => (b[2] - b[0] + 1) * (b[3] - b[1] + 1)
+  return all.filter(p => !all.some(q => inside(p, q))).sort((p, q) => size(q) - size(p))
 }
 
 // arco de centro Q y radio r de a0 a a1 (dir 1 = horario, -1 = antihorario) en tramos ≤ 80°
@@ -196,6 +201,105 @@ function biteK(P, K, rho, kr) {
   return pend ? null : out
 }
 
+const setIn = (k, v) => 'trbl'.split('').forEach((s, i) => k.style.setProperty('--ns-in-' + s, v[i]))
+// si el contenido no cabe en el rectángulo mayor, prueba los demás candidatos de la pieza y se
+// queda con el primero donde cabe; si no cabe en ninguno, con el que menos desborda
+const over = k => Math.max(k.scrollHeight - k.clientHeight, k.scrollWidth - k.clientWidth)
+function fit(el) {
+  for (const k of el.children) {
+    const C = k._nsIn
+    if (!C || C.length < 2 || k.classList.contains('ns-off-area') || over(k) <= 1) continue
+    let best = C[0], bo = over(k)
+    for (const v of C.slice(1)) {
+      setIn(k, v)
+      const o = over(k)
+      if (o < bo) { bo = o; best = v }
+      if (o <= 1) break
+    }
+    setIn(k, best)
+  }
+}
+
+// ── Texto que fluye por la figura. CSS no tiene shape-inside, pero sí shape-outside: dos flotantes
+// invisibles, a izquierda y derecha, dibujan lo que NO es pieza, y el texto se acomoda línea a
+// línea dentro del contorno real (curvas, mordidas del orbe y huecos incluidos), con --ns-pad de
+// margen en todo el borde. El contorno se mide con Path2D (sin DOM): filas cada 2 px.
+let c2d
+function profile(d, w, h, pad) {
+  c2d ||= document.createElement('canvas').getContext('2d')
+  const P = new Path2D(d), S = 2, n = Math.ceil(h / S) + 1, raw = [], inn = (x, y) => c2d.isPointInPath(P, x, y)
+  // borde exacto entre a (fuera) y b (dentro), por bisección
+  const edge = (a, b, y) => { while (Math.abs(b - a) > .25) { const m = (a + b) / 2; inn(m, y) ? b = m : a = m } return b }
+  for (let i = 0; i < n; i++) {
+    const y = Math.min(h - .25, i * S + .25)
+    let l = null, r = null
+    for (let x = .25; x < w; x += 6) if (inn(x, y)) { l = x == .25 ? 0 : edge(x - 6, x, y); break }
+    if (l != null) for (let x = w - .25; x > l; x -= 6) if (inn(x, y)) { r = x == w - .25 ? w : edge(x + 6, x, y); break }
+    raw.push(l == null ? null : [l, r ?? l])
+  }
+  // erosión con un disco de radio pad: cada punto del texto queda a ≥ pad del contorno, también en
+  // las curvas (un cuadrado sangraría de más en las esquinas redondeadas)
+  const k = Math.ceil(pad / S)
+  return raw.map((_, i) => {
+    let L = -1e9, R = 1e9
+    for (let j = i - k; j <= i + k; j++) {
+      const q = raw[j], dy = Math.abs(j - i) * S
+      if (dy >= pad) continue
+      if (!q) return null
+      const c = Math.sqrt(pad * pad - dy * dy)
+      L = Math.max(L, q[0] + c); R = Math.min(R, q[1] - c)
+    }
+    return L < R - 1 ? [L, R] : null
+  })
+}
+// Cada franja lleva un par de flotantes (izquierdo hasta s, derecho desde s + 1) que se apilan con
+// clear; una franja crece mientras todas sus filas quepan a los dos lados de un mismo s. Así una
+// escalera o una T se describen con dos o tres franjas.
+function flow({ k, d, w, h }, pad) {
+  if (w < 4 * pad || h < 2 * pad) return false
+  const rows = profile(d, w, h, pad), S = 2
+  if (!rows.some(Boolean)) return false
+  const bands = []
+  let b = null
+  rows.forEach((q, i) => {
+    if (b && (!q || (Math.max(b.s, q[0]) <= Math.min(b.m, q[1]) - 1))) { if (q) { b.s = Math.max(b.s, q[0]); b.m = Math.min(b.m, q[1]) } b.i1 = i; return }
+    bands.push(b = { i0: i, i1: i, s: q ? q[0] : -1e9, m: q ? q[1] : 1e9 })
+  })
+  // franjas sin ninguna fila útil (margen superior o inferior): se cierran por la mitad
+  for (const x of bands) if (x.s < -1e8) x.s = w / 2
+  const F = k._nsF ||= []
+  const mk2 = c => { const e = document.createElement('i'); e.className = 'ns-f' + c; e.setAttribute('aria-hidden', 'true'); return e }
+  while (F.length < bands.length * 2) F.push(mk2(F.length % 2 ? 'r' : 'l'))
+  F.splice(bands.length * 2).forEach(e => e.remove())
+  if (F.some((e, i) => k.children[i] != e)) k.prepend(...F)
+  bands.forEach(({ i0, i1, s }, n) => {
+    const y0 = i0 * S, y1 = n == bands.length - 1 ? h : (i1 + 1) * S, bh = y1 - y0, wr = Math.max(0, w - s - 1)
+    const lp = [], rp = []
+    for (let i = i0; i <= i1; i++) {
+      // en cada tramo de 2 px se toma lo más estrecho de sus dos filas (nunca invade el margen)
+      const a = rows[i], c = rows[Math.min(i + 1, i1)], t0 = i * S - y0, t1 = Math.min(bh, t0 + S)
+      const l = Math.min(s, Math.max(a ? a[0] : s, c ? c[0] : s)), r = Math.max(s + 1, Math.min(a ? a[1] : s + 1, c ? c[1] : s + 1))
+      lp.push(`${fx(l)}px ${fx(t0)}px`, `${fx(l)}px ${fx(t1)}px`)
+      rp.push(`${fx(r - s - 1)}px ${fx(t0)}px`, `${fx(r - s - 1)}px ${fx(t1)}px`)
+    }
+    const put = (e, width, pts, edge) => {
+      e.style.width = fx(width) + 'px'; e.style.height = fx(bh) + 'px'
+      e.style.setProperty('shape-outside', `polygon(${fx(edge)}px 0px, ${pts.join(', ')}, ${fx(edge)}px ${fx(bh)}px)`)
+    }
+    put(F[2 * n], s, lp, 0)
+    put(F[2 * n + 1], wr, rp, wr)
+  })
+  k.classList.add('ns-flow')
+  k._nsIn = null
+  return true
+}
+function unflow(k) {
+  if (!k._nsF) return
+  k._nsF.forEach(e => e.remove())
+  k._nsF = null
+  k.classList.remove('ns-flow')
+}
+
 function layout() {
   raf = 0
   const jobs = []
@@ -244,23 +348,25 @@ function layout() {
       const kind = SIDES[tok[3]] ? tok[3] : 'circle', [n, base] = SIDES[kind] || [0, 0], a = base + (parseFloat(tok[4]) || 0)
       const O = [line(ob[0], xs, gx), line(ob[1], ys, gy)], Ro = ob[2]
       // hueco: círculo concéntrico con el orbe, o el mismo polígono con los lados desplazados gap px
-      return { O, Ro, n, K: n && ngon(O, n, a, Ro), Kc: n && ngon(O, n, a, Ro + og), Rc: n ? (Ro + og) / Math.cos(Math.PI / n) : Ro + og }
+      const K = n && ngon(O, n, a, Ro), Rb = n ? Ro / Math.cos(Math.PI / n) : Ro
+      // forma del orbe poligonal (esquinas redondeadas); la luz lo dibuja con esta misma forma
+      const sh = K && 'poly ' + K.map(([x, y]) => `${fx(x - O[0] + Rb)} ${fx(y - O[1] + Rb)} r${fx(okr)}`).join(', ')
+      return { O, Ro, n, K, Rb, sh, Kc: n && ngon(O, n, a, Ro + og), Rc: n ? (Ro + og) / Math.cos(Math.PI / n) : Ro + og }
     }).filter(Boolean)
     el.querySelectorAll(':scope>[data-ns-orb]').forEach((orbEl, i) => {
       const h = holes[i]
       orbEl.hidden = !h
       if (!h) return
       // en un orbe poligonal el radio es la apotema: la caja mide 2 × el radio circunscrito
-      const { O, Ro, K } = h, Rb = K ? Ro / Math.cos(Math.PI / h.n) : Ro
+      const { O, K, Rb, sh } = h
       Object.assign(orbEl.style, { left: fx(px(cs.paddingLeft) + O[0] - Rb) + 'px', top: fx(px(cs.paddingTop) + O[1] - Rb) + 'px', width: fx(2 * Rb) + 'px', height: fx(2 * Rb) + 'px' })
-      const sh = K && 'poly ' + K.map(([x, y]) => `${fx(x - O[0] + Rb)} ${fx(y - O[1] + Rb)} r${fx(okr)}`).join(', ')
       orbEl.classList.toggle('ns-orb-poly', !!K)
       if (sh ? orbEl.getAttribute('data-ns') != sh : orbEl.hasAttribute('data-ns')) sh ? orbEl.setAttribute('data-ns', sh) : orbEl.removeAttribute('data-ns')
     })
     const key = [JSON.stringify(G), spec].join('|')
     const same = el._nsk == key
     el._nsk = key
-    const parts = []
+    const parts = [], flows = []
     for (const k of el.children) {
       const name = k.getAttribute('data-ns-area')
       if (name == null) continue
@@ -280,15 +386,16 @@ function layout() {
         const hull = (Math.abs(p[0]) < .5 || Math.abs(p[0] - W) < .5) && (Math.abs(p[1]) < .5 || Math.abs(p[1] - H) < .5)
         return { x: p[0], y: p[1], r: cx > 0 ? (hull ? ro_ : r) : concave }
       })
-      // contenido: mayor rectángulo de celdas; si el orbe lo invade, se recorta por el lado que menos pierde
-      const [ir0, ic0, ir1, ic1] = inner(G, name)
-      let box = [xs[2 * ic0], ys[2 * ir0], xs[2 * ic1 + 1], ys[2 * ir1 + 1]]
       for (const { O, Rc, Kc } of holes) {
         const bit = Kc ? biteK(V, Kc, orho, okr + og) : bite(V, O, Rc, orho)
         if (bit) V = bit
-        const hit = b => { const qx = Math.max(b[0], Math.min(O[0], b[2])), qy = Math.max(b[1], Math.min(O[1], b[3])); return Math.hypot(qx - O[0], qy - O[1]) < Rc }
-        if (hit(box)) {
-          // cuánto hay que mover cada lado para salir del disco (cuerda real, no el radio entero)
+      }
+      // contenido: va en un rectángulo de celdas de la pieza; si un orbe lo invade, se recorta por
+      // el lado que menos pierde (cuerda real, no el radio entero)
+      const clear = box => {
+        for (const { O, Rc } of holes) {
+          const qx = Math.max(box[0], Math.min(O[0], box[2])), qy = Math.max(box[1], Math.min(O[1], box[3]))
+          if (Math.hypot(qx - O[0], qy - O[1]) >= Rc) continue
           const reach = (lo, hi, o) => { const d = o < lo ? lo - o : o > hi ? o - hi : 0; return Math.sqrt(Math.max(0, Rc * Rc - d * d)) }
           const ry = reach(box[0], box[2], O[0]), rx = reach(box[1], box[3], O[1])
           const opts = [[O[0] + rx, box[1], box[2], box[3]], [box[0], box[1], O[0] - rx, box[3]], [box[0], O[1] + ry, box[2], box[3]], [box[0], box[1], box[2], O[1] - ry]]
@@ -297,17 +404,31 @@ function layout() {
           const area = b => (b[2] - b[0]) * (b[3] - b[1]) * (b[0] == box[0] && b[2] == box[2] ? 1.35 : 1)
           if (opts.length) box = opts.reduce((p, q) => area(q) > area(p) ? q : p)
         }
+        return box
       }
+      const R_ = xs[2 * c1 + 1], B_ = ys[2 * r1 + 1], size = b => (b[2] - b[0]) * (b[3] - b[1])
+      // candidatos (en una L: el brazo largo y el brazo ancho), de mayor a menor superficie libre;
+      // tras pintar se elige el primero en el que el contenido cabe entero (fit, más abajo)
+      k._nsIn = inner(G, name).map(([a, b, c, d]) => clear([xs[2 * b], ys[2 * a], xs[2 * d + 1], ys[2 * c + 1]]))
+        .sort((p, q) => size(q) - size(p))
+        .map(box => [box[1] - oy, R_ - box[2], B_ - box[3], box[0] - ox].map(v => fx(Math.max(0, v)) + 'px'))
+      setIn(k, k._nsIn[0])
       const shape = 'poly ' + V.map(v => `${fx(v.x - ox)} ${fx(v.y - oy)}${v.a ? ' a' + fx(v.a) : ''} r${fx(v.r || 0)}`).join(', ')
       parts.push({ shape, ox, oy, w: xs[2 * c1 + 1] - ox, h: ys[2 * r1 + 1] - oy })
-      const ins = [box[1] - oy, xs[2 * c1 + 1] - box[2], ys[2 * r1 + 1] - box[3], box[0] - ox]
-      'trbl'.split('').forEach((s, i) => k.style.setProperty('--ns-in-' + s, fx(Math.max(0, ins[i])) + 'px'))
+      // piezas que no son un rectángulo (L, T, escalera, mordidas por un orbe): el texto fluye por
+      // toda la figura, no sólo por un rectángulo. data-ns-flow="off" (en el mosaico o la pieza) lo desactiva
+      const off = /\boff\b/.test(el.getAttribute('data-ns-flow') || '') || k.getAttribute('data-ns-flow') == 'off'
+      if (!off && (V.length > 4 || V.some(v => v.a))) flows.push({ k, d: path(shape, R_ - ox, B_ - oy), w: R_ - ox, h: B_ - oy })
+      else unflow(k)
       if (k.getAttribute('data-ns') != shape) {
         // al redimensionar, la forma se ajusta al instante; al cambiar de plantilla, se anima (morph)
         same ? k.style.setProperty('--ns-morph-time', '0') : k.style.removeProperty('--ns-morph-time')
         k.setAttribute('data-ns', shape)
       }
     }
+    const pad = cs.getPropertyValue('--ns-pad') ? px(cs.getPropertyValue('--ns-pad')) : 22
+    for (const f of flows) flow(f, pad) || unflow(f.k)
+    fit(el)
     light(el, parts, W, H, holes, matchMedia('(prefers-reduced-motion: reduce)').matches, px(cs.paddingLeft), px(cs.paddingTop))
   }
 }
@@ -376,7 +497,7 @@ function light(el, parts, W, H, holes, reduce, pl, pt) {
   for (const m of [L.ml, L.mf]) { m.setAttribute('width', fx(W + 80)); m.setAttribute('height', fx(H + 80)) }
   // contornos: piezas y orbes (los orbes no se repiten en el trazo libre: ya los rodea su hueco)
   const ds = parts.map(p => [path(p.shape, p.w, p.h), `translate(${fx(p.ox)} ${fx(p.oy)})`])
-  const os = holes.map(({ O, Ro, K }) => [K ? 'M' + K.map(k => k.map(fx).join(' ')).join('L') + 'Z' : `M${fx(O[0] - Ro)} ${fx(O[1])}a${fx(Ro)} ${fx(Ro)} 0 1 0 ${fx(2 * Ro)} 0a${fx(Ro)} ${fx(Ro)} 0 1 0 ${fx(-2 * Ro)} 0Z`, ''])
+  const os = holes.map(({ O, Ro, sh, Rb }) => sh ? [path(sh, 2 * Rb, 2 * Rb), `translate(${fx(O[0] - Rb)} ${fx(O[1] - Rb)})`] : [`M${fx(O[0] - Ro)} ${fx(O[1])}a${fx(Ro)} ${fx(Ro)} 0 1 0 ${fx(2 * Ro)} 0a${fx(Ro)} ${fx(Ro)} 0 1 0 ${fx(-2 * Ro)} 0Z`, ''])
   const P = (list, a = {}) => list.map(([d, t]) => mk('path', t ? { d, transform: t, ...a } : { d, ...a }))
   L.lines.replaceChildren(...P([...ds, ...os])); L.fills.replaceChildren(...P([...ds, ...os]))
   // trazo libre: una luz corta recorre a la vez el contorno de cada pieza, al mismo ritmo
@@ -416,7 +537,8 @@ const schedule = () => { raf ||= requestAnimationFrame(layout) }
 
 function add(el) {
   if (M.has(el)) return
-  if (!styled) { styled = 1; inject(CSS) }
+  // las fuentes web cambian lo que mide el texto: al cargar, se vuelve a elegir dónde cabe
+  if (!styled) { styled = 1; inject(CSS); document.fonts?.ready.then(schedule) }
   // dentro del callback del ResizeObserver: la forma nueva llega en el mismo frame que el tamaño nuevo
   ro ||= new ResizeObserver(() => { cancelAnimationFrame(raf); layout() })
   M.set(el, 1)
@@ -437,7 +559,7 @@ if (typeof document != 'undefined') {
         // piezas añadidas o quitadas, una pieza que cambia de área o el contenedor que cambia de clase
         if (M.has(m.type == 'attributes' && m.attributeName == 'data-ns-area' ? m.target.parentElement : m.target)) schedule()
       }
-    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-ns-area', 'data-ns-mosaic', 'class'] })
+    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-ns-area', 'data-ns-mosaic', 'data-ns-flow', 'class'] })
     // las media queries cambian --ns-areas sin cambiar siempre el tamaño
     addEventListener('resize', schedule, { passive: true })
   }

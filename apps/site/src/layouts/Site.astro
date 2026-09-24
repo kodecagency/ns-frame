@@ -1,5 +1,6 @@
 ---
 // Layout de las páginas de marketing: meta, fuentes, tokens y el núcleo de ns-frame.
+import 'ns-frame/fx.css'
 import '../styles/tokens.css'
 
 interface Props { title: string; description: string }
@@ -29,6 +30,7 @@ const { title, description } = Astro.props
   <script>
     // núcleo: activa todos los data-ns de la página (y los que se añadan después)
     import 'ns-frame'
+    import 'ns-frame/fx'
   </script>
 </body>
 </html>

@@ -1,70 +1,64 @@
 ---
-// Movimiento: un solo escenario con forma; se elige qué luz recorre su borde.
-// La luz es blanca, corta y con halo (--ns-glow), sobre una pista tenue: el borde apagado también se ve.
+// Movimiento: todas las animaciones de borde a la vez, cada una sobre una forma distinta.
+// Luces cortas con halo (--ns-glow), nunca líneas largas y planas. Se pausan fuera de pantalla
+// y se apagan con prefers-reduced-motion.
 import SectionHead from '../SectionHead.astro'
 import Arrow from '../Arrow.astro'
 import { LINKS } from '../../data/sections'
 
-const MOTIONS = [
-  { m: 'comet', name: 'Cometa', text: 'Una luz corta con estela da la vuelta al contorno exacto de la forma.' },
-  { m: 'twin', name: 'Dos luces', text: 'Dos destellos opuestos, para estados de carga o de espera.' },
-  { m: 'spot', name: 'Foco', text: 'La luz sigue al puntero por el borde y aclara un poco el interior.' },
-  { m: 'pulse', name: 'Pulso', text: 'El contorno entero respira despacio: un aviso que no molesta.' },
-  { m: 'progress', name: 'Progreso', text: 'El borde es la barra. Arrastra el control para moverla.' },
+const M = [
+  { m: 'comet', s: 'card', c: '#ffffff', t: 'Cometa', d: 'Luz corta con estela' },
+  { m: 'twin', s: 'soft', c: '#00e676', t: 'Dos luces', d: 'Carga o espera' },
+  { m: 'orbit', s: 'all squircle 36', c: '#ffb547', t: 'Órbita', d: 'Destellos alrededor' },
+  { m: 'scan', s: 'wing', c: '#ffffff', t: 'Barrido', d: 'Cruza el marco' },
+  { m: 'chase', s: 'hud', c: '#b8f36b', t: 'Persecución', d: 'Pulsos de datos' },
+  { m: 'pulse', s: 'ticket', c: '#00e676', t: 'Pulso', d: 'El borde respira' },
+  { m: 'loop', s: 'plate', c: '#d4d4d8', t: 'Trazo', d: 'Se dibuja y se borra' },
+  { m: 'march', s: 'notch', c: '#ffb547', t: 'Marcha', d: 'Zona para soltar' },
+  { m: 'glitch', s: 'tl+br bevel 18; top cut 60% 85% 5; radius 2', c: '#ff7a59', t: 'Interferencia', d: 'Error o alerta' },
+  { m: 'spot', s: 'all round 20', c: '#ffffff', t: 'Foco', d: 'Sigue al puntero' },
+  { m: 'twin hover', s: 'card', hover: 'tl+br bevel 30; radius 3', c: '#ffffff', t: 'Al pasar', d: 'Sólo con el puntero' },
 ]
 ---
 <section class="sec" id="movimiento" aria-labelledby="t-mov">
   <div class="wrap">
     <SectionHead id="t-mov">
-      <Fragment slot="title">Luz que sigue el borde.</Fragment>
-      Una animación de borde es un atributo más. Recorre el contorno exacto, se pausa fuera de pantalla y <b>se apaga si el sistema pide menos movimiento.</b>
+      <Fragment slot="title">Luz que recorre el borde.</Fragment>
+      Un atributo, <code>data-ns-motion</code>. Recorre el contorno exacto de cualquier forma, se combina (<code>"scan march"</code>), se colorea con <code>--ns-motion</code> y <b>se pausa fuera de pantalla o si el sistema pide menos movimiento.</b>
     </SectionHead>
 
-    <div class="seg" id="mv-pick" role="group" aria-label="Animación del borde">
-      {MOTIONS.map((x, i) => <button type="button" data-m={x.m} data-text={x.text} aria-pressed={String(!i)}>{x.name}</button>)}
+    <div class="grid">
+      {M.map(x => (
+        <article class="mv" data-ns={x.s} data-ns-hover={x.hover} data-ns-motion={x.m} style={`--ns-motion:${x.c};--c:${x.c}`}>
+          <b>{x.t}</b><span>{x.d}</span><code class="tag">"{x.m}"</code>
+        </article>
+      ))}
+      <article class="mv prog" id="mv-prog" data-ns="tl+br bevel 18; radius 3" data-ns-motion="progress" style="--ns-motion:#00e676;--c:#00e676;--ns-progress:64">
+        <b><span id="mv-val" class="num">64</span> %</b>
+        <label class="range"><span>Progreso en el borde</span><input type="range" min="0" max="100" value="64" id="mv-input"></label>
+        <code class="tag">"progress"</code>
+      </article>
     </div>
-    <div class="stage" id="mv-stage" data-ns="all squircle 40" data-ns-motion={MOTIONS[0].m} style="--ns-progress:64">
-      <div class="copy">
-        <h3 id="mv-name">{MOTIONS[0].name}</h3>
-        <p id="mv-text" aria-live="polite">{MOTIONS[0].text}</p>
-        <code><span>data-ns-motion=</span>"<b id="mv-code">{MOTIONS[0].m}</b>"</code>
-        <label class="range" id="mv-range" hidden><span>Progreso <b id="mv-val" class="num">64</b> %</span><input type="range" min="0" max="100" value="64" id="mv-input"></label>
-      </div>
-    </div>
-    <p class="after"><a class="more" href={`${LINKS.gallery}#movimiento`}>Las 11 animaciones, en la galería<Arrow /></a></p>
+    <p class="after"><a class="more" href={`${LINKS.gallery}#movimiento`}>Ver todas en la galería<Arrow /></a></p>
   </div>
 </section>
 
 <script>
-  const $ = (id: string) => document.getElementById(id)!
-  const pick = $('mv-pick'), stage = $('mv-stage'), range = $('mv-range'), input = $('mv-input') as HTMLInputElement
-  pick.addEventListener('click', e => {
-    const b = (e.target as Element).closest<HTMLElement>('button[data-m]')
-    if (!b) return
-    pick.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x == b)))
-    stage.setAttribute('data-ns-motion', b.dataset.m!)
-    $('mv-name').textContent = b.textContent
-    $('mv-text').textContent = b.dataset.text!
-    $('mv-code').textContent = b.dataset.m!
-    range.hidden = b.dataset.m != 'progress'
-  })
-  input.addEventListener('input', () => { stage.style.setProperty('--ns-progress', input.value); $('mv-val').textContent = input.value })
+  const input = document.getElementById('mv-input') as HTMLInputElement, box = document.getElementById('mv-prog')!
+  input.addEventListener('input', () => { box.style.setProperty('--ns-progress', input.value); document.getElementById('mv-val')!.textContent = input.value })
 </script>
 
 <style>
-  .seg { display: inline-flex; flex-wrap: wrap; padding: 4px; gap: 2px; border-radius: 28px; background: var(--surface); border: 1px solid var(--line); margin-top: 64px }
-  .seg button { min-height: 40px; padding: 0 16px; border: 0; border-radius: 980px; background: transparent; color: var(--text-2); font-size: 14px; cursor: pointer; transition: background-color .25s var(--ease), color .2s }
-  .seg button:hover { color: var(--text) }
-  .seg button[aria-pressed=true] { background: var(--text); color: #0a0a0a }
-  .stage { margin-top: 20px; min-height: clamp(320px, 42vw, 460px); display: flex; align-items: flex-end; padding: clamp(28px, 4vw, 56px); background: #121212;
-    --ns-border: rgba(255, 255, 255, .1); --ns-motion: #fff; --ns-accent-width: 1.5px; --ns-glow: drop-shadow(0 0 6px rgba(255, 255, 255, .55)); --ns-spot-size: 280; --ns-spot-fill: .05; --ns-motion-time: 5s }
-  .copy { max-width: 520px; display: grid; gap: 12px }
-  h3 { font-size: clamp(30px, 4vw, 48px); line-height: 1; font-weight: 700; font-stretch: 110%; letter-spacing: -.035em }
-  p { margin: 0; color: var(--text-2); font-size: 17px; max-width: 42ch }
-  code { font: 14px var(--mono); color: var(--text-2) }
-  code b { color: var(--signal); font-weight: 400 }
-  .range { display: grid; gap: 10px; margin-top: 8px; font-size: 14px; color: var(--text-2) }
-  .range[hidden] { display: none }
-  .range b { color: var(--text); font-weight: 500 }
-  input { width: min(360px, 100%); accent-color: var(--signal); height: 24px }
+  code { font: 13px var(--mono); color: var(--text) }
+  .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px }
+  .mv { min-height: 150px; padding: 20px; display: flex; flex-direction: column; gap: 4px; min-width: 0;
+    background: radial-gradient(90% 70% at 50% 120%, color-mix(in srgb, var(--c) 10%, transparent), transparent 70%), var(--surface);
+    --ns-border: rgba(255, 255, 255, .1); --ns-accent-width: 1.5px; --ns-glow: drop-shadow(0 0 5px var(--c)); --ns-spot-size: 140; --ns-spot-fill: .08; --ns-morph-time: 360 }
+  .mv b { font: 600 17px/1.2 var(--display); font-stretch: 106% }
+  .mv span { font-size: 13.5px; color: var(--text-2) }
+  .mv .tag { margin-top: auto; padding-top: 12px }
+  .range { display: grid; gap: 6px; font-size: 13px; color: var(--text-2) }
+  .range input { width: 100%; accent-color: var(--signal); height: 24px; margin: 0 }
+  @media (max-width: 960px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)) } }
+  @media (max-width: 640px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px } .mv { min-height: 128px; padding: 20px 18px } .mv b { font-size: 15px } .mv span { font-size: 12.5px } }
 </style>

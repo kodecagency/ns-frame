@@ -1,0 +1,88 @@
+---
+// Por qué: el mismo componente hecho a mano y con ns-frame, y lo que gana cada perfil.
+import SectionHead from '../SectionHead.astro'
+
+const BEFORE = `<span class="c">/* 1. recorte: se deforma al cambiar el tamaño */</span>
+.card { clip-path: polygon(24px 0, 100% 0,
+  100% calc(100% - 24px), calc(100% - 24px) 100%,
+  0 100%, 0 24px); }
+<span class="c">/* 2. el borde no sigue el recorte: otro SVG */</span>
+.card::before { content: ""; position: absolute;
+  inset: 0; background: url(borde-card.svg); }
+<span class="c">/* 3. esquinas redondeadas en un chaflán: imposible */</span>
+<span class="c">/* 4. hover: otro polygon() y otro SVG */</span>
+<span class="c">/* 5. el foco del teclado sigue siendo un rectángulo */</span>`
+
+const GAINS = [
+  { t: 'Para diseño', p: 'Chaflanes con radio, muescas, tickets y mosaicos que encajan. Lo que antes se exportaba como imagen ahora se escribe.', s: 'tl+br bevel 22; radius 3', k: 'd' },
+  { t: 'Para desarrollo', p: 'Un atributo HTML. Sirve en HTML plano, Astro, React, Vue o Svelte, sin build ni dependencias.', s: 'all round 20; top cut center 36% 8 r3', k: 'v' },
+  { t: 'Responsive de verdad', p: 'Los cortes miden píxeles y no se deforman. Con @<420 la forma cambia según el ancho del propio componente.', s: 'left+right scoop center 26 13; all round 14', k: 'r' },
+  { t: 'Accesible y segura', p: 'El foco sigue la forma, respeta el movimiento reducido y funciona con una CSP estricta, sin innerHTML.', s: 'tl bevel 30; br bevel 30; tr+bl round 16; radius 3', k: 'a' },
+]
+---
+<section class="sec" id="por-que" aria-labelledby="t-why">
+  <div class="wrap">
+    <SectionHead id="t-why">
+      <Fragment slot="title">Lo que antes era un SVG a mano, ahora es un atributo.</Fragment>
+      El mismo componente, dos maneras. Con ns-frame el borde es real, sigue al recorte, se anima al pasar el puntero y <b>no se deforma a ningún tamaño.</b>
+    </SectionHead>
+
+    <div class="vs">
+      <figure class="code before" data-ns="all round 18">
+        <figcaption><span>Sin ns-frame</span><span class="dim">CSS + SVG + JS · 3 archivos</span></figcaption>
+        <pre set:html={BEFORE} />
+      </figure>
+      <figure class="code after" data-ns="all round 18">
+        <figcaption><span>Con ns-frame</span><span class="dim">1 atributo</span></figcaption>
+        <pre>&lt;<b>article</b> <i>data-ns</i>=<em>"tl+br bevel 24; radius 3"</em>
+         <i>data-ns-hover</i>=<em>"all bevel 12; radius 3"</em>&gt;</pre>
+        <div class="live">
+          <article class="demo" data-ns="tl+br bevel 24; radius 3" data-ns-hover="all bevel 12; radius 3" data-ns-motion="spot" tabindex="0">
+            <span class="tag">Resultado en vivo · pasa el puntero</span>
+            <strong>Borde real, radio en el chaflán y morph</strong>
+          </article>
+        </div>
+      </figure>
+    </div>
+
+    <div class="gains">
+      {GAINS.map(g => (
+        <article class:list={['gain', g.k]} data-ns={g.s}>
+          <h3>{g.t}</h3>
+          <p>{g.p}</p>
+          <code class="tag">{g.s}</code>
+        </article>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .vs { display: grid; grid-template-columns: 1.05fr 1fr; gap: 14px }
+  .code { margin: 0; background: var(--surface); --ns-border: var(--line-2); padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0 }
+  figcaption { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; font-weight: 500 }
+  figcaption .dim { font: 12px var(--mono) }
+  pre { margin: 0; font: 12.5px/1.7 var(--mono); color: var(--text-2); white-space: pre-wrap; overflow-wrap: anywhere }
+  .before pre :global(.c) { color: #c2703d }
+  .before { --ns-border: rgba(255, 122, 89, .28) }
+  .after { --ns-border: linear-gradient(135deg, rgba(0, 230, 118, .6), rgba(255, 255, 255, .08) 45%, rgba(0, 230, 118, .25)) }
+  .after pre b { color: var(--text); font-weight: 500 }
+  .after pre i { font-style: normal; color: var(--signal) }
+  .after pre em { font-style: normal; color: #e8e8e8 }
+  .live { flex: 1; display: grid; place-items: center; padding: 18px; border-radius: 12px; background: radial-gradient(circle, rgba(255, 255, 255, .07) 1px, transparent 1.5px) 0 0 / 14px 14px }
+  .demo { width: min(320px, 100%); padding: 22px 24px; display: grid; gap: 6px; background: linear-gradient(160deg, #1f2a22, #141416 60%); --ns-border: linear-gradient(120deg, #00e676, rgba(255, 255, 255, .15) 50%, #b8f36b); --ns-motion: #fff; --ns-spot-size: 160; --ns-spot-fill: .08; --ns-morph-time: 380; cursor: default }
+  .demo strong { font: 600 17px/1.25 var(--display) }
+
+  .gains { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 14px }
+  .gain { background: var(--surface); --ns-border: var(--line-2); padding: 22px 22px 20px; display: flex; flex-direction: column; gap: 8px; min-height: 210px; position: relative; overflow: hidden }
+  .gain::after { content: ''; position: absolute; inset: auto -20% -40% -20%; height: 70%; background: radial-gradient(50% 60% at 50% 100%, var(--glow), transparent); opacity: .5; pointer-events: none; z-index: 0 }
+  .gain > * { position: relative; z-index: 1 }
+  .gain h3 { font-size: 17px }
+  .gain p { margin: 0; color: var(--text-2); font-size: 14px; flex: 1 }
+  .d { --glow: rgba(0, 230, 118, .35) }
+  .v { --glow: rgba(212, 212, 216, .25) }
+  .r { --glow: rgba(255, 181, 71, .3) }
+  .a { --glow: rgba(255, 122, 89, .3) }
+  @media (max-width: 960px) { .vs { grid-template-columns: 1fr } .gains { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
+  @media (max-width: 520px) { .gains { gap: 10px } .gain { padding: 22px 20px; min-height: 0 } .gain p { font-size: 13px } .gain code { font-size: 10.5px } }
+</style>
