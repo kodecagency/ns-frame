@@ -6,17 +6,17 @@ import SectionHead from '../SectionHead.astro'
 import Arrow from '../Arrow.astro'
 
 const M = [
-  { m: 'comet', s: 'card', c: '#ffffff', t: 'Cometa', d: 'Luz corta con estela' },
-  { m: 'twin', s: 'soft', c: '#00e676', t: 'Dos luces', d: 'Carga o espera' },
-  { m: 'orbit', s: 'all squircle 36', c: '#ffb547', t: 'Órbita', d: 'Destellos alrededor' },
-  { m: 'scan', s: 'wing', c: '#ffffff', t: 'Barrido', d: 'Cruza el marco' },
-  { m: 'chase', s: 'hud', c: '#b8f36b', t: 'Persecución', d: 'Pulsos de datos' },
-  { m: 'pulse', s: 'ticket', c: '#00e676', t: 'Pulso', d: 'El borde respira' },
-  { m: 'loop', s: 'plate', c: '#d4d4d8', t: 'Trazo', d: 'Se dibuja y se borra' },
-  { m: 'march', s: 'notch', c: '#ffb547', t: 'Marcha', d: 'Zona para soltar' },
-  { m: 'glitch', s: 'tl+br bevel 18; top cut 60% 85% 5; radius 2', c: '#ff7a59', t: 'Interferencia', d: 'Error o alerta' },
-  { m: 'spot', s: 'all round 20', c: '#ffffff', t: 'Foco', d: 'Sigue al puntero' },
-  { m: 'twin hover', s: 'card', hover: 'tl+br bevel 30; radius 3', c: '#ffffff', t: 'Al pasar', d: 'Sólo con el puntero' },
+  { m: 'comet', s: 'card', c: 'white', t: 'Cometa', d: 'Luz corta con estela' },
+  { m: 'twin', s: 'soft', c: 'green', t: 'Dos luces', d: 'Carga o espera' },
+  { m: 'orbit', s: 'all squircle 36', c: 'amber', t: 'Órbita', d: 'Destellos alrededor' },
+  { m: 'scan', s: 'wing', c: 'white', t: 'Barrido', d: 'Cruza el marco' },
+  { m: 'chase', s: 'hud', c: 'lime', t: 'Persecución', d: 'Pulsos de datos' },
+  { m: 'pulse', s: 'ticket', c: 'green', t: 'Pulso', d: 'El borde respira' },
+  { m: 'loop', s: 'plate', c: 'silver', t: 'Trazo', d: 'Se dibuja y se borra' },
+  { m: 'march', s: 'notch', c: 'amber', t: 'Marcha', d: 'Zona para soltar' },
+  { m: 'glitch', s: 'tl+br bevel 18; top cut 60% 85% 5; radius 2', c: 'coral', t: 'Interferencia', d: 'Error o alerta' },
+  { m: 'spot', s: 'all round 20', c: 'white', t: 'Foco', d: 'Sigue al puntero' },
+  { m: 'twin hover', s: 'card', hover: 'tl+br bevel 30; radius 3', c: 'white', t: 'Al pasar', d: 'Sólo con el puntero' },
 ]
 ---
 <section class="sec" id="movimiento" aria-labelledby="t-mov">
@@ -28,11 +28,11 @@ const M = [
 
     <div class="grid">
       {M.map(x => (
-        <article class="mv" data-ns={x.s} data-ns-hover={x.hover} data-ns-motion={x.m} style={`--ns-motion:${x.c};--c:${x.c}`}>
+        <article class:list={['mv', 'c-' + x.c]} data-ns={x.s} data-ns-hover={x.hover} data-ns-motion={x.m}>
           <b>{x.t}</b><span>{x.d}</span><code class="tag">"{x.m}"</code>
         </article>
       ))}
-      <article class="mv prog" id="mv-prog" data-ns="tl+br bevel 18; radius 3" data-ns-motion="progress" style="--ns-motion:#00e676;--c:#00e676;--ns-progress:64">
+      <article class="mv prog c-green" id="mv-prog" data-ns="tl+br bevel 18; radius 3" data-ns-motion="progress">
         <b><span id="mv-val" class="num">64</span> %</b>
         <label class="range"><span>Progreso en el borde</span><input type="range" min="0" max="100" value="64" id="mv-input"></label>
         <code class="tag">"progress"</code>
@@ -53,6 +53,9 @@ const M = [
   .mv { min-height: 150px; padding: 20px; display: flex; flex-direction: column; gap: 4px; min-width: 0;
     background: radial-gradient(90% 70% at 50% 120%, color-mix(in srgb, var(--c) 10%, transparent), transparent 70%), var(--surface);
     --ns-border: rgba(255, 255, 255, .1); --ns-accent-width: 1.5px; --ns-glow: drop-shadow(0 0 5px var(--c)); --ns-spot-size: 140; --ns-spot-fill: .08; --ns-morph-time: 360 }
+  .c-white { --c: #ffffff } .c-green { --c: #00e676 } .c-amber { --c: #ffb547 } .c-lime { --c: #b8f36b } .c-silver { --c: #d4d4d8 } .c-coral { --c: #ff7a59 }
+  .mv { --ns-motion: var(--c) }
+  .prog { --ns-progress: 64 }
   .mv b { font: 600 17px/1.2 var(--display); font-stretch: 106% }
   .mv span { font-size: 13.5px; color: var(--text-2) }
   .mv .tag { margin-top: auto; padding-top: 12px }

@@ -1,4 +1,4 @@
-import { defineConfig } from 'astro/config'
+import { defineConfig, fontProviders } from 'astro/config'
 import { readdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -29,4 +29,30 @@ export default defineConfig({
   // site: 'https://…',   ← pon aquí la URL de producción cuando esté desplegado (URLs canónicas)
   // formas estáticas (data-ns-static) compiladas a CSS en el build: sin JS en el navegador
   integrations: [nsStatic(), docLinks()],
+  // fuentes autoalojadas (sin petición a Google en cada visita) y con fallback de métricas ajustadas
+  // (menos salto al cargar). Mona Sans es variable: un solo archivo con pesos 400–800 y anchos 75–125 %
+  fonts: [
+    // el proveedor de Google entrega Mona Sans sin el eje de anchura (wdth), que usan los titulares:
+    // se sirve el archivo variable completo (latin, pesos 400–800, anchos 75–125 %; licencia OFL)
+    { provider: fontProviders.local(), name: 'Mona Sans', cssVariable: '--font-mona', fallbacks: ['system-ui', 'sans-serif'],
+      options: { variants: [{ src: ['./src/assets/fonts/MonaSans-latin.woff2'], weight: '400 800', style: 'normal', stretch: '75% 125%' }] } },
+    { provider: fontProviders.google(), name: 'JetBrains Mono', cssVariable: '--font-mono', weights: ['400', '500'], styles: ['normal'], subsets: ['latin'], fallbacks: ['ui-monospace', 'monospace'] },
+  ],
+  // CSP estricta: Astro añade el hash de cada script y estilo que genera (sin 'unsafe-inline').
+  // La página no usa atributos style="…" y ns-frame sólo escribe estilos por CSSOM, que la CSP permite
+  security: {
+    csp: {
+      directives: [
+        "default-src 'self'",
+        "img-src 'self' data: https://picsum.photos https://fastly.picsum.photos",
+        "font-src 'self'",
+        "connect-src 'self'",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+      ],
+    },
+  },
+  // las guías se precargan al pasar el puntero por sus enlaces
+  prefetch: { prefetchAll: false, defaultStrategy: 'hover' },
 })

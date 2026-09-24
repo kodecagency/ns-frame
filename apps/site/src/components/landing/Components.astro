@@ -57,8 +57,14 @@ const MODES = ['open', 'split', 'iris', 'wipe', 'drop']
       <article class="c skel" data-ns="soft">
         <h3>Carga sin saltos</h3>
         <p>El esqueleto se mide sobre el componente real, con sus cortes.</p>
-        <div class="sk" id="sk" data-ns="all squircle 18" data-ns-skeleton><img src="https://picsum.photos/seed/ns-sk/128/128" alt="" width="56" height="56" data-ns="all squircle 16" loading="lazy"><div><b>Informe semanal</b><span>Latencia media: 84 ms</span></div></div>
+        <div class="sk" id="sk" data-ns="all squircle 18" data-ns-skeleton><img src="https://picsum.photos/seed/ns-sk/128/128.webp" alt="" width="56" height="56" data-ns="all squircle 16" loading="lazy"><div><b>Informe semanal</b><span>Latencia media: 84 ms</span></div></div>
         <div class="acts"><button type="button" class="btn ghost" data-ns="all round 12" id="sk-run">Volver a cargar</button></div>
+      </article>
+
+      <article class="c sht-c" data-ns="all squircle 26; top cut center 26% 6 r3">
+        <h3>Hoja que se arrastra</h3>
+        <p>Como en una app nativa: sigue al dedo o al ratón, se estira arriba y se cierra al soltarla o lanzarla. <code>ns-frame/sheet</code>, 1,2 KB.</p>
+        <div class="acts"><button type="button" class="btn go" data-ns="all round 12" id="sht-open">Abrir la hoja</button></div>
       </article>
 
       <article class="c car-c" data-ns="all squircle 30">
@@ -66,7 +72,7 @@ const MODES = ['open', 'split', 'iris', 'wipe', 'drop']
         <p>Desliza con el gesto del sistema; flechas e indicadores funcionan con teclado.</p>
         <div class="car" data-ns-carousel aria-label="Rutas destacadas">
           {SLIDES.map(([seed, alt, t, s]) => (
-            <article class="slide" data-ns="media"><img src={`https://picsum.photos/seed/${seed}/480/360`} alt={alt} width="480" height="360" loading="lazy"><div><b>{t}</b><span>{s}</span></div></article>
+            <article class="slide" data-ns="media"><img src={`https://picsum.photos/seed/${seed}/480/360.webp`} alt={alt} width="480" height="360" loading="lazy"><div><b>{t}</b><span>{s}</span></div></article>
           ))}
         </div>
       </article>
@@ -81,6 +87,20 @@ const MODES = ['open', 'split', 'iris', 'wipe', 'drop']
       <button type="button" class="btn" data-ns="button" id="dlg-close">Cerrar</button>
     </div>
   </dialog>
+
+  <dialog id="sht" class="sht" aria-labelledby="sht-t">
+    <div class="sh" id="sht-panel" data-ns="all squircle 30; top cut center 24% 7 r3">
+      <i class="handle" aria-hidden="true"></i>
+      <h3 id="sht-t">Compartir la ruta</h3>
+      <p>Arrástrala hacia abajo para cerrarla, o tira hacia arriba: se estira y vuelve.</p>
+      <ul class="opts">
+        {[['Copiar enlace', 'M8 12a3 3 0 0 0 4.2 0l3-3a3 3 0 0 0-4.2-4.2l-.8.8M12 8a3 3 0 0 0-4.2 0l-3 3a3 3 0 0 0 4.2 4.2l.8-.8'], ['Enviar por correo', 'M3 5h14v10H3Z M3 5l7 6 7-6'], ['Descargar el mapa', 'M10 3v10M6 9l4 4 4-4M4 16h12'], ['Añadir al calendario', 'M4 5h12v11H4ZM4 9h12M8 3v4M12 3v4']].map(([t, d]) => (
+          <li><button type="button" class="opt" data-ns="all squircle 16"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={d} /></svg>{t}</button></li>
+        ))}
+      </ul>
+      <button type="button" class="btn ghost" data-ns="all round 12" id="sht-close">Cerrar</button>
+    </div>
+  </dialog>
 </section>
 
 <script>
@@ -89,6 +109,7 @@ const MODES = ['open', 'split', 'iris', 'wipe', 'drop']
   import 'ns-frame/pop'
   import { open, close } from 'ns-frame'
   import { toast } from 'ns-frame/toast'
+  import { sheet } from 'ns-frame/sheet'
 
   const MSG: Record<string, () => void> = {
     ok: () => toast('Los cambios del informe quedaron guardados.', { type: 'ok', title: 'Guardado' }),
@@ -120,12 +141,37 @@ const MODES = ['open', 'split', 'iris', 'wipe', 'drop']
   const shut = () => Promise.resolve(close(panel, mode)).finally(() => dlg.close())
   document.getElementById('dlg-close')!.addEventListener('click', shut)
   dlg.addEventListener('cancel', e => { e.preventDefault(); shut() })
+
+  // hoja arrastrable (ns-frame/sheet) dentro de un <dialog> nativo: el fondo se aclara con --ns-sheet-p
+  const sd = document.getElementById('sht') as HTMLDialogElement, sp = document.getElementById('sht-panel')!
+  const hs = sheet(sp, { onProgress: p => sd.style.setProperty('--p', String(p)), onClose: () => { sd.close(); sd.style.removeProperty('--p') } })
+  document.getElementById('sht-open')!.addEventListener('click', () => {
+    sd.showModal()
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) sp.animate([{ translate: '0 100%' }, { translate: '0 0' }], { duration: 380, easing: 'cubic-bezier(.2,.8,.2,1)' })
+  })
+  document.getElementById('sht-close')!.addEventListener('click', () => hs.close())
+  sd.addEventListener('cancel', e => { e.preventDefault(); hs.close() })
+  sd.addEventListener('click', e => { if (e.target == sd) hs.close() }) // clic en el fondo
 </script>
 
 <style>
   code, kbd { font: 12.5px var(--mono); color: var(--text) }
-  .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-areas: 'pop press dlg' 'car car toast' 'car car skel'; gap: 14px }
-  .pop { grid-area: pop } .press { grid-area: press } .dlg-c { grid-area: dlg } .toast { grid-area: toast } .skel { grid-area: skel } .car-c { grid-area: car }
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-areas: 'pop press dlg' 'car car toast' 'car car skel' 'car car sht'; gap: 14px }
+  .pop { grid-area: pop } .press { grid-area: press } .dlg-c { grid-area: dlg } .toast { grid-area: toast } .skel { grid-area: skel } .car-c { grid-area: car } .sht-c { grid-area: sht }
+  .sht-c { background: radial-gradient(80% 70% at 50% 110%, rgba(0, 230, 118, .1), transparent 60%), var(--surface) }
+  /* la hoja: pegada abajo, ancho de móvil también en escritorio; el fondo se aclara al bajarla */
+  dialog.sht { margin: auto auto 0; width: min(520px, 100%); max-width: 100%; max-height: 90dvh; overflow: visible }
+  dialog.sht::backdrop { opacity: var(--p, 1) }
+  .sh { position: relative; padding: 28px 22px calc(22px + env(safe-area-inset-bottom)); display: grid; gap: 10px; background: #18181b; --ns-border: rgba(255, 255, 255, .14); cursor: grab }
+  .sh:global(.ns-sheet-drag) { cursor: grabbing }
+  .sh .handle { position: absolute; top: 12px; left: 50%; width: 38px; height: 4px; margin-left: -19px; border-radius: 4px; background: rgba(255, 255, 255, .25) }
+  .sh h3 { font-size: 20px }
+  .sh p { margin: 0; color: var(--text-2); font-size: 14px }
+  .opts { list-style: none; margin: 6px 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px }
+  .opt { width: 100%; min-height: 64px; display: flex; align-items: center; gap: 10px; padding: 0 14px; border: 0; background: rgba(255, 255, 255, .06); --ns-border: var(--line); color: var(--text); font-size: 14px; text-align: left; cursor: pointer }
+  .opt:hover { background: rgba(255, 255, 255, .1) }
+  .opt svg { width: 20px; height: 20px; flex: none; color: var(--signal) }
+  .sh .btn { justify-self: stretch; font-size: 14px }
   .c { background: var(--surface); --ns-border: var(--line-2); padding: 22px; display: flex; flex-direction: column; gap: 8px; min-width: 0 }
   .c h3 { font-size: 17px }
   .c > p { margin: 0; color: var(--text-2); font-size: 14px }
@@ -145,7 +191,12 @@ const MODES = ['open', 'split', 'iris', 'wipe', 'drop']
   .sk span, .slide span { font-size: 13px; color: var(--text-2) }
   .car { --ns-slide: calc((100% - 24px) / 3); margin-top: 10px }
   .slide { background: var(--surface-2); --ns-border: var(--line); display: flex; flex-direction: column }
-  .slide img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover }
+  .slide img { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover }
+  /* en escritorio el carrusel ocupa tres filas: las diapositivas crecen hasta llenar la tarjeta */
+  @media (min-width: 961px) {
+    .car-c .slide img { aspect-ratio: 2 / 3 }
+    .car-c .car { margin-top: auto }
+  }
   .slide div { padding: 12px 16px 16px }
   .slide b { display: block; font: 600 16px/1.2 var(--display); font-stretch: 106% }
   dialog { border: 0; padding: 0; background: transparent; color: var(--text); max-width: min(480px, calc(100% - 32px)) }
@@ -155,6 +206,6 @@ const MODES = ['open', 'split', 'iris', 'wipe', 'drop']
   .dlg p { margin: 0; color: var(--text-2); font-size: 15px }
   .dlg .btn { justify-self: start }
   :global(.ns-toasts) { font-family: var(--body) }
-  @media (max-width: 960px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: 'pop press' 'dlg toast' 'car car' 'skel skel' } .car { --ns-slide: 46% } }
-  @media (max-width: 640px) { .grid { grid-template-columns: 1fr; grid-template-areas: 'pop' 'press' 'dlg' 'toast' 'skel' 'car' } .car { --ns-slide: 78% } .c { padding: 20px 18px } }
+  @media (max-width: 960px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: 'pop press' 'dlg toast' 'skel sht' 'car car' } .car { --ns-slide: 46% } }
+  @media (max-width: 640px) { .grid { grid-template-columns: 1fr; grid-template-areas: 'pop' 'press' 'dlg' 'sht' 'toast' 'skel' 'car' } .car { --ns-slide: 78% } .c { padding: 20px 18px } }
 </style>

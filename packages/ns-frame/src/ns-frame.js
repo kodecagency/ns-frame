@@ -273,12 +273,14 @@ function mk(tag, a = {}, st = {}, ...kids) {
 
 // ───────────────────────────── runtime DOM ─────────────────────────────
 
-const BASE = 'ns-frame{display:block}:where([data-ns],[data-ns-nest],ns-frame){position:relative}' +
+const BASE = 'ns-frame{display:block}:where([data-ns],[data-ns-nest],ns-frame){position:relative}.ns-fast{overflow:clip}' +
   ':where([data-ns-pad],ns-frame[pad]){--p:var(--ns-pad,1.25rem);padding:calc(var(--ns-safe-t,0px) + var(--p)) calc(var(--ns-safe-r,0px) + var(--p)) calc(var(--ns-safe-b,0px) + var(--p)) calc(var(--ns-safe-l,0px) + var(--p))}'
 const STYLE = `
 .ns-svg{position:absolute;left:0;top:0;pointer-events:none;overflow:visible;z-index:1;filter:var(--ns-glow,none)}
 @media (hover:none) and (pointer:coarse){.ns-svg{filter:var(--ns-glow-touch,none)}}
 .ns-svg path{fill:none}
+.ns-fast{box-shadow:inset 0 0 0 var(--ns-border-width,1px) var(--ns-border,#0000),var(--ns-shadow,0 0 #0000)}
+.ns-fast:focus-visible{outline:var(--ns-focus-width,2px) solid var(--ns-focus,currentColor);outline-offset:var(--ns-focus-offset,2px)}
 .ns-b{stroke:var(--ns-border);stroke-width:calc(2*var(--ns-border-width,1px))}
 .ns-i{stroke:var(--ns-inner-color,var(--ns-border));stroke-width:var(--ns-inner-width,1px);opacity:var(--ns-inner-opacity,.45);vector-effect:non-scaling-stroke}
 .ns-a{stroke:var(--ns-accent,var(--ns-border));stroke-width:calc(2*var(--ns-accent-width,2px))}
@@ -364,10 +366,30 @@ function native(s, V, on) {
   s.nt = on
 }
 
+// Vía rápida: una forma sólo de esquinas (redondas; con corner-shape, también chaflanes, scoops,
+// notches y squircles) con borde liso y sin capas extra se dibuja con border-radius + una sombra
+// interior como borde. Sin clip-path ni capa SVG: menos estilo, layout y pintado por elemento.
+// En alto contraste no se usa (el sistema quita las sombras y el borde desaparecería).
+const quick = (s, V) => V.simple && !FORCED.matches && !s.ap && !s.accent && !s.motion && !s.look?.inner &&
+  !/gradient\(/.test(s.look?.border || '') && attr(s.el, 'draw') == null && V.cn.every(([t]) => NATIVE || !t || t == 'round' || t == 'square')
+function fast(s, V, on) {
+  const st = s.el.style
+  if (on) {
+    st.borderRadius = V.cn.map(([, h]) => (h || 0) + 'px').join(' ') + ' / ' + V.cn.map(([, , v]) => (v || 0) + 'px').join(' ')
+    if (NATIVE) st.setProperty('corner-shape', V.cn.map(([t]) => t && t != 'square' ? t : 'round').join(' '))
+  } else { st.borderRadius = ''; st.removeProperty('corner-shape') }
+  s.el.classList.toggle('ns-fast', on)
+  s.fast = on
+}
+
 function paint(s, V, fin) {
   s.cur = V
   // apertura en curso (si el módulo extra aún no llegó, el elemento queda oculto: sin destellos)
   if (typeof NS_LITE == 'undefined' && s.ap && !s.enter) V = X ? X.aperture(s) : []
+  const q = !!(fin && !s.nat && quick(s, V))
+  if (q || s.fast) fast(s, V, q)
+  if (q) { s.el.style.clipPath = ''; if (s.svg) s.svg.style.display = 'none'; return }
+  if (s.svg) s.svg.style.display = ''
   const { C, T, at } = commands(V), d = svgD(C), nat = !!(fin && s.nat && NATIVE && V.simple && !s.ap)
   if (nat || s.nt) native(s, V, nat)
   s.el.style.clipPath = nat ? '' : d ? `path('${d}')` : s.ap ? 'inset(50%)' : ''

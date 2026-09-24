@@ -1,57 +1,65 @@
 ---
+// Guías: misma estética que la landing (tokens, fuentes autoalojadas y pie de Kodec Agency).
 import { getCollection } from 'astro:content'
+import { Font } from 'astro:assets'
+import 'ns-frame/fx.css'
+import '../styles/tokens.css'
 import '../styles/docs.css'
+import Footer from '../components/landing/Footer.astro'
+import { LINKS } from '../data/sections'
 
 interface Props { title: string; description: string; slug: string }
 const { title, description, slug } = Astro.props
 const docs = (await getCollection('docs')).sort((a, b) => a.data.order - b.data.order)
 const i = docs.findIndex(d => d.id == slug), prev = docs[i - 1], next = docs[i + 1]
+// el resaltado de código usa atributos style: sólo en las guías se permiten atributos de estilo
+// (style-src-attr); los scripts y las hojas de estilo siguen exigiendo hash
+Astro.csp?.insertStyleResource({ resource: "'unsafe-inline'", kind: 'attribute' })
 ---
 <!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>{title} · ns-frame</title>
   <meta name="description" content={description}>
-  <meta name="theme-color" content="#06090f">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/ns-frame/ns-fx.css">
-  <script is:inline type="module" src="/ns-frame/ns-frame.js"></script>
+  <meta name="theme-color" content="#0b0b0c">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <Font cssVariable="--font-mona" preload />
+  <Font cssVariable="--font-mono" />
 </head>
 <body>
   <a class="skip" href="#contenido">Saltar al contenido</a>
-  <header class="top">
-    <div class="top-in bar" data-ns="tl+br bevel 14; radius 2">
-      <a class="logo" href="/"><i data-ns-static="all bevel 5"></i>ns-frame</a>
-      <nav aria-label="Principal" class="top-links">
-        <a href="/">Demo</a><a href="/docs/introduccion" aria-current={slug ? 'page' : undefined}>Docs</a><a href="https://github.com/kodecagency/ns-frame">GitHub</a>
+  <header class="dtop">
+    <div class="wrap">
+      <a class="brand" href="/" aria-label="ns-frame, inicio"><i data-ns="tl+br bevel 5"></i>ns-frame<span class="num">0.9</span></a>
+      <nav aria-label="Principal">
+        <a href="/">Demos</a><a href={LINKS.docs} aria-current={slug ? 'page' : undefined}>Guías</a><a href={LINKS.github}>GitHub</a>
       </nav>
     </div>
   </header>
-  <div class="layout">
+  <div class="layout wrap">
     <aside class="side">
       <nav aria-label="Guías">
         <p class="side-h">Guías</p>
         <ol>
-          {docs.map(d => <li><a href={`/docs/${d.id}`} aria-current={d.id == slug ? 'page' : undefined}>{d.data.title}</a></li>)}
+          {docs.map(d => <li><a href={`/docs/${d.id}`} aria-current={d.id == slug ? 'page' : undefined} data-ns={d.id == slug ? 'tl+br bevel 9; radius 2' : undefined} data-astro-prefetch>{d.data.title}</a></li>)}
         </ol>
       </nav>
     </aside>
     <main id="contenido" class="doc">
-      <p class="eyebrow">{String(i + 1).padStart(2, '0')} · Documentación</p>
       <article class="prose">
         <slot />
       </article>
       <nav class="pager" aria-label="Guía anterior y siguiente">
-        {prev ? <a class="pg" data-ns-static="tl bevel 12; br bevel 12; radius 2" href={`/docs/${prev.id}`}><small>← Anterior</small>{prev.data.title}</a> : <span />}
-        {next ? <a class="pg pg-next" data-ns-static="tl bevel 12; br bevel 12; radius 2" href={`/docs/${next.id}`}><small>Siguiente →</small>{next.data.title}</a> : <span />}
+        {prev ? <a class="pg" data-ns="tl bevel 14; br bevel 14; radius 2" href={`/docs/${prev.id}`} data-astro-prefetch><small>Anterior</small>{prev.data.title}</a> : <span />}
+        {next ? <a class="pg pg-next" data-ns="tl bevel 14; br bevel 14; radius 2" href={`/docs/${next.id}`} data-astro-prefetch><small>Siguiente</small>{next.data.title}</a> : <span />}
       </nav>
     </main>
   </div>
-  <footer class="foot">MIT · Kodec Agency · hecho con geometría, no con imágenes</footer>
+  <Footer />
+  <script>
+    import 'ns-frame'
+  </script>
 </body>
 </html>

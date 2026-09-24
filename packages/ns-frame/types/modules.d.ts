@@ -1,6 +1,6 @@
 // Tipos de los módulos opcionales de ns-frame. Cada módulo se importa por su ruta:
 // ns-frame/css, ns-frame/static, ns-frame/vt, ns-frame/toast, ns-frame/skel, ns-frame/carousel,
-// ns-frame/pop, ns-frame/bento, ns-frame/mosaic, ns-frame/link, ns-frame/fx, ns-frame/audit.
+// ns-frame/pop, ns-frame/bento, ns-frame/mosaic, ns-frame/sheet, ns-frame/link, ns-frame/fx, ns-frame/audit.
 import type { Shape } from './ns-frame'
 
 // ── ns-frame/css ──
@@ -41,6 +41,25 @@ export function refresh(el?: Element): void
 // ── ns-frame/mosaic ──
 /** Lee una plantilla `--ns-areas` ("'a a b' 'c d b'") como matriz de celdas ('.' = vacía). */
 export function parseAreas(areas: string): string[][]
+
+// ── ns-frame/sheet ──
+export interface SheetOptions {
+  /** Dónde empieza el arrastre (por defecto, todo el panel). */
+  handle?: HTMLElement
+  /** Se llama cuando la hoja sale al soltarla (o con close()). */
+  onClose?: () => void
+  /** 1 = en su sitio, 0 = fuera. También queda en --ns-sheet-p. */
+  onProgress?: (p: number) => void
+  /** Píxeles antes de considerar que es un arrastre y no un toque (6). */
+  threshold?: number
+}
+export interface Sheet { close(): void; reset(): void; destroy(): void }
+/** Convierte el elemento en una hoja arrastrable como las de una app nativa. */
+export function sheet(el: HTMLElement, options?: SheetOptions): Sheet
+/** Resistencia elástica al pasar del tope (px). */
+export function rubber(x: number, h: number): number
+/** ¿Se cierra al soltar? y: desplazamiento (px), v: velocidad (px/ms), h: altura. */
+export function release(y: number, v: number, h: number): boolean
 
 // ── ns-frame/fx ──
 /** Efecto de texto que se "descifra". */

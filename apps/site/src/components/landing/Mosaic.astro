@@ -34,15 +34,15 @@ const on = FX.filter(f => f[2]).map(f => f[0]).join(' ')
 
     <div class="mo ns-mosaic t-orb" id="mo" data-ns-mosaic={on}>
       <article data-ns-area="h" class="hi"><h3>Formas que se abrazan.</h3><p>La plantilla vive en CSS: cámbiala con una media query y las piezas se reacomodan.</p></article>
-      <article data-ns-area="a" class="ph"><img src="https://picsum.photos/seed/ns-mosaic-a/700/800" alt="Fachada de edificios antiguos" width="700" height="800" loading="lazy"><h3>Fotos con forma</h3><p>La imagen se recorta con la pieza.</p></article>
-      <article data-ns-area="b"><p>Módulo</p><span class="big num">8 KB</span></article>
+      <article data-ns-area="a" class="ph"><img src="https://picsum.photos/seed/ns-mosaic-a/700/800.webp" alt="Fachada de edificios antiguos" width="700" height="800" loading="lazy"><h3>Fotos con forma</h3><p>La imagen se recorta con la pieza.</p></article>
+      <article data-ns-area="b"><h3>Pesa 8 KB</h3><p>Un módulo opcional, con gzip.</p></article>
       <article data-ns-area="c"><h3>Hueco constante</h3><p>La esquina cóncava mide el radio más el hueco.</p></article>
-      <article data-ns-area="d"><p>En el móvil</p><span class="big">2 columnas</span></article>
+      <article data-ns-area="d"><h3>Dos columnas en el móvil</h3><p>Sigue siendo un mosaico.</p></article>
       <article data-ns-area="x"><h3>Orbes con forma</h3><p><code>--ns-orb: 3 3 96 hex</code></p></article>
       <article data-ns-area="y"><h3>Texto que fluye</h3><p>En una L, una escalera o junto al orbe, el texto recorre toda la figura con el mismo margen.</p></article>
-      <article data-ns-area="e"><p>Sin framework</p><span class="big">HTML</span></article>
+      <article data-ns-area="e"><h3>Sólo HTML y CSS</h3><p>Sin framework.</p></article>
       <article data-ns-area="f"><p>El orden del DOM no cambia: se lee igual con lector de pantalla.</p></article>
-      <div data-ns-orb class="orb is-photo" id="mo-orb"><img src="https://picsum.photos/seed/ns-orb-city/400/400" alt="Ciudad de noche" width="400" height="400" loading="lazy"><div class="ok"><b class="num">99,9 %</b><small>disponibilidad</small></div></div>
+      <div data-ns-orb class="orb is-photo" id="mo-orb"><img src="https://picsum.photos/seed/ns-orb-city/400/400.webp" alt="Ciudad de noche" width="400" height="400" loading="lazy"><div class="ok"><b class="num">99,9 %</b><small>disponibilidad</small></div></div>
       <div data-ns-orb class="orb orb-2" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3 5 13h6l-1 8 8-10h-6Z" /></svg></div>
     </div>
     <p class="after"><a class="more" href="/docs/mosaico">Cómo funciona el mosaico<Arrow /></a></p>
@@ -127,9 +127,7 @@ const on = FX.filter(f => f[2]).map(f => f[0]).join(' ')
   code { font: 13px var(--mono); color: var(--signal) }
   .big { font: 700 clamp(26px, 2.6vw, 34px)/1 var(--display); font-stretch: 108%; letter-spacing: -.035em }
 
-  .orb { display: grid; place-items: center; overflow: hidden; color: #0a0a0a; text-align: center; background:
-      radial-gradient(circle at 50% 36%, rgba(255, 255, 255, .6), transparent 50%),
-      conic-gradient(from 210deg, #6b6b6b, #ededed 18%, #8a8a8a 32%, #f5f5f5 50%, #7a7a7a 66%, #dadada 82%, #6b6b6b) }
+  .orb { display: grid; place-items: center; overflow: hidden; color: #0a0a0a; text-align: center; background: #1c1c1f; --ns-border: rgba(255, 255, 255, .22); --ns-inner: 8px; --ns-inner-color: rgba(0, 230, 118, .4) }
   .orb[hidden] { display: none }
   .orb > img, .orb > .ok { grid-area: 1 / 1; opacity: 0; transition: opacity .45s }
   .orb > img { width: 100%; height: 100%; object-fit: cover }

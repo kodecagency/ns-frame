@@ -32,7 +32,7 @@ const PATTERNS = [
         <p>Llena la base con las esquinas y se desvanece hacia arriba.</p>
         <code class="tag"><b>ns-u</b></code>
       </article>
-      <article class="b b3" data-ns="panel" style="--ns-inner:6px">
+      <article class="b b3" data-ns="panel">
         <h3>Doble línea</h3>
         <p>Un segundo contorno, paralelo al primero.</p>
         <code class="tag"><b>--ns-inner</b>: 6px</code>
@@ -84,7 +84,7 @@ const PATTERNS = [
   .b code:not(.tag) { font-size: 12.5px; color: var(--text) }
   .b1 { grid-column: span 2; --ns-border: linear-gradient(90deg, #00e676, #b8f36b 30%, rgba(255, 255, 255, .06) 55%, #ffb547); --ns-border-width: 1.5px; background: radial-gradient(80% 90% at 0% 0%, rgba(0, 230, 118, .12), transparent 60%), var(--surface) }
   .b2 { --ns-u: #00e676; --ns-u-glow: .75 }
-  .b3 { --ns-border: rgba(212, 212, 216, .35) }
+  .b3 { --ns-border: rgba(212, 212, 216, .35); --ns-inner: 6px }
   .b4w { --ns-halo: rgba(255, 181, 71, .35) }
   .b4 { --ns-border: rgba(255, 181, 71, .5); background: linear-gradient(180deg, rgba(255, 181, 71, .08), transparent), var(--surface) }
   .b5 { --ns-u: #d4d4d8; --ns-u-glow: .5; --ns-pat: rgba(255, 255, 255, .06) }

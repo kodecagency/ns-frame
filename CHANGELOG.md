@@ -15,6 +15,12 @@
 - `--ns-morph-time: 0` aplica el cambio de forma al instante.
 - **Arreglo:** las animaciones de borde `scan` y `orbit` y el giro de degradados (`data-ns-spin`) pasan de SMIL a animaciones CSS; ya no se quedan congeladas en móviles.
 
+### Nuevo: `ns-frame/sheet` (1,2 KB)
+- Hoja que se arrastra como en una app nativa: sigue al dedo arriba (con resistencia elástica) y abajo, y al soltarla vuelve o sale según la distancia y la velocidad. Sólo mueve `translate`, expone el progreso (`--ns-sheet-p`, `onProgress`) para atenuar el fondo y no convierte un arrastre en clic.
+
+### Vía rápida nativa
+- Las formas sólo de esquinas (redondas; con `corner-shape`, también chaflanes, scoops, notches y squircles) con borde liso y sin capas extra se dibujan con `border-radius` + una sombra interior como borde, sin `clip-path` ni capa SVG. Pasan solas a SVG si un hover o un pulsado las convierte en una forma compleja. `--ns-shadow` añade sombras propias; el foco usa `outline` (`--ns-focus`). En la landing: 45 capas SVG menos y ~140 ms menos de LCP en un móvil emulado.
+
 ### Rendimiento en táctil
 - **Arreglo:** en pantallas táctiles la forma de hover (`data-ns-hover`) ya no se queda pegada: el hover sólo se activa con ratón o lápiz (para el dedo está `data-ns-press`).
 - En táctil (`hover: none` y `pointer: coarse`), el resplandor `--ns-glow` de las animaciones de borde y el del mosaico se desactivan (filtros que repintan cada frame y podían congelar la animación). `--ns-glow-touch` permite fijar uno propio.
@@ -28,6 +34,7 @@
 ### Sitio
 - Landing rediseñada en Astro, por componentes: hero con mosaico, antes y después, muro de presets, playground (atributo, ruta SVG y CSS `shape()`), bordes en degradado y luz en U (con una tabla de precios real), mosaico interactivo, las 12 animaciones de borde, componentes funcionando, aperturas y View Transitions, anatomía con callouts y formas responsive, ficha técnica en bento unificado sobre fondo aura y la isla de navegación en móvil. Firmada por Kodec Agency.
 - La galería antigua (`galeria.html`) se retira: todas las demos viven en la landing.
+- Sitio más ligero y seguro: secciones con `content-visibility: auto` (saltos a anclas exactos con `scripts/jump.ts`), fuentes autoalojadas con la API de fuentes de Astro (Mona Sans variable con su eje de anchura), fotos de demostración en WebP, sin `backdrop-filter` en táctil, CSP estricta generada por Astro con hashes (sin `unsafe-inline`; en las guías sólo se permiten atributos de estilo para el resaltado de código), caché inmutable para `/_astro/*`, HSTS y COOP. En un móvil emulado (CPU ×4): bloqueo del hilo principal de ~700 a ~290 ms y LCP de ~1,65 a ~1,2 s.
 
 ## 0.8.0 — primera versión pública
 

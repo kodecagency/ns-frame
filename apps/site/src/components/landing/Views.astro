@@ -37,13 +37,13 @@ const CARDS = [
       <div class="vt-grid" id="vt-grid">
         {CARDS.map((c, i) => (
           <button type="button" class="vt-card" data-ns="tl+br bevel 20; radius 3" data-vt={i}>
-            <img src={`https://picsum.photos/seed/${c.seed}/640/400`} alt="" width="640" height="400" loading="lazy" data-ns="tl+br round 14; radius 2">
+            <img src={`https://picsum.photos/seed/${c.seed}/640/400.webp`} alt="" width="640" height="400" loading="lazy" data-ns="tl+br round 14; radius 2">
             <b>{c.t}</b><span>{c.s}</span>
           </button>
         ))}
       </div>
       <article class="vt-detail" id="vt-detail" data-ns="tl+br bevel 36; radius 3" hidden>
-        <img id="vt-img" src="" alt="" width="640" height="400" data-ns="tl+br round 22; radius 2">
+        <img id="vt-img" src={`https://picsum.photos/seed/${CARDS[0].seed}/640/400.webp`} alt={CARDS[0].t} loading="lazy" width="640" height="400" data-ns="tl+br round 22; radius 2">
         <div class="vt-body">
           <h3 id="vt-title" tabindex="-1"></h3>
           <span class="dim" id="vt-sub"></span>

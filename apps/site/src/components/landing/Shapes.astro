@@ -36,7 +36,7 @@ const MEDIA = [
           </div>
         </div>
         <article class="card" id="shape-card" data-ns={SHAPES[0].full}>
-          <img src="https://picsum.photos/seed/nsframe-dune/720/450" alt="Dunas al atardecer" width="720" height="450" loading="lazy">
+          <img src="https://picsum.photos/seed/nsframe-dune/720/450.webp" alt="Dunas al atardecer" width="720" height="450" loading="lazy">
           <div class="meta"><b>Dunas de Médanos</b><span>Recorrido de 12 km · 4 h</span><i class="pill">Reservar</i></div>
         </article>
         <pre class="snippet">&lt;<b>article</b> <i>data-ns</i>="<em id="shape-code">{SHAPES[0].code}</em>"&gt;</pre>
@@ -44,7 +44,7 @@ const MEDIA = [
       <div class="media">
         {MEDIA.map((m, i) => (
           <figure class:list={['m', 'm' + i]}>
-            <img src={`https://picsum.photos/seed/${m.seed}/800/600`} alt={m.alt} width="800" height="600" loading="lazy" data-ns={m.s}>
+            <img src={`https://picsum.photos/seed/${m.seed}/800/600.webp`} alt={m.alt} width="800" height="600" loading="lazy" data-ns={m.s}>
             <figcaption class="tag"><b>{m.c}</b></figcaption>
           </figure>
         ))}

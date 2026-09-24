@@ -29,6 +29,8 @@ const CUR = 'tl+br bevel 14; tr+bl round 16; radius 2'
 </nav>
 
 <script>
+  import { sheet } from 'ns-frame/sheet'
+  import { jump } from '../../scripts/jump'
   const $ = (id: string) => document.getElementById(id)!
   const isle = $('isle'), btn = $('isle-btn'), panel = $('isle-panel'), scrim = $('isle-scrim'), ico = $('isle-ico'), name = $('isle-name'), pos = $('isle-pos')
   const links = [...$('isle-list').querySelectorAll<HTMLAnchorElement>('a')]
@@ -76,19 +78,28 @@ const CUR = 'tl+br bevel 14; tr+bl round 16; radius 2'
     if (Math.abs(dx) < 40) return
     swiped = true
     const k = Math.max(0, Math.min(links.length - 1, cur + (dx < 0 ? 1 : -1)))
-    secs[k].scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth' })
+    jump(secs[k])
     navigator.vibrate?.(4)
   })
   btn.addEventListener('click', () => { if (!swiped) setOpen(true); swiped = false })
-  $('isle-close').addEventListener('click', () => setOpen(false))
-  scrim.addEventListener('click', () => setOpen(false))
+  // el panel abierto es una hoja (ns-frame/sheet): sigue al dedo arriba y abajo, el fondo se aclara
+  // a la vez y, al soltarla, vuelve o sale según la distancia y la velocidad. Al salir, la isla
+  // vuelve a ser la cápsula sin animar el tamaño (el panel ya se fue por abajo).
+  const shut = () => {
+    isle.classList.add('snap')
+    setOpen(false)
+    scrim.style.removeProperty('opacity'); scrim.style.removeProperty('transition')
+    requestAnimationFrame(() => requestAnimationFrame(() => isle.classList.remove('snap')))
+  }
+  const sh = sheet(isle, {
+    handle: panel,
+    onProgress: p => { scrim.style.transition = 'none'; scrim.style.opacity = String(p) },
+    onClose: shut,
+  })
+  $('isle-close').addEventListener('click', () => sh.close())
+  scrim.addEventListener('click', () => sh.close())
   $('isle-list').addEventListener('click', e => { if ((e.target as Element).closest('a')) setOpen(false) })
-  addEventListener('keydown', e => { if (e.key == 'Escape' && open) setOpen(false) })
-  // el asa: arrastrar la cabecera hacia abajo cierra el panel (también hay botón y Escape)
-  let gy: number | null = null
-  const grip = $('isle-grip')
-  grip.addEventListener('pointerdown', e => { if ((e.target as Element).closest('button')) return; gy = e.clientY; grip.setPointerCapture(e.pointerId) })
-  grip.addEventListener('pointerup', e => { if (gy != null && e.clientY - gy > 48) setOpen(false); gy = null })
+  addEventListener('keydown', e => { if (e.key == 'Escape' && open) sh.close() })
 
   // sección actual y pliegue al bajar
   let y0 = scrollY, raf = 0
@@ -146,4 +157,7 @@ const CUR = 'tl+br bevel 14; tr+bl round 16; radius 2'
     .acts a:first-child { background: var(--text); color: #000 }
   }
   @media (max-width: 900px) and (prefers-reduced-motion: reduce) { .isle, .scrim { transition: none } }
+  /* al salir por abajo, la isla vuelve a ser cápsula sin animar el tamaño */
+  .isle.snap, .isle.snap :global(*) { transition: none !important }
+  .isle:global(.ns-sheet-drag) header { cursor: grabbing }
 </style>

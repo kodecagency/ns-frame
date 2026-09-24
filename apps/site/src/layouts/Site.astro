@@ -1,5 +1,6 @@
 ---
 // Layout de las páginas de marketing: meta, fuentes, tokens y el núcleo de ns-frame.
+import { Font } from 'astro:assets'
 import 'ns-frame/fx.css'
 import '../styles/tokens.css'
 
@@ -20,9 +21,8 @@ const { title, description } = Astro.props
   <meta property="og:description" content={description}>
   <meta name="twitter:card" content="summary">
   <script type="application/ld+json" set:html={JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareSourceCode', name: 'ns-frame', description, programmingLanguage: 'JavaScript', license: 'https://opensource.org/licenses/MIT', codeRepository: 'https://github.com/kodecagency/ns-frame', author: { '@type': 'Organization', name: 'Kodec Agency' } })} />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Mona+Sans:wdth,wght@75..125,400..800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <Font cssVariable="--font-mona" preload />
+  <Font cssVariable="--font-mono" />
 </head>
 <body>
   <a class="skip" href="#contenido">Saltar al contenido</a>
@@ -31,6 +31,8 @@ const { title, description } = Astro.props
     // núcleo: activa todos los data-ns de la página (y los que se añadan después)
     import 'ns-frame'
     import 'ns-frame/fx'
+    import { wire } from '../scripts/jump'
+    wire()
   </script>
 </body>
 </html>

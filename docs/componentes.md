@@ -106,6 +106,32 @@ morph(detail, () => { detail.hidden = true; grid.hidden = false }, card).then(()
 - Sin soporte, o con `prefers-reduced-motion`, el cambio es instantáneo. Opciones: `{ duration: 480, easing }`.
 - **Mueve tú el foco** al destino, como en el ejemplo.
 
+## Hoja arrastrable (`ns-frame/sheet`)
+
+```js
+import { sheet } from 'ns-frame/sheet'
+
+const panel = dialog.querySelector('.hoja')
+const s = sheet(panel, {
+  onProgress: p => dialog.style.setProperty('--p', p),   // 1 = en su sitio, 0 = fuera
+  onClose: () => dialog.close(),
+})
+closeButton.onclick = () => s.close()                    // sale por abajo, como al soltarla
+```
+
+```css
+dialog::backdrop { opacity: var(--p, 1) }                 /* el fondo se aclara al bajarla */
+```
+
+- Como una hoja nativa: el panel **sigue al dedo o al ratón** hacia abajo, y hacia arriba con resistencia elástica.
+- Al soltarla decide **por distancia y velocidad**: si bajó más del 35 % de su alto o se lanzó hacia abajo, sale y llama a `onClose()`; si no, vuelve a su sitio. Se puede atrapar a medio camino.
+- Un arrastre no dispara el clic de lo que había debajo; un toque sigue siendo un clic (umbral: `threshold`, 6 px).
+- Sólo mueve la propiedad `translate` (se combina con cualquier `transform` que ya tenga el panel) y usa los eventos agrupados del puntero para medir bien la velocidad en pantallas de 120 Hz.
+- Pone `touch-action: none` en el asa (`handle`, por defecto todo el panel) y `overscroll-behavior: contain` en el panel.
+- `--ns-sheet-p` queda en el panel durante el gesto; la clase `.ns-sheet-drag` mientras se arrastra.
+- Con `prefers-reduced-motion`, el cierre y el regreso son inmediatos. Devuelve `{ close(), reset(), destroy() }`.
+- Escape y el clic en el fondo los decides tú (en un `<dialog>`: evento `cancel` → `s.close()`).
+
 ## Callouts HUD (`ns-frame/link`)
 
 ```html

@@ -6,6 +6,7 @@ import { css as cssSrc } from '../src/ns-css.js'
 import { css as cssMin } from '../dist/ns-css.js'
 import { extract } from '../src/ns-static.js'
 import { parseAreas } from '../src/ns-mosaic.js'
+import { rubber, release } from '../src/ns-sheet.js'
 
 let seed = 7
 const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647)
@@ -50,6 +51,14 @@ eq(/A20 20 0 0 1 /.test(src.path('poly 0 0, 80 0, 100 20 a20, 120 0, 200 0, 200 
 eq(/arc to .* of 20px 20px ccw/.test(cssSrc('poly 0 0, 40% 0, 40%+20 20 a-20, 40%+40 0, 100% 0, 100% 100%, 0 100%') || ''), true, 'poly: arco compila a CSS')
 // mosaico: plantilla de áreas
 eq(JSON.stringify(parseAreas(`'a a b' "c d"`)), '[["a","a","b"],["c","d","."]]', 'mosaic: parseAreas')
+// hoja: resistencia elástica y decisión al soltar
+eq(rubber(0, 400), 0, 'sheet: rubber en 0')
+eq(rubber(4000, 400) < 100, true, 'sheet: rubber nunca supera h/4')
+eq(rubber(100, 400) > rubber(50, 400), true, 'sheet: rubber crece')
+eq(release(160, 0, 400), true, 'sheet: se cierra al pasar el 35 %')
+eq(release(60, 0, 400), false, 'sheet: vuelve si bajó poco')
+eq(release(40, .9, 400), true, 'sheet: se cierra al lanzarla')
+eq(release(4, .9, 400), false, 'sheet: un toque rápido no la cierra')
 // formas sin JS: data-ns-static se compila a una clase + CSS shape()
 const X = extract('<div class="a" data-ns-static="card">x</div><p data-ns-static="card"></p><i data-ns-static="tl bevel 30%"></i>')
 eq(/^<div class="a ns-s-\w+">x<\/div><p class="ns-s-\w+"><\/p><i data-ns="tl bevel 30%"><\/i>$/.test(X.html), true, 'static: html')

@@ -4,8 +4,8 @@
 // así la rejilla se lee como una sola pieza. Sólo datos medidos (docs/rendimiento.md).
 import Arrow from '../Arrow.astro'
 
-const SIZES: [string, number][] = [['núcleo', 8.3], ['mosaico', 8.0], ['lite', 6.1], ['extras', 3.8], ['skeleton', 2.5], ['toast', 2.1], ['fx.css', 2.0], ['carrusel', 1.6]]
-const max = 8.3 // el núcleo es el módulo más grande
+const SIZES: [string, number][] = [['núcleo', 8.5], ['mosaico', 8.1], ['lite', 6.3], ['extras', 3.8], ['skeleton', 2.5], ['toast', 2.1], ['fx.css', 2.0], ['carrusel', 1.6]]
+const max = 8.5 // el núcleo es el módulo más grande
 ---
 <section class="sec aura ns-aura" id="cifras" aria-labelledby="t-cifras">
   <div class="wrap">
@@ -17,18 +17,18 @@ const max = 8.3 // el núcleo es el módulo más grande
     <div class="ns-bento bn" data-ns-bento="outer bevel 30; inner round 12; radius 2">
       <article class="ns-big t" data-ns-motion="spot">
         <span class="k">Núcleo, con gzip</span>
-        <b class="v num">8,3 KB</b>
+        <b class="v num">8,5 KB</b>
         <p>Formas, bordes, morph y foco. Cada módulo se carga sólo si se usa.</p>
         <ul class="bars" aria-label="Tamaño de cada módulo en KB">
-          {SIZES.map(([n, v]) => <li><span>{n}</span><i style={`--v:${v / max}`}></i><b class="num">{v.toFixed(1).replace('.', ',')}</b></li>)}
+          {SIZES.map(([n, v], k) => <li><span>{n}</span><svg viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><rect width={(v / max * 100).toFixed(1)} height="6" rx="3" class:list={[{ hi: k < 3 }]} /></svg><b class="num">{v.toFixed(1).replace('.', ',')}</b></li>)}
         </ul>
       </article>
-      <article class="t" data-ns-motion="spot"><span class="k">Dependencias</span><b class="v">0</b><p>Ni peticiones de red en tiempo de ejecución.</p></article>
-      <article class="t" data-ns-motion="spot"><span class="k">4.000 marcos</span><b class="v num">&lt; 50 ms</b><p>La tarea más larga al montarlos.</p></article>
-      <article class="ns-w2 t" data-ns-motion="spot"><span class="k">Seguridad</span><b class="v">Sin innerHTML</b><p>Funciona con una CSP estricta, sin <code>unsafe-inline</code>: probado con atributos maliciosos.</p></article>
-      <article class="t" data-ns-motion="spot"><span class="k">Accesibilidad</span><b class="v sm">De serie</b><p>Foco con forma, alto contraste, movimiento reducido y RTL.</p></article>
-      <article class="ns-w2 t" data-ns-motion="spot"><span class="k">Frameworks</span><b class="v sm">Cualquiera</b><p>Es un atributo HTML: HTML plano, Astro, React, Vue o Svelte. También compila a CSS <code>shape()</code> sin JS.</p></article>
-      <article class="t" data-ns-motion="spot"><span class="k">Licencia</span><b class="v">MIT</b><p>Software libre, de Kodec Agency.</p></article>
+      <article class="t" data-ns-motion="spot"><h3>Sin dependencias</h3><p>Ni una petición de red en tiempo de ejecución: todo lo dibuja el propio navegador.</p></article>
+      <article class="t" data-ns-motion="spot"><h3>4.000 marcos, menos de 50 ms</h3><p>La tarea más larga al montarlos todos a la vez.</p></article>
+      <article class="ns-w2 t" data-ns-motion="spot"><h3>Segura con una CSP estricta</h3><p>Sin <code>innerHTML</code> ni <code>unsafe-inline</code>: se prueba en cada versión con atributos maliciosos.</p></article>
+      <article class="t" data-ns-motion="spot"><h3>Accesible de serie</h3><p>Foco con forma, alto contraste, movimiento reducido y RTL.</p></article>
+      <article class="ns-w2 t" data-ns-motion="spot"><h3>Con cualquier framework</h3><p>Es un atributo HTML: HTML plano, Astro, React, Vue o Svelte. También compila a CSS <code>shape()</code> sin JS.</p></article>
+      <article class="t" data-ns-motion="spot"><h3>Software libre</h3><p>Licencia MIT, de Kodec Agency.</p></article>
     </div>
     <p class="after center"><a class="more" href="/docs/rendimiento">Cómo se midió<Arrow /></a></p>
   </div>
@@ -43,16 +43,18 @@ const max = 8.3 // el núcleo es el módulo más grande
   code { font: 13px var(--mono); color: var(--text) }
   .center { text-align: center }
   .bn { --ns-gap: 12px; --ns-row: 150px; --ns-min: 220px; --ns-motion: rgba(255, 255, 255, .85); --ns-spot-size: 180; --ns-spot-fill: .06 }
-  .t { background: rgba(20, 20, 22, .82); --ns-border: rgba(255, 255, 255, .12); display: flex; flex-direction: column; gap: 6px; min-width: 0; backdrop-filter: blur(6px) }
+  .t { background: rgba(20, 20, 22, .9); --ns-border: rgba(255, 255, 255, .12); display: flex; flex-direction: column; gap: 6px; min-width: 0 }
   .k { font-size: 13px; color: var(--text-3) }
   .v { font: 700 clamp(26px, 2.6vw, 34px)/1.05 var(--display); font-stretch: 108%; letter-spacing: -.025em }
   .v.sm { font-size: clamp(22px, 2.2vw, 28px) }
   .t p { margin: 0; color: var(--text-2); font-size: 13.5px }
+  .t h3 { font-size: clamp(18px, 1.6vw, 21px); font-stretch: 106%; letter-spacing: -.015em }
   .ns-big .v { font-size: clamp(40px, 5vw, 64px) }
   .bars { list-style: none; margin: auto 0 0; padding: 12px 0 0; display: grid; gap: 7px }
   .bars li { display: grid; grid-template-columns: 76px 1fr 34px; gap: 10px; align-items: center; font: 11.5px var(--mono); color: var(--text-3) }
-  .bars i { height: 6px; border-radius: 6px; background: linear-gradient(90deg, #00e676, #b8f36b); transform-origin: left; transform: scaleX(var(--v)); opacity: .85 }
-  .bars li:nth-child(n+4) i { background: linear-gradient(90deg, #d4d4d8, #8b8b94) }
+  .bars svg { width: 100%; height: 6px; overflow: visible }
+  .bars rect { fill: #8b8b94 }
+  .bars rect.hi { fill: #00e676 }
   .bars b { text-align: right; font-weight: 500; color: var(--text-2) }
   @media (max-width: 560px) { .t p { font-size: 12.5px } .bars li { grid-template-columns: 64px 1fr 30px } }
 </style>

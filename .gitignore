@@ -10,3 +10,6 @@ apps/site/public/ns-frame/
 .playwright-mcp/
 apps/site/public/lab/
 apps/site/public/llms.txt
+
+# capturas de revisión (pesadas, se regeneran)
+apps/site/.impeccable/review/
