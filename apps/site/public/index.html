@@ -1,0 +1,1228 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ns-frame · UI nativa de formas: cortes, bordes y aperturas para la web</title>
+<meta name="theme-color" content="#06090f">
+<meta property="og:type" content="website">
+<meta property="og:title" content="ns-frame · UI nativa de formas">
+<meta property="og:description" content="Cortes, chaflanes y radius invertidos sobre cualquier elemento. Bordes animados, aperturas, bento unificado y callouts. Sin imágenes, accesible y compatible con CSP estricta.">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareSourceCode","name":"ns-frame","description":"Librería de formas para la web: cortes, bordes, aperturas y bento unificado sin imágenes.","programmingLanguage":"JavaScript","license":"https://opensource.org/licenses/MIT"}</script>
+<meta name="description" content="ns-frame: cortes, chaflanes, scoops y radius invertidos sobre cualquier elemento HTML. Bordes animados, aperturas, bento unificado y callouts HUD. Sin imágenes, accesible, SEO-friendly y compatible con CSP estricta.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/ns-frame/ns-fx.css">
+<script type="module" src="/ns-frame/ns-frame.js"></script>
+<script type="module" src="/ns-frame/ns-fx.js"></script>
+<script type="module" src="/ns-frame/ns-link.js"></script>
+<script type="module" src="/ns-frame/ns-bento.js"></script>
+<script type="module" src="/ns-frame/ns-pop.js"></script>
+<script type="module" src="/ns-frame/ns-skel.js"></script>
+<script type="module" src="/ns-frame/ns-carousel.js"></script>
+<style>
+:root {
+  --bg: #06090f;
+  --bg-2: #0a111b;
+  --ink: #e6f1f8;
+  --ink-2: #93a7b8;
+  --ink-3: #5d7185;
+  --line: rgba(120, 200, 235, .16);
+  --cy: #3de0ff;
+  --cy-2: rgba(61, 224, 255, .55);
+  --cy-3: rgba(61, 224, 255, .08);
+  --am: #ffb547;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+  --disp: 'Chakra Petch', 'Inter', sans-serif;
+  --ns-focus: #fff;
+  --ns-link-z: 0;
+}
+* { box-sizing: border-box }
+html { color-scheme: dark }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 400 16px/1.6 Inter, system-ui, sans-serif;
+  background-image:
+    radial-gradient(1200px 600px at 80% -10%, rgba(61,224,255,.10), transparent 60%),
+    linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: auto, 48px 48px, 48px 48px;
+  background-attachment: fixed;
+  overflow-x: hidden;
+}
+a { color: inherit }
+code, pre, .mono { font-family: var(--mono); font-size: .86em }
+.wrap { max-width: 1160px; margin: 0 auto; padding: 0 16px }
+h1, h2, h3 { font-family: var(--disp); letter-spacing: .01em; margin: 0 }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--cy) }
+
+/* ── Temas de marco (sólo variables CSS) ── */
+.hud {
+  background: linear-gradient(180deg, rgba(61,224,255,.075), rgba(61,224,255,.015)), rgba(8,14,22,.85);
+  --ns-border: var(--cy-2);
+  --ns-accent: var(--cy);
+  --ns-accent-width: 2px;
+  backdrop-filter: blur(6px);
+}
+.solid { background: var(--cy); color: #031018; --ns-border: none }
+.ghost { --ns-border: var(--cy-2); background: transparent }
+.amber { --ns-border: rgba(255,181,71,.6); --ns-accent: var(--am); background: linear-gradient(180deg, rgba(255,181,71,.08), rgba(255,181,71,.01)) }
+.glow { filter: drop-shadow(0 0 14px rgba(61,224,255,.28)) }
+
+/* ── Nav ── */
+nav { position: sticky; top: 0; z-index: 10; padding: 12px 0 }
+nav .bar { display: flex; align-items: center; gap: 20px; padding: 10px 18px }
+nav .logo { font: 700 18px var(--disp); display: flex; align-items: center; gap: 10px; text-decoration: none }
+nav .logo i { width: 18px; height: 18px; background: var(--cy); display: block }
+nav .links { margin-left: auto; display: flex; gap: 22px; font-size: 14px; color: var(--ink-2); white-space: nowrap }
+nav .links a { text-decoration: none }
+nav .links a:hover { color: var(--cy) }
+.nav-t { display: none; margin-left: auto; padding: 9px 14px; font: 500 12px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink); background: rgba(61,224,255,.08); border: 0; cursor: pointer; --ns-border: rgba(61,224,255,.35) }
+@media (max-width: 1100px) {
+  nav .bar { position: relative }
+  .nav-t { display: block }
+  nav .links { display: none; position: absolute; top: calc(100% + 8px); right: 0; z-index: 30; flex-direction: column; gap: 0; min-width: 220px; padding: 10px; background: rgba(8,14,22,.97); --ns-border: rgba(61,224,255,.45) }
+  nav .links.open { display: flex }
+  nav .links a { padding: 11px 12px }
+}
+
+/* ── Botones ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 10px; padding: 13px 24px;
+  font: 600 14px/1 var(--disp); letter-spacing: .08em; text-transform: uppercase;
+  text-decoration: none; border: 0; cursor: pointer; color: inherit;
+  transition: background .25s, color .25s;
+  --ns-morph-time: 260;
+}
+.btn.solid { color: #031018 }
+.btn.solid:hover { background: #8cefff }
+.btn.ghost:hover { background: var(--cy-3) }
+.btn:focus-visible { outline: none; --ns-border: #fff }
+
+/* ── Hero ── */
+.hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 48px; align-items: center; padding: 72px 0 96px }
+.hero h1 { font-size: clamp(40px, 6.4vw, 76px); line-height: .98; margin: 18px 0 20px; font-weight: 700 }
+.hero h1 span { color: var(--cy) }
+.hero p.lead { color: var(--ink-2); font-size: 18px; max-width: 520px; margin: 0 0 30px }
+.hero .cta { display: flex; gap: 12px; flex-wrap: wrap }
+.install { margin-top: 28px; display: inline-flex; gap: 12px; padding: 10px 16px; color: var(--ink-2); font: 13px var(--mono) }
+.install b { color: var(--cy); font-weight: 500 }
+.showcase { position: relative; aspect-ratio: 5/4.3 }
+.showcase .photo { position: absolute; inset: 0 0 18% 12%; object-fit: cover; width: 88%; height: 82% }
+.showcase .stat { position: absolute; left: 0; bottom: 0; width: 58%; padding: 22px 24px }
+.showcase .tag { position: absolute; right: 18px; top: 18px; padding: 8px 14px; font: 500 11px/1 var(--mono); letter-spacing: .14em; color: #031018 }
+.stat-wrap { position: absolute; left: 0; bottom: 0; width: 58% }
+@media (max-width: 560px) { .stat-wrap { width: 86% } }
+.stat .row { display: flex; justify-content: space-between; align-items: baseline; margin-top: 12px }
+.stat .big { font: 700 34px/1 var(--disp) }
+.stat .up { color: var(--cy); font: 500 13px var(--mono) }
+.bars { display: flex; gap: 4px; align-items: flex-end; height: 38px; margin-top: 16px }
+.bars i { flex: 1; background: linear-gradient(var(--cy), rgba(61,224,255,.25)); display: block }
+@media (max-width: 880px) { .hero { grid-template-columns: 1fr; padding-top: 40px } }
+
+/* ── Secciones ── */
+section { padding: 80px 0 }
+.head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 16px; margin-bottom: 36px }
+.head h2 { font-size: clamp(28px, 4vw, 42px); margin-top: 12px }
+.head p { color: var(--ink-2); max-width: 440px; margin: 0 }
+
+/* galería de formas */
+.shapes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px }
+/* 14 presets: en 4 columnas, los dos últimos ocupan media fila cada uno (sin huecos) */
+.shapes > :nth-last-child(-n+2) { grid-column: span 2 }
+@media (max-width: 1000px) { .shapes { grid-template-columns: repeat(2, 1fr) } .shapes > :nth-last-child(-n+2) { grid-column: auto } }
+@media (max-width: 560px) { .shapes { grid-template-columns: 1fr } }
+.shape { padding: 22px; min-height: 190px; display: flex; flex-direction: column; cursor: pointer; transition: background .2s }
+.shape:hover { background: linear-gradient(180deg, rgba(61,224,255,.14), rgba(61,224,255,.03)), rgba(8,14,22,.85) }
+.shape h3 { font-size: 20px; display: flex; justify-content: space-between; align-items: center; gap: 12px }
+.shape h3 small { white-space: nowrap }
+.shape h3 small { font: 500 11px var(--mono); color: var(--ink-3); letter-spacing: .1em }
+.shape[data-ns=pill] { padding-left: 72px }
+.shape code { margin-top: auto; color: var(--ink-2); display: block; padding-top: 20px; word-break: break-word }
+
+/* imágenes */
+.media-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 18px }
+.media-grid figure { margin: 0; position: relative }
+.media-grid img { width: 100%; height: 340px; object-fit: cover; display: block }
+.media-grid figcaption { margin-top: 12px; font: 13px var(--mono); color: var(--ink-2) }
+.media-grid figcaption b { color: var(--cy); font-weight: 500 }
+@media (max-width: 800px) { .media-grid { grid-template-columns: 1fr } .media-grid img { height: 240px } }
+
+/* innovación */
+.features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px }
+.feature { padding: 28px 26px 26px }
+.feature .n { font: 500 12px var(--mono); color: var(--cy); letter-spacing: .12em }
+.feature h3 { font-size: 20px; margin: 14px 0 10px }
+.feature p { margin: 0; color: var(--ink-2); font-size: 15px }
+@media (max-width: 880px) { .features { grid-template-columns: 1fr } }
+
+/* pricing, ejemplo real */
+.plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; align-items: stretch }
+.plan { padding: 34px 28px 30px; display: flex; flex-direction: column; gap: 14px }
+.plan .price { font: 700 44px/1 var(--disp) }
+.plan .price small { font-size: 15px; color: var(--ink-3); font-weight: 500 }
+.plan ul { list-style: none; padding: 0; margin: 6px 0 18px; color: var(--ink-2); font-size: 15px; display: grid; gap: 8px }
+.plan li::before { content: ''; display: inline-block; width: 7px; height: 7px; background: var(--cy); margin-right: 10px; transform: rotate(45deg) translateY(-2px) }
+.plan .btn { margin-top: auto; justify-content: center }
+@media (max-width: 880px) { .plans { grid-template-columns: 1fr } }
+
+/* playground */
+.play { display: grid; grid-template-columns: 1fr 1.2fr; gap: 18px }
+.editor { padding: 22px; display: flex; flex-direction: column; gap: 14px }
+.editor label { font: 500 11px var(--mono); letter-spacing: .14em; color: var(--ink-3); text-transform: uppercase }
+.editor textarea {
+  width: 100%; min-height: 130px; resize: vertical; background: rgba(0,0,0,.35); color: var(--ink);
+  border: 1px solid var(--line); padding: 12px; font: 14px/1.6 var(--mono); outline: none;
+}
+.editor textarea:focus { border-color: var(--cy-2) }
+.chips { display: flex; flex-wrap: wrap; gap: 8px }
+.chip { padding: 9px 13px; font: 500 12px/1 var(--mono); background: rgba(61,224,255,.08); color: var(--ink-2); border: 0; cursor: pointer; --ns-border: rgba(61,224,255,.3) }
+.chip:hover, .chip[aria-pressed=true] { color: var(--cy); background: rgba(61,224,255,.16) }
+.stage { position: relative; min-height: 380px; display: grid; place-items: center; padding: 30px; overflow: hidden }
+.resizer { resize: both; overflow: hidden; width: 78%; height: 240px; min-width: 120px; min-height: 80px; max-width: 100%; max-height: 340px }
+.resizer ns-frame { width: 100%; height: 100%; display: grid; place-items: center; color: var(--ink-3); font: 12px var(--mono) }
+.stage .hint { position: absolute; bottom: 12px; right: 30px; font: 11px var(--mono); color: var(--ink-3) }
+.out { grid-column: 1 / -1; padding: 20px 22px; display: grid; gap: 10px }
+.out pre { margin: 0; white-space: pre-wrap; word-break: break-all; color: var(--ink-2); max-height: 150px; overflow: auto; background: rgba(0,0,0,.3); padding: 12px }
+.out .row { display: flex; justify-content: space-between; align-items: center; gap: 10px }
+.copy { padding: 8px 16px; font: 500 11px/1 var(--mono); background: transparent; color: var(--cy); border: 0; cursor: pointer; --ns-border: rgba(61,224,255,.4) }
+@media (max-width: 880px) { .play { grid-template-columns: 1fr } }
+
+/* sintaxis */
+.syntax { padding: 8px 0 }
+table { width: 100%; border-collapse: collapse; font-size: 14px }
+th, td { text-align: left; padding: 12px 20px; border-bottom: 1px solid var(--line); vertical-align: top }
+th { font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3) }
+td code { color: var(--cy) }
+td:last-child { color: var(--ink-2) }
+.tscroll { overflow-x: auto }
+
+.usage { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px }
+.usage pre { margin: 0; padding: 22px; color: var(--ink-2); overflow-x: auto; font-size: 13px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere }
+.usage pre b { color: var(--cy); font-weight: 400 }
+@media (max-width: 880px) { .usage { grid-template-columns: 1fr } }
+
+/* pricing U */
+.switch { display: inline-flex; gap: 4px; padding: 6px }
+.switch button, .modes button { --ns-border: none }
+.switch button:hover, .modes button:hover { background: rgba(61,224,255,.08) }
+.switch button { padding: 9px 16px; font: 500 12px/1 var(--mono); color: var(--ink-2); background: transparent; border: 0; cursor: pointer }
+.switch button[aria-pressed=true] { color: #031018; background: var(--cy) }
+.uplans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; align-items: stretch }
+.uplan { padding: 34px 28px 30px; display: flex; flex-direction: column; gap: 14px; --ns-morph-time: 420 }
+.uplan .price { font: 700 44px/1 var(--disp) }
+.uplan .price small { font-size: 15px; color: var(--ink-3); font-weight: 500 }
+.uplan ul { list-style: none; padding: 0; margin: 6px 0 18px; color: var(--ink-2); font-size: 15px; display: grid; gap: 8px }
+.uplan li::before { content: '✓'; color: var(--ns-u, var(--cy)); margin-right: 10px; font-size: 13px }
+.uplan .btn { margin-top: auto; justify-content: center }
+.uplan.violet { --ns-u: #8b7bff }
+.uplan.amber2 { --ns-u: #ffb547 }
+.uplan .btn.ghost { --ns-border: color-mix(in srgb, var(--ns-u, var(--cy)) 55%, transparent) }
+.uplan .btn.solid { background: var(--ns-u, var(--cy)) }
+@media (max-width: 880px) { .uplans { grid-template-columns: 1fr } }
+
+.ucontrols { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: center; padding: 14px 20px; margin-bottom: 18px; font: 12px var(--mono); color: var(--ink-2) }
+.ucontrols label { display: flex; align-items: center; gap: 10px }
+.ucontrols input { accent-color: var(--cy); width: 120px }
+.ucontrols button { margin-left: auto; padding: 8px 14px; font: 500 12px/1 var(--mono); color: #031018; background: var(--cy); border: 0; cursor: pointer }
+@media (max-width: 640px) { .ucontrols input { width: 100% } .ucontrols label { flex: 1 1 100%; justify-content: space-between } .ucontrols button { margin-left: 0 } }
+
+.ugal { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 18px }
+.ucard { min-height: 220px; display: flex; flex-direction: column; gap: 6px; --ns-pad: 22px; --ns-u-bg: #0a1119; color: var(--ink) }
+.ucard b { font: 600 19px var(--disp) }
+.ucard code { color: var(--ink-2); font-size: 12px }
+.ucard span { color: var(--ink-2); font-size: 14px; line-height: 1.5; margin-bottom: auto }
+.uanim-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px; margin: 48px 0 18px }
+.uanim-head h3 { font-size: 22px }
+.uanim-head p { margin: 0; color: var(--ink-2) }
+.ugal.ugal-3 { grid-template-columns: repeat(3, 1fr) }
+@media (max-width: 880px) { .ugal.ugal-3 { grid-template-columns: 1fr } }
+
+.comp { display: grid; grid-template-columns: 1fr 1fr; gap: 18px }
+.cbox { display: flex; flex-direction: column; gap: 12px; --ns-pad: 26px; min-width: 0 }
+.cbox p { margin: 0; color: var(--ink-2) }
+.crow { display: flex; flex-wrap: wrap; gap: 12px; margin-top: auto; padding-top: 8px }
+.crow .edge { margin-left: auto }
+[popover][data-ns-arrow] { font-size: 14px; line-height: 1.5; --ns-pad: 14px }
+.native-demo { background: linear-gradient(180deg, rgba(61,224,255,.1), rgba(8,14,22,.9)); box-shadow: 0 0 0 1px rgba(61,224,255,.5), 0 18px 50px -12px rgba(61,224,255,.45); outline-offset: 4px }
+.native-demo:focus-visible { outline: 2px solid #fff }
+.scroll-demo { min-height: 230px }
+@media (max-width: 880px) { .comp { grid-template-columns: 1fr } }
+
+/* ── Skeletons ── */
+.skel-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-bottom: 20px }
+.skel-bar output { color: var(--ink-2) }
+.skel { display: grid; grid-template-columns: 1.15fr 1fr; gap: 18px }
+.sk-card { grid-row: span 2 }
+.sk-card, .sk-list, .sk-stat { --ns-pad: 22px; display: flex; flex-direction: column; gap: 10px; min-width: 0 }
+.sk-card img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; background: var(--bg-2); margin-bottom: 4px }
+.sk-card h3 { font-size: 20px }
+.sk-card p, .sk-stat p, .sk-list span { margin: 0; color: var(--ink-2) }
+.sk-card .crow { align-items: center; padding-top: 4px }
+.sk-tag { padding: 9px 12px; font: 500 12px/1 var(--mono); color: var(--cy); background: rgba(61,224,255,.1); --ns-border: rgba(61,224,255,.3) }
+.sk-list ul { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 16px }
+.sk-list li { display: flex; gap: 14px; align-items: center }
+.sk-list .av { flex: none; width: 42px; height: 42px; background: linear-gradient(135deg, var(--cy), #7b5cff) }
+.sk-list b { display: block; font: 600 15px/1.35 var(--disp) }
+.sk-list span { font-size: 13px }
+.sk-stat { --ns-border: rgba(61,224,255,.35); background: #08111b }
+.sk-stat .big { font: 700 42px/1.1 var(--disp) }
+.sk-stat .bars { height: 56px; margin-top: 6px }
+@media (max-width: 640px) { .skel { grid-template-columns: 1fr } .sk-card { grid-row: auto } }
+
+/* ── Carrusel ── */
+.car { --ns-slide: calc((100% - 32px) / 3); padding-bottom: 2px }
+.car-s { --ns-pad: 18px; display: flex; flex-direction: column; gap: 6px }
+.car-s img { display: block; width: 100%; height: auto; aspect-ratio: 7 / 4; object-fit: cover; margin-bottom: 8px; background: var(--bg-2) }
+.car-s b { font: 600 18px var(--disp) }
+.car-s span { color: var(--ink-2); font-size: 14px }
+.car:focus-visible { outline: 2px solid var(--cy); outline-offset: 4px }
+@media (max-width: 880px) { .car { --ns-slide: calc((100% - 16px) / 2) } }
+@media (max-width: 560px) { .car { --ns-slide: 84% } }
+
+/* ── View Transitions ── */
+.vt-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px }
+.vt-card { display: flex; flex-direction: column; gap: 6px; padding: 16px 16px 20px; text-align: left; font: inherit; color: inherit; border: 0; cursor: pointer }
+.vt-card img, .vt-detail img { display: block; width: 100%; height: auto; aspect-ratio: 7 / 4; object-fit: cover; background: var(--bg-2) }
+.vt-card img { margin-bottom: 8px }
+.vt-card b { font: 600 18px var(--disp) }
+.vt-card span { color: var(--ink-2); font-size: 14px }
+.vt-card:hover { background: linear-gradient(180deg, rgba(61,224,255,.14), rgba(61,224,255,.03)), rgba(8,14,22,.85) }
+.vt-detail { display: grid; grid-template-columns: 1.2fr 1fr; gap: 28px; padding: 22px }
+.vt-grid[hidden], .vt-detail[hidden] { display: none }
+.vt-body { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; padding: 12px 8px }
+.vt-body h3 { font-size: 30px; outline: none }
+.vt-body p { margin: 0; color: var(--ink-2) }
+.vt-body .btn { margin-top: auto }
+@media (max-width: 880px) { .vt-grid { grid-template-columns: 1fr } .vt-detail { grid-template-columns: 1fr } }
+
+/* ── Toasts ── */
+.toast-demo { --ns-pad: 26px; display: grid; gap: 18px }
+.toast-demo .crow { margin: 0; padding: 0 }
+.toast-pos { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; color: var(--ink-2) }
+.ns-toasts { font-family: Inter, system-ui, sans-serif; color: var(--ink) }
+.ns-toast b { font-family: var(--disp); letter-spacing: .02em }
+
+/* efectos */
+.fxgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px }
+.fx { min-height: 180px; padding: 22px; display: flex; flex-direction: column; justify-content: flex-end; gap: 6px }
+.fx b { font: 600 18px var(--disp) }
+.fx code { color: var(--ink-3) }
+.fx .big { font: 700 30px/1.1 var(--disp); margin-bottom: auto }
+/* la barra de progreso ocupa su propia fila: la cuadrícula de 12 queda completa */
+#prog { grid-column: 1 / -1; min-height: 0; display: grid; grid-template-columns: auto auto 1fr auto; align-items: center; gap: 12px 28px }
+#prog .big { margin: 0 }
+#prog input { min-width: 0 }
+@media (max-width: 700px) { #prog { grid-template-columns: auto 1fr } #prog input, #prog code { grid-column: 1 / -1 } }
+
+/* libertad */
+.free { display: grid; grid-template-columns: 1fr 1fr; gap: 18px }
+.free > div { padding: 26px; min-width: 0 }
+.free p { color: var(--ink-2); margin: 8px 0 18px }
+.polyshow { height: 200px; display: grid; place-items: center; font: 600 22px var(--disp); letter-spacing: .1em }
+.qbox { resize: horizontal; overflow: hidden; width: 100%; min-width: 180px; max-width: 100% }
+.qbox > div { height: 170px; display: grid; place-items: center; font: 13px var(--mono); color: var(--ink-2) }
+@media (max-width: 880px) { .free { grid-template-columns: 1fr } }
+
+/* rendimiento */
+.perf { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px }
+.kpi { padding: 22px }
+.kpi .v { font: 700 34px/1 var(--disp); margin-top: 10px }
+.kpi .v small { font-size: 14px; color: var(--ink-3) }
+.kpi p { margin: 8px 0 0; color: var(--ink-2); font-size: 14px }
+.bench { margin-top: 18px; padding: 22px; display: flex; flex-wrap: wrap; gap: 18px; align-items: center }
+.bench output { font: 14px var(--mono); color: var(--ink-2) }
+.bench output b { color: var(--cy); font-weight: 500 }
+#benchzone { position: absolute; left: -9999px; top: 0; width: 1200px }
+@media (max-width: 880px) { .perf { grid-template-columns: 1fr 1fr } }
+
+/* aura U */
+.aura-sec { padding: 120px 0 200px; text-align: center }
+.aura-in { display: flex; flex-direction: column; align-items: center; gap: 18px }
+.aura-h { font-size: clamp(34px, 6vw, 68px); line-height: 1.02; max-width: 820px }
+.aura-p { color: var(--ink-2); max-width: 600px; margin: 0 0 8px; font-size: 17px }
+.aura-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 26px }
+.aura-chips span { padding: 8px 16px; font: 12px var(--mono); color: var(--ink-2); background: rgba(255,255,255,.04) }
+
+/* aperturas */
+.ap-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin-bottom: 26px }
+.modes { display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 6px }
+.modes button { padding: 10px 15px; font: 500 12px/1 var(--mono); color: var(--ink-2); background: transparent; border: 0; cursor: pointer }
+.modes button[aria-pressed=true] { color: #031018; background: var(--cy) }
+.menu-wrap { position: relative }
+.menu { position: absolute; top: calc(100% + 8px); left: 0; z-index: 20; min-width: 220px; padding: 10px; display: grid }
+.menu[hidden] { display: none }
+.menu a { padding: 10px 12px; text-decoration: none; color: var(--ink-2); font-size: 14px }
+.menu a:hover, .menu a:focus-visible { color: var(--cy); background: var(--cy-3); outline: none }
+.enter-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px }
+@media (max-width: 880px) { .enter-grid { grid-template-columns: 1fr } }
+dialog { background: transparent; border: 0; padding: 16px; max-width: min(560px, 100%); color: var(--ink); overflow: visible }
+dialog::backdrop { background: rgba(3, 6, 12, .72); backdrop-filter: blur(4px) }
+.dlg { padding: 34px 32px 30px; display: grid; gap: 14px; background: linear-gradient(180deg, rgba(61,224,255,.1), rgba(8,14,22,.96) 40%) }
+.dlg h3 { font-size: 28px }
+.dlg p { margin: 0 0 8px; color: var(--ink-2) }
+.dlg .btn { justify-self: start }
+kbd { font: 12px var(--mono); padding: 2px 6px; border: 1px solid var(--line); border-radius: 4px }
+
+/* callouts */
+.anno { display: grid; grid-template-columns: 1fr 1.3fr 1fr; gap: 56px; align-items: center }
+.anno-l, .anno-r { display: grid; gap: 70px }
+.tag-c { padding: 14px 18px; display: grid; gap: 2px; z-index: 1 }
+.tag-c b { font: 600 16px var(--disp) }
+.tag-c span { font: 12px var(--mono); color: var(--ink-2) }
+.device { position: relative; aspect-ratio: 4/3.2; --ns-pat-mask: radial-gradient(circle, #000, transparent 75%) }
+.pt { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: var(--cy); box-shadow: 0 0 0 6px rgba(61,224,255,.15), 0 0 14px var(--cy) }
+.core { position: absolute; inset: 30% 30%; background: rgba(61,224,255,.06) }
+@media (max-width: 880px) { .anno { grid-template-columns: 1fr; gap: 36px } .anno-l, .anno-r { grid-template-columns: 1fr 1fr; gap: 14px } .device { order: -1 } }
+
+/* bento */
+.bento-demo { --ns-gap: 14px; --ns-row: 170px; --ns-min: 230px; --ns-motion: rgba(255,255,255,.9); --ns-spot-size: 180; --ns-spot-fill: .06 }
+.tile { display: flex; flex-direction: column; gap: 10px; background: linear-gradient(180deg, rgba(61,224,255,.06), rgba(61,224,255,.01)), rgba(8,14,22,.85); min-width: 0 }
+.tile p { margin: 0; color: var(--ink-2); font-size: 15px }
+.tile-h { font-size: clamp(24px, 3vw, 34px); line-height: 1.1; text-wrap: balance }
+.tile-h.sm { font-size: 22px }
+.tile .btn { margin-top: auto; align-self: flex-start }
+.kpi-v { font: 700 40px/1 var(--disp) !important; color: var(--ink) !important }
+.plan-n { font: 600 13px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--cy); display: flex; align-items: center; gap: 10px; flex-wrap: wrap }
+.badge { font: 600 10px/1 var(--mono); letter-spacing: .12em; padding: 5px 9px; border-radius: 99px; color: #0b0720; background: linear-gradient(90deg, #8b7bff, #ff6bd6) }
+
+.foot { margin-top: 40px; border-top: 1px solid var(--line); background: linear-gradient(rgba(61,224,255,.03), transparent 70%) }
+.foot-in { display: grid; grid-template-columns: 1fr auto; gap: 18px 40px; padding: 44px 16px 56px }
+.foot-logo { font: 700 18px var(--disp); display: inline-flex; align-items: center; gap: 10px; text-decoration: none }
+.foot-logo i { width: 18px; height: 18px; background: var(--cy); display: block }
+.foot-brand p { margin: 10px 0 0; color: var(--ink-2); max-width: 380px }
+.foot-links { display: flex; flex-wrap: wrap; gap: 10px 24px; align-self: center; font-size: 14px; color: var(--ink-2) }
+.foot-links a { text-decoration: none }
+.foot-links a:hover { color: var(--cy) }
+.foot-meta { grid-column: 1 / -1; margin: 8px 0 0; color: var(--ink-3); font-size: 12px }
+@media (max-width: 700px) { .foot-in { grid-template-columns: 1fr } }
+</style>
+</head>
+<body>
+
+<nav aria-label="Principal">
+  <div class="wrap">
+    <div class="bar hud" data-ns="tl+br bevel 14; bottom cut center 28% 4; radius 2">
+      <a class="logo" href="#"><i data-ns="all bevel 5"></i>ns-frame</a>
+      <button class="nav-t" id="nav-t" aria-expanded="false" aria-controls="nav-links" data-ns="chip">Menú</button>
+      <div class="links" id="nav-links">
+        <a href="#formas">Formas</a><a href="#pricing">Luz en U</a><a href="#movimiento">Movimiento</a><a href="#componentes">Componentes</a><a href="#skeletons">Skeletons</a><a href="#toasts">Toasts</a><a href="#carrusel">Carrusel</a><a href="#playground">Playground</a><a href="#sintaxis">Sintaxis</a><a href="/docs/introduccion">Docs</a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<main>
+<header class="wrap hero">
+  <div>
+    <div class="eyebrow">// geometry engine · 8 KB gzip · 0 deps · MIT</div>
+    <h1>Cortes <span>futuristas</span>, sin imágenes.</h1>
+    <p class="lead">Chaflanes, notches, scoops e incluso <em>radius dentro del corte</em>, sobre cualquier elemento. Cortes en píxeles exactos que no se deforman, bordes reales y morph animado.</p>
+    <div class="cta">
+      <a class="btn solid" href="#playground" data-ns="tl+br bevel 12; radius 2" data-ns-hover="tl+br bevel 20; radius 2">Probar en vivo →</a>
+      <a class="btn ghost" href="/docs/introduccion" data-ns="tl+br bevel 12; radius 2" data-ns-hover="all bevel 12; radius 2">Documentación</a>
+    </div>
+    <div class="install ghost" data-ns="chip"><b>$</b> &lt;script type="module" src="ns-frame.js"&gt;</div>
+  </div>
+
+  <div class="showcase">
+    <img class="photo" src="https://picsum.photos/seed/nsframe-city/900/760" alt="Ciudad de noche" data-ns="tl round 40; br round 40; tr+bl bevel 26; top cut 55% 80% 10; radius 4">
+    <span class="tag solid" data-ns="tl+br bevel 8">LIVE · 04</span>
+    <div class="glow stat-wrap">
+      <div class="stat hud" style="position:relative;width:100%" data-ns="tl bevel 18; br bevel 18; top tab 0 46% 8; radius 3" data-ns-draw data-ns-trace>
+        <div class="eyebrow">Throughput</div>
+        <div class="row"><span class="big">98.4%</span><span class="up">▲ 12.6</span></div>
+        <div class="bars"><i style="height:30%"></i><i style="height:45%"></i><i style="height:38%"></i><i style="height:62%"></i><i style="height:55%"></i><i style="height:74%"></i><i style="height:68%"></i><i style="height:90%"></i><i style="height:84%"></i><i style="height:100%"></i></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="aura" class="ns-aura aura-sec">
+  <div class="wrap aura-in">
+    <div class="eyebrow">01 · Fondo en U</div>
+    <h2 class="aura-h">Una luz que te <span class="ns-text-aurora">sostiene</span></h2>
+    <p class="aura-p">Luz de fondo en U que llena la base y se desvanece hacia arriba y hacia el centro, con una clase: <code>ns-aura</code>. Tres colores que se funden despacio animando sólo <code>opacity</code>: sin blur y sin repintados.</p>
+    <div class="cta" style="justify-content:center">
+      <a class="btn solid" href="#aperturas" data-ns="all round 50%" data-ns-motion="spot" style="--ns-motion:#fff">Ver aperturas →</a>
+      <a class="btn ghost" href="#callouts" data-ns="all round 50%" style="--ns-border:rgba(255,255,255,.25)">Callouts HUD</a>
+    </div>
+    <div class="aura-chips">
+      <span class="hud" data-ns="all round 50%" style="--ns-border:rgba(255,255,255,.14)">--ns-aura-1</span>
+      <span class="hud" data-ns="all round 50%" style="--ns-border:rgba(255,255,255,.14)">--ns-aura-2</span>
+      <span class="hud" data-ns="all round 50%" style="--ns-border:rgba(255,255,255,.14)">--ns-aura-3</span>
+      <span class="hud" data-ns="all round 50%" style="--ns-border:rgba(255,255,255,.14)">.ns-aura-top = ∩</span>
+    </div>
+  </div>
+</section>
+
+
+<section id="formas">
+  <div class="wrap">
+    <div class="head">
+      <div><div class="eyebrow">02 · Presets</div><h2>Formas listas para producción</h2></div>
+      <p>Pensadas para interfaces reales: cards, botones, tabs, tickets, media. Haz clic en una para abrirla en el playground.</p>
+    </div>
+    <div class="shapes" id="shapes"></div>
+  </div>
+</section>
+
+<section id="bento">
+  <div class="wrap">
+    <div class="head">
+      <div><div class="eyebrow">03 · Bento unificado</div><h2>Una cuadrícula, un solo objeto</h2></div>
+      <p>Las esquinas exteriores del conjunto llevan el corte grande y las interiores un radio discreto, así el bento se lee como una pieza esculpida. Las columnas dependen del ancho real del contenedor y en móvil se reacomoda, no se encoge. El padding es 2 × gap y respeta los cortes. La luz sigue al puntero y cruza los huecos.</p>
+    </div>
+    <div class="ns-bento bento-demo" data-ns-bento="outer bevel 30; inner round 12; radius 2">
+      <article class="ns-big tile hud" data-ns-motion="spot">
+        <div class="eyebrow">Anclaje</div>
+        <h3 class="tile-h">Formas que entienden su espacio</h3>
+        <p>Cortes en px exactos, bordes reales, aperturas y morph. Pon aquí lo más importante: es la celda que se lee primero.</p>
+        <a class="btn solid" href="#playground" data-ns="button">Probar ahora</a>
+      </article>
+      <article class="tile hud" data-ns-motion="spot"><div class="eyebrow">Peso</div><p class="kpi-v">8.0 KB</p><p>núcleo completo, gzip</p></article>
+      <article class="tile hud" data-ns-motion="spot"><div class="eyebrow">Seguridad</div><p class="kpi-v">0</p><p>innerHTML · CSP estricta</p></article>
+      <article class="ns-w2 tile hud" data-ns-motion="spot"><div class="eyebrow">Responsivo</div><h3 class="tile-h sm">Consultas de forma por elemento</h3><p><code>@&lt;420</code> cambia la forma según el ancho del propio componente.</p></article>
+      <article class="tile hud ns-dots" data-ns-motion="spot"><div class="eyebrow">Accesible</div><p>Foco que sigue la forma y <code>prefers-reduced-motion</code>.</p></article>
+      <article class="ns-w2 tile hud" data-ns-motion="spot"><div class="eyebrow">Sin frameworks</div><h3 class="tile-h sm">Atributos HTML, nada más</h3><p>React, Vue, Svelte, Astro o HTML plano. El contenido sigue en el HTML: indexable y rápido.</p></article>
+      <article class="tile hud ns-u" data-ns-motion="spot" style="--ns-u:#8b7bff;--ns-u-glow:.7"><div class="eyebrow">Licencia</div><p class="kpi-v">MIT</p><p>listo para open source</p></article>
+    </div>
+  </div>
+</section>
+
+<section id="imagenes">
+  <div class="wrap">
+    <div class="head">
+      <div><div class="eyebrow">04 · Media</div><h2>Recorta imágenes directamente</h2></div>
+      <p><code>data-ns</code> funciona en <code>&lt;img&gt;</code>, <code>&lt;video&gt;</code> o cualquier bloque. El corte recorta el contenido real, no una máscara pegada encima.</p>
+    </div>
+    <div class="media-grid">
+      <figure><img src="https://picsum.photos/seed/nsframe-a/900/600" alt="" data-ns="tl bevel 36; br round 36; top cut 60% 90% 12 r6; radius 4"><figcaption><b>bevel + round + cut</b> en una sola forma</figcaption></figure>
+      <figure><img src="https://picsum.photos/seed/nsframe-b/600/700" alt="" data-ns="all scoop 28; left+right scoop center 40 16"><figcaption><b>scoop</b>: radius invertido</figcaption></figure>
+      <figure><img src="https://picsum.photos/seed/nsframe-c/600/700" alt="" data-ns="all notch 22; radius 8"><figcaption><b>notch + radius</b>: corte redondeado</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section id="innovacion">
+  <div class="wrap">
+    <div class="head">
+      <div><div class="eyebrow">05 · Qué la hace distinta</div><h2>Más allá de clip-path</h2></div>
+      <p>Lo que hoy hace falta resolver con imágenes, SVG a mano o varias librerías, aquí sale de una sola línea.</p>
+    </div>
+    <div class="features">
+      <div class="feature hud" data-ns="card"><div class="n">A · FILLET UNIVERSAL</div><h3>Radius en cualquier vértice</h3><p>Cada punto de la forma, convexo o cóncavo, puede redondearse. Así salen cortes redondeados y radius invertidos dentro de un notch, cosas que ni <code>corner-shape</code> hace.</p></div>
+      <div class="feature hud" data-ns="card"><div class="n">B · CONSULTAS DE FORMA</div><h3>Responsive por elemento</h3><p>Los cortes miden lo mismo a cualquier tamaño, y con <code>@&lt;420</code> la forma cambia según el ancho del propio elemento, no de la ventana.</p></div>
+      <div class="feature hud" data-ns="card"><div class="n">C · BORDE REAL</div><h3>Bordes en degradado</h3><p><code>--ns-border</code> acepta un color, <code>linear-gradient()</code> o <code>radial-gradient()</code>, y puede girar. Además: doble línea, brackets en esquinas y un cometa que recorre el borde.</p></div>
+      <div class="feature hud" data-ns="card"><div class="n">D · MORPH</div><h3>Interpolación de geometría</h3><p>Hover, foco o un cambio de atributo interpolan los vértices, no el string del path. Funciona igual en Chrome, Safari y Firefox.</p></div>
+      <div class="feature hud" data-ns="card"><div class="n">E · COMPILA A CSS</div><h3>Modo cero JS</h3><p><code>css(shape)</code> genera un <code>shape()</code> nativo con <code>calc(% + px)</code>. Es responsive sin runtime y sirve para SSR o hojas de estilo estáticas.</p></div>
+      <div class="feature hud" data-ns="card"><div class="n">F · EN TODO</div><h3>Cualquier framework</h3><p>Es un atributo HTML: sirve en React, Vue, Svelte, Astro o HTML plano. Las formas también se pueden definir en CSS con <code>--ns-shape</code> y media queries.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="pricing">
+  <div class="wrap">
+    <div class="head">
+      <div><div class="eyebrow">06 · Borde en U</div><h2>Pricing con borde en U</h2></div>
+      <div>
+        <p style="margin-bottom:14px">La luz llena la base, esquinas incluidas, y se desvanece de abajo hacia arriba y de afuera hacia adentro, abrazando la base y los costados. Una clase, <code>ns-u</code>, con cualquier forma; <code>ns-u-top</code> la hace descender. Sin blur: se pinta una sola vez.</p>
+        <div class="switch hud" data-ns="all bevel 10; radius 2" id="uswitch">
+          <button data-ns-nest="round 2" aria-pressed="true" data-shape="all round 18">Redonda</button>
+          <button data-ns-nest="round 2" aria-pressed="false" data-shape="tl+br bevel 24; radius 3">Futurista</button>
+          <button data-ns-nest="round 2" aria-pressed="false" data-shape="all bevel 14; top cut center 38% 6; radius 3">HUD</button>
+        </div>
+      </div>
+    </div>
+    <div class="ucontrols hud" data-ns="tl+br bevel 10; radius 2" id="ucontrols">
+      <label>Altura <input type="range" min="10" max="90" value="42" data-v="--ns-u-rise" data-u="%"></label>
+      <label>Costados <input type="range" min="0" max="45" value="22" data-v="--ns-u-side" data-u="%"></label>
+      <label>Esquinas <input type="range" min="0" max="100" value="62" data-v="--ns-u-corner" data-u="%"></label>
+      <label>Intensidad <input type="range" min="0" max="100" value="60" data-v="--ns-u-glow" data-u=""></label>
+      <button type="button" id="u-dir" aria-pressed="false">↑ Asciende</button>
+    </div>
+    <div class="uplans" id="uplans">
+      <div class="uplan ns-u" data-ns="all round 18">
+        <h3 class="plan-n">Starter</h3><div class="price">$0 <small>/ mes</small></div>
+        <ul><li>3 proyectos</li><li>Todos los presets</li><li>Soporte comunidad</li></ul>
+        <a href="#" class="btn ghost" data-ns="all round 10">Empezar</a>
+      </div>
+      <div class="ns-halo" style="--ns-halo:rgba(139,123,255,.35)">
+        <div class="uplan ns-u violet ns-dots" style="height:100%;--ns-pat:rgba(139,123,255,.25);--ns-pat-mask:linear-gradient(transparent 40%,#000)" data-ns="all round 18" data-ns-trace>
+          <h3 class="plan-n" style="color:#b4a9ff">Pro Max <span class="badge">Recomendado</span></h3><div class="price">$12 <small>/ mes</small></div>
+          <ul><li>Proyectos ilimitados</li><li>Formas personalizadas</li><li>Export a CSS shape()</li><li>Soporte prioritario</li></ul>
+          <a href="#" class="btn solid ns-shimmer" data-ns="all round 10">Elegir Pro</a>
+        </div>
+      </div>
+      <div class="uplan ns-u amber2" data-ns="all round 18">
+        <h3 class="plan-n" style="color:var(--am)">Team</h3><div class="price">$39 <small>/ mes</small></div>
+        <ul><li>Todo lo de Pro</li><li>Design tokens compartidos</li><li>SSO</li></ul>
+        <a href="#" class="btn ghost" data-ns="all round 10">Contactar</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="u-combos">
+  <div class="wrap">
+    <div class="head">
+      <div><div class="eyebrow">07 · Luz en U × todo</div><h2>Combinaciones</h2></div>
+      <p>La luz en U se combina con cualquier forma, dirección, textura, borde y animación, porque cada capa es independiente: la forma recorta, la textura va en <code>::before</code>, la luz en <code>::after</code> y el borde en SVG. Pasa el mouse por las tarjetas.</p>
+    </div>
+    <div class="ugal">
+      <article class="ucard ns-u" data-ns="tl+br bevel 22; radius 2" data-ns-pad data-ns-motion="comet"><b>Cometa</b><code>ns-u · motion comet</code></article>
+      <article class="ucard ns-u-top ns-grid" data-ns="hud" data-ns-pad style="--ns-u:#8b7bff"><b>Desciende + retícula</b><code>ns-u-top · ns-grid · hud</code></article>
+      <article class="ucard ns-u-left ns-dots" data-ns="ticket" data-ns-pad style="--ns-u:#ff6bd6;--ns-pat:rgba(255,107,214,.25)"><b>Lateral + puntos</b><code>ns-u-left · ns-dots · ticket</code></article>
+      <article class="ucard ns-u-right ns-stripes" data-ns="wing" data-ns-pad style="--ns-u:#ffb547;--ns-pat:rgba(255,181,71,.16)"><b>Derecha + rayas</b><code>ns-u-right · ns-stripes · wing</code></article>
+      <article class="ucard ns-u ns-u-hover" data-ns="card" data-ns-hover="tl+br bevel 34; radius 2" data-ns-pad><b>Sube con el hover</b><code>ns-u-hover · morph</code></article>
+      <article class="ucard ns-u ns-u-hue" data-ns="soft" data-ns-pad><b>Color vivo</b><code>ns-u-hue · soft</code></article>
+      <article class="ucard ns-u ns-u-breathe ns-scan" data-ns="notch" data-ns-pad style="--ns-u:#3de0ff;--ns-pat:rgba(61,224,255,.08)"><b>Respira + scan</b><code>ns-u-breathe · ns-scan · notch</code></article>
+      <article class="ucard ns-u" data-ns="plate" data-ns-pad data-ns-motion="orbit" style="--ns-inner:6px;--ns-u:#8b7bff;--ns-motion:#fff"><b>Órbita + doble línea</b><code>motion orbit · --ns-inner</code></article>
+    </div>
+    <div class="uanim-head">
+      <h3>El conjunto en movimiento</h3>
+      <p>Base, costados, esquinas y borde se mueven juntos, con curvas suaves.</p>
+    </div>
+    <div class="ugal ugal-3">
+      <article class="ucard ns-u ns-u-live" data-ns="tl+br bevel 22; radius 2" data-ns-pad><b>Respira</b><span>La intensidad baja un poco, se recupera y crece apenas por encima.</span><code>ns-u-live</code></article>
+      <article class="ucard ns-u ns-u-tide" data-ns="all bevel 14; radius 2" data-ns-pad style="--ns-u:#8b7bff"><b>Marea</b><span>La luz sube despacio por los costados y vuelve a la base.</span><code>ns-u-tide</code></article>
+      <article class="ucard ns-u ns-u-surge" data-ns="soft" data-ns-pad style="--ns-u:#3dffa8"><b>Pulso de energía</b><span>La luz trepa por los bordes del marco y se asienta.</span><code>ns-u-surge</code></article>
+    </div>
+  </div>
+</section>
+
+<section id="efectos">
+  <div class="wrap">
+    <div class="head">
+      <div><div class="eyebrow">08 · Efectos y patrones</div><h2>Animaciones que siguen la forma</h2></div>
+      <p>Módulo opcional <code>ns-fx.css</code>: son clases de CSS puro y cualquier marco los recorta con su forma. Las animaciones se pausan solas fuera de pantalla.</p>
+    </div>
+    <div class="fxgrid">
+      <div class="fx ns-aurora" data-ns="card" data-ns-spin="5s" style="--ns-border-width:1.5px;background:linear-gradient(180deg,rgba(139,123,255,.08),rgba(61,224,255,.02)),rgba(8,14,22,.85)"><span class="big ns-text-aurora">Aurora</span><b>Borde que gira</b><code>ns-aurora + data-ns-spin</code></div>
+      <div class="fx hud" data-ns="card" data-ns-trace style="--ns-trace:#fff"><span class="big">Cometa</span><b>Luz con estela</b><code>data-ns-trace</code></div>
+      <div class="fx hud" data-ns="panel" style="--ns-inner:6px"><span class="big">Doble línea</span><b>Contorno interior</b><code>--ns-inner: 6px</code></div>
+      <div class="fx hud ns-dots" data-ns="soft"><span class="big">Puntos</span><b>Matriz de puntos</b><code>ns-dots</code></div>
+      <div class="fx hud ns-grid" data-ns="notch"><span class="big">Retícula</span><b>Grid técnico</b><code>ns-grid</code></div>
+      <div class="fx hud ns-scales" data-ns="plate" style="--ns-pat-size:18px"><span class="big">Escamas</span><b>Patrón técnico</b><code>ns-scales</code></div>
+      <div class="fx hud amber ns-stripes" data-ns="wing" style="--ns-pat:rgba(255,181,71,.22)"><span class="big" style="color:var(--am)">Rayas</span><b>Zona de alerta</b><code>ns-stripes</code></div>
+      <div class="fx hud ns-scan" data-ns="hud" style="--ns-pat:rgba(61,224,255,.12)"><span class="big">Scan</span><b>Líneas de barrido</b><code>ns-scan</code></div>
+      <div class="fx hud ns-shimmer" data-ns="media"><span class="big">Destello</span><b>Brillo que barre</b><code>ns-shimmer</code></div>
+      <div class="fx hud" data-ns="card"><span class="big" data-ns-decode="hover">DECODE_42</span><b>Texto que se descifra</b><code>data-ns-decode</code></div>
+      <div class="fx hud" data-ns="ticket"><span class="big ns-text-shimmer">Shimmer</span><b>Texto con brillo</b><code>ns-text-shimmer</code></div>
+      <div class="fx hud ns-pulse" data-ns="scoop"><span class="big">Pulso</span><b>Glow que respira</b><code>ns-pulse</code></div>
+    </div>
+  </div>
+</section>
+
+<section id="movimiento">
+  <div class="wrap">
+    <div class="head">
+      <div><div class="eyebrow">09 · Bordes en movimiento</div><h2>Luz que recorre el borde</h2></div>
+      <p>Un atributo, <code>data-ns-motion</code>. Se combinan (<code>"scan march"</code>), se colorean con <code>--ns-motion</code> y se ajustan con <code>--ns-motion-time</code>. Añade <code>hover</code> para que sólo aparezcan al pasar el mouse.</p>
+    </div>
+    <div class="fxgrid motion-grid">
+      <div class="fx hud" data-ns="card" data-ns-motion="comet" style="--ns-motion:#fff"><span class="big">comet</span><b>Cometa con estela</b><code>data-ns-motion="comet"</code></div>
+      <div class="fx hud" data-ns="panel" data-ns-motion="twin" style="--ns-motion:#8cefff"><span class="big">twin</span><b>Dos cometas opuestos</b><code>"twin"</code></div>
+      <div class="fx hud" data-ns="wing" data-ns-motion="scan" style="--ns-motion:#fff;--ns-accent-width:1.5px"><span class="big">scan</span><b>Barrido que cruza el marco</b><code>"scan"</code></div>
+      <div class="fx hud" data-ns="soft" data-ns-motion="orbit" style="--ns-motion:#8b7bff"><span class="big">orbit</span><b>Destellos orbitando</b><code>"orbit"</code></div>
+      <div class="fx hud" data-ns="hud" data-ns-motion="chase" style="--ns-motion:#3de0ff;--ns-accent-width:1.5px"><span class="big">chase</span><b>Pulsos de datos</b><code>"chase"</code></div>
+      <div class="fx hud" data-ns="notch" data-ns-motion="march" style="--ns-border:none;--ns-motion:rgba(61,224,255,.8);--ns-accent-width:1px"><span class="big">march</span><b>Selección / drop zone</b><code>"march"</code></div>
+      <div class="fx hud" data-ns="plate" data-ns-motion="loop" style="--ns-motion:#3de0ff"><span class="big">loop</span><b>Se dibuja y se borra</b><code>"loop"</code></div>
+      <div class="fx hud" data-ns="ticket" data-ns-motion="pulse" style="--ns-motion:#3de0ff;--ns-glow:drop-shadow(0 0 5px #3de0ff)"><span class="big">pulse</span><b>Borde que respira</b><code>"pulse"</code></div>
+      <div class="fx hud" data-ns="tl+br bevel 18; top cut 60% 85% 5; radius 2" data-ns-motion="glitch"><span class="big">glitch</span><b>Interferencia</b><code>"glitch"</code></div>
+      <div class="fx hud" data-ns="card" data-ns-motion="scan march" style="--ns-motion:#ffb547;--ns-border:rgba(255,181,71,.35);--ns-accent-width:1px"><span class="big" style="color:var(--am)">combo</span><b>Barrido + marcha</b><code>"scan march"</code></div>
+      <div class="fx hud" data-ns="soft" data-ns-motion="spot" style="--ns-motion:#fff;--ns-spot-size:120;--ns-spot-fill:.12"><span class="big">spot</span><b>Luz que sigue al puntero</b><code>"spot"</code></div>
+      <div class="fx hud" data-ns="card" data-ns-motion="twin hover" data-ns-hover="tl+br bevel 30; radius 3" style="--ns-motion:#fff"><span class="big">hover</span><b>Sólo al pasar el mouse</b><code>"twin hover"</code></div>
+      <div class="fx hud" data-ns="tl+br bevel 18; radius 3" data-ns-motion="progress" id="prog" style="--ns-motion:#3de0ff;--ns-progress:62;--ns-accent-width:2.5px">
+        <span class="big"><span id="progv">62</span>%</span><b>Progreso en el borde</b>
+        <input type="range" min="0" max="100" value="62" id="progr" aria-label="Progreso" style="accent-color:#3de0ff;width:100%">
+        <code>"progress" + --ns-progress</code>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="aperturas">
+  <div class="wrap">
+    <div class="head">
+      <div><div class="eyebrow">10 · Aperturas</div><h2>Paneles que se despliegan</h2></div>
+      <p>Abrir y cerrar <em>respetando la forma</em>: los cortes mantienen sus px mientras el panel se despliega, el borde lo sigue y el contenido se revela recortado. Sirve para modales, menús, toasts y contenido que entra con el scroll.</p>
+    </div>
+    <div class="ap-row">
+      <div class="modes hud" data-ns="all bevel 10; radius 2">
+        <button data-ns-nest="round 2" data-mode="open" aria-pressed="true">open</button><button data-ns-nest="round 2" data-mode="split">split</button><button data-ns-nest="round 2" data-mode="iris">iris</button><button data-ns-nest="round 2" data-mode="wipe">wipe</button><button data-ns-nest="round 2" data-mode="drop">drop</button>
+      </div>
+      <button class="btn solid" data-ns="button" id="dlg-open">Abrir modal</button>
+      <div class="menu-wrap">
+        <button class="btn ghost" data-ns="button" id="menu-btn" aria-expanded="false" aria-controls="menu">Menú ▾</button>
+        <div class="menu hud" id="menu" data-ns="tl bevel 12; br bevel 12; radius 2" hidden>
+          <a href="#formas">Formas</a><a href="#movimiento">Movimiento</a><a href="#callouts">Callouts</a><a href="#playground">Playground</a>
+        </div>
+      </div>
+    </div>
+    <div class="enter-grid">
+      <div class="hud fx" data-ns="panel" data-ns-enter="open 0"><span class="big">01</span><b>Entra al hacer scroll</b><code>data-ns-enter="open"</code></div>
+      <div class="hud fx" data-ns="panel" data-ns-enter="split 140"><span class="big">02</span><b>Escalonado</b><code>data-ns-enter="split 140"</code></div>
+      <div class="hud fx" data-ns="panel" data-ns-enter="iris 280"><span class="big">03</span><b>Desde el centro</b><code>data-ns-enter="iris 280"</code></div>
+    </div>
+  </div>
+  <dialog id="dlg" aria-labelledby="dlg-t">
+    <div class="dlg hud ns-grid" id="dlg-panel" data-ns="tl bevel 26; br bevel 26; top cut center 30% 7; radius 3" data-ns-motion="scan" style="--ns-border:var(--cy);--ns-inner:6px;--ns-pat-mask:linear-gradient(#000,transparent 60%)">
+      <div class="eyebrow">Transmisión entrante</div>
+      <h3 id="dlg-t">Panel desplegado</h3>
+      <p>Este es un <code>&lt;dialog&gt;</code> nativo: foco atrapado, <kbd>Esc</kbd> para cerrar y accesible. ns-frame sólo añade la apertura y el cierre con <code>open(el, mode)</code> / <code>close(el, mode)</code>.</p>
+      <button class="btn solid" data-ns="button" id="dlg-close">Cerrar</button>
+    </div>
+  </dialog>
+</section>
+
+<section id="componentes">
+  <div class="wrap">
+    <div class="head">
+      <div><div class="eyebrow">11 · Componentes</div><h2>Tooltips, botones y más</h2></div>
+      <p>Piezas de interfaz reales construidas sobre la misma geometría: popovers con la flecha dentro de la forma, botones con estado presionado, modo nativo con sombras que siguen el corte y formas que responden al scroll.</p>
+    </div>
+    <div class="comp">
+      <div class="cbox hud" data-ns="card" data-ns-pad>
+        <div class="eyebrow">Popover + Anchor Positioning</div>
+        <p>La flecha es parte del contorno y siempre apunta al disparador, aunque el navegador voltee el popover para que quepa.</p>
+        <div class="crow">
+          <button class="btn ghost" data-ns="button" popovertarget="pop1">Click</button>
+          <button class="btn ghost" data-ns="button" data-ns-tip="tip1" aria-label="Ayuda">Hover / foco ?</button>
+          <button class="btn ghost edge" data-ns="button" popovertarget="pop2">Pegado al borde</button>
+        </div>
+        <div popover id="pop1" data-ns-arrow="tl+br bevel 10; radius 2" style="--ns-border:#3de0ff"><b>Popover nativo</b><br>Esc o click fuera para cerrar.</div>
+        <div popover="manual" id="tip1" data-ns-arrow="all round 8" role="tooltip" style="--ns-border:rgba(255,255,255,.3);--ns-pop-bg:#16202c">Tooltip con hover y foco de teclado.</div>
+        <div popover id="pop2" data-ns-arrow="all bevel 8; radius 2" style="--ns-border:#ffb547">El navegador lo desplaza para que quepa; la flecha sigue apuntando al botón.</div>
+      </div>
+      <div class="cbox hud" data-ns="card" data-ns-pad>
+        <div class="eyebrow">Estado presionado</div>
+        <p>La forma responde al presionar, con mouse, dedo o teclado (Enter / Espacio).</p>
+        <div class="crow">
+          <button class="btn solid" data-ns="tl+br bevel 12; radius 2" data-ns-hover="tl+br bevel 18; radius 2" data-ns-press="all bevel 5; radius 2">Presióname</button>
+          <button class="btn ghost" data-ns="all round 50%" data-ns-press="all round 6" style="--ns-border:rgba(61,224,255,.5)">Píldora → cápsula</button>
+        </div>
+      </div>
+      <div class="cbox native-demo" data-ns="tl+br bevel 22" data-ns-native data-ns-pad tabindex="0" id="native-card">
+        <div class="eyebrow">Modo nativo · corner-shape</div>
+        <p>En navegadores con <code>corner-shape</code>, las formas simples las recorta el motor CSS: <code>box-shadow</code> y <code>outline</code> siguen el corte. En el resto, se usa <code>clip-path</code> automáticamente.</p>
+        <p class="mono" id="native-state"></p>
+      </div>
+      <div class="cbox hud scroll-demo" data-ns="all bevel 70; radius 4" data-ns-scroll="all bevel 10; radius 2" data-ns-pad style="--ns-border:var(--cy);--ns-inner:6px">
+        <div class="eyebrow">Ligado al scroll</div>
+        <p>El chaflán se afila mientras el panel cruza la pantalla: <code>data-ns-scroll="all bevel 10"</code>. Sólo se procesan los elementos visibles.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="skeletons">
+  <div class="wrap">
+    <div class="head">
+      <div><div class="eyebrow">12 · Skeletons</div><h2>Cargas con la forma real</h2></div>
+      <p>Los huesos se miden sobre el propio componente: cada línea de texto, imagen y botón, con sus cortes. Al llegar los datos, el contenido aparece en su sitio y nada se mueve.</p>
+    </div>
+    <div class="skel-bar">
+      <button class="btn solid" data-ns="button" id="sk-run">Simular carga</button>
+      <output class="mono" id="sk-cls" aria-live="polite">CLS medido: —</output>
+    </div>
+    <div class="skel" id="sk-grid">
+      <article class="sk-card hud" data-ns="card" data-ns-pad data-ns-skeleton>
+        <img src="https://picsum.photos/seed/nsframe-rack/640/360" alt="Foto de ejemplo del informe" width="640" height="360" data-ns="tl round 16; br round 16; tr+bl bevel 8; radius 2">
+        <div class="eyebrow">Informe · 24 sep</div>
+        <h3>Latencia del clúster sur</h3>
+        <p>La respuesta bajó un 18 % tras mover las réplicas de lectura cerca del borde.</p>
+        <div class="crow"><a class="btn ghost" data-ns="button" href="#skeletons">Ver informe</a><span class="sk-tag" data-ns="chip">p95 · 84 ms</span></div>
+      </article>
+      <div class="sk-list hud" data-ns="panel" data-ns-pad data-ns-skeleton>
+        <div class="eyebrow">Equipo en línea</div>
+        <ul>
+          <li><i class="av" data-ns="all bevel 8"></i><div><b>Ana Ríos</b><span>Infraestructura · Caracas</span></div></li>
+          <li><i class="av" data-ns="all bevel 8"></i><div><b>Luis Pérez</b><span>Redes · Valencia</span></div></li>
+          <li><i class="av" data-ns="all bevel 8"></i><div><b>Marta Gil</b><span>Seguridad · Mérida</span></div></li>
+        </ul>
+      </div>
+      <div class="sk-stat ns-u" data-ns="all round 18" data-ns-pad data-ns-skeleton>
+        <div class="eyebrow">Solicitudes / s</div>
+        <div class="big">12.480</div>
+        <p>+4,2 % frente a la hora anterior</p>
+        <div class="bars" data-ns-bone="all bevel 6"><i style="height:40%"></i><i style="height:55%"></i><i style="height:48%"></i><i style="height:70%"></i><i style="height:62%"></i><i style="height:84%"></i><i style="height:76%"></i><i style="height:100%"></i></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="toasts">
+  <div class="wrap">
+    <div class="head">
+      <div><div class="eyebrow">13 · Toasts</div><h2>Avisos con su propio reloj</h2></div>
+      <p>Viven en la capa superior nativa (Popover API), entran con una apertura y el tiempo restante se consume en el propio borde. Pasa el puntero o enfoca uno para pausarlo.</p>
+    </div>
+    <div class="toast-demo hud" data-ns="tl+br bevel 18; radius 3" data-ns-pad>
+      <div class="crow">
+        <button class="btn ghost" data-ns="button" data-toast="info">Info</button>
+        <button class="btn ghost" data-ns="button" data-toast="ok">Éxito</button>
+        <button class="btn ghost" data-ns="button" data-toast="warn">Aviso</button>
+        <button class="btn ghost" data-ns="button" data-toast="error">Error con acción</button>
+        <button class="btn solid" data-ns="button" data-toast="burst">Ráfaga × 5</button>
+      </div>
+      <div class="toast-pos" role="group" aria-label="Posición de la pila">
+        <span class="mono">Posición</span>
+        <button class="chip" data-ns="chip" data-pos="end bottom" aria-pressed="true">↘ abajo</button>
+        <button class="chip" data-ns="chip" data-pos="center top" aria-pressed="false">↑ arriba</button>
+        <button class="chip" data-ns="chip" data-pos="start bottom" aria-pressed="false">↙ izquierda</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="carrusel">
+  <div class="wrap">
+    <div class="head">
+      <div><div class="eyebrow">14 · Carrusel</div><h2>Desliza, con forma</h2></div>
+      <p>El desplazamiento y el snap son nativos (<code>scroll-snap</code>), así que el gesto táctil es el del sistema. ns-carousel sólo añade flechas e indicadores con forma, teclado y accesibilidad.</p>
+    </div>
+    <div class="car" data-ns-carousel aria-label="Proyectos destacados">
+      <article class="car-s hud" data-ns="tl+br bevel 18; radius 2" data-ns-pad><img src="https://picsum.photos/seed/ns-car-1/560/320" alt="Foto de ejemplo 1" width="560" height="320" data-ns="tl round 14; br round 14; radius 2"><b>Centro de control</b><span>Panel en tiempo real para 40 sedes.</span></article>
+      <article class="car-s hud" data-ns="tl+br bevel 18; radius 2" data-ns-pad><img src="https://picsum.photos/seed/ns-car-2/560/320" alt="Foto de ejemplo 2" width="560" height="320" data-ns="tl round 14; br round 14; radius 2"><b>Red de sensores</b><span>Telemetría cada 5 segundos.</span></article>
+      <article class="car-s hud" data-ns="tl+br bevel 18; radius 2" data-ns-pad><img src="https://picsum.photos/seed/ns-car-3/560/320" alt="Foto de ejemplo 3" width="560" height="320" data-ns="tl round 14; br round 14; radius 2"><b>Archivo histórico</b><span>12 años de registros consultables.</span></article>
+      <article class="car-s hud" data-ns="tl+br bevel 18; radius 2" data-ns-pad><img src="https://picsum.photos/seed/ns-car-4/560/320" alt="Foto de ejemplo 4" width="560" height="320" data-ns="tl round 14; br round 14; radius 2"><b>Alertas tempranas</b><span>Avisos antes de que falle un nodo.</span></article>
+      <article class="car-s hud" data-ns="tl+br bevel 18; radius 2" data-ns-pad><img src="https://picsum.photos/seed/ns-car-5/560/320" alt="Foto de ejemplo 5" width="560" height="320" data-ns="tl round 14; br round 14; radius 2"><b>Mapa de cobertura</b><span>Señal por barrio, actualizada a diario.</span></article>
+    </div>
+  </div>
+</section>
+
+<section id="vistas">
+  <div class="wrap">
+    <div class="head">
+      <div><div class="eyebrow">15 · View Transitions</div><h2>La tarjeta se convierte en la vista</h2></div>
+      <p>Con la View Transitions API del navegador, la tarjeta se transforma en el detalle. Los cortes no se estiran: el recorrido se recorta con <code>shape()</code> en píxeles reales.</p>
+    </div>
+    <div class="vt-stage">
+      <div class="vt-grid" id="vt-grid">
+        <button type="button" class="vt-card hud" data-ns="tl+br bevel 18; radius 2" data-vt="0"><img src="https://picsum.photos/seed/ns-vt-1/560/320" alt="" width="560" height="320" data-ns="tl round 12; br round 12; radius 2"><b>Órbita baja</b><span>Telemetría · 12 satélites</span></button>
+        <button type="button" class="vt-card hud" data-ns="tl+br bevel 18; radius 2" data-vt="1"><img src="https://picsum.photos/seed/ns-vt-2/560/320" alt="" width="560" height="320" data-ns="tl round 12; br round 12; radius 2"><b>Red eléctrica</b><span>Carga · 4 regiones</span></button>
+        <button type="button" class="vt-card hud" data-ns="tl+br bevel 18; radius 2" data-vt="2"><img src="https://picsum.photos/seed/ns-vt-3/560/320" alt="" width="560" height="320" data-ns="tl round 12; br round 12; radius 2"><b>Puerto norte</b><span>Tráfico · 38 buques</span></button>
+      </div>
+      <article class="vt-detail hud" id="vt-detail" data-ns="tl+br bevel 34; radius 2" hidden>
+        <img id="vt-img" src="" alt="" width="560" height="320" data-ns="tl round 20; br round 20; radius 2">
+        <div class="vt-body">
+          <div class="eyebrow">Detalle</div>
+          <h3 id="vt-title" tabindex="-1"></h3>
+          <p id="vt-text"></p>
+          <button type="button" class="btn ghost" data-ns="button" id="vt-back">← Volver</button>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section id="callouts">
+  <div class="wrap">
+    <div class="head">
+      <div><div class="eyebrow">16 · Callouts HUD</div><h2>Anota cualquier cosa</h2></div>
+      <p>Módulo opcional <code>ns-link.js</code>: <code>data-ns-link="#destino"</code> une dos elementos con una línea recta + diagonal a 45°. Es responsivo, el scroll no cuesta nada y se ilumina al pasar el mouse por cualquiera de los dos extremos.</p>
+    </div>
+    <div class="anno">
+      <div class="anno-l">
+        <div class="tag-c hud" data-ns="tl+br bevel 10; radius 2" data-ns-link="#pt-a" data-ns-link-flow><b>Sensor térmico</b><span>±0.1 °C · 60 Hz</span></div>
+        <div class="tag-c hud" data-ns="tl+br bevel 10; radius 2" data-ns-link="#pt-b"><b>Núcleo</b><span>12 núcleos · 4.2 GHz</span></div>
+      </div>
+      <div class="device hud ns-grid" data-ns="all bevel 28; left+right cut center 30% 8; radius 4" data-ns-motion="orbit" style="--ns-border:var(--cy);--ns-inner:8px;--ns-motion:#8b7bff">
+        <i class="pt" id="pt-a" style="left:22%;top:26%"></i>
+        <i class="pt" id="pt-b" style="left:40%;top:62%"></i>
+        <i class="pt" id="pt-c" style="left:74%;top:34%"></i>
+        <i class="pt" id="pt-d" style="left:66%;top:76%"></i>
+        <div class="core" data-ns="all notch 14; radius 3" data-ns-motion="pulse" style="--ns-border:rgba(61,224,255,.6);--ns-motion:#3de0ff"></div>
+      </div>
+      <div class="anno-r">
+        <div class="tag-c hud" data-ns="tl+br bevel 10; radius 2" data-ns-link="#pt-c" data-ns-link-flow style="--ns-link:#8b7bff"><b>Antena</b><span>Wi-Fi 7 · 5.8 Gbps</span></div>
+        <div class="tag-c hud amber" data-ns="tl+br bevel 10; radius 2" data-ns-link="#pt-d" style="--ns-link:#ffb547"><b>Batería</b><span>6 200 mAh · 90 W</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="libertad">
+  <div class="wrap">
+    <div class="head">
+      <div><div class="eyebrow">17 · Libertad total</div><h2>Cualquier forma, cualquier tamaño</h2></div>
+      <p>Si los presets se quedan cortos, dibuja tu polígono con radius por vértice. Y la forma puede cambiar según el ancho del propio elemento, sin media queries.</p>
+    </div>
+    <div class="free">
+      <div class="hud" data-ns="tl+br bevel 16; radius 2">
+        <div class="eyebrow">poly</div>
+        <p>Coordenadas en px, % o <code>100%-24</code>; <code>rN</code> redondea ese vértice.</p>
+        <div class="polyshow ns-grid" style="background:linear-gradient(90deg,rgba(61,224,255,.18),rgba(139,123,255,.12));--ns-border:var(--cy);--ns-inner:5px" data-ns="poly 28 0 r4, 100%-60 0 r4, 100% 50% r3, 100%-60 100% r4, 28 100% r4, 0 100%-28 r3, 0 28 r3">SIGUIENTE ›</div>
+        <pre class="mono" style="color:var(--ink-3);white-space:pre-wrap;margin:14px 0 0">poly 28 0 r4, 100%-60 0 r4, 100% 50% r3,
+     100%-60 100% r4, 28 100% r4, 0 100%-28 r3, 0 28 r3</pre>
+      </div>
+      <div class="hud" data-ns="tl+br bevel 16; radius 2">
+        <div class="eyebrow">@&lt;N · consultas de forma</div>
+        <p>Arrastra el borde derecho de la caja: debajo de 420px la forma cambia y se anima sola.</p>
+        <div class="qbox" id="qbox"><div class="hud" data-ns="panel; @<420 all bevel 10; @<420 top none; radius 3" id="qframe">arrástrame ↔</div></div>
+        <pre class="mono" style="color:var(--ink-3);white-space:pre-wrap;margin:14px 0 0">panel; @&lt;420 all bevel 10; @&lt;420 top none</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="rendimiento">
+  <div class="wrap">
+    <div class="head">
+      <div><div class="eyebrow">18 · Rendimiento</div><h2>Casi no pesa</h2></div>
+      <p>Tamaños minificados + gzip. Un solo ResizeObserver, IntersectionObserver y MutationObserver para toda la página; las capas SVG sólo se crean si se usan, nada se repinta si no cambió y las animaciones se pausan fuera de pantalla.</p>
+    </div>
+    <div class="perf">
+      <div class="kpi hud" data-ns="card"><div class="eyebrow">núcleo</div><div class="v">8.0<small> KB</small></div><p>formas, bordes, morph, foco · lite <b style="color:var(--cy);font-weight:500">5.6 KB</b></p></div>
+      <div class="kpi hud" data-ns="card"><div class="eyebrow">extras</div><div class="v">3.2<small> KB</small></div><p>degradados, animaciones y aperturas · se cargan solos, sólo si se usan</p></div>
+      <div class="kpi hud" data-ns="card"><div class="eyebrow">skeletons</div><div class="v">2.5<small> KB</small></div><p>ns-skel.js · opcional</p></div>
+      <div class="kpi hud" data-ns="card"><div class="eyebrow">toasts</div><div class="v">2.2<small> KB</small></div><p>ns-toast.js · opcional</p></div>
+      <div class="kpi hud" data-ns="card"><div class="eyebrow">efectos</div><div class="v">2.0<small> KB</small></div><p>ns-fx.css · luz en U, patrones · opcional</p></div>
+      <div class="kpi hud" data-ns="card"><div class="eyebrow">carrusel</div><div class="v">1.7<small> KB</small></div><p>ns-carousel.js · opcional</p></div>
+      <div class="kpi hud" data-ns="card"><div class="eyebrow">popovers</div><div class="v">1.5<small> KB</small></div><p>ns-pop.js · opcional</p></div>
+      <div class="kpi hud" data-ns="card"><div class="eyebrow">bento · callouts</div><div class="v">1.5<small> KB</small></div><p>ns-bento.js · ns-link.js · cada uno</p></div>
+    </div>
+    <div class="bench hud" data-ns="tl+br bevel 16; radius 2">
+      <button class="btn solid" data-ns="button" id="benchbtn">Medir en este dispositivo</button>
+      <output id="benchout">Crea 1.000 marcos con borde y calcula 20.000 paths.</output>
+    </div>
+    <div id="benchzone"></div>
+  </div>
+</section>
+
+
+<section id="seguridad">
+  <div class="wrap">
+    <div class="head">
+      <div><div class="eyebrow">19 · Seguridad y accesibilidad</div><h2>Seguro por diseño</h2></div>
+      <p>Pensado para producción: se puede usar en sitios con contenido de usuarios y con políticas de seguridad estrictas.</p>
+    </div>
+    <div class="features">
+      <div class="feature hud" data-ns="card"><div class="n">A · SIN INYECCIÓN</div><h3>Cero innerHTML</h3><p>Todo el SVG se construye con <code>createElementNS</code>, <code>setAttribute</code> y CSSOM. Ningún valor de un atributo o de CSS puede convertirse en HTML ni en un script.</p></div>
+      <div class="feature hud" data-ns="card"><div class="n">B · CSP ESTRICTA</div><h3>Sin 'unsafe-inline'</h3><p>Los estilos del runtime van en una <em>constructable stylesheet</em> dentro de <code>@layer</code>, así que tu CSS siempre gana. Hay un test con <code>default-src 'self'</code> que lo comprueba.</p></div>
+      <div class="feature hud" data-ns="card"><div class="n">C · VALIDACIÓN</div><h3>Entradas saneadas</h3><p>Duraciones validadas con una expresión estricta, selectores con <code>try/catch</code>, números con <code>parseFloat</code>. Sin <code>eval</code>, sin red, sin dependencias.</p></div>
+      <div class="feature hud" data-ns="card"><div class="n">D · FOCO QUE SIGUE LA FORMA</div><h3>Accesible con teclado</h3><p><code>clip-path</code> corta el contorno de foco nativo. ns-frame dibuja un anillo de foco que sigue la forma en los elementos enfocables. Pulsa <kbd>Tab</kbd> en esta página.</p></div>
+      <div class="feature hud" data-ns="card"><div class="n">E · MOVIMIENTO RESPONSABLE</div><h3>prefers-reduced-motion</h3><p>Todas las animaciones se desactivan si el sistema lo pide, y se pausan fuera de pantalla para ahorrar batería.</p></div>
+      <div class="feature hud" data-ns="card"><div class="n">F · SEMÁNTICA INTACTA</div><h3>Tu HTML sigue siendo tuyo</h3><p>Las capas decorativas son <code>aria-hidden</code> y no reciben eventos. Los modales usan <code>&lt;dialog&gt;</code> nativo y los botones siguen siendo botones.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="playground">
+  <div class="wrap">
+    <div class="head">
+      <div><div class="eyebrow">20 · Playground</div><h2>Diseña tu forma</h2></div>
+      <p>Escribe la forma, arrastra la esquina de la vista previa para redimensionarla y copia el resultado como SVG o como CSS puro.</p>
+    </div>
+    <div class="play">
+      <div class="editor hud" data-ns="tl bevel 16; br bevel 16; radius 2">
+        <label for="src">Shape</label>
+        <textarea id="src" spellcheck="false">tl bevel 28; br bevel 28
+top cut center 36% 8 r3
+bl notch 14
+radius 4</textarea>
+        <label>Presets</label>
+        <div class="chips" id="chips"></div>
+      </div>
+      <div class="stage hud" data-ns="tl+br bevel 16; radius 2">
+        <div class="resizer" id="resizer">
+          <ns-frame id="preview" class="hud" style="--ns-border:var(--cy)">redimensióname ↘</ns-frame>
+        </div>
+        <span class="hint" id="size"></span>
+      </div>
+      <div class="out hud" data-ns="tl+br bevel 16; radius 2">
+        <div class="row"><label class="eyebrow">SVG path · tamaño actual</label><button class="copy" data-ns="chip" data-copy="svg">copiar</button></div>
+        <pre id="out-svg"></pre>
+        <div class="row"><label class="eyebrow">CSS · clip-path: shape() · cero JS</label><button class="copy" data-ns="chip" data-copy="css">copiar</button></div>
+        <pre id="out-css"></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="sintaxis">
+  <div class="wrap">
+    <div class="head">
+      <div><div class="eyebrow">21 · Sintaxis</div><h2>Un mini lenguaje de formas</h2></div>
+      <p>Declaraciones separadas por <code>;</code> o saltos de línea. Los valores van en px; <code>%</code> es relativo al lado; un negativo se mide desde el final.</p>
+    </div>
+    <div class="syntax hud tscroll" data-ns="tl+br bevel 16; radius 2">
+      <table>
+        <tr><th>Declaración</th><th>Qué hace</th></tr>
+        <tr><td><code>tl|tr|br|bl|all|diag|anti</code></td><td>Destino esquina. Se combinan con <code>+</code>: <code>tl+br</code></td></tr>
+        <tr><td><code>… bevel 16 [8]</code></td><td>Chaflán (asimétrico con 2 valores: horizontal vertical)</td></tr>
+        <tr><td><code>… notch 12</code></td><td>Escalón rectangular hacia dentro</td></tr>
+        <tr><td><code>… round 20</code> · <code>… scoop 20</code></td><td>Radius normal · radius invertido (cóncavo)</td></tr>
+        <tr><td><code>top|right|bottom|left cut A B depth [slope]</code></td><td>Muesca en el borde entre A y B, con pendiente de 45° por defecto (0 = recta)</td></tr>
+        <tr><td><code>… tab A B depth [slope]</code></td><td>Pestaña que sobresale; el resto del borde baja <code>depth</code></td></tr>
+        <tr><td><code>… scoop center 30 12</code></td><td>Mordida curva en el borde (tipo ticket)</td></tr>
+        <tr><td><code>center W</code></td><td>En lugar de A B: un rasgo centrado de ancho W</td></tr>
+        <tr><td><code>poly x y [rN], x y, …</code></td><td>Polígono libre: coordenadas en px, <code>%</code>, <code>100%-24</code> o negativas desde el final</td></tr>
+        <tr><td><code>@&lt;420 …</code> · <code>@&gt;800 …</code></td><td>La declaración sólo aplica si el ancho del elemento es menor / mayor</td></tr>
+        <tr><td><code>top none</code></td><td>Quita los rasgos de un borde (útil dentro de <code>@&lt;N</code>)</td></tr>
+        <tr><td><code>data-ns-motion</code></td><td><code>comet twin scan orbit chase march loop pulse glitch progress</code> · combinables · <code>hover</code> = sólo al pasar el mouse</td></tr>
+        <tr><td><code>radius 4</code></td><td>Fillet global: redondea <em>todos</em> los vértices, convexos y cóncavos</td></tr>
+        <tr><td><code>r6</code> (en cualquier línea)</td><td>Fillet local para esa esquina o rasgo</td></tr>
+        <tr><td><code>card</code>, <code>panel</code>, <code>hud</code>…</td><td>Presets, combinables: <code>card; top cut center 30% 6</code></td></tr>
+      </table>
+    </div>
+    <div class="usage">
+      <pre class="hud" data-ns="tl bevel 16; br bevel 16; radius 2"><span class="mono" style="color:var(--ink-3)">&lt;!-- HTML --&gt;</span>
+&lt;script type="module" src="<b>ns-frame.js</b>"&gt;&lt;/script&gt;
+
+&lt;div <b>data-ns</b>="tl+br bevel 18; radius 3"
+     <b>data-ns-hover</b>="tl+br bevel 28; radius 3"
+     <b>data-ns-accent</b>="corners 16"
+     <b>data-ns-draw data-ns-trace</b>&gt;…&lt;/div&gt;
+
+&lt;img <b>data-ns</b>="media" src="foto.jpg"&gt;
+&lt;<b>ns-frame</b> shape="panel"&gt;…&lt;/ns-frame&gt;</pre>
+      <pre class="hud" data-ns="tl bevel 16; br bevel 16; radius 2"><span class="mono" style="color:var(--ink-3)">/* CSS: estilo y formas responsive */</span>
+.card {
+  <b>--ns-border</b>: #3de0ff88;   <span style="color:var(--ink-3)">/* color del borde */</span>
+  <b>--ns-border-width</b>: 1px;
+  <b>--ns-accent</b>: #3de0ff;     <span style="color:var(--ink-3)">/* esquinas / trace */</span>
+  <b>--ns-glow</b>: drop-shadow(0 0 6px #3de0ff);
+  <b>--ns-border</b>: linear-gradient(to top, #3de0ff, transparent);
+  <b>--ns-inner</b>: 6px;             <span style="color:var(--ink-3)">/* doble línea */</span>
+  <b>--ns-shape</b>: card;          <span style="color:var(--ink-3)">/* sin data-ns */</span>
+}
+@media (max-width: 600px) {
+  .card { <b>--ns-shape</b>: tl bevel 10; }
+}</pre>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-in">
+    <div class="foot-brand">
+      <a class="foot-logo" href="#"><i data-ns="all bevel 5"></i>ns-frame</a>
+      <p>UI nativa de formas para la web. Sin imágenes, sin dependencias.</p>
+    </div>
+    <div class="foot-links">
+      <a href="/docs/introduccion">Documentación</a><a href="/docs/instalacion">Instalación</a><a href="#playground">Playground</a><a href="https://github.com/kodecagency/ns-frame">GitHub</a>
+    </div>
+    <p class="foot-meta mono">MIT · Kodec Agency · 8 KB gzip · CSP estricta · hecho con geometría, no con imágenes</p>
+  </div>
+</footer>
+
+<script type="module">
+import { PRESETS, path, geometry, open, close } from '/ns-frame/ns-frame.js'
+import { css } from '/ns-frame/ns-css.js'
+
+const DESC = {
+  card: 'Cards / paneles', button: 'Botones', chip: 'Chips, tags', soft: 'Chaflán suave',
+  notch: 'Escalón + radius', scoop: 'Radius invertido', panel: 'Panel con muesca', tab: 'Pestaña / folder',
+  ticket: 'Tickets, cupones', media: 'Imágenes', pill: 'Mixto round + bevel', hud: 'Dashboards',
+  wing: 'Chaflán largo', plate: 'Placa técnica'
+}
+const grid = document.getElementById('shapes'), chips = document.getElementById('chips')
+const src = document.getElementById('src'), preview = document.getElementById('preview')
+const outSvg = document.getElementById('out-svg'), outCss = document.getElementById('out-css'), size = document.getElementById('size')
+
+for (const [name, shape] of Object.entries(PRESETS)) {
+  const el = document.createElement('div')
+  el.className = 'shape hud'
+  el.dataset.ns = name
+  el.innerHTML = `<h3>${name}<small>${DESC[name] || ''}</small></h3><code></code>`
+  el.querySelector('code').textContent = shape
+  el.onclick = () => { load(shape); document.getElementById('playground').scrollIntoView({ behavior: 'smooth' }) }
+  grid.append(el)
+
+  const b = document.createElement('button')
+  b.className = 'chip'
+  b.dataset.ns = 'chip'
+  b.textContent = name
+  b.onclick = () => load(shape)
+  chips.append(b)
+}
+
+function load(shape) { src.value = shape.replace(/;\s*/g, '\n'); refresh() }
+function refresh() {
+  const s = src.value
+  preview.setAttribute('shape', s)
+  const w = preview.offsetWidth, h = preview.offsetHeight
+  size.textContent = `${w} × ${h}`
+  outSvg.textContent = path(s, w, h)
+  const c = css(s)
+  outCss.textContent = c ? `clip-path: ${c};` : '// Esta forma usa tamaños en % o se ajusta al tamaño: usa el runtime JS.'
+  for (const b of chips.children) b.setAttribute('aria-pressed', PRESETS[b.textContent] === s.replace(/\n/g, '; '))
+}
+src.addEventListener('input', refresh)
+new ResizeObserver(refresh).observe(preview)
+refresh()
+
+document.querySelectorAll('[data-copy]').forEach(b => b.onclick = async () => {
+  const text = (b.dataset.copy == 'svg' ? outSvg : outCss).textContent
+  try { await navigator.clipboard.writeText(text); b.textContent = 'copiado ✓' } catch { b.textContent = 'error' }
+  setTimeout(() => (b.textContent = 'copiar'), 1400)
+})
+
+// Estilo U: cambiar la forma de las tres tarjetas (se anima con morph)
+const sw = document.getElementById('uswitch')
+sw.onclick = e => {
+  const b = e.target.closest('button[data-shape]')
+  if (!b) return
+  for (const x of sw.children) x.setAttribute('aria-pressed', x == b)
+  document.querySelectorAll('.uplan').forEach(el => el.dataset.ns = b.dataset.shape)
+}
+
+// Nav compacto (< 1100px): panel que se despliega con la apertura "drop"
+const navT = document.getElementById('nav-t'), navL = document.getElementById('nav-links')
+// la forma sólo existe mientras el panel está abierto (en escritorio los enlaces van en línea)
+const navOff = () => { navL.classList.remove('open'); navL.removeAttribute('data-ns'); navT.setAttribute('aria-expanded', false) }
+navT.onclick = async () => {
+  if (navT.getAttribute('aria-expanded') == 'true') { await close(navL, 'drop', 240); return navOff() }
+  navT.setAttribute('aria-expanded', true)
+  navL.classList.add('open')
+  navL.dataset.ns = 'tl bevel 12; br bevel 12; radius 2'
+  open(navL, 'drop', 360)
+}
+navL.addEventListener('click', e => { if (e.target.closest('a') && navT.getAttribute('aria-expanded') == 'true') navT.click() })
+addEventListener('resize', () => { if (innerWidth > 1100) navOff() })
+
+// Aperturas: modal y menú
+let mode = 'open'
+const modes = document.querySelector('.modes')
+modes.onclick = e => { const b = e.target.closest('button'); if (!b) return; mode = b.dataset.mode; for (const x of modes.children) x.setAttribute('aria-pressed', x == b) }
+const dlg = document.getElementById('dlg'), panel = document.getElementById('dlg-panel')
+document.getElementById('dlg-open').onclick = () => { dlg.showModal(); open(panel, mode) }
+const shut = async () => { await close(panel, mode); dlg.close() }
+document.getElementById('dlg-close').onclick = shut
+dlg.addEventListener('cancel', e => { e.preventDefault(); shut() })
+dlg.addEventListener('click', e => { if (e.target == dlg) shut() })
+const mb = document.getElementById('menu-btn'), menu = document.getElementById('menu')
+mb.onclick = async () => {
+  const on = mb.getAttribute('aria-expanded') != 'true'
+  mb.setAttribute('aria-expanded', on)
+  if (on) { menu.hidden = false; open(menu, 'drop', 380) } else { await close(menu, 'drop', 260); menu.hidden = true }
+}
+
+// Modo nativo: indicar qué está usando este navegador
+// ── View Transitions: tarjeta → detalle → tarjeta, con el foco donde corresponde ──
+{
+  const { morph } = await import('/ns-frame/ns-vt.js')
+  const grid = document.getElementById('vt-grid'), detail = document.getElementById('vt-detail')
+  const img = document.getElementById('vt-img'), title = document.getElementById('vt-title'), text = document.getElementById('vt-text')
+  const DATA = [
+    ['Órbita baja', 'Doce satélites en órbita baja envían telemetría cada 30 segundos. La tarjeta se convirtió en esta vista sin estirar sus cortes.'],
+    ['Red eléctrica', 'Carga en tiempo real de cuatro regiones, con alertas cuando una subestación supera el 85 %.'],
+    ['Puerto norte', 'Treinta y ocho buques en maniobra; el tráfico se actualiza con cada señal AIS.'],
+  ]
+  let open = null
+  grid.querySelectorAll('.vt-card').forEach(card => card.onclick = () => {
+    const i = +card.dataset.vt
+    open = card
+    morph(card, () => {
+      img.src = card.querySelector('img').src
+      title.textContent = DATA[i][0]
+      text.textContent = DATA[i][1]
+      grid.hidden = true
+      detail.hidden = false
+    }, detail).then(() => title.focus())
+  })
+  const back = () => open && morph(detail, () => { detail.hidden = true; grid.hidden = false }, open).then(() => open.focus())
+  document.getElementById('vt-back').onclick = back
+  detail.addEventListener('keydown', e => e.key == 'Escape' && back())
+}
+
+// ── Toasts ──
+{
+  const { toast, config } = await import('/ns-frame/ns-toast.js')
+  const MSG = {
+    info: ['Sincronizando', 'Se están subiendo 3 archivos al servidor.'],
+    ok: ['Guardado', 'Los cambios del informe quedaron publicados.'],
+    warn: ['Cuota al 85 %', 'Te quedan 1,2 GB de almacenamiento.'],
+    error: ['Sin conexión', 'No se pudo enviar el formulario.'],
+  }
+  const show = type => toast(MSG[type][1], { type, title: MSG[type][0], time: type == 'error' ? 0 : 5000,
+    action: type == 'error' ? { label: 'Reintentar', onClick: () => toast('Enviado al reintentar.', { type: 'ok', title: 'Listo' }) } : undefined })
+  document.querySelectorAll('[data-toast]').forEach(b => b.onclick = () => {
+    const k = b.dataset.toast
+    if (k != 'burst') return show(k)
+    ;['info', 'ok', 'warn', 'info', 'ok'].forEach((t, i) => setTimeout(() => show(t), i * 180))
+  })
+  const pos = document.querySelectorAll('[data-pos]')
+  pos.forEach(b => b.onclick = () => {
+    const [x, y] = b.dataset.pos.split(' ')
+    config({ x, y })
+    pos.forEach(p => p.setAttribute('aria-pressed', p == b))
+    show('info')
+  })
+}
+
+// ── Skeletons: cada componente "llega" en su momento; el CLS se mide de verdad ──
+{
+  const grid = document.getElementById('sk-grid'), out = document.getElementById('sk-cls'), run = document.getElementById('sk-run')
+  const items = [...grid.children]
+  let cls = 0, timers = []
+  try {
+    // se cuentan todos los desplazamientos dentro de la cuadrícula, incluso los que siguen a un click
+    new PerformanceObserver(l => { for (const e of l.getEntries()) if (e.sources?.some(s => s.node && grid.contains(s.node))) cls += e.value })
+      .observe({ type: 'layout-shift', buffered: true })
+  } catch { cls = NaN }
+  const load = () => {
+    timers.forEach(clearTimeout)
+    items.forEach(e => e.setAttribute('data-ns-skeleton', ''))
+    cls = isNaN(cls) ? NaN : 0
+    out.textContent = 'Cargando…'
+    timers = items.map((e, i) => setTimeout(() => e.removeAttribute('data-ns-skeleton'), 1600 + i * 500))
+    timers.push(setTimeout(() => { out.textContent = isNaN(cls) ? 'CLS: este navegador no lo mide' : `CLS medido: ${cls.toFixed(3)}` }, 1600 + items.length * 500 + 500))
+  }
+  run.onclick = load
+  const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { io.disconnect(); load() } }, { threshold: .3 })
+  io.observe(grid)
+}
+
+document.getElementById('native-state').textContent =CSS.supports('corner-shape', 'bevel')
+  ? '✓ Este navegador usa corner-shape nativo: la sombra sigue el corte.'
+  : '· Este navegador no soporta corner-shape: se usa clip-path (la sombra queda recortada).'
+
+// Progreso en el borde
+const prog = document.getElementById('prog'), progr = document.getElementById('progr')
+progr.oninput = () => { prog.style.setProperty('--ns-progress', progr.value); document.getElementById('progv').textContent = progr.value }
+
+// Luz en U: controles en vivo (variables CSS heredadas por las tarjetas)
+const uplans = document.getElementById('uplans')
+document.querySelectorAll('#ucontrols input').forEach(i => i.oninput = () =>
+  uplans.style.setProperty(i.dataset.v, i.dataset.u ? i.value + i.dataset.u : i.value / 100))
+document.getElementById('u-dir').onclick = e => {
+  const top = e.currentTarget.getAttribute('aria-pressed') != 'true'
+  e.currentTarget.setAttribute('aria-pressed', top)
+  e.currentTarget.textContent = top ? '↓ Desciende' : '↑ Asciende'
+  uplans.querySelectorAll('.uplan').forEach(c => { c.classList.toggle('ns-u', !top); c.classList.toggle('ns-u-top', top) })
+}
+
+// Benchmark en el dispositivo del visitante
+document.getElementById('benchbtn').onclick = async () => {
+  const out = document.getElementById('benchout'), zone = document.getElementById('benchzone')
+  out.textContent = 'midiendo…'
+  await new Promise(r => setTimeout(r, 50))
+  const names = Object.keys(PRESETS)
+  let t = performance.now()
+  for (let i = 0; i < 20000; i++) path(names[i % names.length], 200 + (i % 300), 120 + (i % 90))
+  const geo = performance.now() - t
+  const frag = document.createDocumentFragment()
+  for (let i = 0; i < 1000; i++) {
+    const d = document.createElement('div')
+    d.style.cssText = `height:${60 + (i % 5) * 10}px;margin:4px;--ns-border:#3de0ff`
+    d.dataset.ns = names[i % names.length]
+    frag.append(d)
+  }
+  t = performance.now()
+  zone.append(frag)
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
+  const dom = performance.now() - t, ok = [...zone.children].filter(d => d.style.clipPath).length
+  zone.textContent = ''
+  out.innerHTML = `20.000 paths en <b>${geo.toFixed(0)} ms</b> (${(geo / 20).toFixed(3)} ms / 1.000) · 1.000 marcos con borde listos en <b>${dom.toFixed(0)} ms</b> (${ok}/1000)`
+}
+</script>
+</body>
+</html>

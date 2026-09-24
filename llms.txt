@@ -1,0 +1,32 @@
+# ns-frame
+
+> Tiny (8 KB gzip core), dependency-free library for native UI shapes on the web: bevels, notches, scoops, squircles and fillets on any corner of any element via a small shape language in HTML attributes (`data-ns="tl+br bevel 18; radius 3"`), with borders that follow the cut (`--ns-border`), geometry morphing, shape-preserving apertures, shaped components (toasts, carousel, skeletons, popovers, View Transitions) and build-time compilation to CSS `shape()`. Strict-CSP safe, accessible, MIT. Docs are in Spanish.
+
+Key rules: import the core once (`import 'ns-frame'`); never use CSS `border` on shaped elements (use `--ns-border`); use `data-ns-pad` for text containers; optional modules are imported by path (`ns-frame/toast`, `ns-frame/vt`…); verify with `audit({ clearance: 5 })` from `ns-frame/audit`.
+
+## Agent skill
+
+- [SKILL.md](https://github.com/kodecagency/ns-frame/blob/main/skills/ns-frame/SKILL.md): when to use each piece, rules and verification
+- [Shape language reference](https://github.com/kodecagency/ns-frame/blob/main/skills/ns-frame/references/shapes.md)
+- [Components reference](https://github.com/kodecagency/ns-frame/blob/main/skills/ns-frame/references/components.md)
+- [Review checklist](https://github.com/kodecagency/ns-frame/blob/main/skills/ns-frame/references/checklist.md)
+
+## Docs (Spanish)
+
+- [Introducción](https://github.com/kodecagency/ns-frame/blob/main/docs/introduccion.md)
+- [Instalación](https://github.com/kodecagency/ns-frame/blob/main/docs/instalacion.md): CDN, npm, Astro, React, Vue, Svelte
+- [Sintaxis de formas](https://github.com/kodecagency/ns-frame/blob/main/docs/sintaxis.md)
+- [Estilo y bordes](https://github.com/kodecagency/ns-frame/blob/main/docs/estilo.md)
+- [Movimiento](https://github.com/kodecagency/ns-frame/blob/main/docs/movimiento.md)
+- [Layout](https://github.com/kodecagency/ns-frame/blob/main/docs/layout.md)
+- [Componentes](https://github.com/kodecagency/ns-frame/blob/main/docs/componentes.md)
+- [Efectos](https://github.com/kodecagency/ns-frame/blob/main/docs/efectos.md)
+- [Formas sin JS](https://github.com/kodecagency/ns-frame/blob/main/docs/sin-js.md)
+- [API de JavaScript](https://github.com/kodecagency/ns-frame/blob/main/docs/api.md)
+
+## Optional
+
+- [Accesibilidad](https://github.com/kodecagency/ns-frame/blob/main/docs/accesibilidad.md)
+- [Seguridad](https://github.com/kodecagency/ns-frame/blob/main/docs/seguridad.md)
+- [Rendimiento](https://github.com/kodecagency/ns-frame/blob/main/docs/rendimiento.md)
+- [TypeScript types](https://github.com/kodecagency/ns-frame/tree/main/packages/ns-frame/types)

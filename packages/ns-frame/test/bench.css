@@ -1,0 +1,4 @@
+body { font: 14px/1.5 system-ui, sans-serif; background: #06090f; color: #e6f1f8; margin: 24px }
+#zone { display: grid; grid-template-columns: repeat(20, 1fr); gap: 4px; width: 1000px }
+#zone.narrow { width: 800px }
+#zone > div { height: 40px; background: #0b1520; --ns-border: #3de0ff88 }

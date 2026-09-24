@@ -1,0 +1,12 @@
+{
+  "name": "ns-frame-monorepo",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "engines": { "node": ">=22.12.0" },
+  "scripts": {
+    "build": "pnpm --filter ns-frame build && pnpm --filter site build",
+    "test": "pnpm --filter ns-frame build && pnpm --filter ns-frame test",
+    "dev": "pnpm --filter ns-frame build && pnpm --filter site dev"
+  }
+}

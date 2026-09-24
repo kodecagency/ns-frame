@@ -1,0 +1,13 @@
+packages:
+  - packages/*
+  - apps/*
+
+# Política de dependencias: sólo pnpm, con cooldown y scripts de build bloqueados.
+minimumReleaseAge: 10080        # 1 semana: no se instalan versiones recién publicadas
+minimumReleaseAgeStrict: true
+blockExoticSubdeps: true        # nada de subdependencias desde git o tarballs
+trustPolicy: no-downgrade
+
+# Ningún paquete ejecuta scripts de instalación. esbuild y sharp traen binarios
+# precompilados por plataforma (optionalDependencies) y funcionan sin su postinstall.
+onlyBuiltDependencies: []

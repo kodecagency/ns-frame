@@ -1,0 +1,12 @@
+node_modules/
+apps/site/dist/
+apps/site/.astro/
+apps/site/public/ns-frame/
+.vercel/
+.env
+.env.*
+.DS_Store
+*.log
+.playwright-mcp/
+apps/site/public/lab/
+apps/site/public/llms.txt

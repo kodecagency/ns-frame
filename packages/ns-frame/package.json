@@ -1,0 +1,44 @@
+{
+  "name": "ns-frame",
+  "version": "0.8.0",
+  "description": "Native UI shapes for the web: bevels, notches, scoops, squircles and fillets on any corner of any element, with real borders, morph, apertures and shaped components. No images, no dependencies, strict-CSP safe.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Kodec Agency",
+  "homepage": "https://github.com/kodecagency/ns-frame#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kodecagency/ns-frame.git",
+    "directory": "packages/ns-frame"
+  },
+  "bugs": "https://github.com/kodecagency/ns-frame/issues",
+  "keywords": ["clip-path", "shape", "bevel", "chamfer", "notch", "squircle", "corner-shape", "hud", "sci-fi", "ui", "css", "web-components", "view-transitions", "skeleton", "toast", "carousel"],
+  "exports": {
+    ".": { "types": "./types/ns-frame.d.ts", "default": "./dist/ns-frame.js" },
+    "./lite": { "types": "./types/ns-frame.d.ts", "default": "./dist/ns-frame.lite.js" },
+    "./css": { "types": "./types/modules.d.ts", "default": "./dist/ns-css.js" },
+    "./static": { "types": "./types/modules.d.ts", "default": "./dist/ns-static.js" },
+    "./astro": { "types": "./types/astro.d.ts", "default": "./dist/ns-astro.js" },
+    "./vt": { "types": "./types/modules.d.ts", "default": "./dist/ns-vt.js" },
+    "./toast": { "types": "./types/modules.d.ts", "default": "./dist/ns-toast.js" },
+    "./skel": { "types": "./types/modules.d.ts", "default": "./dist/ns-skel.js" },
+    "./carousel": { "types": "./types/modules.d.ts", "default": "./dist/ns-carousel.js" },
+    "./pop": { "types": "./types/modules.d.ts", "default": "./dist/ns-pop.js" },
+    "./bento": { "types": "./types/modules.d.ts", "default": "./dist/ns-bento.js" },
+    "./link": { "types": "./types/modules.d.ts", "default": "./dist/ns-link.js" },
+    "./fx": { "types": "./types/modules.d.ts", "default": "./dist/ns-fx.js" },
+    "./audit": { "types": "./types/modules.d.ts", "default": "./dist/ns-audit.js" },
+    "./fx.css": "./dist/ns-fx.css",
+    "./package.json": "./package.json"
+  },
+  "files": ["dist", "src", "types", "README.md", "LICENSE"],
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node scripts/test.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "terser": "5.51.2"
+  }
+}

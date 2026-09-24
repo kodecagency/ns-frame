@@ -1,0 +1,14 @@
+{
+  "name": "site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/prepare.mjs && astro dev",
+    "build": "node scripts/prepare.mjs && astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "astro": "7.3.3",
+    "ns-frame": "workspace:*"
+  }
+}

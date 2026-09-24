@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<!-- Política estricta: nada inline, sólo recursos del mismo origen -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:">
+<title>ns-frame · test CSP</title>
+<link rel="stylesheet" href="../src/ns-fx.css">
+<link rel="stylesheet" href="./csp.css">
+<script type="module" src="./csp.js"></script>
+</head>
+<body>
+  <div id="a" class="box ns-u" data-ns="tl+br bevel 16; radius 3" data-ns-accent="corners 12" data-ns-motion="scan orbit spot comet" data-ns-spin="4s">gradiente + motions</div>
+  <button id="b" class="box" data-ns="button" data-ns-hover="all bevel 12">botón enfocable</button>
+  <div id="c" class="box" data-ns="panel" data-ns-motion="x&quot;/><image href=x onerror=alert(1)>" data-ns-spin="1s&quot;/><script>alert(1)</script>">atributos maliciosos</div>
+  <div id="d" class="box" data-ns="card">apertura</div>
+  <div id="src" data-ns-link="#d" class="tag">link</div>
+  <div id="e" class="box" data-ns="card" data-ns-skeleton="all round 3')}&lt;/style&gt;&lt;script&gt;alert(1)&lt;/script&gt;">skeleton <b>con valor malicioso</b></div>
+  <div data-ns-carousel="x&quot;/><script>alert(1)</script>" aria-label="c"><div>1</div><div>2</div></div>
+  <div id="bad" data-ns-link="###<img>" class="tag">selector inválido</div>
+</body>
+</html>
