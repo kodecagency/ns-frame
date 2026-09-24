@@ -1,0 +1,117 @@
+---
+// Anatomía y responsive: una tarjeta real anotada con callouts (ns-frame/link) que señalan cada
+// parte de su forma, y formas que cambian según el ancho del propio componente (@<N) o dibujadas
+// vértice a vértice (poly).
+import SectionHead from '../SectionHead.astro'
+
+const NOTES = [
+  { id: 'an-a', side: 'l', t: 'Chaflán con radio', c: 'tl+br bevel 22; radius 3', k: '#00e676' },
+  { id: 'an-d', side: 'l', t: 'Forma al pulsar', c: 'data-ns-press="all bevel 5"', k: '#ffb547' },
+  { id: 'an-b', side: 'r', t: 'Muesca en el borde', c: 'right cut center 28% 7 r3', k: '#d4d4d8' },
+  { id: 'an-c', side: 'r', t: 'Borde en degradado', c: '--ns-border: linear-gradient(…)', k: '#b8f36b' },
+]
+---
+<section class="sec" id="anatomia" aria-labelledby="t-an">
+  <div class="wrap">
+    <SectionHead id="t-an">
+      <Fragment slot="title">Cada parte, una línea.</Fragment>
+      Las anotaciones se unen a su destino con <code>data-ns-link</code> y se iluminan al pasar el puntero por cualquiera de los dos extremos. Y la forma puede cambiar <b>según el ancho del propio componente</b>, sin media queries.
+    </SectionHead>
+
+    <div class="anno">
+      <div class="side">
+        {NOTES.filter(n => n.side == 'l').map(n => (
+          <div class="note" data-ns="tl+br bevel 10; radius 2" data-ns-link={`#${n.id}`} style={`--ns-link:${n.k};--k:${n.k}`}><b><i class="nb" aria-hidden="true">{NOTES.indexOf(n) + 1}</i>{n.t}</b><code>{n.c}</code></div>
+        ))}
+      </div>
+      <div class="stage">
+        <article class="card" data-ns="tl+br bevel 22; right cut center 28% 7 r3; radius 3">
+          <img src="https://picsum.photos/seed/ns-anatomy/720/440" alt="Dunas al atardecer" width="720" height="440" loading="lazy" data-ns="tl round 14; radius 2">
+          <div class="body">
+            <b>Travesía por las dunas</b>
+            <span>2 días · guía incluida</span>
+            <button type="button" class="btn go" data-ns="tl+br bevel 10; radius 2" data-ns-press="all bevel 5; radius 2">Reservar plaza</button>
+          </div>
+          <i class="pt" data-n="1" id="an-a" style="left:7%;top:8%"></i>
+          <i class="pt" data-n="3" id="an-b" style="left:94%;top:50%"></i>
+          <i class="pt" data-n="4" id="an-c" style="left:91%;top:92%"></i>
+          <i class="pt" data-n="2" id="an-d" style="left:7%;top:87%"></i>
+        </article>
+      </div>
+      <div class="side">
+        {NOTES.filter(n => n.side == 'r').map(n => (
+          <div class="note" data-ns="tl+br bevel 10; radius 2" data-ns-link={`#${n.id}`} style={`--ns-link:${n.k};--k:${n.k}`}><b><i class="nb" aria-hidden="true">{NOTES.indexOf(n) + 1}</i>{n.t}</b><code>{n.c}</code></div>
+        ))}
+      </div>
+    </div>
+
+    <div class="free">
+      <div class="box" data-ns="tl+br bevel 18; radius 3">
+        <h3>Forma según su propio ancho</h3>
+        <p>Debajo de 420 px el panel pierde la muesca y reduce el chaflán. Mueve el control o arrastra el borde derecho.</p>
+        <label class="range"><span>Ancho del componente: <b id="q-val" class="num">100 %</b></span><input type="range" min="30" max="100" value="100" id="q-in"></label>
+        <div class="qbox" id="q-box"><div class="q" data-ns="panel; @<420 all bevel 10; @<420 top none; radius 3"><span id="q-w" class="num"></span></div></div>
+        <pre>panel; <b>@&lt;420</b> all bevel 10; <b>@&lt;420</b> top none</pre>
+      </div>
+      <div class="box" data-ns="tl+br bevel 18; radius 3">
+        <h3>Tu propio polígono</h3>
+        <p>Coordenadas en px, % o <code>100%-24</code>; <code>rN</code> redondea ese vértice. Una flecha de «siguiente» en una sola línea:</p>
+        <div class="poly"><a href="#empezar" class="arrow" data-ns="poly 26 0 r4, 100%-56 0 r4, 100% 50% r3, 100%-56 100% r4, 26 100% r4, 0 100%-26 r3, 0 26 r3" data-ns-hover="poly 18 0 r4, 100%-44 0 r4, 100% 50% r3, 100%-44 100% r4, 18 100% r4, 0 100%-18 r3, 0 18 r3">Siguiente paso</a></div>
+        <pre>poly 26 0 r4, 100%-56 0 r4, 100% 50% r3,
+     100%-56 100% r4, 26 100% r4, 0 100%-26 r3, 0 26 r3</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  import 'ns-frame/link'
+  const box = document.getElementById('q-box')!, input = document.getElementById('q-in') as HTMLInputElement
+  const w = document.getElementById('q-w')!, val = document.getElementById('q-val')!
+  input.addEventListener('input', () => { box.style.width = input.value + '%'; val.textContent = input.value + ' %' })
+  new ResizeObserver(() => { w.textContent = Math.round(box.offsetWidth) + ' px' + (box.offsetWidth < 420 ? ' · forma compacta' : ' · forma completa') }).observe(box)
+</script>
+
+<style>
+  code { font: 12px var(--mono); color: var(--text-2) }
+  .anno { display: grid; grid-template-columns: 1fr minmax(0, 1.25fr) 1fr; gap: 56px; align-items: center; margin-bottom: 14px; --ns-link-width: 1.25px }
+  .side { display: grid; gap: 64px }
+  .note { position: relative; z-index: 1; padding: 14px 18px; display: grid; gap: 4px; background: var(--surface); --ns-border: color-mix(in srgb, var(--k) 45%, transparent) }
+  .note b { font: 600 15px/1.2 var(--display); font-stretch: 104%; display: flex; align-items: center; gap: 8px }
+  .nb { display: none; flex: none; width: 20px; height: 20px; border-radius: 50%; place-items: center; background: var(--k); color: #0a0a0a; font: 700 11px/1 var(--mono); font-style: normal }
+  .note code { color: var(--k); font-size: 11.5px; word-break: break-word }
+  .stage { display: grid; place-items: center; padding: 24px 0 }
+  .card { position: relative; width: 100%; max-width: 380px; background: #151517; --ns-border: linear-gradient(140deg, #00e676, rgba(255, 255, 255, .12) 45%, #b8f36b); --ns-border-width: 1.5px; padding: 12px 12px 18px; display: flex; flex-direction: column; gap: 12px; filter: drop-shadow(0 30px 40px rgba(0, 0, 0, .55)) }
+  .card img { width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover }
+  .body { display: grid; gap: 2px; padding: 0 8px }
+  .body b { font: 700 18px/1.2 var(--display); font-stretch: 106% }
+  .body span { font-size: 13px; color: var(--text-2) }
+  .body .btn { justify-self: start; margin-top: 12px; font-size: 14px; min-height: 42px }
+  .pt { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 5px rgba(255, 255, 255, .12); pointer-events: none }
+
+  .free { display: grid; grid-template-columns: 1fr 1fr; gap: 14px }
+  .box { background: var(--surface); --ns-border: var(--line-2); padding: 24px; display: flex; flex-direction: column; gap: 10px; min-width: 0 }
+  .box h3 { font-size: 17px }
+  .box p { margin: 0; color: var(--text-2); font-size: 14px }
+  .range { display: grid; gap: 6px; font-size: 13px; color: var(--text-2) }
+  .range b { color: var(--text); font-weight: 500 }
+  .range input { width: 100%; accent-color: var(--signal); height: 24px; margin: 0 }
+  .qbox { resize: horizontal; overflow: hidden; width: 100%; min-width: 160px; max-width: 100% }
+  .q { height: 150px; display: grid; place-items: center; background: linear-gradient(180deg, rgba(255, 181, 71, .1), rgba(20, 20, 22, .6)); --ns-border: rgba(255, 181, 71, .55); --ns-inner: 5px; --ns-morph-time: 360; font: 12.5px var(--mono); color: var(--text-2) }
+  .poly { display: grid; place-items: center; min-height: 150px; border-radius: 12px; background: radial-gradient(circle, rgba(255, 255, 255, .07) 1px, transparent 1.5px) 0 0 / 14px 14px }
+  .arrow { display: inline-grid; place-items: center; min-height: 64px; padding: 0 64px 0 34px; background: var(--signal); color: #04210f; font: 600 16px var(--display); font-stretch: 106%; --ns-morph-time: 300 }
+  pre { margin: auto 0 0; padding: 12px 14px; border-radius: 10px; background: rgba(0, 0, 0, .35); color: var(--text-2); font: 12px/1.6 var(--mono); white-space: pre-wrap; word-break: break-word }
+  pre b { color: var(--signal); font-weight: 500 }
+  @media (max-width: 960px) {
+    .anno { grid-template-columns: 1fr; gap: 28px }
+    .stage { order: -1 }
+    .side { grid-template-columns: 1fr 1fr; gap: 12px }
+    /* en pantallas estrechas las líneas cruzarían la tarjeta: marcadores numerados en su lugar */
+    :global(.ns-links) { display: none }
+    .nb { display: grid }
+    .pt { width: 22px; height: 22px; margin: -11px 0 0 -11px; display: grid; place-items: center; background: #fff; box-shadow: 0 0 0 4px rgba(0, 0, 0, .35) }
+    .pt::after { content: attr(data-n); font: 700 11px/1 var(--mono); color: #0a0a0a }
+    .free { grid-template-columns: 1fr }
+  }
+  @media (max-width: 560px) { .note { padding: 12px 14px } .note code { font-size: 10.5px } }
+</style>

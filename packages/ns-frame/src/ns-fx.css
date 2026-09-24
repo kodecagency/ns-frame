@@ -138,6 +138,15 @@
 .ns-text-aurora { background-image: linear-gradient(90deg, #3de0ff, #8b7bff, #ff6bd6, #ffb547, #3de0ff, #8b7bff); background-size: 200% 100% }
 @keyframes ns-text { from { background-position: 100% 0 } to { background-position: 0 0 } }
 
+/* Táctil (móviles y tabletas): las animaciones que repintan grandes degradados o filtros en cada
+   frame (luz en U en movimiento, pulso con drop-shadow, barrido de fondo) calientan la GPU y
+   pueden congelarse. Aquí se quedan en su versión fija o en una que sólo anima opacity. */
+@media (hover: none) and (pointer: coarse) {
+  .ns-u-live, .ns-u-tide, .ns-u-surge, .ns-u-hue, .ns-scan::before { animation: none }
+  .ns-pulse > .ns-svg { animation-name: ns-pulse-o }
+}
+@keyframes ns-pulse-o { 50% { opacity: .55 } }
+
 @media (prefers-reduced-motion: reduce) {
   .ns-u-hover { transition: none }
   :is(.ns-aura, .ns-aura-top)::before, .ns-u-breathe::after, .ns-u-hue, .ns-u-live, .ns-u-tide, .ns-u-surge, .ns-scan::before, .ns-shimmer::after, .ns-text-shimmer, .ns-text-aurora, .ns-pulse > .ns-svg { animation: none }

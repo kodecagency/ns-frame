@@ -27,6 +27,8 @@ Todo se ajusta con **variables CSS**. No uses `border` de CSS en un elemento con
 
 Cambiar `data-ns` por JS, o una clase que cambie `--ns-shape`, anima la transición.
 
+En pantallas táctiles (`hover: none` y `pointer: coarse`) `--ns-glow` no se aplica: un filtro sobre un borde animado se repinta en cada frame y en móviles puede ralentizar o congelar la animación. Si lo quieres igualmente, defínelo en `--ns-glow-touch`. En táctil tampoco hay hover (`data-ns-hover`); para el dedo usa `data-ns-press`.
+
 ## Atributos
 
 | Atributo (`data-ns-*`) / en `<ns-frame>` | Qué hace |

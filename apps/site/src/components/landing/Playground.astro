@@ -1,0 +1,115 @@
+---
+// Playground: se escribe la forma, se redimensiona la vista previa y se copia el resultado como
+// atributo, como ruta SVG a este tamaño o como CSS shape() (cero JS) cuando la forma lo permite.
+import SectionHead from '../SectionHead.astro'
+
+const START = 'tl bevel 28; br bevel 28\ntop cut center 36% 8 r3\nbl notch 14\nradius 4'
+const PRESETS = ['card', 'button', 'chip', 'soft', 'notch', 'scoop', 'wing', 'panel', 'plate', 'tab', 'ticket', 'media', 'pill', 'hud']
+---
+<section class="sec" id="playground" aria-labelledby="t-play">
+  <div class="wrap">
+    <SectionHead id="t-play">
+      <Fragment slot="title">Diseña tu forma.</Fragment>
+      Escribe la forma, arrastra la esquina de la vista previa y copia el resultado: el atributo, la ruta SVG a ese tamaño o <b>CSS puro con <code>shape()</code>, sin JavaScript.</b>
+    </SectionHead>
+
+    <div class="pg">
+      <div class="ed" data-ns="tl bevel 18; br bevel 18; radius 3">
+        <label for="pg-src">Forma</label>
+        <textarea id="pg-src" spellcheck="false" rows="6">{START}</textarea>
+        <span class="lb" id="pg-pl">Presets</span>
+        <div class="chips" role="group" aria-labelledby="pg-pl" id="pg-chips">
+          {PRESETS.map(p => <button type="button" data-ns="all round 10" data-p={p} aria-pressed="false">{p}</button>)}
+        </div>
+      </div>
+      <div class="st" data-ns="all round 20">
+        <div class="rz" id="pg-rz" tabindex="0" aria-label="Vista previa redimensionable: arrastra la esquina inferior derecha">
+          <div class="pv" id="pg-pv" data-ns={START}><span>arrastra la esquina ↘</span></div>
+        </div>
+        <output class="size tag" id="pg-size"></output>
+      </div>
+      <div class="out" data-ns="tl+br bevel 16; radius 3">
+        <div class="row"><span class="lb">HTML</span><button type="button" class="cp" data-ns="all round 10" data-copy="pg-html">Copiar</button></div>
+        <pre id="pg-html"></pre>
+        <div class="row"><span class="lb">CSS · <code>clip-path: shape()</code> · cero JS</span><button type="button" class="cp" data-ns="all round 10" data-copy="pg-css">Copiar</button></div>
+        <pre id="pg-css"></pre>
+        <div class="row"><span class="lb">Ruta SVG · tamaño actual</span><button type="button" class="cp" data-ns="all round 10" data-copy="pg-svg">Copiar</button></div>
+        <pre id="pg-svg"></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  import { PRESETS, path } from 'ns-frame'
+  import { css } from 'ns-frame/css'
+
+  const $ = (id: string) => document.getElementById(id)!
+  const src = $('pg-src') as HTMLTextAreaElement, pv = $('pg-pv'), chips = $('pg-chips')
+  const flat = (s: string) => s.split('\n').map(x => x.trim()).filter(Boolean).join('; ')
+
+  let raf = 0
+  const refresh = () => {
+    raf = 0
+    const s = flat(src.value), w = pv.offsetWidth, h = pv.offsetHeight
+    pv.setAttribute('data-ns', s)
+    $('pg-size').textContent = `${w} × ${h} px`
+    $('pg-html').textContent = `<div data-ns="${s}"></div>`
+    let d = ''
+    try { d = path(s, w, h) } catch { d = '' }
+    $('pg-svg').textContent = d || '// forma no válida'
+    let c: string | undefined
+    try { c = css(s) } catch { c = undefined }
+    $('pg-css').textContent = c ? `clip-path: ${c};` : '/* Esta forma se ajusta al tamaño (%, arcos o morph): usa el runtime de JS. */'
+    const P = PRESETS as Record<string, string>
+    chips.querySelectorAll<HTMLElement>('[data-p]').forEach(b => b.setAttribute('aria-pressed', String(P[b.dataset.p!] == s || b.dataset.p == s)))
+  }
+  const later = () => { raf ||= requestAnimationFrame(refresh) }
+  src.addEventListener('input', later)
+  new ResizeObserver(later).observe(pv)
+  chips.addEventListener('click', e => {
+    const b = (e.target as Element).closest<HTMLElement>('[data-p]')
+    if (!b) return
+    src.value = (PRESETS as Record<string, string>)[b.dataset.p!].replace(/;\s*/g, '\n')
+    refresh()
+  })
+  // teclado: con la vista previa enfocada, las flechas cambian su tamaño
+  $('pg-rz').addEventListener('keydown', e => {
+    const k = { ArrowRight: [16, 0], ArrowLeft: [-16, 0], ArrowDown: [0, 16], ArrowUp: [0, -16] }[e.key]
+    if (!k) return
+    e.preventDefault()
+    const rz = $('pg-rz')
+    rz.style.width = Math.max(140, rz.offsetWidth + k[0]) + 'px'
+    rz.style.height = Math.max(90, rz.offsetHeight + k[1]) + 'px'
+  })
+  document.querySelectorAll<HTMLElement>('#playground [data-copy]').forEach(b => b.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText($(b.dataset.copy!).textContent!); b.textContent = 'Copiado' } catch { b.textContent = 'No se pudo' }
+    setTimeout(() => (b.textContent = 'Copiar'), 1400)
+  }))
+  refresh()
+</script>
+
+<style>
+  code { font: 12.5px var(--mono); color: var(--text) }
+  .pg { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.3fr); gap: 14px }
+  .lb, label { font: 500 12px/1.3 var(--body); color: var(--text-3) }
+  .ed { background: var(--surface); --ns-border: var(--line-2); padding: 22px; display: flex; flex-direction: column; gap: 10px; min-width: 0 }
+  textarea { width: 100%; resize: vertical; min-height: 140px; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line-2); background: rgba(0, 0, 0, .35); color: var(--text); font: 13.5px/1.7 var(--mono); outline: none }
+  textarea:focus-visible { border-color: var(--signal); box-shadow: 0 0 0 3px rgba(0, 230, 118, .18) }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px }
+  .chips button { min-height: 36px; padding: 0 12px; border: 0; background: rgba(255, 255, 255, .06); --ns-border: var(--line); color: var(--text-2); font: 12.5px var(--mono); cursor: pointer }
+  .chips button:hover { color: var(--text) }
+  .chips button[aria-pressed=true] { background: var(--text); color: #0a0a0a }
+  .st { position: relative; min-height: 380px; display: grid; place-items: center; padding: 28px; overflow: hidden; min-width: 0;
+    background: radial-gradient(50% 60% at 50% 50%, rgba(0, 230, 118, .07), transparent 70%), radial-gradient(circle, rgba(255, 255, 255, .08) 1px, transparent 1.5px) 0 0 / 16px 16px, var(--bg-2); --ns-border: var(--line-2) }
+  .rz { resize: both; overflow: hidden; width: 78%; height: 250px; min-width: 140px; min-height: 90px; max-width: 100%; max-height: 330px; border-radius: 4px }
+  .rz:focus-visible { outline-offset: 6px }
+  .pv { width: 100%; height: 100%; display: grid; place-items: center; background: linear-gradient(150deg, rgba(0, 230, 118, .16), rgba(184, 243, 107, .05) 45%, rgba(20, 20, 22, .9)); --ns-border: linear-gradient(120deg, #00e676, rgba(255, 255, 255, .2) 50%, #b8f36b); --ns-border-width: 1.5px; --ns-inner: 6px; color: var(--text-2); font: 12px var(--mono) }
+  .size { position: absolute; right: 18px; bottom: 14px }
+  .out { grid-column: 1 / -1; background: var(--surface); --ns-border: var(--line-2); padding: 20px 22px; display: grid; gap: 8px; min-width: 0 }
+  .row { display: flex; justify-content: space-between; align-items: center; gap: 12px }
+  .cp { min-height: 34px; padding: 0 14px; border: 0; background: rgba(255, 255, 255, .08); color: var(--text); font-size: 13px; cursor: pointer }
+  .cp:hover { background: rgba(255, 255, 255, .14) }
+  pre { margin: 0 0 8px; padding: 12px 14px; border-radius: 10px; background: rgba(0, 0, 0, .35); color: var(--text-2); font: 12px/1.6 var(--mono); white-space: pre-wrap; word-break: break-all; max-height: 92px; overflow: auto }
+  @media (max-width: 900px) { .pg { grid-template-columns: 1fr } .st { min-height: 300px } .rz { height: 200px } }
+</style>

@@ -15,12 +15,19 @@
 - `--ns-morph-time: 0` aplica el cambio de forma al instante.
 - **Arreglo:** las animaciones de borde `scan` y `orbit` y el giro de degradados (`data-ns-spin`) pasan de SMIL a animaciones CSS; ya no se quedan congeladas en móviles.
 
+### Rendimiento en táctil
+- **Arreglo:** en pantallas táctiles la forma de hover (`data-ns-hover`) ya no se queda pegada: el hover sólo se activa con ratón o lápiz (para el dedo está `data-ns-press`).
+- En táctil (`hover: none` y `pointer: coarse`), el resplandor `--ns-glow` de las animaciones de borde y el del mosaico se desactivan (filtros que repintan cada frame y podían congelar la animación). `--ns-glow-touch` permite fijar uno propio.
+- El foco `spot` no se registra en táctil: ya no recalcula los marcos en cada scroll.
+- `ns-fx.css`: en táctil, la luz en U en movimiento (`ns-u-live`, `ns-u-tide`, `ns-u-surge`), `ns-u-hue` y `ns-scan` quedan fijos, y `ns-pulse` anima sólo la opacidad.
+
 ### Bento y auditoría
 - El bento sigue siendo bento en móvil: al menos `--ns-cols-min` columnas (2 por defecto).
 - `audit()` ignora las imágenes y vídeos a sangre (recortarlos es la intención).
 
 ### Sitio
-- Landing rediseñada en Astro, por componentes: hero con mosaico, antes y después, muro de presets, bordes en degradado y luz en U (con una tabla de precios real), mosaico interactivo, las 12 animaciones de borde, componentes funcionando y la isla de navegación en móvil. Firmada por Kodec Agency.
+- Landing rediseñada en Astro, por componentes: hero con mosaico, antes y después, muro de presets, playground (atributo, ruta SVG y CSS `shape()`), bordes en degradado y luz en U (con una tabla de precios real), mosaico interactivo, las 12 animaciones de borde, componentes funcionando, aperturas y View Transitions, anatomía con callouts y formas responsive, ficha técnica en bento unificado sobre fondo aura y la isla de navegación en móvil. Firmada por Kodec Agency.
+- La galería antigua (`galeria.html`) se retira: todas las demos viven en la landing.
 
 ## 0.8.0 — primera versión pública
 

@@ -146,8 +146,11 @@ function spots() {
   const jobs = [...SPOTS].filter(s => s.vis !== false && s.mo?.spot).map(s => [s, s.el.getBoundingClientRect()])
   for (const [s, r] of jobs) { const g = s.mo.spot.firstChild.firstChild; g.setAttribute('cx', f(px - r.left)); g.setAttribute('cy', f(py - r.top)) }
 }
+// sin puntero que flote (táctil) el foco no tiene nada que seguir: no se registra, y así el
+// scroll no recalcula todos los marcos en cada frame
+const touch = () => matchMedia('(hover: none) and (pointer: coarse)').matches
 function spot(s, on) {
-  on ? SPOTS.add(s) : SPOTS.delete(s)
+  on && !touch() ? SPOTS.add(s) : SPOTS.delete(s)
   if (on) track()
 }
 function track() {

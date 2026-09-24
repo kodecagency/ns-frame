@@ -46,6 +46,7 @@ const CSS = `@layer ns{
 @keyframes ns-mo-tr{to{stroke-dashoffset:-100}}
 @media (prefers-reduced-motion:reduce){.ns-mo-sw,.ns-mo-wv,.ns-mo-sc,.ns-mo-tr{display:none}.ns-mo-pl{animation:none;opacity:.4}.ns-mosaic>[data-ns-area]::before{animation:none!important}}
 @media (forced-colors:active){.ns-mo-fx{display:none}}
+@media (hover:none) and (pointer:coarse){.ns-mo-glow{filter:none}}
 }`
 
 const M = new Map()

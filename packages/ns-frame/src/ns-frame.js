@@ -277,6 +277,7 @@ const BASE = 'ns-frame{display:block}:where([data-ns],[data-ns-nest],ns-frame){p
   ':where([data-ns-pad],ns-frame[pad]){--p:var(--ns-pad,1.25rem);padding:calc(var(--ns-safe-t,0px) + var(--p)) calc(var(--ns-safe-r,0px) + var(--p)) calc(var(--ns-safe-b,0px) + var(--p)) calc(var(--ns-safe-l,0px) + var(--p))}'
 const STYLE = `
 .ns-svg{position:absolute;left:0;top:0;pointer-events:none;overflow:visible;z-index:1;filter:var(--ns-glow,none)}
+@media (hover:none) and (pointer:coarse){.ns-svg{filter:var(--ns-glow-touch,none)}}
 .ns-svg path{fill:none}
 .ns-b{stroke:var(--ns-border);stroke-width:calc(2*var(--ns-border-width,1px))}
 .ns-i{stroke:var(--ns-inner-color,var(--ns-border));stroke-width:var(--ns-inner-width,1px);opacity:var(--ns-inner-opacity,.45);vector-effect:non-scaling-stroke}
@@ -565,8 +566,10 @@ export function attach(el) {
   if (!s) {
     S.set(el, (s = { el, w: 0, h: 0 }))
     const hot = () => { s.hot = s.ptr || el.matches(':focus-within'); refresh(s, 1) }
-    el.addEventListener('pointerenter', () => { s.ptr = 1; hot() })
-    el.addEventListener('pointerleave', () => { s.ptr = 0; hot() })
+    // hover sólo con ratón o lápiz: en táctil el pointerleave casi nunca llega y la forma
+    // se quedaba "pegada" en su estado hover (para el dedo está data-ns-press)
+    el.addEventListener('pointerenter', e => { if (e.pointerType != 'touch') { s.ptr = 1; hot() } })
+    el.addEventListener('pointerleave', () => { if (s.ptr) { s.ptr = 0; hot() } })
     // estado presionado (data-ns-press): mouse, dedo o teclado (Enter / Espacio)
     const down = v => () => { if (!v || attr(el, 'press') != null) { s.dn = v; refresh(s, 1) } }
     el.addEventListener('pointerdown', down(1))

@@ -1,0 +1,122 @@
+---
+// Aperturas y transiciones: piezas que entran al hacer scroll respetando sus cortes, y una
+// tarjeta que se convierte en la vista de detalle con la View Transitions API (ns-frame/vt).
+import SectionHead from '../SectionHead.astro'
+
+const ENTER = [
+  { m: 'open', d: 0, t: 'Se despliega', p: 'El panel se abre sin deformar sus cortes.' },
+  { m: 'split', d: 140, t: 'Escalonado', p: 'Cada pieza entra un poco después que la anterior.' },
+  { m: 'iris', d: 280, t: 'Desde el centro', p: 'Se revela desde el centro, con la forma exacta.' },
+]
+const CARDS = [
+  { seed: 'ns-vt-1', t: 'Costa del Pacífico', s: '14 miradores · 3 días', d: 'Una ruta por acantilados y playas de arena negra. Al abrirla, la tarjeta se convirtió en esta vista sin estirar sus cortes.' },
+  { seed: 'ns-vt-2', t: 'Valle alto', s: '6 refugios · 5 días', d: 'Travesía entre refugios de montaña, con tramos de glaciar y lagunas de altura.' },
+  { seed: 'ns-vt-3', t: 'Ciudad vieja', s: '22 paradas · 1 día', d: 'Un paseo a pie por calles de piedra, mercados y patios interiores.' },
+]
+---
+<section class="sec" id="aperturas" aria-labelledby="t-ap">
+  <div class="wrap">
+    <SectionHead id="t-ap">
+      <Fragment slot="title">Aperturas que respetan la forma.</Fragment>
+      Paneles que entran al hacer scroll con <code>data-ns-enter</code>, y una tarjeta que se convierte en la vista de detalle con la View Transitions API: <b>los cortes miden lo mismo durante todo el recorrido.</b>
+    </SectionHead>
+
+    <div class="enter" id="ap-enter">
+      {ENTER.map((x, i) => (
+        <article class:list={['en', 'e' + i]} data-ns="panel" data-ns-enter={`${x.m} ${x.d}`} data-m={x.m}>
+          <span class="n num">0{i + 1}</span>
+          <h3>{x.t}</h3>
+          <p>{x.p}</p>
+          <code class="tag">data-ns-enter="<b>{x.d ? `${x.m} ${x.d}` : x.m}</b>"</code>
+        </article>
+      ))}
+    </div>
+    <div class="replay"><button type="button" class="btn ghost" data-ns="all round 12" id="ap-replay">Repetir las aperturas</button></div>
+
+    <div class="vt" id="vt">
+      <div class="vt-grid" id="vt-grid">
+        {CARDS.map((c, i) => (
+          <button type="button" class="vt-card" data-ns="tl+br bevel 20; radius 3" data-vt={i}>
+            <img src={`https://picsum.photos/seed/${c.seed}/640/400`} alt="" width="640" height="400" loading="lazy" data-ns="tl+br round 14; radius 2">
+            <b>{c.t}</b><span>{c.s}</span>
+          </button>
+        ))}
+      </div>
+      <article class="vt-detail" id="vt-detail" data-ns="tl+br bevel 36; radius 3" hidden>
+        <img id="vt-img" src="" alt="" width="640" height="400" data-ns="tl+br round 22; radius 2">
+        <div class="vt-body">
+          <h3 id="vt-title" tabindex="-1"></h3>
+          <span class="dim" id="vt-sub"></span>
+          <p id="vt-text"></p>
+          <button type="button" class="btn ghost" data-ns="all round 12" id="vt-back">Volver a las rutas</button>
+        </div>
+      </article>
+      <template id="vt-data">{JSON.stringify(CARDS)}</template>
+    </div>
+  </div>
+</section>
+
+<script>
+  import { open } from 'ns-frame'
+  import { morph } from 'ns-frame/vt'
+
+  // repetir las aperturas (el mismo modo, escalonado)
+  const panels = [...document.querySelectorAll<HTMLElement>('#ap-enter .en')]
+  document.getElementById('ap-replay')!.addEventListener('click', () => {
+    panels.forEach((p, i) => setTimeout(() => open(p, p.dataset.m), i * 140))
+  })
+
+  // tarjeta → detalle → tarjeta, con el foco donde corresponde
+  const $ = (id: string) => document.getElementById(id)!
+  const grid = $('vt-grid'), detail = $('vt-detail'), img = $('vt-img') as HTMLImageElement
+  const DATA: { t: string; s: string; d: string }[] = JSON.parse(($('vt-data') as HTMLTemplateElement).content.textContent || '[]')
+  let from: HTMLElement | null = null
+  grid.addEventListener('click', e => {
+    const card = (e.target as Element).closest<HTMLElement>('.vt-card')
+    if (!card) return
+    const c = DATA[+card.dataset.vt!]
+    from = card
+    morph(card, () => {
+      img.src = card.querySelector('img')!.src
+      img.alt = c.t
+      $('vt-title').textContent = c.t
+      $('vt-sub').textContent = c.s
+      $('vt-text').textContent = c.d
+      grid.hidden = true
+      detail.hidden = false
+    }, detail).then(() => $('vt-title').focus())
+  })
+  const back = () => from && morph(detail, () => { detail.hidden = true; grid.hidden = false }, from).then(() => from!.focus())
+  $('vt-back').addEventListener('click', back)
+  detail.addEventListener('keydown', e => { if (e.key == 'Escape') back() })
+</script>
+
+<style>
+  code { font: 12.5px var(--mono); color: var(--text) }
+  .enter { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px }
+  .en { background: var(--surface); --ns-border: var(--line-2); padding: 26px 26px 22px; display: flex; flex-direction: column; gap: 6px; min-height: 190px; min-width: 0 }
+  .e0 { --ns-border: rgba(0, 230, 118, .45); background: linear-gradient(180deg, rgba(0, 230, 118, .08), transparent 70%), var(--surface) }
+  .e1 { --ns-border: rgba(255, 181, 71, .45); background: linear-gradient(180deg, rgba(255, 181, 71, .08), transparent 70%), var(--surface) }
+  .e2 { --ns-border: rgba(212, 212, 216, .4); background: linear-gradient(180deg, rgba(212, 212, 216, .07), transparent 70%), var(--surface) }
+  .n { font: 500 13px var(--mono); color: var(--text-3) }
+  .en h3 { font-size: 18px }
+  .en p { margin: 0; color: var(--text-2); font-size: 14px; flex: 1 }
+  .replay { display: flex; justify-content: flex-end; margin: 12px 0 28px }
+  .replay .btn { font-size: 14px; min-height: 42px }
+
+  .vt-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px }
+  .vt-grid[hidden], .vt-detail[hidden] { display: none }
+  .vt-card { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; gap: 4px; padding: 14px 14px 20px; background: var(--surface); --ns-border: var(--line-2); transition: background-color .25s }
+  .vt-card:hover { background: var(--surface-2) }
+  .vt-card img, .vt-detail img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; background: var(--bg-2) }
+  .vt-card img { margin-bottom: 10px }
+  .vt-card b { font: 600 17px/1.2 var(--display); font-stretch: 106%; padding: 0 6px }
+  .vt-card span { color: var(--text-2); font-size: 13.5px; padding: 0 6px }
+  .vt-detail { display: grid; grid-template-columns: 1.2fr 1fr; gap: 28px; padding: 22px; background: var(--surface); --ns-border: linear-gradient(120deg, rgba(0, 230, 118, .6), rgba(255, 255, 255, .1) 50%, rgba(184, 243, 107, .5)) }
+  .vt-body { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; padding: 12px 8px }
+  .vt-body h3 { font-size: clamp(24px, 3vw, 34px); letter-spacing: -.02em; outline: none }
+  .vt-body p { margin: 0; color: var(--text-2) }
+  .vt-body .btn { margin-top: auto; font-size: 14px }
+  @media (max-width: 900px) { .enter { grid-template-columns: 1fr } .vt-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) } .vt-grid > :last-child { grid-column: 1 / -1 } .vt-detail { grid-template-columns: 1fr } .replay { justify-content: flex-start } }
+  @media (max-width: 560px) { .vt-grid { gap: 10px } .vt-card { padding: 10px 10px 16px } .vt-card b { font-size: 15px } .vt-card span { font-size: 12.5px } }
+</style>
