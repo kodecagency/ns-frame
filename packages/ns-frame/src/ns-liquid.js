@@ -65,7 +65,18 @@ const WK = !LENS && typeof navigator != 'undefined' && /AppleWebKit/.test(naviga
 // -moz-element(): Firefox pinta cualquier elemento, en vivo, como imagen de fondo
 const MOZ = !!globalThis.CSS?.supports?.('background-image', '-moz-element(#a)')
 const FIT = { cover: 'cover', contain: 'contain', fill: '100% 100%', none: 'auto', 'scale-down': 'contain' }
-const CAP = 1500, SKIP = /^(SCRIPT|STYLE|TEMPLATE|NOSCRIPT|IFRAME|OBJECT|EMBED|DIALOG)$/
+// propiedades que copia el clon del DOM (las que cambian el aspecto; el resto no se ve en una copia)
+const LOOK = ('display position top right bottom left width height min-width min-height max-width max-height box-sizing ' +
+  'margin-top margin-right margin-bottom margin-left padding-top padding-right padding-bottom padding-left ' +
+  'border-top-width border-right-width border-bottom-width border-left-width border-top-style border-right-style border-bottom-style border-left-style ' +
+  'border-top-color border-right-color border-bottom-color border-left-color border-top-left-radius border-top-right-radius border-bottom-right-radius border-bottom-left-radius ' +
+  'background-color background-image background-size background-position background-repeat background-clip color ' +
+  'font-family font-size font-weight font-style font-stretch line-height letter-spacing word-spacing text-align text-transform text-decoration-line text-shadow text-overflow white-space ' +
+  'overflow-x overflow-y opacity visibility transform transform-origin translate rotate scale ' +
+  'flex-direction flex-wrap flex-grow flex-shrink flex-basis align-items align-content align-self justify-content justify-items justify-self row-gap column-gap ' +
+  'grid-template-columns grid-template-rows grid-column-start grid-column-end grid-row-start grid-row-end grid-auto-flow grid-auto-rows grid-auto-columns order ' +
+  'object-fit object-position aspect-ratio box-shadow filter z-index vertical-align list-style-type clip-path mask-image fill stroke stroke-width').split(' ')
+const CAP = 1500, SKIP =/^(SCRIPT|STYLE|TEMPLATE|NOSCRIPT|IFRAME|OBJECT|EMBED|DIALOG)$/
 // lo que hay detrás del centro de `el` sin indicarlo: subiendo por los antepasados, un hermano
 // anterior (pinta debajo) que sea o contenga una imagen, un vídeo o un canvas que cubra ese punto,
 // o el primer antepasado con background-image
@@ -328,7 +339,10 @@ function simplify(P, eps, near = 0) {
  * hay más allá, como un cristal grueso), con una caída suave; en el centro y fuera, nada. Rojo = x,
  * verde = y, 128 = 0. Se pinta en un canvas del tamaño de la rejilla (el filtro lo estira).
  */
-function lensMap(f, rim, cv, full) {
+// `hard` (cristal tallado): dentro de la banda, el desvío es constante en cada cara (sin caída),
+// así que el fondo se ve partido en cada corte, como a través de una gema; el borde de la banda se
+// suaviza 1,5 px para que el corte sea limpio y no un escalón pixelado
+function lensMap(f, rim, cv, full, hard) {
   const { F, nx, ny, step } = f
   cv.width = nx; cv.height = ny
   // willReadFrequently: canvas en CPU. Uno acelerado por GPU obliga a leerlo de vuelta para
@@ -340,7 +354,7 @@ function lensMap(f, rim, cv, full) {
     if (v < 0 && -v < rim) {
       gx = (F[j * nx + Math.min(nx - 1, i + 1)] - F[j * nx + Math.max(0, i - 1)]) / (2 * step)
       gy = (F[Math.min(ny - 1, j + 1) * nx + i] - F[Math.max(0, j - 1) * nx + i]) / (2 * step)
-      const L = Math.hypot(gx, gy) || 1, t = (1 + v / rim) ** 2
+      const L = Math.hypot(gx, gy) || 1, t = hard ? Math.min(1, (v + rim) / 1.5) * .7 : (1 + v / rim) ** 2
       gx = gx / L * t; gy = gy / L * t
     }
     D[k] = 128 + gx * 127; D[k + 1] = 128 + gy * 127; D[k + 2] = 128; D[k + 3] = 255
@@ -443,7 +457,12 @@ export function liquid(el, o = {}) {
   const oRect = mk('rect', { fill: '#fff' }), oCut = mk('path', { fill: '#000' }), mGlow = mk('mask', { id: id + 'o', maskUnits: 'userSpaceOnUse' }); mGlow.append(oRect, oCut)
   defs.append(fGlow, mGlow)
   const glow = mk('path', { class: 'ns-lg', filter: `url(#${id}g)`, mask: `url(#${id}o)` })
-  svg.append(defs, glow, path, rim, rim2)
+  // Sombra (--ns-glass-shadow): la forma desenfocada y algo más abajo, también sólo por fuera. Separa
+  // el cristal del fondo sin un contorno
+  const sB = mk('feGaussianBlur', { in: 'SourceGraphic', stdDeviation: 9, result: 'b' }), sO = mk('feOffset', { in: 'b', dx: 0, dy: 7 })
+  const fShadow = mk('filter', { id: id + 'h', x: '-50%', y: '-50%', width: '200%', height: '200%' }); fShadow.append(sB, sO); defs.append(fShadow)
+  const shadow = mk('path', { class: 'ns-lsh', filter: `url(#${id}h)`, mask: `url(#${id}o)` })
+  svg.append(defs, shadow, glow, path, rim, rim2)
   const glass = div('ns-liquid-glass'), edge = div('ns-liquid-rim')
   // Lente donde backdrop-filter no admite filtros SVG (Safari, Firefox): si se indica qué hay
   // detrás (data-ns-liquid-src="selector" u o.source: una imagen o un elemento con background-image),
@@ -497,7 +516,9 @@ export function liquid(el, o = {}) {
       kind = 'dom'
       snap(n)
       // el clon se rehace cuando el original cambia (como mucho cuatro veces por segundo)
-      smo = new MutationObserver(() => { redo ||= setTimeout(() => { redo = 0; if (kind == 'dom') { copy.replaceChildren(); snap(n) } }, 250) })
+      // (en un momento libre del hilo si el navegador lo ofrece: no compite con una animación)
+      const rebuild = () => { redo = 0; if (kind == 'dom') { copy.replaceChildren(); snap(n) } }
+      smo = new MutationObserver(() => { redo ||= setTimeout(() => globalThis.requestIdleCallback ? requestIdleCallback(rebuild, { timeout: 500 }) : rebuild(), 250) })
       smo.observe(n, { subtree: true, childList: true, characterData: true, attributes: true })
     } else {
       kind = 'bg'
@@ -536,8 +557,9 @@ export function liquid(el, o = {}) {
       if (m.nodeType != 1 || budget-- <= 0 || SKIP.test(m.tagName)) return null
       const c = document.createElementNS(m.namespaceURI, m.localName)
       for (const a of m.attributes) if (!/^(id|style|on.*|autofocus|tabindex|contenteditable|loading)$/i.test(a.name)) c.setAttribute(a.name, a.value)
+      // sólo lo que cambia cómo se ve (unas 100 propiedades, no las ~370 del estilo calculado)
       const s = getComputedStyle(m)
-      for (let i = 0; i < s.length; i++) c.style.setProperty(s[i], s.getPropertyValue(s[i]))
+      for (const p of LOOK) { const v = s.getPropertyValue(p); v && c.style.setProperty(p, v) }
       c.style.animation = c.style.transition = 'none'
       if (m.scrollHeight > m.clientHeight + 1 || m.scrollWidth > m.clientWidth + 1) scrolls.push([c, m])
       for (const k of m.childNodes) { const x = walk(k); x && c.append(x) }
@@ -556,32 +578,39 @@ export function liquid(el, o = {}) {
   const syncScroll = () => { for (const [c, m] of scrolls) { c.scrollTop = m.scrollTop; c.scrollLeft = m.scrollLeft } }
   // al desplazarse la página o un contenedor, la copia se recoloca (y el clon copia el desplazamiento)
   const onScroll = () => { if (V?.src && vis) fr ||= requestAnimationFrame(follow) }
-  // la copia, donde está el original respecto a las capas (BX, BY: origen de las capas en pantalla)
-  let BX = 0, BY = 0, placed = '', fr = 0
+  // La copia, donde está el original respecto a las capas. OX, OY: origen del grupo en pantalla;
+  // SC: su escala (un grupo con scale o transform: la barra que se encoge al desplazar); LX, LY:
+  // origen de las capas en coordenadas del grupo. La copia se desescala para verse a tamaño real
+  let OX = 0, OY = 0, SC = 1, LX = 0, LY = 0, placed = '', fr = 0
+  const origin = () => {
+    const E = el.getBoundingClientRect()
+    SC = el.offsetWidth ? E.width / el.offsetWidth || 1 : 1
+    OX = E.left + el.clientLeft * SC; OY = E.top + el.clientTop * SC
+    return E
+  }
   const put = S => {
-    const at = [r2(S.left - BX), r2(S.top - BY), r2(S.width), r2(S.height)], k = at.join()
-    if (k != placed) { placed = k; Object.assign(copy.style, { left: at[0] + 'px', top: at[1] + 'px', width: at[2] + 'px', height: at[3] + 'px' }) }
+    const at = [r2((S.left - OX) / SC - LX), r2((S.top - OY) / SC - LY), r2(S.width), r2(S.height), r2(1 / SC)], k = at.join()
+    if (k != placed) { placed = k; Object.assign(copy.style, { left: at[0] + 'px', top: at[1] + 'px', width: at[2] + 'px', height: at[3] + 'px', transform: SC != 1 ? `scale(${at[4]})` : '', transformOrigin: '0 0' }) }
   }
   const follow = () => {
     fr = 0
     const s = V?.src
     if (!s || back.hidden) return
     if (kind == 'dom') syncScroll()
-    // el grupo también puede haberse movido (si no es fijo): el origen de las capas se relee
-    const E = el.getBoundingClientRect(), dx = E.left + el.clientLeft - ox0, dy = E.top + el.clientTop - oy0
-    ox0 += dx; oy0 += dy; BX += dx; BY += dy
+    // el grupo también puede haberse movido (si no es fijo): el origen se relee
+    origin()
     put(s.getBoundingClientRect())
   }
-  let ox0 = 0, oy0 = 0
   let raf = 0, idle = 0, cost = 3, last = '', lastPre = '', msig = '', now = null, cur = -1, lensKey = '', token = 0, frame = 0, dirty = true, V = null
   // estilos leídos en caché: las variables del grupo y el radio/visibilidad de cada hijo se leen al
   // despertar por un cambio (clase, estilo, tamaño) y cada pocos frames en marcha, no en cada frame
   const look = new WeakMap()
   const draw = () => {
-    const E = el.getBoundingClientRect(), fresh = dirty || frame % 6 == 0
+    origin()
+    const fresh = dirty || frame % 6 == 0
     if (dirty || !V) {
       const cs = getComputedStyle(el), num = (k, d) => { const v = parseFloat(cs.getPropertyValue(k)); return v >= 0 ? v : d }
-      V = { k: num('--ns-liquid', 14), lens: num('--ns-glass-lens', 34), edge: num('--ns-glass-edge', 8), depth: num('--ns-glass-depth', 24), blur: num('--ns-glass-blur', 4), sat: num('--ns-glass-sat', 1.3), src: LENS || !glassy() ? null : source(), prism: !!o.prism?.(), glow: cs.getPropertyValue('--ns-glass-glow').trim(), glowSize: num('--ns-glass-glow-size', 16) }
+      V = { k: num('--ns-liquid', 14), lens: num('--ns-glass-lens', 34), edge: num('--ns-glass-edge', 8), depth: num('--ns-glass-depth', 24), blur: num('--ns-glass-blur', 4), sat: num('--ns-glass-sat', 1.3), src: LENS || !glassy() ? null : source(), prism: !!o.prism?.(), hard: !!o.hard?.(), shadow: cs.getPropertyValue('--ns-glass-shadow').trim(), glow: cs.getPropertyValue('--ns-glass-glow').trim(), glowSize: num('--ns-glass-glow-size', 16) }
       // prisma: se monta o se desmonta la cadena de los dos filtros (y se regenera la lente)
       if (lenses[0].prism !== V.prism) { lenses.forEach(L => chain(L, V.prism)); lensKey = ''; lastPre = '' }
       // (el clon del DOM y el de fotogramas se rehacen sólo si cambia el original; la imagen y el
@@ -590,10 +619,9 @@ export function liquid(el, o = {}) {
     }
     dirty = false; frame++
     const k = o.k ?? V.k
-    const ox = E.left + el.clientLeft, oy = E.top + el.clientTop
     const g = glassy(), src = g ? V.src : null, lensPx = g && (LENS || src) ? V.lens : 0, edgePx = V.edge, depth = V.depth
     const S = src?.getBoundingClientRect()
-    const tail = `|${g}|${lensPx}|${edgePx}|${!!src}|${depth}|${V.blur}|${V.sat}`
+    const tail = `|${g}|${lensPx}|${edgePx}|${!!src}|${depth}|${V.blur}|${V.sat}|${V.hard}|${V.shadow}|${V.glow}`
     let bx, by, bw, bh, pre, make
     if (o.path) {
       // Una forma cualquiera (ns-frame/glass): el path del propio elemento, en su caja de borde. Las
@@ -614,7 +642,9 @@ export function liquid(el, o = {}) {
         let L = look.get(b)
         if (!L || fresh) { const s = getComputedStyle(b); look.set(b, L = { off: s.visibility == 'hidden' || +s.opacity == 0, rad: s.borderTopLeftRadius }) }
         if (L.off) return { x: 0, y: 0, w: 0, h: 0 }
-        return { x: r.left - ox, y: r.top - oy, w: r.width, h: r.height, r: px(L.rad, Math.min(r.width, r.height)) }
+        // (en coordenadas del grupo: si está escalado, las medidas en pantalla se dividen por su escala)
+        const w = r.width / SC, h = r.height / SC
+        return { x: (r.left - OX) / SC, y: (r.top - OY) / SC, w, h, r: px(L.rad, Math.min(w, h)) }
       }).filter(b => b.w > 0 && b.h > 0)
       // las capas cubren el contorno real y un margen (los hijos pueden salir del contenedor, y la
       // lente toma fondo un poco más allá del borde)
@@ -629,7 +659,7 @@ export function liquid(el, o = {}) {
       make = () => { const f = field(boxes.map(b => ({ ...b, x: b.x - bx, y: b.y - by })), K, o.step || Math.min(3, Math.max(1.25, Math.sqrt(bw * bh / 9000)))); return [f, contour(f)] }
     }
     // la copia sigue al original (al desplazarse la página, por ejemplo) sin rehacer la forma
-    BX = bx + ox; BY = by + oy; ox0 = ox; oy0 = oy
+    LX = bx; LY = by
     if (S) put(S)
     // si las piezas y los parámetros no cambiaron, la forma tampoco: ni campo ni contorno (un grupo
     // se despierta a menudo por otro que se mueve dentro o cerca, y así no le cuesta nada)
@@ -643,13 +673,14 @@ export function liquid(el, o = {}) {
     svg.setAttribute('viewBox', `0 0 ${r2(bw)} ${r2(bh)}`)
     path.setAttribute('d', d); rim.setAttribute('d', d)
     // halo: sólo si hay color; el desenfoque crece con el tamaño pedido
-    const gs = V.glowSize, gOn = g && d && V.glow
-    glow.setAttribute('d', gOn ? d : '')
-    if (gOn) {
-      const R = { x: -gs * 3, y: -gs * 3, width: r2(bw + gs * 6), height: r2(bh + gs * 6) }
+    const gs = V.glowSize, gOn = g && d && V.glow, sOn = g && d && V.shadow
+    glow.setAttribute('d', gOn ? d : ''); shadow.setAttribute('d', sOn ? d : '')
+    if (gOn || sOn) {
+      const p = Math.max(gs * 3, 40), R = { x: -p, y: -p, width: r2(bw + p * 2), height: r2(bh + p * 2) }
       setA(mGlow, R); setA(oRect, R); oCut.setAttribute('d', d)
-      setA(glow, { stroke: V.glow, 'stroke-width': r2(gs) }); gBlur.setAttribute('stdDeviation', r2(gs / 2.4))
     }
+    if (gOn) { setA(glow, { stroke: V.glow, 'stroke-width': r2(gs) }); gBlur.setAttribute('stdDeviation', r2(gs / 2.4)) }
+    if (sOn) shadow.setAttribute('fill', V.shadow)
     // segundo reflejo: un contorno 1,6 px hacia dentro (sólo en vidrio)
     rim2.setAttribute('d', g && d ? contour(f, -1.6) : '')
     el.classList.toggle('ns-glass', g)
@@ -672,7 +703,7 @@ export function liquid(el, o = {}) {
     mEdge.setAttribute('stroke-width', r2(edgePx * 1.6)); eBlur.setAttribute('stdDeviation', r2(edgePx / 2.2))
     if (!lensPx) { glass.style.backdropFilter = back.style.filter = ''; now = null; return }
     // sobre la copia, la lente sólo desplaza: el desenfoque y la saturación los pone el cuerpo encima
-    now = { f, d, bw, bh, depth, lensPx, blur: src ? 0 : V.blur, sat: src ? 1 : V.sat, src: !!src }
+    now = { f, d, bw, bh, depth, lensPx, blur: src ? 0 : V.blur, sat: src ? 1 : V.sat, src: !!src, hard: V.hard }
     // en marcha: el mapa vigente sigue a la forma (se estira); el nuevo llega al detenerse. Sobre la
     // copia (fuera de Chromium) el mapa va con la capa y se estira a su tamaño: vale mientras la
     // forma se desplaza o se estira un poco (un indicador que se levanta); si cambia mucho (unas
@@ -705,11 +736,11 @@ export function liquid(el, o = {}) {
   const refreshLens = () => {
     const s = now
     if (!s) return
-    const k = [s.d, s.bw, s.bh, s.depth, s.lensPx, s.blur, s.sat, s.src].join('|')
+    const k = [s.d, s.bw, s.bh, s.depth, s.lensPx, s.blur, s.sat, s.src, s.hard].join('|')
     if (k == lensKey) return
     lensKey = k
     const n = cur < 0 ? 0 : 1 - cur, L = lenses[n], t = ++token
-    lensMap(s.f, s.depth, cv, s.src ? { cv: cv2 ||= document.createElement('canvas'), w: s.bw, h: s.bh } : null).then(url => {
+    lensMap(s.f, s.depth, cv, s.src ? { cv: cv2 ||= document.createElement('canvas'), w: s.bw, h: s.bh } : null, s.hard).then(url => {
       if (t != token) return
       place(L, s)
       L.map.setAttribute('href', url)
@@ -755,7 +786,9 @@ export function liquid(el, o = {}) {
     if (idle < 2 || fading) raf = requestAnimationFrame(tick)
   }
   const wake = () => { idle = 0; raf ||= requestAnimationFrame(tick) }
-  const stale = () => { dirty = true; lastPre = ''; wake() }
+  // (se releen los estilos; la forma sólo se rehace si cambió algo que la define: un grupo que se
+  // arrastra cambia su estilo en cada frame y no debe recalcular el campo)
+  const stale = () => { dirty = true; wake() }
   const ro = new ResizeObserver(stale)
   ro.observe(el)
   // elementos con transiciones o animaciones CSS en curso (si uno termina antes que otra de sus

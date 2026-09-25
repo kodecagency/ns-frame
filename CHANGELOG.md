@@ -6,6 +6,14 @@
 - Sin el error global «ResizeObserver loop completed with undelivered notifications» (WebKit lo lanzaba como excepción): el margen seguro de `data-ns-pad` se aplica en el frame siguiente cuando viene de un ResizeObserver, y `ns-link` ya no observa el `<body>` (compara la altura del documento en eventos baratos).
 - Todas las páginas del sitio revisadas en WebKit (motor de Safari) sin errores.
 
+### Vidrio más limpio y barra que se encoge
+- **Sin contorno:** en `ns-frame/glass` el canto lo dibuja la luz (brillo según el ángulo de cada tramo, en un canvas recortado a la forma y sin costuras) y una sombra suave (`--ns-glass-shadow`) lo separa del fondo; el borde de ns-frame ya no se superpone (doble contorno) salvo con `data-ns-glass="border"`.
+- **Cristal tallado** con lente plana por caras: el fondo se parte en cada corte, como una gema.
+- `ns-tabs`: sin la gota que se quedaba atrás (se veía como un tirón y deformaba la píldora; ahora opcional con `drop`), estiramiento más sutil, más margen para distinguir un toque de un arrastre con el dedo, clase `ns-tabs-on` y `shrink` (se encoge al desplazar, como iOS 26).
+- `ns-liquid` mide las piezas en coordenadas del grupo: correcto bajo `scale` o `transform`; la copia del fondo en Safari se desescala.
+- Clon del DOM (Safari) más ligero: sólo las ~100 propiedades que se ven, y se rehace en un momento libre del hilo.
+- Sitio: galería de piezas de vidrio con forma que se arrastran; etiquetas de la barra del móvil con más aire.
+
 ### Vidrio en cualquier forma (`ns-frame/glass`, nuevo)
 - `data-ns-glass`: el vidrio líquido en cualquier elemento, con su forma exacta de ns-frame (chaflanes, muescas, cortes, pestañas, squircles) o su `border-radius` por esquina. Campo de distancias exacto de cualquier path (`pathField`, transformada de Felzenszwalb) para la lente y los reflejos.
 - **Cristal tallado** (`facet`): cada corte es una faceta que recoge la luz según su ángulo; la luz sigue al puntero o, en el móvil, barre las caras con el scroll. **Prisma** (`prism`): dispersión cromática en el canto. **Halo** propio (`--ns-glass-glow`), sin `filter` en el elemento.

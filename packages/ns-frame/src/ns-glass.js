@@ -19,12 +19,13 @@ import { styles, path, shapeOf, update } from './ns-frame.js'
 import { liquid } from './ns-liquid.js'
 
 const CSS = `@layer ns{
-[data-ns-glass]{background:none}
+[data-ns-glass]{background:none;--ns-glass-shadow:rgba(0,0,0,.28)}
+[data-ns-glass]:not([data-ns-glass~=border]){--ns-border:transparent!important}
+.ns-glass.ns-glass-shape>.ns-liquid-fx .ns-lr,.ns-glass.ns-glass-shape>.ns-liquid-fx .ns-lr2{display:none}
+.ns-glass-light{position:absolute;pointer-events:none}
 [data-ns-glass~=clear]{--ns-glass-tint:rgba(255,255,255,.02);--ns-glass-blur:1.5px}
 [data-ns-glass~=tint]{--ns-glass-tint:rgba(18,18,22,.46);--ns-glass-blur:10px}
-.ns-glass-facets g:first-child path{fill:var(--ns-facet-color,#fff)}
-.ns-glass-facets g:last-child path{fill:none;stroke:var(--ns-facet-color,#fff);stroke-width:var(--ns-facet-line,1px);stroke-linecap:round}
-@media (prefers-reduced-transparency:reduce),(forced-colors:active){.ns-glass-facets{display:none}}
+@media (forced-colors:active){.ns-glass-light{display:none}}
 }`
 let styled = 0
 const G = new WeakMap()
@@ -42,12 +43,16 @@ function rounded(el, w, h) {
   return `M${tl[0]} 0L${w - tr[0]} 0${A(tr, w, tr[1])}L${w} ${h - br[1]}${A(br, w - br[0], h)}L${bl[0]} ${h}${A(bl, 0, h - bl[1])}L0 ${tl[1]}${A(tl, tl[0], 0)}Z`
 }
 
-// ── Cristal tallado (data-ns-glass="facet") ──
-// Cada tramo del contorno es una faceta con su normal: un chaflán es una cara plana que se enciende
-// entera; una curva, muchas caras pequeñas que dan un degradado. Cada faceta tiene una banda
-// hacia dentro (la cara tallada) y una arista; las dos se iluminan según el ángulo entre su normal y
-// la luz. La luz sigue al puntero; sin puntero fino (móvil), barre las facetas al desplazar la
-// página, sin pedir permisos de giroscopio. Sólo cambia la opacidad de cada faceta: barato.
+// ── Luz del canto ──
+// El vidrio no lleva un contorno plano: el canto lo dibuja la luz. Cada tramo del contorno tiene su
+// normal y brilla según el ángulo con la luz (fuerte donde mira a ella, un reflejo tenue enfrente y
+// casi nada en los costados), como el especular del Liquid Glass. Un chaflán es una cara que se
+// enciende entera; una curva, un degradado. Se pinta en un canvas recortado a la forma (el brillo
+// queda por dentro del borde, nítido) y con mezcla "lighten": los tramos se solapan sin costuras.
+// La luz sigue al puntero; sin puntero fino (móvil), barre las caras al desplazar la página.
+// data-ns-glass="facet" (cristal tallado): además, cada cara tiene una banda hacia dentro que se
+// ilumina con ella y una arista de corte, y la lente es plana por caras (el fondo se parte en cada
+// corte, como en una gema).
 
 // contorno de un path (M, L, A, C, Z absolutos) como polígono: rectas tal cual, curvas en tramos de ~5 px
 function flatten(d) {
@@ -79,7 +84,6 @@ function flatten(d) {
   // sin puntos repetidos (el cierre vuelve al inicio)
   return P.filter((p, j) => { const q = P[(j + P.length - 1) % P.length]; return Math.hypot(p[0] - q[0], p[1] - q[1]) > .05 })
 }
-const SVGNS = 'http://www.w3.org/2000/svg'
 const FAC = new Set()
 let lx = -1, ly = -1, lraf = 0, MQ = null
 const fine = () => (MQ ||= [matchMedia('(hover: hover) and (pointer: fine)'), matchMedia('(prefers-reduced-motion: reduce)')])[0].matches
@@ -93,67 +97,83 @@ function light() {
   all.forEach((F, i) => F.lit(R[i]))
 }
 const relight = () => { lraf ||= requestAnimationFrame(light) }
-function facets(el) {
-  const svg = document.createElementNS(SVGNS, 'svg')
-  svg.setAttribute('class', 'ns-liquid-fx ns-glass-facets'); svg.setAttribute('aria-hidden', 'true')
-  const gB = document.createElementNS(SVGNS, 'g'), gE = document.createElementNS(SVGNS, 'g')
-  svg.append(gB, gE)
-  let F = [], key = '', vis = false
-  const build = (d, w, h) => {
-    const k = d + w + h
+const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t) }
+function lights(el) {
+  const cv = document.createElement('canvas')
+  cv.className = 'ns-liquid-fx ns-glass-light'; cv.setAttribute('aria-hidden', 'true')
+  const x = cv.getContext('2d')
+  let F = [], key = '', vis = false, clip = null, W = 0, H = 0, q = 1, last = '', cut = false, fw = 7
+  const build = (d, w, h, facet) => {
+    const k = d + w + h + facet
     if (k == key) return
-    key = k
-    Object.assign(svg.style, { left: -el.clientLeft + 'px', top: -el.clientTop + 'px', width: w + 'px', height: h + 'px' })
-    svg.setAttribute('viewBox', `0 0 ${w} ${h}`)
+    key = k; cut = facet; W = w; H = h; last = ''
+    q = Math.min(2, devicePixelRatio || 1)
+    cv.width = Math.round(w * q); cv.height = Math.round(h * q)
+    Object.assign(cv.style, { left: -el.clientLeft + 'px', top: -el.clientTop + 'px', width: w + 'px', height: h + 'px' })
+    clip = new Path2D(d)
     const P = flatten(d), n = P.length
-    if (n < 3) { gB.replaceChildren(); gE.replaceChildren(); F = []; return }
+    F = []
+    if (n < 3) return
     // sentido del contorno: la normal hacia fuera depende de él
     let area = 0
     for (let j = 0; j < n; j++) { const a = P[j], b = P[(j + 1) % n]; area += a[0] * b[1] - b[0] * a[1] }
-    const out = area > 0 ? 1 : -1, cs = getComputedStyle(el), W = parseFloat(cs.getPropertyValue('--ns-facet-width')) || 7
-    const fb = [], fe = []
-    F = []
+    const out = area > 0 ? 1 : -1
+    fw = parseFloat(getComputedStyle(el).getPropertyValue('--ns-facet-width')) || 8
     for (let j = 0; j < n; j++) {
       const a = P[j], b = P[(j + 1) % n], L = Math.hypot(b[0] - a[0], b[1] - a[1])
-      if (L < .5) continue
-      const nx = (b[1] - a[1]) / L * out, ny = -(b[0] - a[0]) / L * out
-      const band = document.createElementNS(SVGNS, 'path'), edge = document.createElementNS(SVGNS, 'path')
-      band.setAttribute('d', `M${a[0]} ${a[1]}L${b[0]} ${b[1]}L${b[0] - nx * W} ${b[1] - ny * W}L${a[0] - nx * W} ${a[1] - ny * W}Z`)
-      edge.setAttribute('d', `M${a[0]} ${a[1]}L${b[0]} ${b[1]}`)
-      band.setAttribute('opacity', 0); edge.setAttribute('opacity', 0)
-      fb.push(band); fe.push(edge)
-      F.push([nx, ny, band, edge, -1])
+      if (L < .3) continue
+      F.push([a, b, (b[1] - a[1]) / L * out, -(b[0] - a[0]) / L * out])
     }
-    gB.replaceChildren(...fb); gE.replaceChildren(...fe)
     lit()
   }
   const lit = (r = el.getBoundingClientRect()) => {
     if (!vis || !F.length) return
     const cx = r.left + r.width / 2, cy = r.top + r.height / 2
     let dx, dy
-    if (calm()) { dx = -.6; dy = -.8 }
+    if (calm()) { dx = -.55; dy = -.85 }
     else if (fine() && lx >= 0) { dx = lx - cx; dy = ly - cy }
     else {
       // sin puntero: la luz barre de izquierda a derecha según dónde esté el elemento en la pantalla
       const t = Math.max(-1, Math.min(1, (cy / innerHeight) * 2 - 1))
-      dx = t * innerWidth * .6; dy = -innerHeight * .5
+      dx = t * innerWidth * .5; dy = -innerHeight * .6
     }
     // la luz está por delante de la superficie: cuanto más lejos el puntero, más rasante
-    const z = Math.max(r.width, r.height) * .6, l = Math.hypot(dx, dy, z)
+    const z = Math.max(r.width, r.height) * .7, l = Math.hypot(dx, dy, z)
     dx /= l; dy /= l
-    for (const f of F) {
-      // luz principal + un reflejo tenue por el lado contrario (la luz que atraviesa el cristal)
-      const s = f[0] * dx + f[1] * dy, i = Math.max(0, s) ** 2 + Math.max(0, -s) ** 3 * .35, q = Math.round(i * 40) / 40
-      if (q == f[4]) continue
-      f[4] = q
-      // (atributo, no style: los observadores del vidrio no escuchan este cambio, que es de cada frame)
-      f[2].setAttribute('opacity', (.02 + q * .3).toFixed(3))
-      f[3].setAttribute('opacity', (.12 + q * .88).toFixed(3))
+    // (no se repinta si la luz apenas se movió)
+    const k = Math.round(dx * 60) + ',' + Math.round(dy * 60)
+    if (k == last) return
+    last = k
+    x.setTransform(q, 0, 0, q, 0, 0)
+    x.clearRect(0, 0, W, H)
+    x.save()
+    x.clip(clip)
+    x.globalCompositeOperation = 'lighten'
+    x.lineCap = 'round'
+    const L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L
+    for (const [a, b, nx, ny] of F) {
+      const s = nx * ux + ny * uy
+      // especular: fuerte y estrecho donde la cara mira a la luz; reflejo tenue enfrente
+      const i = smooth(.25, 1, s) * .95 + smooth(.55, 1, -s) * .38, base = .07
+      if (cut) {
+        // cara tallada: una banda hacia dentro que se desvanece, y la arista del corte
+        const g = x.createLinearGradient((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[0] + b[0]) / 2 - nx * fw, (a[1] + b[1]) / 2 - ny * fw)
+        g.addColorStop(0, `rgba(255,255,255,${(i * .3).toFixed(3)})`); g.addColorStop(1, 'rgba(255,255,255,0)')
+        x.fillStyle = g
+        x.beginPath(); x.moveTo(a[0], a[1]); x.lineTo(b[0], b[1]); x.lineTo(b[0] - nx * fw, b[1] - ny * fw); x.lineTo(a[0] - nx * fw, a[1] - ny * fw); x.closePath(); x.fill()
+        x.strokeStyle = `rgba(255,255,255,${(i * .22).toFixed(3)})`; x.lineWidth = .8
+        x.beginPath(); x.moveTo(a[0] - nx * fw, a[1] - ny * fw); x.lineTo(b[0] - nx * fw, b[1] - ny * fw); x.stroke()
+      }
+      // el canto: un trazo que el recorte deja en su mitad interior (fino y nítido)
+      x.strokeStyle = `rgba(255,255,255,${(base + i * .85).toFixed(3)})`
+      x.lineWidth = 1.2 + i * 1.2
+      x.beginPath(); x.moveTo(a[0], a[1]); x.lineTo(b[0], b[1]); x.stroke()
     }
+    x.restore()
   }
   const io = new IntersectionObserver(es => { vis = es[es.length - 1].isIntersecting; vis && lit() })
   io.observe(el)
-  const api = { build, lit, svg, el, on: () => vis && F.length > 0, destroy() { io.disconnect(); FAC.delete(api); svg.remove() } }
+  const api = { build, lit, cv, el, on: () => vis && F.length > 0, destroy() { io.disconnect(); FAC.delete(api); cv.remove() } }
   FAC.add(api)
   if (FAC.size == 1) {
     addEventListener('pointermove', e => { if (e.pointerType == 'mouse' || e.pointerType == 'pen') { lx = e.clientX; ly = e.clientY; relight() } }, { passive: true })
@@ -169,21 +189,20 @@ export function glass(el, o = {}) {
   if (!styled) { styled = 1; styles(CSS) }
   const tok = () => (el.getAttribute('data-ns-glass') || '').split(/\s+/)
   let fc = null
+  el.classList.add('ns-glass-shape')
   const shape = () => {
     const w = el.offsetWidth, hh = el.offsetHeight, s = shapeOf(el)
     if (!w || !hh) return null
     const d = s ? path(s, w, hh) : rounded(el, w, hh)
-    // cristal tallado: las facetas, encima del vidrio y debajo del contenido
-    if (tok().includes('facet')) {
-      if (!fc) { fc = facets(el); (el.querySelector(':scope > .ns-liquid-fx') || el.firstChild)?.after(fc.svg) }
-      fc.build(d, w, hh)
-    } else if (fc) { fc.destroy(); fc = null }
+    // la luz del canto: encima del vidrio y debajo del contenido
+    if (!fc) { fc = lights(el); (el.querySelector(':scope > .ns-liquid-fx') || el.firstChild)?.after(fc.cv) }
+    fc.build(d, w, hh, tok().includes('facet'))
     return { d, w, h: hh }
   }
-  const h = liquid(el, { glass: true, prism: () => tok().includes('prism'), path: shape, ...o })
+  const h = liquid(el, { glass: true, prism: () => tok().includes('prism'), hard: () => tok().includes('facet'), path: shape, ...o })
   // un marco de ns-frame deja de recortarse (lo lee el núcleo al pintar)
   if (el.hasAttribute('data-ns') || el.localName == 'ns-frame') update(el)
-  const api = { ...h, destroy() { fc?.destroy(); h.destroy(); G.delete(el) } }
+  const api = { ...h, destroy() { fc?.destroy(); h.destroy(); el.classList.remove('ns-glass-shape'); G.delete(el) } }
   G.set(el, api)
   return api
 }

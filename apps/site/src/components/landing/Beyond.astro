@@ -18,7 +18,7 @@ const PERIODS = ['Semana', 'Mes', 'Año']
 const TABS = [
   ['Inicio', 'M3.5 9.2 10 3.8l6.5 5.4V16a.5.5 0 0 1-.5.5h-4v-4.5h-4v4.5H4a.5.5 0 0 1-.5-.5Z'],
   ['Buscar', 'M9 3.8a5.2 5.2 0 1 0 0 10.4 5.2 5.2 0 1 0 0-10.4 M12.8 12.8l3.7 3.7'],
-  ['Guardado', 'M6 3.5h8v13l-4-3-4 3Z'],
+  ['Listas', 'M6 3.5h8v13l-4-3-4 3Z'],
   ['Perfil', 'M10 3.8a3.1 3.1 0 1 0 0 6.2 3.1 3.1 0 1 0 0-6.2 M4.2 16.5c.9-3 3-4.6 5.8-4.6s4.9 1.6 5.8 4.6'],
 ]
 const POSTS = [
@@ -27,6 +27,15 @@ const POSTS = [
   ['ns-feed-forest', 'Niebla en el bosque', 'Mérida · ayer'],
   ['ns-feed-sea', 'Mar de fondo', 'Choroní · ayer'],
   ['ns-feed-peak', 'Cumbre nevada', 'Pico Bolívar · hace 3 días'],
+]
+// galería de vidrio: forma de ns-frame (vacía = círculo con border-radius), material y nombre
+const GEMS = [
+  ['card', '', 'card'],
+  ['notch', '', 'notch'],
+  ['ticket', '', 'ticket'],
+  ['hud', 'facet', 'tallado'],
+  ['all squircle 34', 'prism', 'prisma'],
+  ['', 'clear', 'lente'],
 ]
 const ACTIONS = [
   ['Compartir', 'M13.5 5.5a2 2 0 1 0 0-.01 M6.5 10a2 2 0 1 0 0-.01 M13.5 14.5a2 2 0 1 0 0-.01 M8.3 9 11.7 6.5 M8.3 11l3.4 2.5'],
@@ -127,7 +136,7 @@ const ACTIONS = [
                   </article>
                 ))}
               </div>
-              <nav class="tb" id="tb" data-ns-tabs data-ns-liquid="glass" data-ns-liquid-src="#tb-feed" aria-label="Secciones">
+              <nav class="tb" id="tb" data-ns-tabs="shrink" data-ns-tabs-scroll="#tb-feed" data-ns-liquid="glass" data-ns-liquid-src="#tb-feed" aria-label="Secciones">
                 {TABS.map(([n, d], i) => <button type="button" aria-pressed={String(!i)}><Icon d={d} /><span>{n}</span></button>)}
               </nav>
             </div>
@@ -145,16 +154,15 @@ const ACTIONS = [
       <article class="x x6" data-ns="all round 22">
         <div class="stage s6">
           <img class="bg" src="https://picsum.photos/seed/ns-facet-night/1200/760.webp" alt="" width="1200" height="760" loading="lazy">
-          <div class="gems">
-            <div class="gem" data-ns="card" data-ns-glass="facet"><b>Tallado</b><small>Cada chaflán es una cara</small></div>
-            <div class="gem" data-ns="hud" data-ns-glass="facet prism"><b>Prisma</b><small>Dispersión en el canto</small></div>
-            <div class="gem orb" data-ns-glass="facet" aria-hidden="true"><Icon d="M10 3.5 16 8l-6 8.5L4 8Z M4 8h12 M8 8l2 8.5L12 8 M7.5 3.8 8 8m4.5-4.2L12 8" /></div>
+          <div class="gems" id="gems" aria-hidden="true">
+            {GEMS.map(([shape, mode, name]) => <div class={`gem${shape ? '' : ' orb'}`} data-ns={shape || undefined} data-ns-glass={mode}><b>{name}</b></div>)}
           </div>
+          <small class="drag-hint">Arrastra las piezas</small>
         </div>
         <div class="cap">
-          <h3>Cristal tallado</h3>
-          <p>Vidrio líquido en cualquier elemento y con cualquier forma: chaflanes, muescas, cortes y curvas. Y algo que no hace nadie: cada corte es una faceta con su ángulo y recoge la luz por separado, como una gema. La luz sigue al puntero; en el móvil, barre las caras al desplazar la página. Con prisma, el canto separa los colores.</p>
-          <code class="tag"><b>data-ns-glass="facet"</b> · <b>prism</b> · <b>ns-frame/glass</b></code>
+          <h3>Vidrio con cualquier forma</h3>
+          <p>El mismo cristal en cualquier elemento: chaflanes, muescas, cortes, squircles y círculos. Sin contorno: el canto lo dibuja la luz, que brilla donde el borde mira hacia ella y sigue al puntero (en el móvil, al desplazar). Arrastra una pieza sobre la foto y mira cómo la lente curva el fondo en cada forma. El tallado parte el fondo en cada corte, como una gema.</p>
+          <code class="tag"><b>data-ns-glass</b> · <b>facet</b> · <b>prism</b> · <b>ns-frame/glass</b></code>
         </div>
       </article>
     </div>
@@ -190,6 +198,31 @@ const ACTIONS = [
     const { tab } = (e as CustomEvent<{ tab: HTMLElement }>).detail
     $('tb-title').textContent = tab.textContent!.trim()
     $('tb-feed').scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+  })
+
+  // galería de vidrio: las piezas se arrastran (y vuelven con un muelle corto al soltarlas si salen
+  // del escenario); el vidrio las sigue solo, redibujándose donde estén
+  const stage = document.querySelector<HTMLElement>('.s6')!
+  document.querySelectorAll<HTMLElement>('#gems .gem').forEach(g => {
+    let sx = 0, sy = 0, px = 0, py = 0, on = false
+    g.addEventListener('pointerdown', e => { on = true; sx = e.clientX - px; sy = e.clientY - py; g.setPointerCapture(e.pointerId); g.style.transition = '' })
+    g.addEventListener('pointermove', e => {
+      if (!on) return
+      px = e.clientX - sx; py = e.clientY - sy
+      g.style.translate = `${px}px ${py}px`
+    })
+    const end = () => {
+      if (!on) return
+      on = false
+      // fuera del escenario: vuelve a su sitio
+      const r = g.getBoundingClientRect(), s = stage.getBoundingClientRect()
+      if (r.right < s.left + 30 || r.left > s.right - 30 || r.bottom < s.top + 30 || r.top > s.bottom - 30) {
+        px = py = 0
+        g.style.transition = matchMedia('(prefers-reduced-motion: reduce)').matches ? '' : 'translate .45s cubic-bezier(.3, 1.3, .4, 1)'
+        g.style.translate = ''
+      }
+    }
+    g.addEventListener('pointerup', end); g.addEventListener('pointercancel', end)
   })
 
   // acciones: salen del botón como gotas que se separan
@@ -278,21 +311,24 @@ const ACTIONS = [
   .post img { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; border-radius: 22px; margin-bottom: 8px; background: #1b1b20 }
   .post b { margin: 0 6px; font: 650 var(--t-ui)/1.3 var(--body); color: var(--text) }
   .post small { margin: 0 6px; color: var(--text-3); font-size: var(--t-caption) }
-  .tb { position: absolute; left: 12px; right: 12px; bottom: 12px; display: flex; padding: 4px; --ns-liquid: 0px; --ns-glass-tint: rgba(22, 22, 26, .28); --ns-glass-blur: 6px; --ns-glass-lens: 30px; --ns-glass-depth: 20px; --ns-glass-edge: 8px; --ns-tabs-radius: 30px; --ns-tabs-ind-radius: 26px }
-  .tb button { flex: 1; height: 52px; border: 0; background: none; display: grid; place-items: center; align-content: center; gap: 3px; color: rgba(255, 255, 255, .72); font: 600 10.5px/1 var(--body); cursor: pointer; transition: color .25s; text-shadow: 0 1px 2px rgba(0, 0, 0, .4) }
-  .tb button :global(svg) { width: 21px; height: 21px; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .35)) }
+  .tb { position: absolute; left: 10px; right: 10px; bottom: 12px; display: flex; padding: 4px; --ns-liquid: 0px; --ns-glass-tint: rgba(22, 22, 26, .28); --ns-glass-blur: 6px; --ns-glass-lens: 20px; --ns-glass-depth: 16px; --ns-glass-edge: 7px; --ns-tabs-radius: 30px; --ns-tabs-ind-radius: 26px }
+  /* etiquetas cortas, con aire: nada de palabras pegadas a la pestaña vecina */
+  .tb button { flex: 1; min-width: 0; height: 52px; padding: 0 2px; border: 0; background: none; display: grid; place-items: center; align-content: center; gap: 4px; color: rgba(255, 255, 255, .7); font: 600 10px/1 var(--body); letter-spacing: .01em; cursor: pointer; transition: color .25s; text-shadow: 0 1px 2px rgba(0, 0, 0, .4) }
+  .tb button :global(svg) { width: 20px; height: 20px; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .35)) }
+  .tb button span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
   .tb button.ns-tabs-hot { color: #fff }
 
   /* 6 · cristal tallado: piezas de vidrio con forma sobre una foto */
   .x6 { grid-column: 1 / -1 }
-  .s6 { min-height: 400px; overflow: hidden }
+  .s6 { min-height: 420px; padding-top: 48px; overflow: hidden }
   .s6 .bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(.78) saturate(1.1) }
-  .gems { position: relative; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 26px }
-  .gem { position: relative; width: 240px; height: 150px; padding: 22px 24px; box-sizing: border-box; display: grid; align-content: end; gap: 3px; color: #fff; --ns-border: rgba(255, 255, 255, .3); --ns-glass-tint: rgba(14, 14, 18, .24); --ns-glass-blur: 5px; --ns-glass-lens: 30px; --ns-glass-depth: 20px }
-  .gem b { font: 700 var(--t-title)/1.1 var(--display); letter-spacing: -.01em; text-shadow: 0 1px 3px rgba(0, 0, 0, .4) }
-  .gem small { color: rgba(255, 255, 255, .78); font-size: var(--t-small); text-shadow: 0 1px 2px rgba(0, 0, 0, .4) }
-  .gem.orb { width: 120px; height: 120px; padding: 0; border-radius: 50%; place-items: center; align-content: center }
-  .gem.orb :global(svg) { width: 40px; height: 40px; filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .4)) }
+  /* piezas de vidrio sin contorno (el canto lo dibuja la luz), que se arrastran sobre la foto */
+  .gems { position: relative; display: grid; grid-template-columns: repeat(3, auto); align-items: center; justify-items: center; gap: 28px 34px }
+  .gem { position: relative; width: 176px; height: 112px; padding: 16px 18px; box-sizing: border-box; display: grid; align-content: end; color: #fff; cursor: grab; touch-action: none; --ns-glass-tint: rgba(14, 14, 18, .16); --ns-glass-blur: 4px; --ns-glass-lens: 26px; --ns-glass-depth: 18px }
+  .gem:active { cursor: grabbing }
+  .gem b { font: 600 var(--t-small)/1 var(--mono); letter-spacing: .02em; color: rgba(255, 255, 255, .86); text-shadow: 0 1px 3px rgba(0, 0, 0, .45) }
+  .gem.orb { width: 112px; height: 112px; padding: 0; border-radius: 50%; place-items: center; align-content: center }
+  .drag-hint { position: relative; margin-top: 20px; color: rgba(255, 255, 255, .7); font-size: var(--t-caption); text-shadow: 0 1px 2px rgba(0, 0, 0, .5) }
 
   @media (max-width: 960px) {
     .x1, .x2, .x3, .x4 { grid-column: 1 / -1 }
@@ -305,6 +341,9 @@ const ACTIONS = [
     .cap, .x5 .cap { padding: 16px 18px 20px }
     .s5 { padding: 24px 14px }
     .phone { width: min(300px, 100%); height: 520px }
+    .gems { grid-template-columns: repeat(2, auto); gap: 20px 18px }
+    .gem { width: 144px; height: 96px }
+    .gem.orb { width: 96px; height: 96px }
     .cap p { font-size: var(--t-small) }
     .prod img { height: 150px }
     .lt button { width: 80px }
