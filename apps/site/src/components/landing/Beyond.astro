@@ -14,6 +14,20 @@ const SHAPES = [
 ]
 const MARKS = [['go', 'Verde'], ['amber', 'Ámbar'], ['line', 'Contorno']]
 const PERIODS = ['Semana', 'Mes', 'Año']
+// barra de pestañas del móvil: icono (trazo, 20×20) y nombre
+const TABS = [
+  ['Inicio', 'M3.5 9.2 10 3.8l6.5 5.4V16a.5.5 0 0 1-.5.5h-4v-4.5h-4v4.5H4a.5.5 0 0 1-.5-.5Z'],
+  ['Buscar', 'M9 3.8a5.2 5.2 0 1 0 0 10.4 5.2 5.2 0 1 0 0-10.4 M12.8 12.8l3.7 3.7'],
+  ['Guardado', 'M6 3.5h8v13l-4-3-4 3Z'],
+  ['Perfil', 'M10 3.8a3.1 3.1 0 1 0 0 6.2 3.1 3.1 0 1 0 0-6.2 M4.2 16.5c.9-3 3-4.6 5.8-4.6s4.9 1.6 5.8 4.6'],
+]
+const POSTS = [
+  ['ns-feed-dunes', 'Dunas al amanecer', 'Médanos · hace 2 h'],
+  ['ns-feed-city', 'La ciudad de noche', 'Caracas · hace 5 h'],
+  ['ns-feed-forest', 'Niebla en el bosque', 'Mérida · ayer'],
+  ['ns-feed-sea', 'Mar de fondo', 'Choroní · ayer'],
+  ['ns-feed-peak', 'Cumbre nevada', 'Pico Bolívar · hace 3 días'],
+]
 const ACTIONS = [
   ['Compartir', 'M13.5 5.5a2 2 0 1 0 0-.01 M6.5 10a2 2 0 1 0 0-.01 M13.5 14.5a2 2 0 1 0 0-.01 M8.3 9 11.7 6.5 M8.3 11l3.4 2.5'],
   ['Guardar', 'M6 3.5h8v13l-4-3-4 3Z'],
@@ -98,6 +112,34 @@ const ACTIONS = [
           <code class="tag"><b>data-ns-liquid="glass"</b> · <b>data-ns-tabs</b></code>
         </div>
       </article>
+
+      <!-- 5 · barra de pestañas de vidrio sobre un feed que se desplaza -->
+      <article class="x x5" data-ns="all round 22">
+        <div class="stage s5">
+          <div class="phone">
+            <div class="scr">
+              <div class="feed" id="tb-feed" tabindex="0" aria-label="Publicaciones">
+                <p class="ft" id="tb-title">Inicio</p>
+                {POSTS.map(([seed, t, m]) => (
+                  <article class="post">
+                    <img src={`https://picsum.photos/seed/${seed}/600/600.webp`} alt="" width="600" height="600" loading="lazy">
+                    <b>{t}</b><small>{m}</small>
+                  </article>
+                ))}
+              </div>
+              <nav class="tb" id="tb" data-ns-tabs data-ns-liquid="glass" data-ns-liquid-src="#tb-feed" aria-label="Secciones">
+                {TABS.map(([n, d], i) => <button type="button" aria-pressed={String(!i)}><Icon d={d} /><span>{n}</span></button>)}
+              </nav>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h3>Barra de pestañas de vidrio</h3>
+          <p>Como la de iOS 26. Pulsa una pestaña y el indicador viaja con un muelle, se estira con la velocidad y deja una gota que se funde. Arrástralo y se levanta: crece y se vuelve una lente clara que aumenta lo que pasa por debajo; al soltarlo encaja en la pestaña más cercana. Desplaza el feed: el contenido pasa de verdad por detrás del vidrio, también en Safari.</p>
+          <p>Teclado, lectores de pantalla y movimiento reducido incluidos.</p>
+          <code class="tag"><b>data-ns-tabs</b> · <b>ns-frame/tabs</b></code>
+        </div>
+      </article>
     </div>
     <p class="after"><a class="more" href="/docs/componentes">Cómo usarlos<Arrow /></a></p>
   </div>
@@ -124,6 +166,13 @@ const ACTIONS = [
   // selector de periodo: ns-frame/tabs (se pulsa o se arrastra el indicador entre pestañas)
   // material: vidrio líquido o sólido (los módulos releen el atributo; el indicador sigue a la barra)
   on('lq-mode', 'data-m', v => ['lt', 'fab'].forEach(id => $(id).setAttribute('data-ns-liquid', v)))
+
+  // barra de pestañas del móvil: el título del feed sigue a la pestaña elegida
+  $('tb').addEventListener('change', e => {
+    const { tab } = (e as CustomEvent<{ tab: HTMLElement }>).detail
+    $('tb-title').textContent = tab.textContent!.trim()
+    $('tb-feed').scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+  })
 
   // acciones: salen del botón como gotas que se separan
   const fab = $('fab'), main = fab.querySelector<HTMLElement>('.main')!
@@ -197,13 +246,36 @@ const ACTIONS = [
   .fab.open .a1, .fab.open .a4 { transition-delay: 60ms }
   .fab.open .act :global(svg) { opacity: 1; transition-delay: .16s }
 
+  /* 5 · móvil con feed y barra de pestañas de vidrio (el feed se desplaza por detrás de la barra) */
+  .x5 { grid-column: 1 / -1; flex-direction: row }
+  .x5 .cap { flex: 0 0 38%; align-content: center; padding: 32px 36px }
+  .s5 { padding: 36px 24px; background: radial-gradient(60% 70% at 50% 40%, rgba(0, 230, 118, .07), transparent 70%) }
+  .phone { position: relative; width: 300px; height: 560px; border-radius: 46px; border: 1px solid var(--line-2); background: #0b0b0d; box-shadow: 0 30px 60px rgba(0, 0, 0, .45) }
+  .scr { position: absolute; inset: 7px; border-radius: 39px; overflow: hidden; background: #111114 }
+  .feed { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; padding: 22px 12px 100px; display: grid; gap: 14px; align-content: start }
+  .feed::-webkit-scrollbar { display: none }
+  .feed:focus-visible { outline: 2px solid var(--signal); outline-offset: -4px }
+  .ft { margin: 0 4px; font: 700 var(--t-title-lg)/1.1 var(--display); letter-spacing: -.02em; color: var(--text) }
+  .post { display: grid; gap: 2px; margin: 0 }
+  .post img { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; border-radius: 22px; margin-bottom: 8px; background: #1b1b20 }
+  .post b { margin: 0 6px; font: 650 var(--t-ui)/1.3 var(--body); color: var(--text) }
+  .post small { margin: 0 6px; color: var(--text-3); font-size: var(--t-caption) }
+  .tb { position: absolute; left: 12px; right: 12px; bottom: 12px; display: flex; padding: 4px; --ns-liquid: 0px; --ns-glass-tint: rgba(22, 22, 26, .28); --ns-glass-blur: 6px; --ns-glass-lens: 30px; --ns-glass-depth: 20px; --ns-glass-edge: 8px; --ns-tabs-radius: 30px; --ns-tabs-ind-radius: 26px }
+  .tb button { flex: 1; height: 52px; border: 0; background: none; display: grid; place-items: center; align-content: center; gap: 3px; color: rgba(255, 255, 255, .72); font: 600 10.5px/1 var(--body); cursor: pointer; transition: color .25s; text-shadow: 0 1px 2px rgba(0, 0, 0, .4) }
+  .tb button :global(svg) { width: 21px; height: 21px; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .35)) }
+  .tb button.ns-tabs-hot { color: #fff }
+
   @media (max-width: 960px) {
     .x1, .x2, .x3, .x4 { grid-column: 1 / -1 }
+    .x5 { flex-direction: column }
+    .x5 .cap { flex: none; padding: 18px 24px 24px }
     .stage { min-height: 0; padding: 28px 18px 6px }
   }
   @media (max-width: 560px) {
     .grid { gap: 10px }
-    .cap { padding: 16px 18px 20px }
+    .cap, .x5 .cap { padding: 16px 18px 20px }
+    .s5 { padding: 24px 14px }
+    .phone { width: min(300px, 100%); height: 520px }
     .cap p { font-size: var(--t-small) }
     .prod img { height: 150px }
     .lt button { width: 80px }

@@ -455,7 +455,7 @@ export function liquid(el, o = {}) {
       if (m.nodeType == 3) return document.createTextNode(m.data)
       if (m.nodeType != 1 || budget-- <= 0 || SKIP.test(m.tagName)) return null
       const c = document.createElementNS(m.namespaceURI, m.localName)
-      for (const a of m.attributes) if (!/^(id|style|on.*|autofocus|tabindex|contenteditable)$/i.test(a.name)) c.setAttribute(a.name, a.value)
+      for (const a of m.attributes) if (!/^(id|style|on.*|autofocus|tabindex|contenteditable|loading)$/i.test(a.name)) c.setAttribute(a.name, a.value)
       const s = getComputedStyle(m)
       for (let i = 0; i < s.length; i++) c.style.setProperty(s[i], s.getPropertyValue(s[i]))
       c.style.animation = c.style.transition = 'none'
@@ -553,7 +553,7 @@ export function liquid(el, o = {}) {
     // como imagen SVG en línea)
     const mb = g && d && !WK ? `url(#${id}m)` : '', me = g && d ? (WK ? rimImage(d, bw, bh, edgePx) : `url(#${id}e)`) : ''
     glass.style.mask = glass.style.webkitMask = mb
-    edge.style.mask = edge.style.webkitMask = me
+    setRim(me)
     // y además clip-path: si un navegador no aplica una máscara SVG del documento a un elemento
     // HTML, el vidrio sigue teniendo la forma exacta (nunca un rectángulo)
     glass.style.clipPath = edge.style.clipPath = back.style.clipPath = g && d ? `path("${d}")` : ''
@@ -566,15 +566,31 @@ export function liquid(el, o = {}) {
     if (!lensPx) { glass.style.backdropFilter = back.style.filter = ''; now = null; return }
     // sobre la copia, la lente sólo desplaza: el desenfoque y la saturación los pone el cuerpo encima
     now = { f, d, bw, bh, depth, lensPx, blur: src ? 0 : V.blur, sat: src ? 1 : V.sat, src: !!src }
-    // en marcha: el mapa vigente sigue a la forma (se estira); el nuevo llega al detenerse
-    if (cur >= 0) place(lenses[cur], now)
+    // en marcha: el mapa vigente sigue a la forma (se estira); el nuevo llega al detenerse. Sobre la
+    // copia (fuera de Chromium) el mapa va con la capa y se estira a su tamaño: vale mientras la
+    // forma se desplaza o se estira un poco (un indicador que se levanta); si cambia mucho (unas
+    // gotas que salen), la lente se desvanece y vuelve con el mapa nuevo al detenerse
+    if (cur >= 0) {
+      if (now.src) lkT = mapWH && Math.abs(bw / mapWH[0] - 1) < .35 && Math.abs(bh / mapWH[1] - 1) < .35 ? 1 : 0
+      place(lenses[cur], now)
+    }
+  }
+  // fuerza de la lente sobre la copia (0–1), con transición
+  let lk = 1, lkT = 1, mapWH = null, rimTok = 0
+  // canto en WebKit (imagen SVG en línea): la nueva sólo entra ya decodificada; mientras, sigue la
+  // anterior (antes, durante un frame no había máscara y el canto brillaba entero: parpadeo)
+  const setRim = u => {
+    if (!WK || !u) { rimTok++; edge.style.mask = edge.style.webkitMask = u; return }
+    const t = ++rimTok, im = new Image(), go = () => { if (t == rimTok) edge.style.mask = edge.style.webkitMask = u }
+    im.src = u.slice(5, -2)
+    im.decode ? im.decode().then(go, go) : go()
   }
   const place = (L, s) => {
     if (!s.src) {
       setA(L.map, { x: r2(s.f.X0), y: r2(s.f.Y0), width: r2(s.f.nx * s.f.step), height: r2(s.f.ny * s.f.step) })
       setA(L.f, { width: r2(s.bw), height: r2(s.bh) })
-    }
-    L.disp.setAttribute('scale', s.lensPx)
+    } else setA(L.map, { width: r2(s.bw), height: r2(s.bh) })
+    L.disp.setAttribute('scale', r2(s.lensPx * (s.src ? lk : 1)))
     L.blur.setAttribute('stdDeviation', s.blur / 2)
     L.sat.setAttribute('values', s.sat)
   }
@@ -592,13 +608,17 @@ export function liquid(el, o = {}) {
       L.map.setAttribute('href', url)
       const img = new Image()
       img.src = url
-      const swap = () => requestAnimationFrame(() => requestAnimationFrame(() => {
+      // se espera a que el filtro libre tenga el mapa cargado: dos frames en Chromium; en WebKit,
+      // que carga el feImage aparte, seis (si no, un frame con el mapa vacío desplazaba todo)
+      const after = (k, fn) => requestAnimationFrame(() => k > 1 ? after(k - 1, fn) : fn())
+      const swap = () => after(WK ? 6 : 2, () => {
         if (t != token || !now) return
         cur = n
+        if (now.src) { mapWH = [s.bw, s.bh]; lkT = 1; wake() }
         place(L, now)
         const u = `url(#${id}l${n})`
         if (now.src) { back.style.filter = u; glass.style.backdropFilter = '' } else { glass.style.backdropFilter = u; back.style.filter = '' }
-      }))
+      })
       img.decode ? img.decode().then(swap, swap) : swap()
     })
   }
@@ -615,7 +635,11 @@ export function liquid(el, o = {}) {
     if (!moving && last == before && idle == 1) moving = !!el.getAnimations?.({ subtree: true }).some(a => a.playState == 'running')
     idle = last == before && !moving ? idle + 1 : 0
     if (idle >= 1 || cur < 0) refreshLens()
-    if (idle < 2) raf = requestAnimationFrame(tick)
+    // la lente de la copia se desvanece o vuelve en unos 150 ms
+    let fading = false
+    if (now?.src && cur >= 0 && Math.abs(lk - lkT) > .01) { lk += (lkT - lk) * .25; place(lenses[cur], now); fading = true }
+    else if (Math.abs(lk - lkT) <= .01 && lk != lkT) { lk = lkT; now?.src && cur >= 0 && place(lenses[cur], now) }
+    if (idle < 2 || fading) raf = requestAnimationFrame(tick)
   }
   const wake = () => { idle = 0; raf ||= requestAnimationFrame(tick) }
   const stale = () => { dirty = true; lastPre = ''; wake() }

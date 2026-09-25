@@ -7,10 +7,12 @@
 - Todas las páginas del sitio revisadas en WebKit (motor de Safari) sin errores.
 
 ### Pestañas de vidrio líquido (`ns-frame/tabs`, nuevo)
+- Arrastre con el dedo: con toques, el navegador retiene el puntero en la pestaña tocada y al pasarlo a la barra esa pestaña emitía `lostpointercapture`, que subía hasta la barra y cortaba el arrastre. Sólo cuenta el de la barra (verificado con toques reales).
 - `data-ns-tabs`: la barra de pestañas de iOS 26. El indicador viaja con un muelle, se estira con la velocidad y deja una gota que se funde; se arrastra entre pestañas levantándose como una lente clara, con resistencia de goma en los extremos, y encaja al soltar. Teclado, ARIA (`tablist`/`tab` o `aria-pressed`), evento `change` y `prefers-reduced-motion`.
 
 ### Vidrio líquido (`ns-frame/liquid`)
 - **Contorno exacto:** curvas que pasan por los puntos del campo (Catmull-Rom → Bézier cúbicas) con los lados rectos en línea; un círculo sale redondo con menos de 0,05 px de error (antes, las cuadráticas por puntos medios lo achataban). Rejilla adaptativa entre 1,25 y 3 px.
+- **Sin parpadeo en Safari:** el canto (imagen SVG en línea en WebKit) sólo cambia cuando la nueva ya está decodificada; el filtro de la lente se cambia cuando WebKit ya cargó su mapa; y si la forma cambia mucho de tamaño en marcha (gotas que salen), la lente sobre la copia se desvanece y vuelve con el mapa nuevo al detenerse. Con cambios pequeños el mapa se estira con la capa.
 - Segundo reflejo por dentro del canto, en sentido contrario (la luz que vuelve por el otro lado del cristal).
 - **Más rápido:** si las piezas no cambian, no se recalcula ni el campo ni el contorno; los estilos en línea de las piezas sólo despiertan el bucle (sin releer variables); la copia del fondo no se rehace si la imagen no cambia. Una sola instancia por elemento y `frame()` para quien anima por JS.
 - La detección del fondo ignora lo que se pinta encima (lo que va después en el DOM), también en grupos anidados que no reciben el puntero.

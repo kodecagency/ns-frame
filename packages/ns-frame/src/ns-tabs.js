@@ -145,6 +145,8 @@ export function tabs(el, o = {}) {
       // más vertical que horizontal: es un desplazamiento de la página, no un arrastre
       if (Math.abs(dy) > Math.abs(dx)) { cancel(); return }
       drag.on = true
+      // (con el dedo, el navegador ya retiene el puntero en la pestaña tocada: al pasarlo a la
+      // barra, esa pestaña recibe lostpointercapture, que sube hasta aquí; sólo cuenta el de la barra)
       el.setPointerCapture?.(e.pointerId)
       lift(1)
     }
@@ -173,7 +175,7 @@ export function tabs(el, o = {}) {
     const rtl = getComputedStyle(el).direction == 'rtl' && e.key.startsWith('Arrow')
     select(((rtl ? 2 * i - n : n) + all.length) % all.length, { focus: true })
   }
-  const EV = [['pointerdown', down], ['pointermove', move], ['pointerup', upE], ['pointercancel', cancel], ['lostpointercapture', e => drag?.on && upE(e)], ['click', click, true], ['keydown', key]]
+  const EV = [['pointerdown', down], ['pointermove', move], ['pointerup', upE], ['pointercancel', cancel], ['lostpointercapture', e => e.target == el && drag?.on && upE(e)], ['click', click, true], ['keydown', key]]
   EV.forEach(([t, f, c]) => el.addEventListener(t, f, c))
   // el material del indicador sigue al de la barra (vidrio o sólido)
   const mo = new MutationObserver(() => { lens.setAttribute('data-ns-liquid', el.getAttribute('data-ns-liquid') || '') })
