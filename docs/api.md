@@ -52,6 +52,7 @@ await open(panel, 'iris', 500)
 | `ns-frame/flow` | `flow({ k, d, w, h }, pad)` → `true` / `false` · `unflow(k)` · `profile(d, w, h, pad)` · `refresh()` |
 | `ns-frame/mark` | `outline(rects, px?, py?)` → polígonos · `refresh()` |
 | `ns-frame/liquid` | `liquid(el, { blobs, k, step, glass, source })` → `{ update(), frame(), destroy() }` · `field()`, `contour()`, `blend(boxes, k?, step?)` → `d` |
+| `ns-frame/glass` | `glass(el, opciones de liquid)` → `{ update(), frame(), destroy() }` · automático con `data-ns-glass` (`clear`, `tint`, `facet`, `prism`) · en `ns-frame/liquid`: `pathField(d, w, h, step?)`, `shift(d, dx, dy)` |
 | `ns-frame/tabs` | `tabs(el, { items })` → `{ select(i), index, destroy() }` · evento `change` con `detail { index, tab }` |
 | `ns-frame/fx` | `decode(el, ms?)` |
 | `ns-frame/audit` | `audit({ root, mark, margin, clearance })` → problemas encontrados |

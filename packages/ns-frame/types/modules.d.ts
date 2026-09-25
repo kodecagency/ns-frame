@@ -1,7 +1,7 @@
 // Tipos de los módulos opcionales de ns-frame. Cada módulo se importa por su ruta:
 // ns-frame/css, ns-frame/static, ns-frame/vt, ns-frame/toast, ns-frame/skel, ns-frame/carousel,
 // ns-frame/pop, ns-frame/bento, ns-frame/mosaic, ns-frame/sheet, ns-frame/isle, ns-frame/concentric,
-// ns-frame/flow, ns-frame/mark, ns-frame/liquid, ns-frame/tabs, ns-frame/link, ns-frame/fx, ns-frame/audit.
+// ns-frame/flow, ns-frame/mark, ns-frame/liquid, ns-frame/glass, ns-frame/tabs, ns-frame/link, ns-frame/fx, ns-frame/audit.
 import type { Shape } from './ns-frame'
 
 // ── ns-frame/css ──
@@ -134,6 +134,18 @@ export function field(boxes: { x: number; y: number; w: number; h: number; r?: n
 export function contour(f: LiquidField | null, level?: number): string
 /** Contorno fundido (path `d`) de rectángulos redondeados; `k` es el alcance interno del mínimo suave. */
 export function blend(boxes: { x: number; y: number; w: number; h: number; r?: number }[], k?: number, step?: number): string
+
+/** Campo de distancias (negativo = dentro) de un path `d` cualquiera en una caja w×h (necesita canvas). */
+export function pathField(d: string, w: number, h: number, step?: number): LiquidField | null
+/** Desplaza un path `d` absoluto (M, L, C, Q, A, Z) en (dx, dy). */
+export function shift(d: string, dx: number, dy: number): string
+
+// ── ns-frame/glass ──
+/**
+ * Vidrio líquido en cualquier elemento, con su forma de ns-frame (data-ns) o su border-radius.
+ * Automático con `data-ns-glass` ("clear", "tint", "facet" = cristal tallado, "prism" = dispersión).
+ */
+export function glass(el: HTMLElement, options?: LiquidOptions): { update(): void; frame(): void; destroy(): void }
 
 // ── ns-frame/tabs ──
 /** Pestañas de vidrio líquido: indicador que se arrastra, se estira y encaja con un muelle. Automático con `data-ns-tabs`. Emite "change" con detail { index, tab }. */

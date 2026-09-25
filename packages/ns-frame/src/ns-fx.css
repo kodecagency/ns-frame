@@ -138,6 +138,17 @@
 .ns-text-aurora { background-image: linear-gradient(90deg, #3de0ff, #8b7bff, #ff6bd6, #ffb547, #3de0ff, #8b7bff); background-size: 200% 100% }
 @keyframes ns-text { from { background-position: 100% 0 } to { background-position: 0 0 } }
 
+/* ── Con vidrio (ns-frame/glass, data-ns-glass) ──
+   isolation, un fondo opaco y filter en el propio elemento lo harían raíz del fondo: el vidrio no
+   vería la página. Con vidrio: sin aislar y sin fondo; la luz en U y el aura quedan dentro del
+   cristal (la ::after va sobre él, sin tapar el texto: sólo suma luz), los patrones se ven a través
+   del cristal (la ::before va debajo de sus capas), y el halo lo dibuja el propio vidrio, fuera de
+   su silueta (--ns-glass-glow). */
+[data-ns-glass]:is(.ns-u, .ns-u-top, .ns-u-left, .ns-u-right, .ns-aura, .ns-aura-top, .ns-dots, .ns-grid, .ns-lines, .ns-stripes, .ns-scan, .ns-scales) { isolation: auto; background-color: transparent }
+[data-ns-glass]:is(.ns-u, .ns-u-top, .ns-u-left, .ns-u-right, .ns-aura, .ns-aura-top)::after { z-index: auto; mix-blend-mode: screen }
+[data-ns-glass]:is(.ns-aura, .ns-aura-top, .ns-dots, .ns-grid, .ns-lines, .ns-stripes, .ns-scan, .ns-scales)::before { z-index: auto }
+[data-ns-glass].ns-halo { filter: none; --ns-glass-glow: var(--ns-halo, rgba(61, 224, 255, .35)); --ns-glass-glow-size: var(--ns-halo-size, 16px) }
+
 /* Táctil (móviles y tabletas): las animaciones que repintan grandes degradados o filtros en cada
    frame (luz en U en movimiento, pulso con drop-shadow, barrido de fondo) calientan la GPU y
    pueden congelarse. Aquí se quedan en su versión fija o en una que sólo anima opacity. */

@@ -6,6 +6,14 @@
 - Sin el error global «ResizeObserver loop completed with undelivered notifications» (WebKit lo lanzaba como excepción): el margen seguro de `data-ns-pad` se aplica en el frame siguiente cuando viene de un ResizeObserver, y `ns-link` ya no observa el `<body>` (compara la altura del documento en eventos baratos).
 - Todas las páginas del sitio revisadas en WebKit (motor de Safari) sin errores.
 
+### Vidrio en cualquier forma (`ns-frame/glass`, nuevo)
+- `data-ns-glass`: el vidrio líquido en cualquier elemento, con su forma exacta de ns-frame (chaflanes, muescas, cortes, pestañas, squircles) o su `border-radius` por esquina. Campo de distancias exacto de cualquier path (`pathField`, transformada de Felzenszwalb) para la lente y los reflejos.
+- **Cristal tallado** (`facet`): cada corte es una faceta que recoge la luz según su ángulo; la luz sigue al puntero o, en el móvil, barre las caras con el scroll. **Prisma** (`prism`): dispersión cromática en el canto. **Halo** propio (`--ns-glass-glow`), sin `filter` en el elemento.
+- Un marco con vidrio no se recorta con `clip-path` (aislaría el fondo). `ns-fx.css`: la luz en U, el aura, los patrones y el halo funcionan con vidrio.
+- `ns-liquid`: la regla que posiciona a los hijos baja a especificidad 0 (`:where`): ya no pisa el SVG del borde de un marco (que se metía en el flujo y desplazaba el contenido).
+- Presupuesto de ~8 ms por frame entre todos los vidrios: los que aparecen a la vez se reparten en varios frames. 12 piezas, CPU ×4: bloqueo al cargar de 366 a 16 ms; moviendo el puntero, de 46,9 a 14,6 ms por frame.
+- La detección automática del fondo también reconoce una capa decorativa anterior con `background-image` (y la copia con su contenido).
+
 ### Pestañas de vidrio líquido (`ns-frame/tabs`, nuevo)
 - Arrastre con el dedo: con toques, el navegador retiene el puntero en la pestaña tocada y al pasarlo a la barra esa pestaña emitía `lostpointercapture`, que subía hasta la barra y cortaba el arrastre. Sólo cuenta el de la barra (verificado con toques reales).
 - `data-ns-tabs`: la barra de pestañas de iOS 26. El indicador viaja con un muelle, se estira con la velocidad y deja una gota que se funde; se arrastra entre pestañas levantándose como una lente clara, con resistencia de goma en los extremos, y encaja al soltar. Teclado, ARIA (`tablist`/`tab` o `aria-pressed`), evento `change` y `prefers-reduced-motion`.

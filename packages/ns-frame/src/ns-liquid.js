@@ -38,7 +38,7 @@ import { styles } from './ns-frame.js'
 
 const CSS = `@layer ns{
 .ns-liquid{position:relative}
-.ns-liquid>:not(.ns-liquid-fx,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-src){position:relative}
+:where(.ns-liquid>:not(.ns-liquid-fx,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-src)){position:relative}
 .ns-liquid-fx,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-src{position:absolute;pointer-events:none;margin:0}
 .ns-liquid-src{overflow:hidden}.ns-liquid-src>div{position:absolute}
 .ns-liquid-fx{overflow:visible}
@@ -48,6 +48,7 @@ const CSS = `@layer ns{
 .ns-glass>.ns-liquid-glass{display:block;background:var(--ns-glass-tint,rgba(22,22,26,.22));-webkit-backdrop-filter:blur(var(--ns-glass-blur,4px)) saturate(var(--ns-glass-sat,1.3));backdrop-filter:blur(var(--ns-glass-blur,4px)) saturate(var(--ns-glass-sat,1.3))}
 .ns-glass>.ns-liquid-rim{display:block;-webkit-backdrop-filter:blur(1.5px) brightness(1.22) saturate(1.15) contrast(1.06);backdrop-filter:blur(1.5px) brightness(1.22) saturate(1.15) contrast(1.06)}
 .ns-glass>.ns-liquid-fx .ns-lf{stroke:none;opacity:var(--ns-glass-shine,1)}
+.ns-liquid-fx .ns-lg{fill:none}
 .ns-glass>.ns-liquid-fx .ns-lr{display:inline;fill:none;stroke-width:1.2px;opacity:var(--ns-glass-shine,1)}
 .ns-glass>.ns-liquid-fx .ns-lr2{display:inline;fill:none;stroke-width:.8px;opacity:calc(var(--ns-glass-shine,1)*.5)}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.ns-glass>.ns-liquid-glass{background:var(--ns-glass-solid,rgba(30,30,34,.92))}}
@@ -93,6 +94,8 @@ function behind(el) {
     for (let s = c.previousElementSibling; s; s = s.previousElementSibling) {
       const m = [s, ...s.querySelectorAll('img,video,canvas')].reverse().find(n => /^(IMG|VIDEO|CANVAS)$/.test(n.tagName) && covers(n))
       if (m) return m == first ? m : null
+      // un fondo pintado (un degradado, una capa decorativa con texto): lo que se ve es él o algo suyo
+      if (covers(s) && getComputedStyle(s).backgroundImage != 'none') return first && (first == s || s.contains(first)) ? s : null
     }
     if (getComputedStyle(a).backgroundImage != 'none') return first && a.contains(first) ? null : a
   }
@@ -248,6 +251,63 @@ export function contour(f, level = 0) {
 /** Contorno fundido (path `d`) de rectángulos redondeados; `k` es el alcance interno del mínimo suave. */
 export const blend = (boxes, k = 14, step = 2) => contour(field(boxes, k, step))
 
+// Campo de distancias de CUALQUIER forma (un path: chaflanes, muescas, curvas, cortes): se rellena el
+// path en un canvas a la resolución de la rejilla y se calcula la distancia euclídea exacta a lo de
+// fuera (para los puntos de dentro) y a lo de dentro (para los de fuera), con la transformada de
+// Felzenszwalb (lineal: dos pasadas 1D). En el borde, la cobertura del antialiasing afina a
+// fracciones de píxel. Mismo formato que field(): lo usan la lente, el canto y los reflejos.
+const BIG = 1e20
+// (envolvente inferior de parábolas: v = vértices, z = fronteras entre ellas)
+function edt1(f, n, o, v, z) {
+  let k = 0
+  const cut = (q, p) => (f[q] + q * q - f[p] - p * p) / (2 * (q - p))
+  v[0] = 0; z[0] = -BIG; z[1] = BIG
+  for (let q = 1; q < n; q++) {
+    let s = cut(q, v[k])
+    while (s <= z[k]) s = cut(q, v[--k])
+    v[++k] = q; z[k] = s; z[k + 1] = BIG
+  }
+  for (let q = 0, j = 0; q < n; q++) { while (z[j + 1] < q) j++; const p = v[j]; o[q] = (q - p) * (q - p) + f[p] }
+}
+function edt(g, nx, ny) {
+  const m = Math.max(nx, ny), f = new Float64Array(m), o = new Float64Array(m), v = new Int32Array(m), z = new Float64Array(m + 1)
+  for (let i = 0; i < nx; i++) { for (let j = 0; j < ny; j++) f[j] = g[j * nx + i]; edt1(f, ny, o, v, z); for (let j = 0; j < ny; j++) g[j * nx + i] = o[j] }
+  for (let j = 0; j < ny; j++) { for (let i = 0; i < nx; i++) f[i] = g[j * nx + i]; edt1(f, nx, o, v, z); for (let i = 0; i < nx; i++) g[j * nx + i] = Math.sqrt(o[i]) }
+}
+let pcv = null
+/** Campo de distancias (negativo = dentro) de un path `d` en una caja w×h, rejilla de `step` px. */
+export function pathField(d, w, h, step = 1) {
+  if (!d || typeof Path2D == 'undefined') return null
+  const nx = Math.ceil(w / step) + 1, ny = Math.ceil(h / step) + 1
+  pcv ||= document.createElement('canvas')
+  pcv.width = nx; pcv.height = ny
+  const x = pcv.getContext('2d', { willReadFrequently: true })
+  // cada píxel del canvas es un nodo de la rejilla: su centro cae en (i·step, j·step)
+  x.setTransform(1 / step, 0, 0, 1 / step, .5, .5)
+  x.fill(new Path2D(d))
+  const A = x.getImageData(0, 0, nx, ny).data, n = nx * ny, In = new Float64Array(n), Out = new Float64Array(n), F = new Float32Array(n)
+  for (let k = 0; k < n; k++) { const a = A[k * 4 + 3]; In[k] = a >= 128 ? 0 : BIG; Out[k] = a >= 128 ? BIG : 0 }
+  edt(In, nx, ny); edt(Out, nx, ny)
+  for (let k = 0; k < n; k++) {
+    const a = A[k * 4 + 3] / 255
+    // en el borde (cobertura parcial), la fracción cubierta da la distancia con precisión subpíxel
+    F[k] = (a > 0 && a < 1 ? .5 - a : a >= .5 ? .5 - Out[k] : In[k] - .5) * step
+  }
+  return { F, nx, ny, X0: 0, Y0: 0, step }
+}
+/** Desplaza un path `d` absoluto (M, L, C, A, Q, Z, como los de ns-frame) en (dx, dy). */
+export function shift(d, dx, dy) {
+  const t = d.match(/[A-Za-z]|-?\d*\.?\d+(?:e-?\d+)?/g) || []
+  let out = '', c = '', i = 0
+  const n = () => +t[i++]
+  while (i < t.length) {
+    if (/[A-Za-z]/.test(t[i])) { c = t[i++]; out += c; if (c == 'Z' || c == 'z') continue }
+    if (c == 'A') { const a = [n(), n(), n(), n(), n()], x = n() + dx, y = n() + dy; out += `${a.join(' ')} ${r2(x)} ${r2(y)} ` }
+    else { const k = c == 'C' ? 3 : c == 'Q' ? 2 : 1; for (let j = 0; j < k; j++) out += `${r2(n() + dx)} ${r2(n() + dy)} ` }
+  }
+  return out.trim()
+}
+
 // quita los puntos que se desvían menos de `eps` px de la recta entre sus vecinos (lados rectos) y
 // los que quedan a menos de `near` px del anterior (cuando el contorno roza un nodo de la rejilla
 // salen dos puntos casi iguales, y una curva que pasa por los dos haría una ondulación)
@@ -308,7 +368,7 @@ function lensMap(f, rim, cv, full) {
 
 const px = (v, L) => { v = String(v || '0').split(' ')[0]; return v.endsWith('%') ? parseFloat(v) * L / 100 : parseFloat(v) || 0 }
 let uid = 0
-const REG = new WeakMap()
+const REG = new WeakMap(), BUDGET = { t: -1, used: 0 }
 // firma de lo que pinta una imagen o un fondo: si no cambia, la copia no se rehace
 const sig = n => { const s = getComputedStyle(n); return n.tagName == 'IMG' ? [n.currentSrc || n.src, s.objectFit, s.objectPosition, s.filter].join('|') : [s.backgroundImage, s.backgroundSize, s.backgroundPosition, s.backgroundColor, s.filter].join('|') }
 const mk = (tag, a = {}) => { const e = document.createElementNS(SVG, tag); for (const k in a) e.setAttribute(k, a[k]); return e }
@@ -345,14 +405,28 @@ export function liquid(el, o = {}) {
   // sólo se cambia de filtro cuando ya está decodificado: nunca hay un frame sin mapa (el filtro lo
   // leería transparente, rojo y verde a 0, y desplazaría todo el fondo en diagonal). Mientras la
   // forma se mueve, el mapa vigente se estira con ella; al detenerse se regenera.
+  // Cadena del filtro: mapa → desplazamiento → desenfoque → saturación. Con prisma (dispersión
+  // cromática, como un cristal real en el canto), tres desplazamientos: el rojo un poco más y el azul
+  // un poco menos que el verde, cada uno se queda con su canal y se suman. Sólo se monta si se pide.
+  const chain = (L, prism) => {
+    if (L.prism === prism) return
+    L.prism = prism
+    const D = (s, k) => mk('feDisplacementMap', { in: 'SourceGraphic', in2: 'm', xChannelSelector: 'R', yChannelSelector: 'G', result: s, 'data-k': k })
+    if (!prism) { L.disp = [D('d', 1)]; L.f.replaceChildren(L.map, ...L.disp, L.blur, L.sat); return }
+    // (cada uno conserva su canal con alfa 1; la suma aritmética recorta el alfa a 1 y el color queda entero)
+    const keep = (i, s) => mk('feColorMatrix', { in: s, result: s + 'c', type: 'matrix', values: [0, 1, 2].map(r => [0, 1, 2, 3, 4].map(c => +(r == i && c == i)).join(' ')).join(' ') + ' 0 0 0 1 0' })
+    L.disp = [D('r', 1.12), D('g', 1), D('b', .88)]
+    const add = (a, b, s) => mk('feComposite', { in: a, in2: b, operator: 'arithmetic', k2: 1, k3: 1, result: s })
+    L.f.replaceChildren(L.map, ...L.disp, keep(0, 'r'), keep(1, 'g'), keep(2, 'b'), add('rc', 'gc', 'rg'), add('rg', 'bc', 'd'), L.blur, L.sat)
+  }
   const lenses = [0, 1].map(n => {
     // (fuera de Chromium, región del objeto: WebKit pierde el elemento entero con userSpaceOnUse)
     const f = mk('filter', LENS ? { id: id + 'l' + n, x: 0, y: 0, filterUnits: 'userSpaceOnUse', 'color-interpolation-filters': 'sRGB' } : { id: id + 'l' + n, x: 0, y: 0, width: 1, height: 1, 'color-interpolation-filters': 'sRGB' })
     const map = mk('feImage', { result: 'm', preserveAspectRatio: 'none' })
-    const disp = mk('feDisplacementMap', { in: 'SourceGraphic', in2: 'm', xChannelSelector: 'R', yChannelSelector: 'G', result: 'd' })
     const blur = mk('feGaussianBlur', { in: 'd', result: 'b' }), sat = mk('feColorMatrix', { in: 'b', type: 'saturate' })
-    f.append(map, disp, blur, sat)
-    return { f, map, disp, blur, sat }
+    const L = { f, map, blur, sat, disp: [], prism: null }
+    chain(L, false)
+    return L
   })
   const defs = mk('defs')
   defs.append(
@@ -363,7 +437,13 @@ export function liquid(el, o = {}) {
     stops(mk('linearGradient', { id: id + 'q', x1: 1, y1: 1, x2: .6, y2: 0 }), [[0, .7], [.3, .18], [.6, 0], [1, 0]]),
     maskB, maskE, clipE, fEdge, ...lenses.map(l => l.f))
   const path = mk('path', { class: 'ns-lf' }), rim = mk('path', { class: 'ns-lr', stroke: `url(#${id}r)` }), rim2 = mk('path', { class: 'ns-lr2', stroke: `url(#${id}q)` })
-  svg.append(defs, path, rim, rim2)
+  // Halo (--ns-glass-glow): un trazo desenfocado del contorno que sólo se ve por fuera (una máscara
+  // quita el interior). Sin filter en el elemento, que haría de raíz del fondo y apagaría el vidrio
+  const gBlur = mk('feGaussianBlur'), fGlow = mk('filter', { id: id + 'g', x: '-50%', y: '-50%', width: '200%', height: '200%' }); fGlow.append(gBlur)
+  const oRect = mk('rect', { fill: '#fff' }), oCut = mk('path', { fill: '#000' }), mGlow = mk('mask', { id: id + 'o', maskUnits: 'userSpaceOnUse' }); mGlow.append(oRect, oCut)
+  defs.append(fGlow, mGlow)
+  const glow = mk('path', { class: 'ns-lg', filter: `url(#${id}g)`, mask: `url(#${id}o)` })
+  svg.append(defs, glow, path, rim, rim2)
   const glass = div('ns-liquid-glass'), edge = div('ns-liquid-rim')
   // Lente donde backdrop-filter no admite filtros SVG (Safari, Firefox): si se indica qué hay
   // detrás (data-ns-liquid-src="selector" u o.source: una imagen o un elemento con background-image),
@@ -493,7 +573,7 @@ export function liquid(el, o = {}) {
     put(s.getBoundingClientRect())
   }
   let ox0 = 0, oy0 = 0
-  let raf = 0, idle = 0, last = '', lastPre = '', msig = '', now = null, cur = -1, lensKey = '', token = 0, frame = 0, dirty = true, V = null
+  let raf = 0, idle = 0, cost = 3, last = '', lastPre = '', msig = '', now = null, cur = -1, lensKey = '', token = 0, frame = 0, dirty = true, V = null
   // estilos leídos en caché: las variables del grupo y el radio/visibilidad de cada hijo se leen al
   // despertar por un cambio (clase, estilo, tamaño) y cada pocos frames en marcha, no en cada frame
   const look = new WeakMap()
@@ -501,7 +581,9 @@ export function liquid(el, o = {}) {
     const E = el.getBoundingClientRect(), fresh = dirty || frame % 6 == 0
     if (dirty || !V) {
       const cs = getComputedStyle(el), num = (k, d) => { const v = parseFloat(cs.getPropertyValue(k)); return v >= 0 ? v : d }
-      V = { k: num('--ns-liquid', 14), lens: num('--ns-glass-lens', 34), edge: num('--ns-glass-edge', 8), depth: num('--ns-glass-depth', 24), blur: num('--ns-glass-blur', 4), sat: num('--ns-glass-sat', 1.3), src: LENS || !glassy() ? null : source() }
+      V = { k: num('--ns-liquid', 14), lens: num('--ns-glass-lens', 34), edge: num('--ns-glass-edge', 8), depth: num('--ns-glass-depth', 24), blur: num('--ns-glass-blur', 4), sat: num('--ns-glass-sat', 1.3), src: LENS || !glassy() ? null : source(), prism: !!o.prism?.(), glow: cs.getPropertyValue('--ns-glass-glow').trim(), glowSize: num('--ns-glass-glow-size', 16) }
+      // prisma: se monta o se desmonta la cadena de los dos filtros (y se regenera la lente)
+      if (lenses[0].prism !== V.prism) { lenses.forEach(L => chain(L, V.prism)); lensKey = ''; lastPre = '' }
       // (el clon del DOM y el de fotogramas se rehacen sólo si cambia el original; la imagen y el
       // fondo, que no cuestan nada, siempre: pueden haber cambiado de src o de estilo)
       if (V.src != mirrored || ((kind == 'img' || kind == 'bg') && sig(V.src) != msig)) { mirrored = V.src; msig = V.src ? sig(V.src) : ''; V.src ? mirror(V.src) : unmirror() }
@@ -509,40 +591,65 @@ export function liquid(el, o = {}) {
     dirty = false; frame++
     const k = o.k ?? V.k
     const ox = E.left + el.clientLeft, oy = E.top + el.clientTop
-    const boxes = list().filter(b => b.getClientRects().length).map(b => {
-      const r = b.getBoundingClientRect()
-      let L = look.get(b)
-      if (!L || fresh) { const s = getComputedStyle(b); look.set(b, L = { off: s.visibility == 'hidden' || +s.opacity == 0, rad: s.borderTopLeftRadius }) }
-      if (L.off) return { x: 0, y: 0, w: 0, h: 0 }
-      return { x: r.left - ox, y: r.top - oy, w: r.width, h: r.height, r: px(L.rad, Math.min(r.width, r.height)) }
-    }).filter(b => b.w > 0 && b.h > 0)
     const g = glassy(), src = g ? V.src : null, lensPx = g && (LENS || src) ? V.lens : 0, edgePx = V.edge, depth = V.depth
     const S = src?.getBoundingClientRect()
-    // las capas cubren el contorno real y un margen (los hijos pueden salir del contenedor, y la
-    // lente toma fondo un poco más allá del borde)
-    const K = k * 2.4, m = K + 6 + lensPx / 2
-    const bx = boxes.length ? Math.min(...boxes.map(b => b.x)) - m : 0, by = boxes.length ? Math.min(...boxes.map(b => b.y)) - m : 0
-    const bw = boxes.length ? Math.max(...boxes.map(b => b.x + b.w)) + m - bx : 0, bh = boxes.length ? Math.max(...boxes.map(b => b.y + b.h)) + m - by : 0
+    const tail = `|${g}|${lensPx}|${edgePx}|${!!src}|${depth}|${V.blur}|${V.sat}`
+    let bx, by, bw, bh, pre, make
+    if (o.path) {
+      // Una forma cualquiera (ns-frame/glass): el path del propio elemento, en su caja de borde. Las
+      // capas lo rodean con un margen para la lente; el campo sale del path rasterizado
+      const P = o.path(el), m = 6 + lensPx / 2
+      bx = -el.clientLeft - m; by = -el.clientTop - m; bw = (P?.w || 0) + 2 * m; bh = (P?.h || 0) + 2 * m
+      pre = (P?.d || '') + `|${bw}|${bh}|${bx}|${by}` + tail
+      make = () => {
+        if (!P?.d) return [null, '']
+        const d = shift(P.d, m, m)
+        // el recorte y los reflejos usan el path exacto; el campo sólo da la lente y el reflejo
+        // interior: basta una rejilla de unos 12 000 nodos (entre 1 y 2,5 px)
+        return [pathField(d, bw, bh, o.step || Math.min(2.5, Math.max(1, Math.sqrt(bw * bh / 12000)))), d]
+      }
+    } else {
+      const boxes = list().filter(b => b.getClientRects().length).map(b => {
+        const r = b.getBoundingClientRect()
+        let L = look.get(b)
+        if (!L || fresh) { const s = getComputedStyle(b); look.set(b, L = { off: s.visibility == 'hidden' || +s.opacity == 0, rad: s.borderTopLeftRadius }) }
+        if (L.off) return { x: 0, y: 0, w: 0, h: 0 }
+        return { x: r.left - ox, y: r.top - oy, w: r.width, h: r.height, r: px(L.rad, Math.min(r.width, r.height)) }
+      }).filter(b => b.w > 0 && b.h > 0)
+      // las capas cubren el contorno real y un margen (los hijos pueden salir del contenedor, y la
+      // lente toma fondo un poco más allá del borde)
+      const K = k * 2.4, m = K + 6 + lensPx / 2
+      bx = boxes.length ? Math.min(...boxes.map(b => b.x)) - m : 0; by = boxes.length ? Math.min(...boxes.map(b => b.y)) - m : 0
+      bw = boxes.length ? Math.max(...boxes.map(b => b.x + b.w)) + m - bx : 0; bh = boxes.length ? Math.max(...boxes.map(b => b.y + b.h)) + m - by : 0
+      pre = boxes.map(b => `${r2(b.x)},${r2(b.y)},${r2(b.w)},${r2(b.h)},${r2(b.r)}`).join(';') + `|${K}` + tail
+      // --ns-liquid es el hueco máximo que se funde; el mínimo suave acerca como mucho k/4 por lado,
+      // así que k = 2,4 × hueco deja un cuello visible justo en el límite
+      // rejilla adaptativa: unos 9000 nodos, entre 1,25 y 3 px (el contorno pasa por puntos exactos
+      // del campo y se traza con cúbicas: un círculo sale redondo al píxel a cualquier tamaño)
+      make = () => { const f = field(boxes.map(b => ({ ...b, x: b.x - bx, y: b.y - by })), K, o.step || Math.min(3, Math.max(1.25, Math.sqrt(bw * bh / 9000)))); return [f, contour(f)] }
+    }
     // la copia sigue al original (al desplazarse la página, por ejemplo) sin rehacer la forma
     BX = bx + ox; BY = by + oy; ox0 = ox; oy0 = oy
     if (S) put(S)
     // si las piezas y los parámetros no cambiaron, la forma tampoco: ni campo ni contorno (un grupo
     // se despierta a menudo por otro que se mueve dentro o cerca, y así no le cuesta nada)
-    const pre = boxes.map(b => `${r2(b.x)},${r2(b.y)},${r2(b.w)},${r2(b.h)},${r2(b.r)}`).join(';') + `|${K}|${g}|${lensPx}|${edgePx}|${!!src}|${depth}|${V.blur}|${V.sat}`
     if (pre == lastPre) return
     lastPre = pre
-    // --ns-liquid es el hueco máximo que se funde; el mínimo suave acerca como mucho k/4 por lado,
-    // así que k = 2,4 × hueco deja un cuello visible justo en el límite
-    // rejilla adaptativa: unos 9000 nodos, entre 1,25 y 3 px (el contorno pasa por puntos exactos
-    // del campo y se traza con cúbicas: un círculo sale redondo al píxel a cualquier tamaño)
-    const step = o.step || Math.min(3, Math.max(1.25, Math.sqrt(bw * bh / 9000)))
-    const f = field(boxes.map(b => ({ ...b, x: b.x - bx, y: b.y - by })), K, step), d = contour(f)
+    const [f, d] = make()
     const key = d + '|' + bx + '|' + by + '|' + g + '|' + lensPx + '|' + edgePx + '|' + !!src
     if (key == last) return
     last = key
     for (const e of [svg, glass, edge, back]) Object.assign(e.style, { left: r2(bx) + 'px', top: r2(by) + 'px', width: r2(bw) + 'px', height: r2(bh) + 'px' })
     svg.setAttribute('viewBox', `0 0 ${r2(bw)} ${r2(bh)}`)
     path.setAttribute('d', d); rim.setAttribute('d', d)
+    // halo: sólo si hay color; el desenfoque crece con el tamaño pedido
+    const gs = V.glowSize, gOn = g && d && V.glow
+    glow.setAttribute('d', gOn ? d : '')
+    if (gOn) {
+      const R = { x: -gs * 3, y: -gs * 3, width: r2(bw + gs * 6), height: r2(bh + gs * 6) }
+      setA(mGlow, R); setA(oRect, R); oCut.setAttribute('d', d)
+      setA(glow, { stroke: V.glow, 'stroke-width': r2(gs) }); gBlur.setAttribute('stdDeviation', r2(gs / 2.4))
+    }
     // segundo reflejo: un contorno 1,6 px hacia dentro (sólo en vidrio)
     rim2.setAttribute('d', g && d ? contour(f, -1.6) : '')
     el.classList.toggle('ns-glass', g)
@@ -590,7 +697,7 @@ export function liquid(el, o = {}) {
       setA(L.map, { x: r2(s.f.X0), y: r2(s.f.Y0), width: r2(s.f.nx * s.f.step), height: r2(s.f.ny * s.f.step) })
       setA(L.f, { width: r2(s.bw), height: r2(s.bh) })
     } else setA(L.map, { width: r2(s.bw), height: r2(s.bh) })
-    L.disp.setAttribute('scale', r2(s.lensPx * (s.src ? lk : 1)))
+    for (const n of L.disp) n.setAttribute('scale', r2(s.lensPx * (s.src ? lk : 1) * n.getAttribute('data-k')))
     L.blur.setAttribute('stdDeviation', s.blur / 2)
     L.sat.setAttribute('values', s.sat)
   }
@@ -623,12 +730,18 @@ export function liquid(el, o = {}) {
     })
   }
   // bucle sólo mientras algo se mueve: dos frames sin cambios y sin animaciones → se detiene
-  const tick = () => {
+  const tick = t => {
     raf = 0
     // lejos de la pantalla no se dibuja nada: se retoma al acercarse (near)
     if (!near) return
-    const before = last
+    // presupuesto por frame compartido por todos los grupos: si otros ya gastaron ~8 ms en este
+    // frame y el último dibujo de éste fue caro (una forma nueva: campo y mapa), espera al siguiente.
+    // Doce vidrios que aparecen a la vez se reparten en varios frames en vez de una tarea larga
+    if (t != BUDGET.t) { BUDGET.t = t; BUDGET.used = 0 }
+    if (BUDGET.used > 8 && cost > 2) { raf = requestAnimationFrame(tick); return }
+    const before = last, t0 = performance.now()
     draw()
+    cost = performance.now() - t0; BUDGET.used += cost
     // en marcha mientras haya transiciones o animaciones CSS activas (por eventos); antes de parar,
     // una comprobación con getAnimations por si hay Web Animations
     let moving = active.size > 0

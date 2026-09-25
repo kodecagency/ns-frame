@@ -299,6 +299,24 @@ El material del Liquid Glass de Apple, en capas, con la forma exacta del grupo (
 - El contorno pasa por puntos exactos del campo y se traza con cúbicas (Catmull-Rom), con los lados rectos en línea: un círculo sale redondo con menos de 0,05 px de error. La rejilla se adapta al tamaño (entre 1,25 y 3 px). Para que dos gotas separadas no se abomben una hacia la otra, déjalas a más de `--ns-liquid × 2,4` de hueco.
 - Si mueves piezas por JS en cada frame, `liquid(el).frame()` redibuja sin releer estilos (los estilos en línea de las piezas ya sólo despiertan el bucle).
 
+#### Vidrio en cualquier elemento y cualquier forma (`ns-frame/glass`)
+
+```html
+<aside data-ns-glass>…</aside>                                   <!-- con su border-radius -->
+<article data-ns="panel" data-ns-glass>…</article>               <!-- con la forma del marco -->
+<article data-ns="hud" data-ns-glass="facet prism">…</article>   <!-- cristal tallado + prisma -->
+```
+
+El material de `ns-frame/liquid` (cuerpo, lente, canto, reflejos) sobre cualquier elemento, con su **forma exacta**: chaflanes, muescas, cortes, pestañas, curvas y squircles de ns-frame, o su `border-radius` esquina por esquina (elíptico incluido). La lente sale del **campo de distancias del propio path**: se rellena en un canvas y se calcula la distancia euclídea exacta (transformada de Felzenszwalb, lineal), así que el fondo se curva igual junto a un chaflán que junto a una esquina redonda. El recorte y los reflejos usan el path exacto. Lente en todos los motores, como en `ns-frame/liquid`: en Safari y Firefox, sobre una copia del fondo.
+
+- `data-ns-glass="clear"`: casi sin tinte, una lente. `"tint"`: más cuerpo, para texto largo.
+- **`"facet"` — cristal tallado.** Cada tramo del contorno es una faceta con su normal: un chaflán es una cara plana que se enciende entera; una curva, muchas caras pequeñas que dan un degradado. Cada faceta tiene una banda hacia dentro (la cara tallada) y una arista, y las dos se iluminan según el ángulo entre su normal y la luz: la luz principal y un reflejo tenue por el lado contrario. La luz sigue al puntero; sin puntero fino (móvil), barre las caras al desplazar la página, sin pedir permisos de giroscopio. `--ns-facet-width` (7px), `--ns-facet-line` (1px), `--ns-facet-color`. Con movimiento reducido, la luz queda fija arriba a la izquierda.
+- **`"prism"` — dispersión.** En el canto, el rojo se desvía un poco más y el azul un poco menos que el verde, como un cristal real: tres desplazamientos que se suman. Sólo se monta si se pide.
+- **Halo:** `--ns-glass-glow` (color) y `--ns-glass-glow-size`: un brillo que sigue la forma y sólo se ve por fuera.
+- Un marco de ns-frame con vidrio **no se recorta con `clip-path`**: haría de raíz del fondo y el vidrio no vería la página. La silueta la pone el vidrio y el borde del marco se sigue dibujando. Lo que haya dentro no se recorta: si una imagen llega a los cortes, recórtala con su propio `data-ns`.
+- **Con los efectos de `ns-fx.css`:** con `data-ns-glass`, la luz en U y el aura quedan dentro del cristal (sin aislar el elemento ni ponerle fondo opaco), los patrones (`ns-dots`, `ns-grid`…) se ven a través de él, y `ns-halo` pasa a ser el halo del propio vidrio (sin `filter` en el elemento). El borde que gira, el cometa, el destello y el pulso funcionan tal cual.
+- **Rendimiento:** la forma y el campo sólo se recalculan si cambian el tamaño o la forma; la luz de las facetas sólo cambia opacidades (como atributo SVG, sin despertar a nadie), lee todas las posiciones antes de escribir y sólo en las piezas a la vista; y los vidrios que aparecen a la vez se reparten entre frames con un presupuesto de ~8 ms por frame. Doce piezas con la CPU ×4: 16 ms de bloqueo al cargar y 14,6 ms por frame moviendo el puntero, sin frames lentos.
+
 #### Pestañas de vidrio líquido (`ns-frame/tabs`)
 
 ```html

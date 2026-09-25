@@ -35,6 +35,7 @@ ns-frame draws shapes with a small shape language written in HTML attributes. Th
 | Text that fills a non-rectangular shape (shape-inside) | `data-ns-flow` on a `data-ns` element with a defined height + `ns-frame/flow` |
 | One continuous highlight across several lines, with inner and outer curves | `<mark data-ns-mark>` + `ns-frame/mark` |
 | Nearby elements that melt together (gooey) with a crisp vector edge; liquid glass | `data-ns-liquid` / `data-ns-liquid="glass"` (+ `data-ns-blob`) + `ns-frame/liquid` |
+| Liquid glass on any element / any ns-frame shape (bevels, notches, cuts); cut-glass facets lit by the pointer; prism edge | `data-ns-glass` (`clear`, `tint`, `facet`, `prism`) + `ns-frame/glass` |
 | iOS-style tab bar whose glass indicator can be dragged between tabs | `data-ns-tabs` + `ns-frame/tabs` |
 
 Read `references/shapes.md` before writing any non-trivial shape and `references/components.md` before using a module.

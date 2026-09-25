@@ -414,7 +414,9 @@ function paint(s, V, fin) {
   if (s.svg) s.svg.style.display = ''
   const { T, at } = cmds(V), d = dOf(V), nat = !!(fin && s.nat && NATIVE && V.simple && !s.ap)
   if (nat || s.nt) native(s, V, nat)
-  s.el.style.clipPath = nat ? '' : d ? `path('${d}')` : s.ap ? 'inset(50%)' : ''
+  // (con data-ns-glass no se recorta: clip-path haría de raíz del fondo y el vidrio de dentro no
+  // vería la página; la silueta la pone el propio vidrio)
+  s.el.style.clipPath = nat || (d && s.el.hasAttribute('data-ns-glass')) ? '' : d ? `path('${d}')` : s.ap ? 'inset(50%)' : ''
   if (typeof NS_LITE == 'undefined') decorate(s, V, d, T, at)
 }
 
