@@ -83,12 +83,12 @@ const ACTIONS = [
       <article class="x x4" data-ns="all round 22">
         <div class="stage s4">
           <img class="bg" src="https://picsum.photos/seed/ns-glass-coast/900/700.webp" alt="" width="900" height="700" loading="lazy">
-          <div class="lt" id="lt" data-ns-liquid="glass" role="group" aria-label="Periodo">
+          <div class="lt" id="lt" data-ns-liquid="glass" data-ns-liquid-src=".bg" role="group" aria-label="Periodo">
             <i class="trk" data-ns-blob></i>
-            <div class="pills" id="pills" data-ns-liquid="glass"><i class="ind" data-ns-blob></i><i class="trail" data-ns-blob></i></div>
+            <div class="pills" id="pills" data-ns-liquid="glass" data-ns-liquid-src=".bg"><i class="ind" data-ns-blob></i><i class="trail" data-ns-blob></i></div>
             {PERIODS.map((p, i) => <button type="button" data-i={i} aria-pressed={String(i == 1)}>{p}</button>)}
           </div>
-          <div class="fab" id="fab" data-ns-liquid="glass">
+          <div class="fab" id="fab" data-ns-liquid="glass" data-ns-liquid-src=".bg">
             {ACTIONS.map(([n, d], i) => <button type="button" class={`act a${i + 1}`} aria-label={n} inert><Icon d={d} /></button>)}
             <button type="button" class="main" aria-expanded="false" aria-label="Más acciones"><Icon d="M10 4.5v11 M4.5 10h11" /></button>
           </div>

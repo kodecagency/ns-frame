@@ -8,6 +8,8 @@
 - El contenedor ya no usa `isolation` (hacía de raíz del fondo) y las capas se apilan por orden.
 - El puente entre gotas sale redondo, no en punta hacia la vecina.
 - `field()` y `contour()` exponen el campo y sus contornos a cualquier nivel.
+- **Lente en Safari y Firefox:** con `data-ns-liquid-src="selector"` (u `o.source`) el vidrio pinta debajo una copia alineada del fondo (imagen o `background-image`) y le aplica la lente con `filter: url()`, que sí funciona fuera de Chromium. Allí el filtro usa la región del objeto y un mapa a tamaño de la capa: WebKit hace desaparecer el elemento con `filterUnits="userSpaceOnUse"`.
+- **Vidrio visible en Safari:** WebKit no aplica a HTML una máscara `url(#…)` del documento y la capa del cuerpo desaparecía (el vidrio no desenfocaba nada). En WebKit el cuerpo se recorta sólo con `clip-path` y el canto usa la máscara como imagen SVG en línea.
 - **Sin parpadeo:** el recorte pasa a una máscara SVG del documento (sin imágenes por frame) y la lente usa dos filtros que se turnan; el mapa nuevo sólo entra cuando ya está decodificado (antes, durante un frame el filtro leía un mapa vacío y desplazaba todo el fondo). En movimiento el mapa se estira; al detenerse se regenera con `toBlob`, fuera del hilo principal.
 - **Más rápido:** unión suave sólo cerca de los puentes, sin desestructurar en el bucle caliente, rejilla adaptativa, movimiento detectado por eventos y estilos en caché. CPU ×4: de ~38 a ~17 ms por frame, sin fotogramas largos.
 - Sin `backdrop-filter`, tinte casi opaco.

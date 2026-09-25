@@ -268,11 +268,20 @@ h2 mark { background: none; color: inherit; --ns-mark: #ffe066 }
 El material del Liquid Glass de Apple, en capas, con la forma exacta del grupo (también mientras se funde y se estira):
 
 1. **Cuerpo:** el fondo desenfocado, saturado y tintado (`--ns-glass-blur` 4px, `--ns-glass-sat` 1.3, `--ns-glass-tint`).
-2. **Lente** (Chromium): el fondo se curva junto al borde como a través de un cristal grueso. El mapa de desplazamiento sale del mismo campo de distancias: cada punto a menos de `--ns-glass-depth` (24px) del borde toma el fondo un poco más allá, en la dirección de la normal, con una caída suave; `--ns-glass-lens` (34px) es la fuerza. Va en `backdrop-filter` con un `feDisplacementMap`, que hoy sólo aplica Chromium; en WebKit (todos los navegadores de iPhone) y Firefox queda el resto de capas.
+2. **Lente:** el fondo se curva junto al borde como a través de un cristal grueso. El mapa de desplazamiento sale del mismo campo de distancias: cada punto a menos de `--ns-glass-depth` (24px) del borde toma el fondo un poco más allá, en la dirección de la normal, con una caída suave; `--ns-glass-lens` (34px) es la fuerza. En Chromium va en `backdrop-filter` con un `feDisplacementMap`. Safari (y todos los navegadores de iPhone) y Firefox no admiten filtros SVG en `backdrop-filter`, pero sí en `filter`: si le dices qué hay detrás, el vidrio pinta debajo una copia alineada de ese fondo, le aplica la lente y la desenfoca y tiñe encima, igual que al fondo real:
+
+   ```html
+   <div class="tarjeta">
+     <img class="foto" src="…" alt="">
+     <nav data-ns-liquid="glass" data-ns-liquid-src=".foto">…</nav>
+   </div>
+   ```
+
+   `data-ns-liquid-src` (o la opción `source`) es un selector —se busca el más cercano subiendo por los antepasados— o un elemento: una imagen (con su `object-fit`, `object-position` y `filter`) o cualquier elemento con `background-image`. Sin él, en esos navegadores queda el resto de capas. Un fondo que no es una imagen (texto, vídeo, contenido que se desplaza por detrás) sólo tiene lente en Chromium.
 3. **Canto:** un brillo junto al borde que se desvanece hacia dentro, sin línea interior (`--ns-glass-edge`, 8px). En todos los navegadores.
 4. **Luz:** un reflejo especular fino que recoge la luz arriba y la devuelve tenue abajo, y un brillo interior (`--ns-glass-shine`, 0–1).
 
-- El recorte es una máscara SVG del propio documento (`mask: url(#…)`, se actualiza cambiando un `<path>`, sin imágenes) y además `clip-path: path()`: Chromium no aplica un `clip-path` libre al desenfoque de fondo si un antepasado recorta con esquinas redondeadas (lo normal en una tarjeta) y pintaría el rectángulo entero; la máscara sí la respeta, y el `clip-path` cubre a los navegadores que no apliquen la máscara.
+- El recorte es una máscara SVG del propio documento (`mask: url(#…)`, se actualiza cambiando un `<path>`, sin imágenes) y además `clip-path: path()`: Chromium no aplica un `clip-path` libre al desenfoque de fondo si un antepasado recorta con esquinas redondeadas (lo normal en una tarjeta) y pintaría el rectángulo entero; la máscara sí la respeta. WebKit, al revés: no aplica a HTML una máscara que apunta a un `<mask>` del documento (la capa desaparecería entera), así que allí el cuerpo se recorta sólo con `clip-path` y el canto usa la misma máscara como imagen SVG en línea.
 - **Sin parpadeos:** el mapa de la lente es una imagen generada en local (la CSP necesita `img-src data:` para la lente; sin ella queda el resto del vidrio). Hay dos filtros que se turnan: el mapa nuevo se prepara en el que no se usa y sólo se cambia cuando ya está decodificado (un filtro sin mapa desplazaría todo el fondo durante un frame). Mientras la forma se mueve, el mapa vigente se estira con ella; al detenerse se regenera, codificado fuera del hilo principal.
 - **Rendimiento:** el campo sólo hace la unión suave cerca de los puentes, la rejilla pasa a 3 px en grupos grandes, el estado de movimiento sale de los eventos de transición y los estilos se leen en caché. Medido con la CPU ×4: ~17 ms por frame en movimiento, sin fotogramas largos.
 - Sin `backdrop-filter`, el vidrio usa un tinte casi opaco (`--ns-glass-solid`) para que el contenido se lea.

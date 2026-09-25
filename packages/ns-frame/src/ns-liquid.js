@@ -15,9 +15,12 @@
 // · --ns-liquid-fill / --ns-liquid-border / --ns-liquid-width: relleno y trazo del conjunto.
 // · data-ns-liquid="glass": vidrio líquido, con las capas del material de Apple:
 //   1. cuerpo: el fondo desenfocado, saturado y tintado dentro de la forma exacta;
-//   2. lente (Chromium): el fondo se curva en el borde como a través de un cristal grueso. El mapa
-//      de desplazamiento sale del mismo campo de distancias: cada punto cerca del borde toma el
-//      fondo un poco más allá, en la dirección de la normal (feDisplacementMap en backdrop-filter);
+//   2. lente: el fondo se curva en el borde como a través de un cristal grueso. El mapa de
+//      desplazamiento sale del mismo campo de distancias: cada punto cerca del borde toma el
+//      fondo un poco más allá, en la dirección de la normal. En Chromium, feDisplacementMap en
+//      backdrop-filter; en Safari y Firefox (que no admiten filtros SVG en backdrop-filter), sobre
+//      una copia alineada del fondo si se indica cuál es: data-ns-liquid-src="selector" (una
+//      imagen o un elemento con background-image; el más cercano subiendo por los antepasados);
 //   3. canto: un anillo junto al borde con más brillo, saturación y contraste (en todos los
 //      navegadores: es lo que da el grosor al vidrio donde no hay lente);
 //   4. luz: un reflejo especular fino arriba, uno tenue abajo y un brillo interior.
@@ -35,24 +38,30 @@ import { styles } from './ns-frame.js'
 
 const CSS = `@layer ns{
 .ns-liquid{position:relative}
-.ns-liquid>:not(.ns-liquid-fx,.ns-liquid-glass,.ns-liquid-rim){position:relative}
-.ns-liquid-fx,.ns-liquid-glass,.ns-liquid-rim{position:absolute;pointer-events:none;margin:0}
+.ns-liquid>:not(.ns-liquid-fx,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-src){position:relative}
+.ns-liquid-fx,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-src{position:absolute;pointer-events:none;margin:0}
+.ns-liquid-src{overflow:hidden}.ns-liquid-src>div{position:absolute}
 .ns-liquid-fx{overflow:visible}
 .ns-liquid-fx .ns-lf{fill:var(--ns-liquid-fill,currentColor);stroke:var(--ns-liquid-border,none);stroke-width:var(--ns-liquid-width,1.5px)}
-.ns-liquid-fx .ns-lr,.ns-liquid-glass,.ns-liquid-rim{display:none}
+.ns-liquid-fx .ns-lr,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-src{display:none}
+.ns-glass>.ns-liquid-src:not([hidden]){display:block}
 .ns-glass>.ns-liquid-glass{display:block;background:var(--ns-glass-tint,rgba(22,22,26,.22));-webkit-backdrop-filter:blur(var(--ns-glass-blur,4px)) saturate(var(--ns-glass-sat,1.3));backdrop-filter:blur(var(--ns-glass-blur,4px)) saturate(var(--ns-glass-sat,1.3))}
 .ns-glass>.ns-liquid-rim{display:block;-webkit-backdrop-filter:blur(1.5px) brightness(1.22) saturate(1.15) contrast(1.06);backdrop-filter:blur(1.5px) brightness(1.22) saturate(1.15) contrast(1.06)}
 .ns-glass>.ns-liquid-fx .ns-lf{stroke:none;opacity:var(--ns-glass-shine,1)}
 .ns-glass>.ns-liquid-fx .ns-lr{display:inline;fill:none;stroke-width:1.2px;opacity:var(--ns-glass-shine,1)}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.ns-glass>.ns-liquid-glass{background:var(--ns-glass-solid,rgba(30,30,34,.92))}}
-@media (prefers-reduced-transparency:reduce){.ns-glass>.ns-liquid-glass{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:var(--ns-glass-solid,#232327)}.ns-glass>.ns-liquid-rim{display:none}}
-@media (forced-colors:active){.ns-liquid-fx .ns-lf{fill:Canvas;stroke:CanvasText}.ns-liquid-glass,.ns-liquid-rim{display:none!important}}
+@media (prefers-reduced-transparency:reduce){.ns-glass>.ns-liquid-glass{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:var(--ns-glass-solid,#232327)}.ns-glass>.ns-liquid-rim,.ns-glass>.ns-liquid-src{display:none!important}}
+@media (forced-colors:active){.ns-liquid-fx .ns-lf{fill:Canvas;stroke:CanvasText}.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-src{display:none!important}}
 }`
 const SVG = 'http://www.w3.org/2000/svg'
 const r2 = n => Math.round(n * 100) / 100 || 0
 let styled = 0
-// la lente sólo donde backdrop-filter admite filtros SVG (Chromium); en WebKit y Gecko, el canto
+// lente en backdrop-filter sólo donde admite filtros SVG (Chromium); en los demás, sobre la copia
 const LENS = typeof navigator != 'undefined' && !!navigator.userAgentData?.brands?.some(b => b.brand == 'Chromium')
+// WebKit (Safari y todos los navegadores de iPhone)
+const WK = !LENS && typeof navigator != 'undefined' && /AppleWebKit/.test(navigator.userAgent)
+// máscara del canto como imagen: el trazo del contorno, desenfocado y recortado a la forma
+const rimImage = (d, w, h, e) => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns="${SVG}" width="${r2(w)}" height="${r2(h)}"><filter id="b" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="${r2(e / 2.2)}"/></filter><clipPath id="c"><path d="${d}"/></clipPath><g clip-path="url(#c)"><path d="${d}" fill="none" stroke="#fff" stroke-width="${r2(e * 1.6)}" filter="url(#b)"/></g></svg>`)}")`
 
 // distancia con signo a un rectángulo redondeado (centro cx, cy; semiejes hx, hy; radio r), con su
 // gradiente (hacia fuera): G = [d, gx, gy]
@@ -201,7 +210,7 @@ function simplify(P, eps) {
  * hay más allá, como un cristal grueso), con una caída suave; en el centro y fuera, nada. Rojo = x,
  * verde = y, 128 = 0. Se pinta en un canvas del tamaño de la rejilla (el filtro lo estira).
  */
-function lensMap(f, rim, cv) {
+function lensMap(f, rim, cv, full) {
   const { F, nx, ny, step } = f
   cv.width = nx; cv.height = ny
   // willReadFrequently: canvas en CPU. Uno acelerado por GPU obliga a leerlo de vuelta para
@@ -219,9 +228,20 @@ function lensMap(f, rim, cv) {
     D[k] = 128 + gx * 127; D[k + 1] = 128 + gy * 127; D[k + 2] = 128; D[k + 3] = 255
   }
   x.putImageData(img, 0, 0)
+  // `full` ({ cv, w, h }): el mapa a tamaño de la capa, neutro fuera de la rejilla y estirado con
+  // suavizado. Es el que usa filter: url() fuera de Chromium: WebKit sólo coloca bien un feImage
+  // sin posición ni tamaño (a su tamaño propio, en el origen de la región del objeto)
+  let out = cv
+  if (full) {
+    out = full.cv
+    out.width = Math.max(1, Math.round(full.w)); out.height = Math.max(1, Math.round(full.h))
+    const y = out.getContext('2d')
+    y.fillStyle = 'rgb(128,128,128)'; y.fillRect(0, 0, out.width, out.height)
+    y.drawImage(cv, f.X0, f.Y0, nx * step, ny * step)
+  }
   // toBlob codifica el PNG fuera del hilo principal (toDataURL lo bloqueaba al detenerse la forma)
-  return new Promise(res => cv.toBlob(b => {
-    if (!b) return res(cv.toDataURL())
+  return new Promise(res => out.toBlob(b => {
+    if (!b) return res(out.toDataURL())
     const r = new FileReader()
     r.onload = () => res(r.result)
     r.readAsDataURL(b)
@@ -237,7 +257,8 @@ const setA = (e, a) => { for (const k in a) e.setAttribute(k, a[k]) }
 
 /**
  * Convierte `el` en un grupo líquido. Opciones: blobs (selector o función → elementos; por defecto
- * [data-ns-blob] o los hijos), k y step (si no, --ns-liquid y 2), glass (si no, el atributo).
+ * [data-ns-blob] o los hijos), k y step (si no, --ns-liquid y 2), glass (si no, el atributo),
+ * source (elemento o selector del fondo para la lente fuera de Chromium; si no, data-ns-liquid-src).
  * Devuelve { update(), destroy() }.
  */
 export function liquid(el, o = {}) {
@@ -262,7 +283,8 @@ export function liquid(el, o = {}) {
   // leería transparente, rojo y verde a 0, y desplazaría todo el fondo en diagonal). Mientras la
   // forma se mueve, el mapa vigente se estira con ella; al detenerse se regenera.
   const lenses = [0, 1].map(n => {
-    const f = mk('filter', { id: id + 'l' + n, x: 0, y: 0, filterUnits: 'userSpaceOnUse', 'color-interpolation-filters': 'sRGB' })
+    // (fuera de Chromium, región del objeto: WebKit pierde el elemento entero con userSpaceOnUse)
+    const f = mk('filter', LENS ? { id: id + 'l' + n, x: 0, y: 0, filterUnits: 'userSpaceOnUse', 'color-interpolation-filters': 'sRGB' } : { id: id + 'l' + n, x: 0, y: 0, width: 1, height: 1, 'color-interpolation-filters': 'sRGB' })
     const map = mk('feImage', { result: 'm', preserveAspectRatio: 'none' })
     const disp = mk('feDisplacementMap', { in: 'SourceGraphic', in2: 'm', xChannelSelector: 'R', yChannelSelector: 'G', result: 'd' })
     const blur = mk('feGaussianBlur', { in: 'd', result: 'b' }), sat = mk('feColorMatrix', { in: 'b', type: 'saturate' })
@@ -278,10 +300,37 @@ export function liquid(el, o = {}) {
   const path = mk('path', { class: 'ns-lf' }), rim = mk('path', { class: 'ns-lr', stroke: `url(#${id}r)` })
   svg.append(defs, path, rim)
   const glass = div('ns-liquid-glass'), edge = div('ns-liquid-rim')
-  // orden de pintado: cuerpo, canto, luz y encima los hijos (posicionados después en el DOM)
-  el.prepend(glass, edge, svg)
+  // Lente donde backdrop-filter no admite filtros SVG (Safari, Firefox): si se indica qué hay
+  // detrás (data-ns-liquid-src="selector" u o.source: una imagen o un elemento con background-image),
+  // se pinta una copia alineada debajo del vidrio y la lente se le aplica con filter: url(), que sí
+  // funciona en todos. El cuerpo del vidrio la desenfoca y la tiñe encima, como al fondo real.
+  const back = div('ns-liquid-src'), copy = document.createElement('div')
+  back.append(copy); back.hidden = true
+  // orden de pintado: copia del fondo, cuerpo, canto, luz y encima los hijos
+  el.prepend(back, glass, edge, svg)
   const cv = document.createElement('canvas')
-  const list = () => typeof o.blobs == 'function' ? o.blobs(el) : [...el.querySelectorAll(o.blobs || (el.querySelector(':scope > [data-ns-blob]') ? ':scope > [data-ns-blob]' : ':scope > :not(.ns-liquid-fx, .ns-liquid-glass, .ns-liquid-rim)'))]
+  let cv2 = null
+  const list = () => typeof o.blobs == 'function' ? o.blobs(el) : [...el.querySelectorAll(o.blobs || (el.querySelector(':scope > [data-ns-blob]') ? ':scope > [data-ns-blob]' : ':scope > :not(.ns-liquid-fx, .ns-liquid-glass, .ns-liquid-rim, .ns-liquid-src)'))]
+  // el fondo que se copia: el más cercano que coincida con el selector, subiendo por los antepasados
+  const source = () => {
+    const s = o.source ?? el.getAttribute('data-ns-liquid-src')
+    if (!s || typeof s != 'string') return s || null
+    for (let a = el.parentElement; a; a = a.parentElement) { const n = a.querySelector(s); if (n) return n }
+    return null
+  }
+  // la copia pinta lo mismo que el original: una imagen como fondo con su object-fit y
+  // object-position; otro elemento, con sus propiedades de fondo. Con su filtro (brillo, etc.)
+  const FIT = { cover: 'cover', contain: 'contain', fill: '100% 100%', none: 'auto', 'scale-down': 'contain' }
+  const mirror = n => {
+    const s = getComputedStyle(n), c = copy.style
+    if (n.tagName == 'IMG') {
+      const u = n.currentSrc || n.src
+      // (con loading="lazy" o srcset, la fuente definitiva se conoce al cargar)
+      if (!n.complete) n.addEventListener('load', stale, { once: true })
+      Object.assign(c, { backgroundImage: u ? `url(${JSON.stringify(u)})` : '', backgroundSize: FIT[s.objectFit] || '100% 100%', backgroundPosition: s.objectPosition, backgroundRepeat: 'no-repeat', backgroundColor: '' })
+    } else Object.assign(c, { backgroundImage: s.backgroundImage, backgroundSize: s.backgroundSize, backgroundPosition: s.backgroundPosition, backgroundRepeat: s.backgroundRepeat, backgroundColor: s.backgroundColor })
+    c.filter = s.filter == 'none' ? '' : s.filter
+  }
   let raf = 0, idle = 0, last = '', now = null, cur = -1, lensKey = '', token = 0, frame = 0, dirty = true, V = null
   // estilos leídos en caché: las variables del grupo y el radio/visibilidad de cada hijo se leen al
   // despertar por un cambio (clase, estilo, tamaño) y cada pocos frames en marcha, no en cada frame
@@ -290,7 +339,8 @@ export function liquid(el, o = {}) {
     const E = el.getBoundingClientRect(), fresh = dirty || frame % 6 == 0
     if (dirty || !V) {
       const cs = getComputedStyle(el), num = (k, d) => { const v = parseFloat(cs.getPropertyValue(k)); return v >= 0 ? v : d }
-      V = { k: num('--ns-liquid', 14), lens: num('--ns-glass-lens', 34), edge: num('--ns-glass-edge', 8), depth: num('--ns-glass-depth', 24), blur: num('--ns-glass-blur', 4), sat: num('--ns-glass-sat', 1.3) }
+      V = { k: num('--ns-liquid', 14), lens: num('--ns-glass-lens', 34), edge: num('--ns-glass-edge', 8), depth: num('--ns-glass-depth', 24), blur: num('--ns-glass-blur', 4), sat: num('--ns-glass-sat', 1.3), src: LENS ? null : source() }
+      if (V.src) mirror(V.src)
     }
     dirty = false; frame++
     const k = o.k ?? V.k
@@ -302,7 +352,8 @@ export function liquid(el, o = {}) {
       if (L.off) return { x: 0, y: 0, w: 0, h: 0 }
       return { x: r.left - ox, y: r.top - oy, w: r.width, h: r.height, r: px(L.rad, Math.min(r.width, r.height)) }
     }).filter(b => b.w > 0 && b.h > 0)
-    const g = glassy(), lensPx = g && LENS ? V.lens : 0, edgePx = V.edge, depth = V.depth
+    const g = glassy(), src = g ? V.src : null, lensPx = g && (LENS || src) ? V.lens : 0, edgePx = V.edge, depth = V.depth
+    const S = src?.getBoundingClientRect()
     // las capas cubren el contorno real y un margen (los hijos pueden salir del contenedor, y la
     // lente toma fondo un poco más allá del borde)
     const K = k * 2.4, m = K + 6 + lensPx / 2
@@ -312,33 +363,42 @@ export function liquid(el, o = {}) {
     // así que k = 2,4 × hueco deja un cuello visible justo en el límite
     // rejilla de 2 px; en grupos grandes, 3 px (el contorno sigue suave: se traza con curvas)
     const f = field(boxes.map(b => ({ ...b, x: b.x - bx, y: b.y - by })), K, o.step || (bw * bh > 60000 ? 3 : 2)), d = contour(f)
-    const key = d + '|' + bx + '|' + by + '|' + g + '|' + lensPx + '|' + edgePx
+    const key = d + '|' + bx + '|' + by + '|' + g + '|' + lensPx + '|' + edgePx + (S ? `|${S.left - ox}|${S.top - oy}|${S.width}|${S.height}` : '')
     if (key == last) return
     last = key
-    for (const e of [svg, glass, edge]) Object.assign(e.style, { left: r2(bx) + 'px', top: r2(by) + 'px', width: r2(bw) + 'px', height: r2(bh) + 'px' })
+    for (const e of [svg, glass, edge, back]) Object.assign(e.style, { left: r2(bx) + 'px', top: r2(by) + 'px', width: r2(bw) + 'px', height: r2(bh) + 'px' })
     svg.setAttribute('viewBox', `0 0 ${r2(bw)} ${r2(bh)}`)
     path.setAttribute('d', d); rim.setAttribute('d', d)
     el.classList.toggle('ns-glass', g)
     // (estilo en línea: el relleno de la capa en CSS ganaría a un atributo fill)
     path.style.fill = g ? `url(#${id}s)` : ''
-    const mb = g && d ? `url(#${id}m)` : '', me = g && d ? `url(#${id}e)` : ''
+    // (WebKit no aplica a HTML una máscara que apunta a un <mask> del documento: la capa entera
+    // desaparece. Allí el cuerpo se recorta sólo con clip-path, y el canto usa la misma máscara
+    // como imagen SVG en línea)
+    const mb = g && d && !WK ? `url(#${id}m)` : '', me = g && d ? (WK ? rimImage(d, bw, bh, edgePx) : `url(#${id}e)`) : ''
     glass.style.mask = glass.style.webkitMask = mb
     edge.style.mask = edge.style.webkitMask = me
     // y además clip-path: si un navegador no aplica una máscara SVG del documento a un elemento
     // HTML, el vidrio sigue teniendo la forma exacta (nunca un rectángulo)
-    glass.style.clipPath = edge.style.clipPath = g && d ? `path("${d}")` : ''
-    if (!g || !d) { glass.style.backdropFilter = ''; now = null; return }
+    glass.style.clipPath = edge.style.clipPath = back.style.clipPath = g && d ? `path("${d}")` : ''
+    back.style.mask = back.style.webkitMask = mb
+    back.hidden = !(src && d)
+    if (S) Object.assign(copy.style, { left: r2(S.left - ox - bx) + 'px', top: r2(S.top - oy - by) + 'px', width: r2(S.width) + 'px', height: r2(S.height) + 'px' })
+    if (!g || !d) { glass.style.backdropFilter = back.style.filter = ''; now = null; return }
     for (const M of [maskB, maskE]) setA(M, { width: r2(bw), height: r2(bh) })
     mBody.setAttribute('d', d); mEdge.setAttribute('d', d); cEdge.setAttribute('d', d)
     mEdge.setAttribute('stroke-width', r2(edgePx * 1.6)); eBlur.setAttribute('stdDeviation', r2(edgePx / 2.2))
-    if (!lensPx) { glass.style.backdropFilter = ''; now = null; return }
-    now = { f, d, bw, bh, depth, lensPx, blur: V.blur, sat: V.sat }
+    if (!lensPx) { glass.style.backdropFilter = back.style.filter = ''; now = null; return }
+    // sobre la copia, la lente sólo desplaza: el desenfoque y la saturación los pone el cuerpo encima
+    now = { f, d, bw, bh, depth, lensPx, blur: src ? 0 : V.blur, sat: src ? 1 : V.sat, src: !!src }
     // en marcha: el mapa vigente sigue a la forma (se estira); el nuevo llega al detenerse
     if (cur >= 0) place(lenses[cur], now)
   }
   const place = (L, s) => {
-    setA(L.map, { x: r2(s.f.X0), y: r2(s.f.Y0), width: r2(s.f.nx * s.f.step), height: r2(s.f.ny * s.f.step) })
-    setA(L.f, { width: r2(s.bw), height: r2(s.bh) })
+    if (!s.src) {
+      setA(L.map, { x: r2(s.f.X0), y: r2(s.f.Y0), width: r2(s.f.nx * s.f.step), height: r2(s.f.ny * s.f.step) })
+      setA(L.f, { width: r2(s.bw), height: r2(s.bh) })
+    }
     L.disp.setAttribute('scale', s.lensPx)
     L.blur.setAttribute('stdDeviation', s.blur / 2)
     L.sat.setAttribute('values', s.sat)
@@ -347,11 +407,11 @@ export function liquid(el, o = {}) {
   const refreshLens = () => {
     const s = now
     if (!s) return
-    const k = [s.d, s.bw, s.bh, s.depth, s.lensPx, s.blur, s.sat].join('|')
+    const k = [s.d, s.bw, s.bh, s.depth, s.lensPx, s.blur, s.sat, s.src].join('|')
     if (k == lensKey) return
     lensKey = k
     const n = cur < 0 ? 0 : 1 - cur, L = lenses[n], t = ++token
-    lensMap(s.f, s.depth, cv).then(url => {
+    lensMap(s.f, s.depth, cv, s.src ? { cv: cv2 ||= document.createElement('canvas'), w: s.bw, h: s.bh } : null).then(url => {
       if (t != token) return
       place(L, s)
       L.map.setAttribute('href', url)
@@ -361,7 +421,8 @@ export function liquid(el, o = {}) {
         if (t != token || !now) return
         cur = n
         place(L, now)
-        glass.style.backdropFilter = `url(#${id}l${n})`
+        const u = `url(#${id}l${n})`
+        if (now.src) { back.style.filter = u; glass.style.backdropFilter = '' } else { glass.style.backdropFilter = u; back.style.filter = '' }
       }))
       img.decode ? img.decode().then(swap, swap) : swap()
     })
@@ -392,13 +453,13 @@ export function liquid(el, o = {}) {
     ['transitionrun', on], ['animationstart', on], ['transitionend', off], ['transitioncancel', off], ['animationend', off], ['animationcancel', off]]
   EV.forEach(([e, f]) => el.addEventListener(e, f, true))
   // (sus propias capas no cuentan: cambiar su estilo no debe despertar otro frame)
-  const own = n => n == svg || n == glass || n == edge || svg.contains(n)
+  const own = n => n == svg || n == glass || n == edge || n == back || n == copy || svg.contains(n)
   const mo = new MutationObserver(ms => { if (ms.some(m => !own(m.target))) stale() })
   mo.observe(el, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden', 'data-ns-liquid'] })
   wake()
   return {
     update: wake,
-    destroy() { cancelAnimationFrame(raf); token++; ro.disconnect(); mo.disconnect(); EV.forEach(([e, f]) => el.removeEventListener(e, f, true)); svg.remove(); glass.remove(); edge.remove(); el.classList.remove('ns-liquid', 'ns-glass') },
+    destroy() { cancelAnimationFrame(raf); token++; ro.disconnect(); mo.disconnect(); EV.forEach(([e, f]) => el.removeEventListener(e, f, true)); svg.remove(); glass.remove(); edge.remove(); back.remove(); el.classList.remove('ns-liquid', 'ns-glass') },
   }
 }
 
