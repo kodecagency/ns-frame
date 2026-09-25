@@ -26,14 +26,13 @@
 // · La capa va detrás del contenido; un marco de ns-frame con relieve no se recorta con clip-path.
 
 import { styles, path, shapeOf, update } from './ns-frame.js'
+import { material, mk } from './ns-light.js'
 
 const CSS = `@layer ns{
 [data-ns-relief]{position:relative;isolation:isolate;background:none;--ns-border:transparent}
 .ns-relief{position:absolute;z-index:-1;pointer-events:none;overflow:visible}
 @media (forced-colors:active){.ns-relief{display:none}}
 }`
-const NS = 'http://www.w3.org/2000/svg'
-const mk = (t, a = {}, ...k) => { const e = document.createElementNS(NS, t); for (const n in a) e.setAttribute(n, a[n]); e.append(...k); return e }
 // b: ancho del bisel (desenfoque de la silueta); s: altura; ks, n: brillo del canto y su dureza;
 // amb: luz mínima de la cara en sombra; sh: sombras [dy, desenfoque, opacidad]; inset: sombra interior
 const PRESET = {
@@ -44,67 +43,8 @@ const PRESET = {
   pressed: { b: 1.3, s: .9, ks: .3, n: 60, amb: .76, inset: .1 },
 }
 const TONE = { metal: { ks: 1.15, n: .6 }, paper: { ks: .35, n: 1 } }
-const EL = 52
-let styled = 0, defs = null, uid = 0, AZ = 258
-const FILTERS = new Map(), LIGHTS = [], R = new WeakMap(), ALL = new Set()
-
-// compila un material en un <filter> (una vez por combinación de parámetros)
-function filter(M) {
-  const key = JSON.stringify(M)
-  if (FILTERS.has(key)) return FILTERS.get(key)
-  if (!defs) { defs = mk('svg', { 'aria-hidden': 'true', focusable: 'false' }); defs.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden'; document.body.append(defs) }
-  const id = 'nsr' + ++uid, k = 1 / Math.sin(EL * Math.PI / 180)
-  const light = () => { const l = mk('feDistantLight', { azimuth: AZ, elevation: EL }); LIGHTS.push(l); return l }
-  const f = mk('filter', { id, x: '-30%', y: '-30%', width: '160%', height: '160%', 'color-interpolation-filters': 'sRGB' })
-  f.append(mk('feGaussianBlur', { in: 'SourceAlpha', stdDeviation: M.b, result: 'h0' }))
-  // alturas (hundido: invertidas, el canto arriba y el centro abajo)
-  f.append(mk('feComponentTransfer', { in: 'h0', result: 'h' }, mk('feFuncA', M.inset ? { type: 'linear', slope: -1, intercept: 1 } : { type: 'identity' })))
-  // difusa, llevada a [amb, 1]: la cara plana queda exactamente de su color; lo que no mira a la luz
-  // se oscurece con un mínimo. Un desenfoque mínimo quita el grano de cuantizar las alturas a 8 bits
-  f.append(mk('feDiffuseLighting', { in: 'h', surfaceScale: M.s, diffuseConstant: 1, 'lighting-color': '#fff', result: 'd0' }, light()))
-  f.append(mk('feComponentTransfer', { in: 'd0', result: 'd1' }, ...['R', 'G', 'B'].map(c => mk('feFunc' + c, { type: 'linear', slope: k * (1 - M.amb), intercept: M.amb }))))
-  f.append(mk('feGaussianBlur', { in: 'd1', stdDeviation: .35, result: 'd' }))
-  f.append(mk('feBlend', { in: 'SourceGraphic', in2: 'd', mode: 'multiply', result: 'lit' }))
-  // especular dura: sólo el canto que mira a la luz
-  f.append(mk('feSpecularLighting', { in: 'h', surfaceScale: M.s, specularConstant: M.ks, specularExponent: M.n, 'lighting-color': '#fff', result: 'sp' }, light()))
-  f.append(mk('feComposite', { in: 'sp', in2: 'lit', operator: 'arithmetic', k2: 1, k3: 1, result: 'sum' }))
-  f.append(mk('feComposite', { in: 'sum', in2: 'SourceAlpha', operator: 'in', result: 'face' }))
-  const merge = []
-  ;(M.sh || []).forEach(([dy, b, o], i) => {
-    f.append(mk('feGaussianBlur', { in: 'SourceAlpha', stdDeviation: b, result: 'sb' + i }))
-    f.append(mk('feOffset', { in: 'sb' + i, dx: 0, dy, result: 'so' + i }))
-    f.append(mk('feFlood', { 'flood-color': '#000', 'flood-opacity': o, result: 'sf' + i }))
-    f.append(mk('feComposite', { in: 'sf' + i, in2: 'so' + i, operator: 'in', result: 'sh' + i }))
-    merge.push('sh' + i)
-  })
-  merge.push('face')
-  if (M.inset) {
-    f.append(mk('feComponentTransfer', { in: 'SourceAlpha', result: 'iv' }, mk('feFuncA', { type: 'linear', slope: -1, intercept: 1 })))
-    f.append(mk('feGaussianBlur', { in: 'iv', stdDeviation: 2, result: 'ib' }))
-    f.append(mk('feOffset', { in: 'ib', dx: 0, dy: 1.5, result: 'io' }))
-    f.append(mk('feFlood', { 'flood-color': '#000', 'flood-opacity': M.inset, result: 'if' }))
-    f.append(mk('feComposite', { in: 'if', in2: 'io', operator: 'in', result: 'i0' }))
-    f.append(mk('feComposite', { in: 'i0', in2: 'SourceAlpha', operator: 'in', result: 'is' }))
-    merge.push('is')
-  }
-  f.append(mk('feMerge', {}, ...merge.map(n => mk('feMergeNode', { in: n }))))
-  defs.append(f)
-  FILTERS.set(key, id)
-  return id
-}
-
-// la luz, una para toda la página: arriba, algo a la izquierda; el puntero la gira un poco (en el
-// móvil, el desplazamiento); con movimiento reducido, fija
-let MQ = null, lraf = 0, px = .5
-const calm = () => (MQ ||= [matchMedia('(prefers-reduced-motion: reduce)'), matchMedia('(hover: hover) and (pointer: fine)')])[0].matches
-const aimLight = () => {
-  lraf = 0
-  const az = (258 + (calm() ? 0 : (px - .5) * 36)).toFixed(1)
-  if (az == AZ) return
-  AZ = az
-  for (const l of LIGHTS) l.setAttribute('azimuth', az)
-}
-const moveLight = v => { px = v; lraf ||= requestAnimationFrame(aimLight) }
+const R = new WeakMap(), ALL = new Set()
+let styled = 0
 
 // rectángulo con el border-radius real, esquina por esquina (elíptico si hace falta)
 function rounded(el, w, h) {
@@ -158,7 +98,7 @@ export function relief(el) {
     p.setAttribute('d', d)
     p.style.fill = fill
     p.style.display = hide ? 'none' : ''
-    p.setAttribute('filter', `url(#${filter(M)})`)
+    p.setAttribute('filter', `url(#${material(M)})`)
   }
   const press = v => () => { if (down != v) { down = v; draw() } }
   const EV = [['pointerdown', press(true)], ['pointerup', press(false)], ['pointerleave', press(false)], ['pointercancel', press(false)],
@@ -173,10 +113,6 @@ export function relief(el) {
   if (el.hasAttribute('data-ns') || el.localName == 'ns-frame') update(el)
   const api = { update: () => { key = ''; draw() }, destroy() { EV.forEach(([t, f]) => el.removeEventListener(t, f)); ro.disconnect(); mo.disconnect(); ALL.delete(api); R.delete(el); svg.remove() } }
   ALL.add(api)
-  if (ALL.size == 1) {
-    addEventListener('pointermove', e => { if (e.pointerType == 'mouse' || e.pointerType == 'pen') moveLight(e.clientX / innerWidth) }, { passive: true })
-    addEventListener('scroll', () => { if (!MQ?.[1].matches) moveLight(Math.min(1, scrollY / Math.max(1, document.documentElement.scrollHeight - innerHeight))) }, { passive: true })
-  }
   R.set(el, api)
   return api
 }

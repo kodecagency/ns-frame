@@ -35,6 +35,7 @@
 // Sin dependencias (salvo el núcleo). Sólo CSSOM y atributos SVG (sin HTML en texto).
 
 import { styles } from './ns-frame.js'
+import { material } from './ns-light.js'
 
 const CSS = `@layer ns{
 .ns-liquid{position:relative}
@@ -43,14 +44,13 @@ const CSS = `@layer ns{
 .ns-liquid-src{overflow:hidden}.ns-liquid-src>div{position:absolute}
 .ns-liquid-fx{overflow:visible}
 .ns-liquid-fx .ns-lf{fill:var(--ns-liquid-fill,currentColor);stroke:var(--ns-liquid-border,none);stroke-width:var(--ns-liquid-width,1.5px)}
-.ns-liquid-fx .ns-lr,.ns-liquid-fx .ns-lr2,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-src{display:none}
+.ns-liquid-fx .ns-lr,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-src{display:none}
 .ns-glass>.ns-liquid-src:not([hidden]){display:block}
 .ns-glass>.ns-liquid-glass{display:block;background:var(--ns-glass-tint,rgba(22,22,26,.22));-webkit-backdrop-filter:blur(var(--ns-glass-blur,4px)) saturate(var(--ns-glass-sat,1.3));backdrop-filter:blur(var(--ns-glass-blur,4px)) saturate(var(--ns-glass-sat,1.3))}
 .ns-glass>.ns-liquid-rim{display:block;-webkit-backdrop-filter:blur(1.5px) brightness(1.22) saturate(1.15) contrast(1.06);backdrop-filter:blur(1.5px) brightness(1.22) saturate(1.15) contrast(1.06)}
 .ns-glass>.ns-liquid-fx .ns-lf{stroke:none;opacity:var(--ns-glass-shine,1)}
 .ns-liquid-fx .ns-lg{fill:none}
-.ns-glass>.ns-liquid-fx .ns-lr{display:inline;fill:none;stroke-width:1.2px;opacity:var(--ns-glass-shine,1)}
-.ns-glass>.ns-liquid-fx .ns-lr2{display:inline;fill:none;stroke-width:.8px;opacity:calc(var(--ns-glass-shine,1)*.5)}
+.ns-glass>.ns-liquid-fx .ns-lr{display:inline;fill:#fff;stroke:none;opacity:var(--ns-glass-shine,1)}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.ns-glass>.ns-liquid-glass{background:var(--ns-glass-solid,rgba(30,30,34,.92))}}
 @media (prefers-reduced-transparency:reduce){.ns-glass>.ns-liquid-glass{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:var(--ns-glass-solid,#232327)}.ns-glass>.ns-liquid-rim,.ns-glass>.ns-liquid-src{display:none!important}}
 @media (forced-colors:active){.ns-liquid-fx .ns-lf{fill:Canvas;stroke:CanvasText}.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-src{display:none!important}}
@@ -491,13 +491,12 @@ export function liquid(el, o = {}) {
   })
   const defs = mk('defs')
   defs.append(
-    // luz del vidrio: reflejo especular (fuerte arriba, tenue abajo) y un brillo interior arriba
-    stops(mk('linearGradient', { id: id + 'r', x1: 0, y1: 0, x2: .3, y2: 1 }), [[0, .85], [.2, .35], [.5, .06], [.8, .1], [1, .4]]),
+    // brillo interior del vidrio, arriba (el canto lo pone ns-light)
     stops(mk('radialGradient', { id: id + 's', cx: .5, cy: -.15, r: .95 }), [[0, .22], [.55, .05], [1, 0]]),
-    // segundo reflejo, por dentro y al revés: la luz que vuelve por el otro lado del cristal
-    stops(mk('linearGradient', { id: id + 'q', x1: 1, y1: 1, x2: .6, y2: 0 }), [[0, .7], [.3, .18], [.6, 0], [1, 0]]),
     maskB, maskE, clipE, fEdge, ...lenses.map(l => l.f))
-  const path = mk('path', { class: 'ns-lf' }), rim = mk('path', { class: 'ns-lr', stroke: `url(#${id}r)` }), rim2 = mk('path', { class: 'ns-lr2', stroke: `url(#${id}q)` })
+  // el canto: la silueta con el filtro de luz de ns-light (una línea especular donde el borde mira a
+  // la luz de la página y un reflejo tenue enfrente), nítido a cualquier zoom
+  const path = mk('path', { class: 'ns-lf' }), rim = mk('path', { class: 'ns-lr' })
   // Halo (--ns-glass-glow): un trazo desenfocado del contorno que sólo se ve por fuera (una máscara
   // quita el interior). Sin filter en el elemento, que haría de raíz del fondo y apagaría el vidrio
   const gBlur = mk('feGaussianBlur'), fGlow = mk('filter', { id: id + 'g', x: '-50%', y: '-50%', width: '200%', height: '200%' }); fGlow.append(gBlur)
@@ -509,7 +508,7 @@ export function liquid(el, o = {}) {
   const sB = mk('feGaussianBlur', { in: 'SourceGraphic', stdDeviation: 9, result: 'b' }), sO = mk('feOffset', { in: 'b', dx: 0, dy: 7 })
   const fShadow = mk('filter', { id: id + 'h', x: '-50%', y: '-50%', width: '200%', height: '200%' }); fShadow.append(sB, sO); defs.append(fShadow)
   const shadow = mk('path', { class: 'ns-lsh', filter: `url(#${id}h)`, mask: `url(#${id}o)` })
-  svg.append(defs, shadow, glow, path, rim, rim2)
+  svg.append(defs, shadow, glow, path, rim)
   const glass = div('ns-liquid-glass'), edge = div('ns-liquid-rim')
   // Lente donde backdrop-filter no admite filtros SVG (Safari, Firefox): si se indica qué hay
   // detrás (data-ns-liquid-src="selector" u o.source: una imagen o un elemento con background-image),
@@ -658,7 +657,9 @@ export function liquid(el, o = {}) {
     const fresh = dirty || frame % 6 == 0
     if (dirty || !V) {
       const cs = getComputedStyle(el), num = (k, d) => { const v = parseFloat(cs.getPropertyValue(k)); return v >= 0 ? v : d }
-      V = { k: num('--ns-liquid', 14), lens: num('--ns-glass-lens', 34), edge: num('--ns-glass-edge', 8), depth: num('--ns-glass-depth', 24), blur: num('--ns-glass-blur', 4), sat: num('--ns-glass-sat', 1.3), src: LENS || !glassy() ? null : source(), prism: !!o.prism?.(), hard: !!o.hard?.(), shadow: cs.getPropertyValue('--ns-glass-shadow').trim(), glow: cs.getPropertyValue('--ns-glass-glow').trim(), glowSize: num('--ns-glass-glow-size', 16), zoom: Math.min(1, num('--ns-glass-zoom', 0)) }
+      V = { k: num('--ns-liquid', 14), lens: num('--ns-glass-lens', 34), edge: num('--ns-glass-edge', 8), depth: num('--ns-glass-depth', 24), blur: num('--ns-glass-blur', 4), sat: num('--ns-glass-sat', 1.3), src: LENS || !glassy() ? null : source(), prism: !!o.prism?.(), hard: !!o.hard?.(), shadow: cs.getPropertyValue('--ns-glass-shadow').trim(), glow: cs.getPropertyValue('--ns-glass-glow').trim(), glowSize: num('--ns-glass-glow-size', 16), zoom: Math.min(1, num('--ns-glass-zoom', 0)),
+        // canto: intensidad y reflejo opuesto (su fuerza y su color: la luz en U lo tiñe)
+        rim: num('--ns-glass-rim', 1), back: num('--ns-glass-rim-back', .5), backColor: cs.getPropertyValue('--ns-glass-rim-color').trim() || '#fff' }
       // si cambió algo del mapa de la lente (al levantarse un indicador, por ejemplo), se regenera ya,
       // aunque la forma siga en marcha; si no, sólo al detenerse
       const vk = [V.lens, V.depth, V.zoom, V.hard, V.prism].join()
@@ -734,7 +735,7 @@ export function liquid(el, o = {}) {
     if (gOn) { setA(glow, { stroke: V.glow, 'stroke-width': r2(gs) }); gBlur.setAttribute('stdDeviation', r2(gs / 2.4)) }
     if (sOn) shadow.setAttribute('fill', V.shadow)
     // segundo reflejo: un contorno 1,6 px hacia dentro (sólo en vidrio)
-    rim2.setAttribute('d', g && d ? contour(f, -1.6) : '')
+    if (g && d) rim.setAttribute('filter', `url(#${material({ rim: true, b: V.hard ? .8 : 1.3, s: 1.3, ks: +(.95 * V.rim).toFixed(2), n: 110, back: V.back, backColor: V.backColor })})`)
     el.classList.toggle('ns-glass', g)
     // (estilo en línea: el relleno de la capa en CSS ganaría a un atributo fill)
     path.style.fill = g ? `url(#${id}s)` : ''

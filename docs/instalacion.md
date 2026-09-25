@@ -68,6 +68,7 @@ Añade una entrada por cada módulo que uses. Cada ruta corresponde a un archivo
 | `ns-frame/mark` | `ns-mark.js` | Resaltado continuo en varias líneas |
 | `ns-frame/liquid` | `ns-liquid.js` | Formas líquidas que se funden y vidrio líquido |
 | `ns-frame/glass` | `ns-glass.js` | Vidrio en cualquier elemento y forma; cristal tallado y prisma |
+| `ns-frame/light` | `ns-light.js` | La luz de la página: materiales en filtros de iluminación (lo usan relieve y vidrio) |
 | `ns-frame/relief` | `ns-relief.js` | Materiales con relieve real y controles que se hunden |
 | `ns-frame/tabs` | `ns-tabs.js` | Pestañas de vidrio líquido que se arrastran |
 | `ns-frame/fx` · `ns-frame/fx.css` | `ns-fx.js` · `ns-fx.css` | Efectos |

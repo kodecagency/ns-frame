@@ -321,6 +321,13 @@ El material de `ns-frame/liquid` (cuerpo, lente, canto, reflejos) sobre cualquie
 - **`"u"` — luz en U dentro del cristal.** El tinte del vidrio lleva la luz en U de la base (`--ns-u`) y el canto de abajo brilla con su color aunque la luz venga de otro lado, como el borde de `ns-u`.
 - **Aumento** (`--ns-glass-zoom`, 0–1): todo el interior aumenta lo que hay debajo, como una lupa (lo usa el indicador de `ns-frame/tabs` al levantarse). El mapa de la lente se regenera en cuanto cambian sus variables, aunque la forma siga en marcha.
 
+#### La luz de la página (`ns-frame/light`)
+
+El motor que comparten el relieve y el canto del vidrio: **una sola luz direccional para toda la página** (arriba, algo a la izquierda; el puntero la gira un poco, en el móvil el desplazamiento, con movimiento reducido queda fija) y los **materiales compilados en filtros SVG de iluminación** (`feDiffuseLighting`, `feSpecularLighting`), que el navegador calcula a la resolución real de la pantalla. Todo lo que tiene volumen se ilumina desde el mismo sitio, así que un panel con relieve, una barra de vidrio y un botón combinan sin contradecirse. `material(parámetros)` devuelve el id de un `<filter>`; cada combinación se compila una vez y la comparten todas las piezas que la usan.
+
+- **Superficie** (relieve): cara de su color, línea de luz en el canto, sombras de contacto y ambiente, hundido.
+- **Canto** (vidrio): sólo la luz del canto, sin cara: una línea especular donde el borde mira a la luz y un reflejo tenue enfrente. En el vidrio: `--ns-glass-rim` (intensidad), `--ns-glass-rim-back` (reflejo opuesto, 0–1) y `--ns-glass-rim-color` (su color: la variante `u` lo tiñe con `--ns-u`).
+
 #### Relieve (`ns-frame/relief`)
 
 ```html

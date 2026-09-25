@@ -149,6 +149,12 @@ export function shift(d: string, dx: number, dy: number): string
  */
 export function glass(el: HTMLElement, options?: LiquidOptions): { update(): void; frame(): void; destroy(): void }
 
+// ── ns-frame/light ──
+/** Parámetros de un material: superficie (relieve) o canto (rim: true, vidrio). */
+export interface Material { b: number; s: number; ks: number; n: number; amb?: number; sh?: [number, number, number][]; inset?: number; rim?: boolean; back?: number; backColor?: string }
+/** Compila un material en un <filter> compartido e iluminado por la luz de la página; devuelve su id. */
+export function material(m: Material): string
+
 // ── ns-frame/relief ──
 /**
  * Motor de materiales (filtros de iluminación SVG) sobre la silueta exacta de la pieza (ns-frame o

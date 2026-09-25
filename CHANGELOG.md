@@ -6,6 +6,11 @@
 - Sin el error global «ResizeObserver loop completed with undelivered notifications» (WebKit lo lanzaba como excepción): el margen seguro de `data-ns-pad` se aplica en el frame siguiente cuando viene de un ResizeObserver, y `ns-link` ya no observa el `<body>` (compara la altura del documento en eventos baratos).
 - Todas las páginas del sitio revisadas en WebKit (motor de Safari) sin errores.
 
+### La luz de la página (`ns-frame/light`, nuevo)
+- Motor compartido: una sola luz direccional para toda la página y materiales compilados en filtros SVG de iluminación (una vez por combinación, compartidos). Lo usan el relieve y el canto del vidrio: todo se ilumina desde el mismo sitio y combina.
+- Vidrio (`ns-liquid`, `ns-glass`, `ns-tabs`): el canto deja los trazos con degradado y la capa canvas por la luz de `ns-light`: una línea especular nítida a cualquier zoom donde el borde mira a la luz y un reflejo tenue enfrente (`--ns-glass-rim`, `-rim-back`, `-rim-color`; la variante `u` lo tiñe). `ns-glass` pasa de 5,8 a 2,5 KB.
+- Pestañas: el indicador en reposo es una cápsula limpia (lente suave, sin reflejar el canto de la barra); la lente fuerte y el aumento, al levantarse.
+
 ### Relieve (`ns-frame/relief`, nuevo) y vidrio que aumenta
 - `data-ns-relief`: un **motor de materiales** sobre los filtros de iluminación de SVG (difusa, especular y luz direccional), calculado por el navegador a la resolución real de la pantalla: nítido a cualquier zoom y en todos los motores. De la silueta exacta salen la cara de su color, la línea de luz del canto, dos sombras (contacto y ambiente) y el hundido. Materiales como parámetros (`surface`, `raised`, `knob`, `inset`; tonos `metal`, `paper`; variables finas), compilados una vez en filtros compartidos; una sola luz para la página.
 - Estado en el volumen: se hunde al pulsar (puntero y teclado), con `aria-pressed` / `aria-checked` y con `inset`; `select` sube al estar elegido (el segmento activo en su carril, como iOS) y `ghost` no dibuja nada hasta pulsarse.

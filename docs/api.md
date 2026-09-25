@@ -53,7 +53,8 @@ await open(panel, 'iris', 500)
 | `ns-frame/mark` | `outline(rects, px?, py?)` → polígonos · `refresh()` |
 | `ns-frame/liquid` | `liquid(el, { blobs, k, step, glass, source })` → `{ update(), frame(), destroy() }` · `field()`, `contour()`, `blend(boxes, k?, step?)` → `d` |
 | `ns-frame/glass` | `glass(el, opciones de liquid)` → `{ update(), frame(), destroy() }` · automático con `data-ns-glass` (`clear`, `tint`, `facet`, `prism`) · en `ns-frame/liquid`: `pathField(d, w, h, step?)`, `shift(d, dx, dy)` |
-| `ns-frame/relief` | `relief(el)` → `{ update(), destroy() }` · automático con `data-ns-relief` (`ceramic`, `paper`, `metal`, `clay`, `flat`, `inset`) |
+| `ns-frame/light` | `material(parámetros)` → id de un `<filter>` compartido, iluminado por la luz de la página |
+| `ns-frame/relief` | `relief(el)` → `{ update(), destroy() }` · automático con `data-ns-relief` (`surface`, `raised`, `knob`, `inset`, `select`, `ghost`; tonos `metal`, `paper`) |
 | `ns-frame/tabs` | `tabs(el, { items })` → `{ select(i), index, destroy() }` · evento `change` con `detail { index, tab }` |
 | `ns-frame/fx` | `decode(el, ms?)` |
 | `ns-frame/audit` | `audit({ root, mark, margin, clearance })` → problemas encontrados |

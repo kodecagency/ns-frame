@@ -31,6 +31,7 @@
     "./concentric": { "types": "./types/modules.d.ts", "default": "./dist/ns-concentric.js" },
     "./flow": { "types": "./types/modules.d.ts", "default": "./dist/ns-flow.js" },
     "./mark": { "types": "./types/modules.d.ts", "default": "./dist/ns-mark.js" },
+    "./light": { "types": "./types/modules.d.ts", "default": "./dist/ns-light.js" },
     "./liquid": { "types": "./types/modules.d.ts", "default": "./dist/ns-liquid.js" },
     "./tabs": { "types": "./types/modules.d.ts", "default": "./dist/ns-tabs.js" },
     "./glass": { "types": "./types/modules.d.ts", "default": "./dist/ns-glass.js" },
