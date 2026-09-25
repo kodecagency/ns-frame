@@ -201,15 +201,14 @@ const ACTIONS = [
 </section>
 
 <script>
-  import 'ns-frame/concentric'
-  import 'ns-frame/flow'
-  import 'ns-frame/mark'
-  import 'ns-frame/liquid'
-  import 'ns-frame/tabs'
-  import 'ns-frame/glass'
-  import 'ns-frame/relief'
+  import { near } from '../../scripts/near'
 
   const $ = (id: string) => document.getElementById(id)!
+  // los módulos se cargan y activan al acercarse la sección (se activan solos con sus atributos)
+  near($('imposibles'), () => {
+    import('ns-frame/concentric'); import('ns-frame/flow'); import('ns-frame/mark')
+    import('ns-frame/liquid'); import('ns-frame/tabs'); import('ns-frame/glass'); import('ns-frame/relief')
+  })
   const press = (g: HTMLElement, b: Element) => g.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x == b)))
   const on = (id: string, attr: string, fn: (v: string) => void) => $(id).addEventListener('click', e => {
     const b = (e.target as Element).closest<HTMLElement>(`button[${attr}]`)

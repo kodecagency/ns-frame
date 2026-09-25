@@ -104,12 +104,12 @@ const MODES = ['open', 'split', 'iris', 'wipe', 'drop']
 </section>
 
 <script>
-  import 'ns-frame/skel'
-  import 'ns-frame/carousel'
-  import 'ns-frame/pop'
   import { open, close } from 'ns-frame'
-  import { toast } from 'ns-frame/toast'
-  import { sheet } from 'ns-frame/sheet'
+  import { near } from '../../scripts/near'
+
+  // los módulos de la sección, al acercarse (skel, carousel y pop se activan solos con sus atributos)
+  near(document.getElementById('componentes')!, () => { import('ns-frame/skel'); import('ns-frame/carousel'); import('ns-frame/pop') })
+  const toast = async (...a: Parameters<typeof import('ns-frame/toast').toast>) => (await import('ns-frame/toast')).toast(...a)
 
   const MSG: Record<string, () => void> = {
     ok: () => toast('Los cambios del informe quedaron guardados.', { type: 'ok', title: 'Guardado' }),
@@ -144,7 +144,12 @@ const MODES = ['open', 'split', 'iris', 'wipe', 'drop']
 
   // hoja arrastrable (ns-frame/sheet) dentro de un <dialog> nativo: el fondo se aclara con --ns-sheet-p
   const sd = document.getElementById('sht') as HTMLDialogElement, sp = document.getElementById('sht-panel')!
-  const hs = sheet(sp, { onProgress: p => sd.style.setProperty('--p', String(p)), onClose: () => { sd.close(); sd.style.removeProperty('--p') } })
+  // (la hoja se monta al acercarse la sección; hasta entonces, cerrar es cerrar el diálogo)
+  let hs = { close: () => sd.close() }
+  near(sp.closest('section')!, async () => {
+    const { sheet } = await import('ns-frame/sheet')
+    hs = sheet(sp, { onProgress: p => sd.style.setProperty('--p', String(p)), onClose: () => { sd.close(); sd.style.removeProperty('--p') } })
+  })
   document.getElementById('sht-open')!.addEventListener('click', () => {
     sd.showModal()
     if (!matchMedia('(prefers-reduced-motion: reduce)').matches) sp.animate([{ translate: '0 100%' }, { translate: '0 0' }], { duration: 380, easing: 'cubic-bezier(.2,.8,.2,1)' })

@@ -42,7 +42,9 @@ const PRESETS = ['card', 'button', 'chip', 'soft', 'notch', 'scoop', 'wing', 'pa
 
 <script>
   import { PRESETS, path } from 'ns-frame'
-  import { css } from 'ns-frame/css'
+  import { near } from '../../scripts/near'
+  // el compilador a CSS, al acercarse la sección (hasta entonces no hay nada que mostrar)
+  let css: (s: string) => string | null = () => null
 
   const $ = (id: string) => document.getElementById(id)!
   const src = $('pg-src') as HTMLTextAreaElement, pv = $('pg-pv'), chips = $('pg-chips')
@@ -66,7 +68,6 @@ const PRESETS = ['card', 'button', 'chip', 'soft', 'notch', 'scoop', 'wing', 'pa
   }
   const later = () => { raf ||= requestAnimationFrame(refresh) }
   src.addEventListener('input', later)
-  new ResizeObserver(later).observe(pv)
   chips.addEventListener('click', e => {
     const b = (e.target as Element).closest<HTMLElement>('[data-p]')
     if (!b) return
@@ -86,7 +87,11 @@ const PRESETS = ['card', 'button', 'chip', 'soft', 'notch', 'scoop', 'wing', 'pa
     try { await navigator.clipboard.writeText($(b.dataset.copy!).textContent!); b.textContent = 'Copiado' } catch { b.textContent = 'No se pudo' }
     setTimeout(() => (b.textContent = 'Copiar'), 1400)
   }))
-  refresh()
+  near($('playground'), async () => {
+    css = (await import('ns-frame/css')).css as typeof css
+    new ResizeObserver(later).observe(pv)
+    refresh()
+  })
 </script>
 
 <style>

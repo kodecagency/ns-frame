@@ -35,7 +35,9 @@ const max = 8.9 // el núcleo es el módulo más grande
 </section>
 
 <script>
-  import 'ns-frame/bento'
+  import { near } from '../../scripts/near'
+  // el bento se activa al acercarse la sección
+  near(document.getElementById('cifras')!, () => { import('ns-frame/bento') })
 </script>
 
 <style>
