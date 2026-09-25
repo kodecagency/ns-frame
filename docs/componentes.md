@@ -289,7 +289,9 @@ El material del Liquid Glass de Apple, en capas, con la forma exacta del grupo (
    `data-ns-liquid-src` (o la opción `source`) es un selector —se busca el más cercano subiendo por los antepasados—, un elemento, `page` para la escena o `none` para desactivarlo. La copia sigue al original al desplazarse, sin recalcular la forma, y se recorta a la forma antes de la lente (como hace Chromium con el fondo): lo que queda fuera no entra doblado por el canto.
 
    **Tono:** sobre un fondo claro liso el vidrio se aclara solo, como el de Apple (clase `ns-glass-light`, tinte `--ns-glass-tint-light`), y vuelve a oscurecerse sobre uno oscuro al desplazarse. Sobre una foto o un degradado no cambia. `--ns-glass-ink` da el color de texto que contrasta con el tono actual (`color: var(--ns-glass-ink)`); un `--ns-glass-tint` propio manda sobre todo esto.
-3. **Canto:** un brillo junto al borde que se desvanece hacia dentro, sin línea interior (`--ns-glass-edge`, 8px). En todos los navegadores.
+3. **Canto:** un brillo junto al borde que se desvanece hacia dentro, sin línea interior (`--ns-glass-edge`, 8px). Va dentro del filtro de la lente (Chromium no recorta un `backdrop-filter` con la máscara del propio elemento); sin lente, una capa aparte de respaldo. En todos los navegadores.
+
+> El contenido de un vidrio va dentro de elementos (`<button><span>+</span></button>`): un texto suelto quedaría bajo las capas del vidrio.
 4. **Luz:** un reflejo especular fino que recoge la luz arriba y la devuelve tenue abajo, y un brillo interior (`--ns-glass-shine`, 0–1).
 
 - El recorte es una máscara SVG del propio documento (`mask: url(#…)`, se actualiza cambiando un `<path>`, sin imágenes) y además `clip-path: path()`: Chromium no aplica un `clip-path` libre al desenfoque de fondo si un antepasado recorta con esquinas redondeadas (lo normal en una tarjeta) y pintaría el rectángulo entero; la máscara sí la respeta. WebKit, al revés: no aplica a HTML una máscara que apunta a un `<mask>` del documento (la capa desaparecería entera), así que allí el cuerpo se recorta sólo con `clip-path` y el canto usa la misma máscara como imagen SVG en línea.

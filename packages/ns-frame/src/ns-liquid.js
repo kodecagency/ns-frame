@@ -51,7 +51,9 @@ const CSS = `@layer ns{
 .ns-glass>.ns-liquid-src:not([hidden]){display:block}
 .ns-glass>.ns-liquid-glass{display:block;transition:background-color .35s;background:var(--ns-glass-tint,rgba(22,22,26,.22));-webkit-backdrop-filter:blur(var(--ns-glass-blur,4px)) saturate(var(--ns-glass-sat,1.3));backdrop-filter:blur(var(--ns-glass-blur,4px)) saturate(var(--ns-glass-sat,1.3))}
 .ns-glass{--ns-glass-ink:#fff}.ns-glass.ns-glass-light{--ns-glass-ink:#111}
-.ns-glass.ns-glass-light>.ns-liquid-glass{background:var(--ns-glass-tint,var(--ns-glass-tint-light,rgba(255,255,255,.34)))}
+.ns-glass.ns-glass-light>.ns-liquid-glass{background:var(--ns-glass-tint,var(--ns-glass-tint-light,rgba(255,255,255,.16)));-webkit-backdrop-filter:blur(var(--ns-glass-blur,7px)) saturate(var(--ns-glass-sat,1.2)) brightness(1.03);backdrop-filter:blur(var(--ns-glass-blur,7px)) saturate(var(--ns-glass-sat,1.2)) brightness(1.03)}
+.ns-glass.ns-glass-light>.ns-liquid-fx .ns-lf{stroke:rgba(0,0,0,.09);stroke-width:1px}
+.ns-glass.ns-glass-light>.ns-liquid-rim{-webkit-backdrop-filter:blur(1.5px) brightness(1.04) saturate(1.3) contrast(1.05);backdrop-filter:blur(1.5px) brightness(1.04) saturate(1.3) contrast(1.05)}
 .ns-glass>.ns-liquid-rim{display:block;-webkit-backdrop-filter:blur(1.5px) brightness(1.22) saturate(1.15) contrast(1.06);backdrop-filter:blur(1.5px) brightness(1.22) saturate(1.15) contrast(1.06)}
 .ns-glass>.ns-liquid-fx .ns-lf{stroke:none;opacity:var(--ns-glass-shine,1)}
 .ns-liquid-fx .ns-lg{fill:none}
@@ -500,19 +502,33 @@ export function liquid(el, o = {}) {
     if (L.prism === prism) return
     L.prism = prism
     const D = (s, k) => mk('feDisplacementMap', { in: 'SourceGraphic', in2: 'm', xChannelSelector: 'R', yChannelSelector: 'G', result: s, 'data-k': k })
-    if (!prism) { L.disp = [D('d', 1)]; L.f.replaceChildren(L.map, ...L.disp, L.blur, L.sat); return }
+    if (!prism) { L.disp = [D('d', 1)]; L.f.replaceChildren(L.map, ...L.disp, L.blur, L.sat, ...L.rim); return }
     // (cada uno conserva su canal con alfa 1; la suma aritmética recorta el alfa a 1 y el color queda entero)
     const keep = (i, s) => mk('feColorMatrix', { in: s, result: s + 'c', type: 'matrix', values: [0, 1, 2].map(r => [0, 1, 2, 3, 4].map(c => +(r == i && c == i)).join(' ')).join(' ') + ' 0 0 0 1 0' })
     L.disp = [D('r', 1.12), D('g', 1), D('b', .88)]
     const add = (a, b, s) => mk('feComposite', { in: a, in2: b, operator: 'arithmetic', k2: 1, k3: 1, result: s })
-    L.f.replaceChildren(L.map, ...L.disp, keep(0, 'r'), keep(1, 'g'), keep(2, 'b'), add('rc', 'gc', 'rg'), add('rg', 'bc', 'd'), L.blur, L.sat)
+    L.f.replaceChildren(L.map, ...L.disp, keep(0, 'r'), keep(1, 'g'), keep(2, 'b'), add('rc', 'gc', 'rg'), add('rg', 'bc', 'd'), L.blur, L.sat, ...L.rim)
+  }
+  // El canto va dentro del mismo filtro: lo de detrás, más luminoso y saturado, sólo en una franja
+  // junto al borde (una imagen: el trazo del contorno desenfocado y recortado a la forma). Una capa
+  // aparte con backdrop-filter y máscara no sirve: Chromium no recorta el desenfoque de fondo con la
+  // máscara del propio elemento y aclaraba el vidrio entero
+  const rimChain = () => {
+    const img = mk('feImage', { result: 'e', preserveAspectRatio: 'none' })
+    const sat = mk('feColorMatrix', { in: 'o', type: 'saturate', result: 'es' })
+    const tone = mk('feComponentTransfer', { in: 'es', result: 'et' }), fn = ['R', 'G', 'B'].map(c => mk('feFunc' + c, { type: 'linear' }))
+    tone.append(...fn)
+    const cut = mk('feComposite', { in: 'et', in2: 'e', operator: 'in', result: 'ei' }), merge = mk('feMerge')
+    merge.append(mk('feMergeNode', { in: 'o' }), mk('feMergeNode', { in: 'ei' }))
+    return { img, sat, fn, nodes: [img, sat, tone, cut, merge] }
   }
   const lenses = [0, 1].map(n => {
     // (fuera de Chromium, región del objeto: WebKit pierde el elemento entero con userSpaceOnUse)
     const f = mk('filter', LENS ? { id: id + 'l' + n, x: 0, y: 0, filterUnits: 'userSpaceOnUse', 'color-interpolation-filters': 'sRGB' } : { id: id + 'l' + n, x: 0, y: 0, width: 1, height: 1, 'color-interpolation-filters': 'sRGB' })
     const map = mk('feImage', { result: 'm', preserveAspectRatio: 'none' })
-    const blur = mk('feGaussianBlur', { in: 'd', result: 'b' }), sat = mk('feColorMatrix', { in: 'b', type: 'saturate' })
-    const L = { f, map, blur, sat, disp: [], prism: null }
+    const blur = mk('feGaussianBlur', { in: 'd', result: 'b' }), sat = mk('feColorMatrix', { in: 'b', type: 'saturate', result: 'o' })
+    const edge = rimChain()
+    const L = { f, map, blur, sat, edge, rim: edge.nodes, disp: [], prism: null }
     chain(L, false)
     return L
   })
@@ -772,10 +788,12 @@ export function liquid(el, o = {}) {
     origin()
     const fresh = dirty || frame % 6 == 0
     if (dirty || !V) {
-      const cs = getComputedStyle(el), num = (k, d) => { const v = parseFloat(cs.getPropertyValue(k)); return v >= 0 ? v : d }
-      V = { k: num('--ns-liquid', 14), lens: num('--ns-glass-lens', 34), edge: num('--ns-glass-edge', 8), depth: num('--ns-glass-depth', 24), blur: num('--ns-glass-blur', 4), sat: num('--ns-glass-sat', 1.3), src: LENS || !glassy() ? null : source(), prism: !!o.prism?.(), hard: !!o.hard?.(), shadow: cs.getPropertyValue('--ns-glass-shadow').trim(), glow: cs.getPropertyValue('--ns-glass-glow').trim(), glowSize: num('--ns-glass-glow-size', 16), zoom: Math.min(1, num('--ns-glass-zoom', 0)),
+      // (el tono va antes: el vidrio claro desenfoca y satura más por defecto)
+      tone()
+      const cs = getComputedStyle(el), num = (k, d) => { const v = parseFloat(cs.getPropertyValue(k)); return v >= 0 ? v : d }, lt = el.classList.contains('ns-glass-light')
+      V = { k: num('--ns-liquid', 14), lens: num('--ns-glass-lens', 34), edge: num('--ns-glass-edge', 8), depth: num('--ns-glass-depth', 24), blur: num('--ns-glass-blur', lt ? 7 : 4), sat: num('--ns-glass-sat', lt ? 1.2 : 1.3), src: LENS || !glassy() ? null : source(), prism: !!o.prism?.(), hard: !!o.hard?.(), shadow: cs.getPropertyValue('--ns-glass-shadow').trim(), glow: cs.getPropertyValue('--ns-glass-glow').trim(), glowSize: num('--ns-glass-glow-size', 16), zoom: Math.min(1, num('--ns-glass-zoom', 0)),
         // canto: intensidad y reflejo opuesto (su fuerza y su color: la luz en U lo tiñe)
-        rim: num('--ns-glass-rim', 1), back: num('--ns-glass-rim-back', .5), backColor: cs.getPropertyValue('--ns-glass-rim-color').trim() || '#fff' }
+        light: lt, rim: num('--ns-glass-rim', 1), back: num('--ns-glass-rim-back', .5), backColor: cs.getPropertyValue('--ns-glass-rim-color').trim() || '#fff' }
       // si cambió algo del mapa de la lente (al levantarse un indicador, por ejemplo), se regenera ya,
       // aunque la forma siga en marcha; si no, sólo al detenerse
       const vk = [V.lens, V.depth, V.zoom, V.hard, V.prism].join()
@@ -784,14 +802,13 @@ export function liquid(el, o = {}) {
       if (lenses[0].prism !== V.prism) { lenses.forEach(L => chain(L, V.prism)); lensKey = ''; lastPre = '' }
       // (el clon del DOM y el de fotogramas se rehacen sólo si cambia el original; la imagen y el
       // fondo, que no cuestan nada, siempre: pueden haber cambiado de src o de estilo)
-      tone()
       if (V.src != mirrored || ((kind == 'img' || kind == 'bg') && sig(V.src) != msig)) { mirrored = V.src; msig = V.src ? sig(V.src) : ''; V.src ? mirror(V.src) : unmirror() }
     }
     dirty = false; frame++
     const k = o.k ?? V.k
     const g = glassy(), src = g ? V.src : null, lensPx = g && (LENS || src) ? V.lens : 0, edgePx = V.edge, depth = V.depth
     const S = src?.getBoundingClientRect()
-    const tail = `|${g}|${lensPx}|${edgePx}|${!!src}|${depth}|${V.blur}|${V.sat}|${V.hard}|${V.shadow}|${V.glow}`
+    const tail = `|${g}|${lensPx}|${edgePx}|${!!src}|${depth}|${V.blur}|${V.sat}|${V.light}|${V.hard}|${V.shadow}|${V.glow}`
     let bx, by, bw, bh, pre, make
     if (o.path) {
       // Una forma cualquiera (ns-frame/glass): el path del propio elemento, en su caja de borde. Las
@@ -859,7 +876,7 @@ export function liquid(el, o = {}) {
     // (WebKit no aplica a HTML una máscara que apunta a un <mask> del documento: la capa entera
     // desaparece. Allí el cuerpo se recorta sólo con clip-path, y el canto usa la misma máscara
     // como imagen SVG en línea)
-    const mb = g && d && !WK ? `url(#${id}m)` : '', me = g && d ? (WK ? rimImage(d, bw, bh, edgePx) : `url(#${id}e)`) : ''
+    const mb = g && d && !WK ? `url(#${id}m)` : '', me = g && d ? rimImage(d, bw, bh, edgePx) : ''
     glass.style.mask = glass.style.webkitMask = mb
     setRim(me)
     // y además clip-path: si un navegador no aplica una máscara SVG del documento a un elemento
@@ -871,9 +888,11 @@ export function liquid(el, o = {}) {
     for (const M of [maskB, maskE]) setA(M, { width: r2(bw), height: r2(bh) })
     mBody.setAttribute('d', d); mEdge.setAttribute('d', d); cEdge.setAttribute('d', d)
     mEdge.setAttribute('stroke-width', r2(edgePx * 1.6)); eBlur.setAttribute('stdDeviation', r2(edgePx / 2.2))
+    // (con lente, el canto va dentro de su filtro; la capa aparte sólo queda de respaldo)
+    edge.style.display = lensPx && (LENS || src) ? 'none' : ''
     if (!lensPx) { glass.style.backdropFilter = back.style.filter = ''; now = null; return }
     // sobre la copia, la lente sólo desplaza: el desenfoque y la saturación los pone el cuerpo encima
-    now = { f, d, bw, bh, depth, lensPx, blur: src ? 0 : V.blur, sat: src ? 1 : V.sat, src: !!src, hard: V.hard, zoom: V.zoom }
+    now = { f, d, bw, bh, depth, lensPx, blur: src ? 0 : V.blur, sat: src ? 1 : V.sat, src: !!src, hard: V.hard, zoom: V.zoom, light: V.light, rim: me.slice(5, -2) }
     // en marcha: el mapa vigente sigue a la forma (se estira); el nuevo llega al detenerse. Sobre la
     // copia (fuera de Chromium) el mapa va con la capa y se estira a su tamaño: vale mientras la
     // forma se desplaza o se estira un poco (un indicador que se levanta); si cambia mucho (unas
@@ -888,7 +907,7 @@ export function liquid(el, o = {}) {
   // canto en WebKit (imagen SVG en línea): la nueva sólo entra ya decodificada; mientras, sigue la
   // anterior (antes, durante un frame no había máscara y el canto brillaba entero: parpadeo)
   const setRim = u => {
-    if (!WK || !u) { rimTok++; edge.style.mask = edge.style.webkitMask = u; return }
+    if (!u) { rimTok++; edge.style.mask = edge.style.webkitMask = u; return }
     const t = ++rimTok, im = new Image(), go = () => { if (t == rimTok) edge.style.mask = edge.style.webkitMask = u }
     im.src = u.slice(5, -2)
     im.decode ? im.decode().then(go, go) : go()
@@ -901,12 +920,19 @@ export function liquid(el, o = {}) {
     for (const n of L.disp) n.setAttribute('scale', r2(s.lensPx * (s.src ? lk : 1) * n.getAttribute('data-k')))
     L.blur.setAttribute('stdDeviation', s.blur / 2)
     L.sat.setAttribute('values', s.sat)
+    // canto: brillo b y contraste c (como brightness() y contrast() de CSS) y más saturación; en el
+    // vidrio claro, apenas más brillo (sobre un fondo claro, el canto se iría a blanco)
+    const E = L.edge, b = s.light ? 1.04 : 1.22, c = s.light ? 1.05 : 1.06
+    if (E.img.getAttribute('href') != s.rim) E.img.setAttribute('href', s.rim)
+    setA(E.img, { width: r2(s.bw), height: r2(s.bh) })
+    E.sat.setAttribute('values', s.light ? 1.1 : 1.15)
+    for (const f of E.fn) setA(f, { slope: +(b * c).toFixed(3), intercept: +(b * (.5 - .5 * c)).toFixed(3) })
   }
   // mapa nuevo en el filtro libre; se cambia de filtro cuando la imagen ya está decodificada
   const refreshLens = () => {
     const s = now
     if (!s) return
-    const k = [s.d, s.bw, s.bh, s.depth, s.lensPx, s.blur, s.sat, s.src, s.hard, s.zoom].join('|')
+    const k = [s.d, s.bw, s.bh, s.depth, s.lensPx, s.blur, s.sat, s.src, s.hard, s.zoom, s.light, s.rim.length].join('|')
     if (k == lensKey) return
     lensKey = k
     const n = cur < 0 ? 0 : 1 - cur, L = lenses[n], t = ++token

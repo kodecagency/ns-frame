@@ -8,7 +8,8 @@
 - Vidrio en Safari y Firefox sobre **cualquier** fondo: si detrás no hay una imagen limpia (una barra fija sobre texto y tarjetas, una foto con un título encima), la lente se aplica a la **escena**, un clon de la página sólo en la zona bajo el vidrio, que se rehace al cambiar la página o al desplazarse. Antes se quedaba sin lente. `data-ns-liquid-src="page"` la fuerza.
 - La copia se recorta a la forma antes de la lente, como Chromium: el canto ya no muestra lo de fuera doblado ni dentado.
 - Los clones ya no llevan los atributos `data-ns*` (la biblioteca los activaba otra vez).
-- Tono automático: sobre un fondo claro liso el vidrio se aclara (`ns-glass-light`, `--ns-glass-tint-light`) y `--ns-glass-ink` da el color de texto que contrasta; sobre fotos no cambia.
+- Tono automático: sobre un fondo claro liso el vidrio se aclara (`ns-glass-light`, `--ns-glass-tint-light`) y `--ns-glass-ink` da el color de texto que contrasta; sobre fotos no cambia. El vidrio claro desenfoca más (7px) para que el texto de detrás no compita con las etiquetas, y lleva un filo fino que define la forma.
+- El canto (más brillo y saturación junto al borde) va dentro del filtro de la lente, recortado con una imagen del borde. Antes era una capa con `backdrop-filter` y máscara, y Chromium ignora esa máscara: aclaraba el vidrio entero (en el claro, hasta blanco). La capa queda sólo de respaldo donde no hay lente.
 
 ### La luz de la página (`ns-frame/light`, nuevo)
 - Motor compartido: una sola luz direccional para toda la página y materiales compilados en filtros SVG de iluminación (una vez por combinación, compartidos). Lo usan el relieve y el canto del vidrio: todo se ilumina desde el mismo sitio y combina.
