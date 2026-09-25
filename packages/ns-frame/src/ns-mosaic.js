@@ -14,6 +14,7 @@
 // Requiere ns-frame.js (que dibuja las formas). CSP-safe: estilos por constructable stylesheet.
 
 import { styles as inject, path } from './ns-frame.js'
+import { flow, unflow } from './ns-flow.js'
 
 const CSS = `@layer ns{
 .ns-mosaic{display:grid;position:relative;gap:var(--ns-gap,14px);grid-template-columns:repeat(var(--ns-cn,3),minmax(0,1fr));grid-template-rows:repeat(var(--ns-rn,2),var(--ns-row,150px))}
@@ -220,91 +221,6 @@ function fit(el) {
     }
     setIn(k, best)
   }
-}
-
-// ── Texto que fluye por la figura. CSS no tiene shape-inside, pero sí shape-outside: dos flotantes
-// invisibles, a izquierda y derecha, dibujan lo que NO es pieza, y el texto se acomoda línea a
-// línea dentro del contorno real (curvas, mordidas del orbe y huecos incluidos), con --ns-pad de
-// margen en todo el borde. El contorno se mide con Path2D (sin DOM): filas cada 2 px.
-let c2d
-function profile(d, w, h, pad) {
-  c2d ||= document.createElement('canvas').getContext('2d')
-  const P = new Path2D(d), S = 2, n = Math.ceil(h / S) + 1, raw = [], inn = (x, y) => c2d.isPointInPath(P, x, y)
-  // borde exacto entre a (fuera) y b (dentro), por bisección
-  const edge = (a, b, y) => { while (Math.abs(b - a) > .25) { const m = (a + b) / 2; inn(m, y) ? b = m : a = m } return b }
-  for (let i = 0; i < n; i++) {
-    const y = Math.min(h - .25, i * S + .25)
-    let l = null, r = null
-    for (let x = .25; x < w; x += 6) if (inn(x, y)) { l = x == .25 ? 0 : edge(x - 6, x, y); break }
-    if (l != null) for (let x = w - .25; x > l; x -= 6) if (inn(x, y)) { r = x == w - .25 ? w : edge(x + 6, x, y); break }
-    raw.push(l == null ? null : [l, r ?? l])
-  }
-  // erosión con un disco de radio pad: cada punto del texto queda a ≥ pad del contorno, también en
-  // las curvas (un cuadrado sangraría de más en las esquinas redondeadas)
-  const k = Math.ceil(pad / S)
-  return raw.map((_, i) => {
-    let L = -1e9, R = 1e9
-    for (let j = i - k; j <= i + k; j++) {
-      const q = raw[j], dy = Math.abs(j - i) * S
-      if (dy >= pad) continue
-      if (!q) return null
-      const c = Math.sqrt(pad * pad - dy * dy)
-      L = Math.max(L, q[0] + c); R = Math.min(R, q[1] - c)
-    }
-    return L < R - 1 ? [L, R] : null
-  })
-}
-// Cada franja lleva un par de flotantes (izquierdo hasta s, derecho desde s + 1) que se apilan con
-// clear; una franja crece mientras todas sus filas quepan a los dos lados de un mismo s. Así una
-// escalera o una T se describen con dos o tres franjas.
-function flow({ k, d, w, h }, pad) {
-  if (w < 4 * pad || h < 2 * pad) return false
-  // misma silueta, mismo tamaño y mismo margen: los flotantes ya están bien (no se vuelve a medir)
-  const key = d + '|' + w + '|' + h + '|' + pad
-  if (k._nsFK == key && k._nsF && k.classList.contains('ns-flow')) return true
-  k._nsFK = key
-  const rows = profile(d, w, h, pad), S = 2
-  if (!rows.some(Boolean)) return false
-  const bands = []
-  let b = null
-  rows.forEach((q, i) => {
-    if (b && (!q || (Math.max(b.s, q[0]) <= Math.min(b.m, q[1]) - 1))) { if (q) { b.s = Math.max(b.s, q[0]); b.m = Math.min(b.m, q[1]) } b.i1 = i; return }
-    bands.push(b = { i0: i, i1: i, s: q ? q[0] : -1e9, m: q ? q[1] : 1e9 })
-  })
-  // franjas sin ninguna fila útil (margen superior o inferior): se cierran por la mitad
-  for (const x of bands) if (x.s < -1e8) x.s = w / 2
-  const F = k._nsF ||= []
-  const mk2 = c => { const e = document.createElement('i'); e.className = 'ns-f' + c; e.setAttribute('aria-hidden', 'true'); return e }
-  while (F.length < bands.length * 2) F.push(mk2(F.length % 2 ? 'r' : 'l'))
-  F.splice(bands.length * 2).forEach(e => e.remove())
-  if (F.some((e, i) => k.children[i] != e)) k.prepend(...F)
-  bands.forEach(({ i0, i1, s }, n) => {
-    const y0 = i0 * S, y1 = n == bands.length - 1 ? h : (i1 + 1) * S, bh = y1 - y0, wr = Math.max(0, w - s - 1)
-    const lp = [], rp = []
-    for (let i = i0; i <= i1; i++) {
-      // en cada tramo de 2 px se toma lo más estrecho de sus dos filas (nunca invade el margen)
-      const a = rows[i], c = rows[Math.min(i + 1, i1)], t0 = i * S - y0, t1 = Math.min(bh, t0 + S)
-      const l = Math.min(s, Math.max(a ? a[0] : s, c ? c[0] : s)), r = Math.max(s + 1, Math.min(a ? a[1] : s + 1, c ? c[1] : s + 1))
-      lp.push(`${fx(l)}px ${fx(t0)}px`, `${fx(l)}px ${fx(t1)}px`)
-      rp.push(`${fx(r - s - 1)}px ${fx(t0)}px`, `${fx(r - s - 1)}px ${fx(t1)}px`)
-    }
-    const put = (e, width, pts, edge) => {
-      e.style.width = fx(width) + 'px'; e.style.height = fx(bh) + 'px'
-      e.style.setProperty('shape-outside', `polygon(${fx(edge)}px 0px, ${pts.join(', ')}, ${fx(edge)}px ${fx(bh)}px)`)
-    }
-    put(F[2 * n], s, lp, 0)
-    put(F[2 * n + 1], wr, rp, wr)
-  })
-  k.classList.add('ns-flow')
-  k._nsIn = null
-  return true
-}
-function unflow(k) {
-  if (!k._nsF) return
-  k._nsF.forEach(e => e.remove())
-  k._nsF = null
-  k._nsFK = ''
-  k.classList.remove('ns-flow')
 }
 
 function layout() {

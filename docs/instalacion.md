@@ -1,48 +1,114 @@
 ---
 title: Instalación
-description: CDN, npm y uso con Astro, React, Vue y Svelte.
+description: CDN, import maps y uso con Astro, React, Vue y Svelte.
 order: 2
 ---
 
 # Instalación
 
+> El paquete de npm llegará más adelante; hasta entonces, no instales ningún paquete llamado ns-frame desde npm: no es nuestro.
+
 ## Por CDN (sin build)
 
+ns-frame se sirve desde jsDelivr, directamente de las etiquetas de este repositorio:
+
 ```html
-<script type="module" src="https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.8.0/packages/ns-frame/dist/ns-frame.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.9.0/packages/ns-frame/dist/ns-frame.js"></script>
 <!-- opcional: efectos 100 % CSS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.8.0/packages/ns-frame/dist/ns-fx.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.9.0/packages/ns-frame/dist/ns-fx.css">
 ```
 
-Los módulos opcionales se cargan igual, desde la misma carpeta `dist/` (por ejemplo `dist/ns-toast.js`). Fija siempre la versión en la URL (`@v0.8.0`): así una actualización nunca te cambia el sitio sin avisar.
+Los módulos opcionales se cargan igual, desde la misma carpeta `dist/` (por ejemplo `dist/ns-toast.js` o `dist/ns-mosaic.js`). Fija siempre la versión en la URL (`@v0.9.0`): así una actualización nunca te cambia el sitio sin avisar.
 
-## Con npm (pnpm, npm o yarn)
-
-```bash
-pnpm add ns-frame
+```html
+<script type="module">
+  import { toast } from 'https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.9.0/packages/ns-frame/dist/ns-toast.js'
+  toast('Cambios guardados', { type: 'ok' })
+</script>
 ```
+
+Cada módulo importa el núcleo por ruta relativa (`./ns-frame.js`), así que núcleo y módulos deben salir **de la misma versión**: con versiones distintas cargarías dos núcleos.
+
+### Módulos que aún no están en `v0.9.0`
+
+`isle`, `concentric`, `flow`, `mark` y `liquid` llegan en la próxima versión etiquetada. Hasta entonces, cárgalos desde `@main`, **con el núcleo también de `@main`**:
+
+```html
+<script type="module" src="https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@main/packages/ns-frame/dist/ns-frame.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@main/packages/ns-frame/dist/ns-flow.js"></script>
+```
+
+`@main` cambia con cada commit (y jsDelivr lo guarda en caché unas horas): úsalo para probar, y pasa a la etiqueta en cuanto exista.
+
+## Import map (nombres cortos sin build)
+
+Para escribir `import … from 'ns-frame/toast'`, como en el resto de esta documentación, declara un import map antes de cualquier módulo:
+
+```html
+<script type="importmap">
+{
+  "imports": {
+    "ns-frame": "https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.9.0/packages/ns-frame/dist/ns-frame.js",
+    "ns-frame/toast": "https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.9.0/packages/ns-frame/dist/ns-toast.js",
+    "ns-frame/vt": "https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.9.0/packages/ns-frame/dist/ns-vt.js"
+  }
+}
+</script>
+<script type="module">
+  import 'ns-frame'                     // activa data-ns en toda la página
+  import { toast } from 'ns-frame/toast'
+  import { morph } from 'ns-frame/vt'
+</script>
+```
+
+Añade una entrada por cada módulo que uses. Cada ruta corresponde a un archivo de `dist/`:
+
+| Ruta | Archivo | Módulo |
+|---|---|---|
+| `ns-frame` | `ns-frame.js` | Núcleo |
+| `ns-frame/lite` | `ns-frame.lite.js` | Sólo recortes (sin capa SVG) |
+| `ns-frame/css` | `ns-css.js` | Compilador a CSS `shape()` |
+| `ns-frame/static` · `ns-frame/astro` | `ns-static.js` · `ns-astro.js` | Formas sin JS en el build (Node) |
+| `ns-frame/vt` | `ns-vt.js` | View Transitions con cortes |
+| `ns-frame/toast` · `skel` · `carousel` · `pop` · `bento` · `link` | `ns-<nombre>.js` | Componentes |
+| `ns-frame/mosaic` | `ns-mosaic.js` (+ `ns-flow.js` desde la próxima versión) | Mosaicos de piezas libres |
+| `ns-frame/sheet` | `ns-sheet.js` | Hoja arrastrable |
+| `ns-frame/isle` | `ns-isle.js` (usa `ns-sheet.js`) | Isla de navegación · `@main` |
+| `ns-frame/concentric` | `ns-concentric.js` | Esquinas concéntricas automáticas · `@main` |
+| `ns-frame/flow` | `ns-flow.js` | Texto que llena la forma · `@main` |
+| `ns-frame/mark` | `ns-mark.js` | Resaltado continuo en varias líneas · `@main` |
+| `ns-frame/liquid` | `ns-liquid.js` | Formas líquidas que se funden · `@main` |
+| `ns-frame/fx` · `ns-frame/fx.css` | `ns-fx.js` · `ns-fx.css` | Efectos |
+| `ns-frame/audit` | `ns-audit.js` | Auditoría de texto recortado (sólo desarrollo) |
+
+Los tipos de TypeScript están en `packages/ns-frame/types/`.
+
+> Los módulos opcionales importan el núcleo completo (`ns-frame.js`). Si usas `ns-frame/lite`, no lo mezcles con ellos: cargarías dos núcleos.
+
+## Con un bundler (Vite, Astro, webpack…)
+
+Mientras no haya paquete de npm, copia los archivos de `packages/ns-frame/dist/` de una etiqueta (por ejemplo `v0.9.0`) a tu proyecto, en una carpeta propia (`src/vendor/ns-frame/`), y apunta el alias `ns-frame` a ella. Con Vite:
 
 ```js
-import 'ns-frame'                     // activa data-ns en toda la página
-import 'ns-frame/fx.css'              // efectos (si tu bundler importa CSS)
-import { toast } from 'ns-frame/toast'
-import { morph } from 'ns-frame/vt'
+// vite.config.js (o `vite` dentro de astro.config.mjs)
+import { fileURLToPath } from 'node:url'
+const dist = fileURLToPath(new URL('./src/vendor/ns-frame/', import.meta.url))
+
+export default {
+  resolve: {
+    alias: [
+      { find: /^ns-frame$/, replacement: dist + 'ns-frame.js' },
+      { find: /^ns-frame\/lite$/, replacement: dist + 'ns-frame.lite.js' },
+      { find: /^ns-frame\/fx\.css$/, replacement: dist + 'ns-fx.css' },
+      { find: /^ns-frame\/(.+)$/, replacement: dist + 'ns-$1.js' },
+    ],
+  },
+}
 ```
 
-| Ruta | Módulo |
-|---|---|
-| `ns-frame` | Núcleo |
-| `ns-frame/lite` | Sólo recortes (sin capa SVG) |
-| `ns-frame/css` | Compilador a CSS `shape()` |
-| `ns-frame/static` | Formas sin JS en el build (Node) |
-| `ns-frame/vt` | View Transitions con cortes |
-| `ns-frame/toast` · `skel` · `carousel` · `pop` · `bento` · `link` | Componentes |
-| `ns-frame/fx` · `ns-frame/fx.css` | Efectos |
-| `ns-frame/audit` | Auditoría de texto recortado (sólo desarrollo) |
+Así los ejemplos de esta documentación (`import 'ns-frame'`, `import { toast } from 'ns-frame/toast'`) funcionan tal cual, y los archivos quedan versionados en tu repositorio. Los ejemplos de Astro, React, Vue y Svelte de más abajo suponen este alias.
 
-Los tipos de TypeScript vienen incluidos.
-
-> Los módulos opcionales importan el núcleo completo (`ns-frame`). Si usas `ns-frame/lite`, no lo mezcles con ellos: cargarías dos núcleos.
+En archivos que ejecuta Node directamente (`astro.config.mjs`, scripts de build) el alias de Vite no se aplica: importa la ruta relativa, por ejemplo `import nsStatic from './src/vendor/ns-frame/ns-astro.js'`.
 
 ## Qué pasa al importarlo
 

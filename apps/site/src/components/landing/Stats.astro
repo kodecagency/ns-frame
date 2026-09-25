@@ -4,8 +4,8 @@
 // así la rejilla se lee como una sola pieza. Sólo datos medidos (docs/rendimiento.md).
 import Arrow from '../Arrow.astro'
 
-const SIZES: [string, number][] = [['núcleo', 8.7], ['mosaico', 8.1], ['lite', 6.5], ['extras', 3.8], ['skeleton', 2.5], ['toast', 2.1], ['fx.css', 2.0], ['carrusel', 1.6]]
-const max = 8.7 // el núcleo es el módulo más grande
+const SIZES: [string, number][] = [['núcleo', 8.9], ['mosaico', 7.4], ['lite', 6.7], ['extras', 3.8], ['líquido', 2.5], ['skeleton', 2.4], ['concéntricas', 2.4], ['toast', 2.1]]
+const max = 8.9 // el núcleo es el módulo más grande
 ---
 <section class="sec aura ns-aura" id="cifras" aria-labelledby="t-cifras">
   <div class="wrap">
@@ -17,7 +17,7 @@ const max = 8.7 // el núcleo es el módulo más grande
     <div class="ns-bento bn" data-ns-bento="outer bevel 30; inner round 12; radius 2">
       <article class="ns-big t" data-ns-motion="spot">
         <span class="k">Núcleo, con gzip</span>
-        <b class="v num">8,7 KB</b>
+        <b class="v num">8,9 KB</b>
         <p>Formas, bordes, morph y foco. Cada módulo se carga sólo si se usa.</p>
         <ul class="bars" aria-label="Tamaño de cada módulo en KB">
           {SIZES.map(([n, v], k) => <li><span>{n}</span><svg viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><rect width={(v / max * 100).toFixed(1)} height="6" rx="3" class:list={[{ hi: k < 3 }]} /></svg><b class="num">{v.toFixed(1).replace('.', ',')}</b></li>)}

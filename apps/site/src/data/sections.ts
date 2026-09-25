@@ -15,6 +15,8 @@ export const SECTIONS: Section[] = [
   { id: 'bordes', name: 'Bordes', sub: 'Degradados y luz', icon: 'M4 6.5a2.5 2.5 0 0 1 2.5-2.5h7A2.5 2.5 0 0 1 16 6.5v7a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 4 13.5Z M7.5 8v2.5a2.5 2.5 0 0 0 5 0V8', nav: true },
   // cuatro piezas que abrazan un hueco redondo
   { id: 'mosaico', name: 'Mosaico', sub: 'Piezas que encajan', icon: 'M3 3h5.5v3a3 3 0 0 0-2.5 2.5H3Z M17 3v5.5h-3A3 3 0 0 0 11.5 6V3Z M3 17v-5.5h3A3 3 0 0 0 8.5 14v3Z M17 17h-5.5v-3a3 3 0 0 0 2.5-2.5h3Z', nav: true },
+  // dos gotas que se funden
+  { id: 'imposibles', name: 'Imposibles', sub: 'Lo que CSS no hace', icon: 'M7 6.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z M14 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z M10.2 9.2c.9-.5 1.9-.5 2 0 M10.2 10.8c.9.5 1.9.5 2 0' },
   // borde abierto con la estela de un cometa
   { id: 'movimiento', name: 'Movimiento', sub: 'Luz en el borde', icon: 'M9 4H7a3 3 0 0 0-3 3v6a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3v-2 M12.5 4h.01 M15.2 5h.01 M16 7.8h.01', nav: true },
   // popover con su flecha

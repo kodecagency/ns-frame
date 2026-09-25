@@ -11,5 +11,20 @@ apps/site/public/ns-frame/
 apps/site/public/lab/
 apps/site/public/llms.txt
 
-# capturas de revisión (pesadas, se regeneran)
-apps/site/.impeccable/review/
+# briefs y artefactos internos de diseño (se quedan en local)
+apps/site/PRODUCT.md
+apps/site/DESIGN.md
+apps/site/.impeccable/
+
+# builds a medias, editores y herramientas
+packages/ns-frame/.build-src/
+coverage/
+*.tmp
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+.claude/
+
+# laboratorio local de módulos
+packages/ns-frame/test/lab.*

@@ -58,6 +58,9 @@ export function geometry(shape: Shape, w: number, h: number): Geometry
 /** Vértices → comandos de path con los fillets aplicados. `T` es la longitud total; `at`, la posición de cada vértice. */
 export function commands(V: Vertex[]): { C: Command[]; T: number; at: Array<[number, number]> }
 
+/** Declaraciones de una forma para un ancho dado (esquinas `c`, rasgos de borde `e`, `r`, `poly`), sin resolver a px. */
+export function spec(shape: Shape, w: number): { c: Record<string, { type: string; a: string[]; r?: number }>; e: Record<'top' | 'right' | 'bottom' | 'left', { type: string; a: string[]; r?: number }[]>; r: number; rtl: number; poly?: string[][] }
+
 /** SVG path `d` de una forma para una caja w×h (para <svg>, canvas Path2D, React…). */
 export function path(shape: Shape, w: number, h: number): string
 

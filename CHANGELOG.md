@@ -1,5 +1,35 @@
 # Changelog
 
+## Sin publicar
+
+### Lo que CSS todavía no hace
+Cuatro módulos que resuelven con geometría real lo que la web sólo imitaba con capturas, filtros borrosos o cálculos a mano.
+- **`ns-frame/concentric` (2,4 KB)**: esquinas concéntricas automáticas con `data-ns-concentric`. El hijo repite la forma del padre desplazada el hueco: redondeos − hueco, chaflanes − 0,59 × hueco, muescas que conservan su tamaño, scoops que crecen, cortes y pestañas de los bordes con la misma profundidad y la boca desplazada, fillets y `poly`. Si el padre no es un marco, usa su `border-radius`. `--ns-concentric-min` redondea las esquinas que quedan lejos de las del padre. CSS no tiene nada equivalente (hay una propuesta abierta en el CSSWG, sólo para redondeos).
+- **`ns-frame/flow` (2,0 KB)**: el texto llena la forma con `data-ns-flow`, con el mismo margen en todo el contorno (curvas, diagonales, vértices). Es el `shape-inside` que CSS especificó y ningún navegador ha implementado, hecho con `shape-outside` nativo. El mosaico lo usa también (antes lo llevaba dentro).
+- **`ns-frame/mark` (2,1 KB)**: resaltado continuo en varias líneas con `data-ns-mark`: un solo contorno con curvas hacia fuera y hacia dentro, nítido y con trazo opcional, en vez del filtro de desenfoque habitual. `data-ns-mark="draw"` lo dibuja al entrar en pantalla. Se redibuja al cambiar el texto o el ajuste de línea.
+- **`ns-frame/liquid` (2,5 KB)**: formas líquidas con `data-ns-liquid`: los hijos cercanos se funden con un puente curvo y se separan en gotas al alejarse. Campo de distancias con una unión suave que tiene en cuenta el ángulo (no se infla donde dos formas se solapan alineadas), contorno con marching squares y curvas. Sólo redibuja mientras algo se mueve (< 1 ms por frame en una barra típica).
+
+### Nuevo: `ns-frame/isle` (2,3 KB)
+- **Isla de navegación**: una cápsula flotante con la sección actual (icono, nombre y posición, seguidos con `IntersectionObserver`) que se pliega al bajar, cambia de sección al deslizarla y abre una hoja con todas. La hoja entra moviendo sólo `translate`, se prepara al apoyar el dedo (al abrirse ya está pintada) y se arrastra con `ns-frame/sheet`. Accesible (`aria-expanded`, `aria-current`, `inert`, foco que entra y vuelve) y con el marcado y las formas del usuario.
+- `sheet`: el progreso del gesto se calcula de la temporización de la animación, sin leer estilos en cada frame (sin micro-parones al cerrar).
+
+### Mosaico
+- En táctil se quitan `glow` (sigue a un puntero que no existe) y `ripple` (cada toque, que casi siempre es scroll, era una onda). `data-ns-mosaic-touch` elige los efectos para táctil.
+- Al cambiar a una plantilla con menos filas, las piezas aún colocadas según la anterior creaban filas implícitas y el mosaico reintentaba en cada frame sin terminar: se quedaba con la plantilla vieja, dejaba de responder y podía verse con piezas superpuestas. Ahora sólo cuentan las pistas explícitas y los reintentos están acotados.
+- Los listeners de la luz conectada se registran una vez por mosaico y leen la capa actual (antes se duplicaban si la capa se quitaba y volvía).
+
+### Núcleo y auditoría
+- `spec(shape, w)`: las declaraciones de una forma para un ancho, para módulos que transforman formas.
+- Hover, pulsado y foco con 6 listeners delegados en el documento en vez de varios por marco.
+- `audit()` avisa cuando un reset como `all: unset` deja el borde sin dibujar (tipos `unanchored` y `reset`).
+
+### Sitio
+- Sección «Lo que CSS todavía no sabe hacer» con las cuatro demos: tarjeta de reserva concéntrica, pieza editorial que cambia de silueta, titular con resaltado editable y selector y acciones líquidas.
+- Los controles del mosaico van en una barra fija (en el móvil, una fila que se desliza): se cambia de opción sin subir y bajar. Al cambiar de plantilla sólo se animan las piezas; la barra superior y la isla quedan por encima durante la transición.
+- La isla usa `ns-frame/isle` y el menú lleva suave hasta la sección elegida.
+- Contorno suave, teñido con el tono de cada pieza, en el muro de formas y en las tarjetas de aperturas.
+- La fuente recortada se llama Frame Sans: la licencia OFL de Mona Sans reserva el nombre «Mona» para la fuente sin modificar.
+
 ## 0.9.0 — mosaicos de piezas libres
 
 ### Nuevo: `ns-frame/mosaic`
@@ -18,10 +48,6 @@
 ### Nuevo: `ns-frame/sheet` (1,3 KB)
 - Hoja que se arrastra como en una app nativa: sigue al dedo arriba (con resistencia elástica) y abajo, y al soltarla vuelve o sale según la distancia y la velocidad. Sólo mueve `translate`, expone el progreso (`--ns-sheet-p`, `onProgress`) para atenuar el fondo y no convierte un arrastre en clic.
 
-### Nuevo: `ns-frame/isle` (2,3 KB)
-- **Isla de navegación**: una cápsula flotante con la sección actual (icono, nombre y posición, seguidos con `IntersectionObserver`) que se pliega al bajar, cambia de sección al deslizarla y abre una hoja con todas. La hoja entra moviendo sólo `translate`, se prepara al apoyar el dedo (al abrirse ya está pintada) y se arrastra con `ns-frame/sheet`. Accesible (`aria-expanded`, `aria-current`, `inert`, foco que entra y vuelve) y con el marcado y las formas del usuario.
-- `sheet`: el progreso del gesto se calcula de la temporización de la animación, sin leer estilos en cada frame (sin micro-parones al cerrar).
-
 ### Motor más rápido
 - **Memo de geometría** por (forma, ancho, alto): los marcos que comparten forma y tamaño reutilizan geometría, comandos y path.
 - **Repintado perezoso:** al redimensionar sólo se recalculan los marcos en pantalla o cerca; el resto se pinta al acercarse. Con 4.000 marcos, redimensionar pasa de ~283 a ~105 ms.
@@ -35,24 +61,15 @@
 - **Arreglo:** en pantallas táctiles la forma de hover (`data-ns-hover`) ya no se queda pegada: el hover sólo se activa con ratón o lápiz (para el dedo está `data-ns-press`).
 - En táctil (`hover: none` y `pointer: coarse`), el resplandor `--ns-glow` de las animaciones de borde y el del mosaico se desactivan (filtros que repintan cada frame y podían congelar la animación). `--ns-glow-touch` permite fijar uno propio.
 - El foco `spot` no se registra en táctil: ya no recalcula los marcos en cada scroll.
-- Mosaico: en táctil se quitan `glow` (sigue a un puntero que no existe) y `ripple` (cada toque, que casi siempre es scroll, era una onda). `data-ns-mosaic-touch` elige los efectos para táctil.
-- Hover, pulsado y foco con 6 listeners delegados en el documento en vez de varios por marco.
 - `ns-fx.css`: en táctil, la luz en U en movimiento (`ns-u-live`, `ns-u-tide`, `ns-u-surge`), `ns-u-hue` y `ns-scan` quedan fijos, y `ns-pulse` anima sólo la opacidad.
 
 ### Bento y auditoría
 - El bento sigue siendo bento en móvil: al menos `--ns-cols-min` columnas (2 por defecto).
-- `audit()` ignora las imágenes y vídeos a sangre (recortarlos es la intención), y avisa cuando un reset como `all: unset` deja el borde sin dibujar (tipos `unanchored` y `reset`).
-
-### Arreglos del mosaico
-- Al cambiar a una plantilla con menos filas, las piezas aún colocadas según la anterior creaban filas implícitas y el mosaico reintentaba en cada frame sin terminar: se quedaba con la plantilla vieja, dejaba de responder y podía verse con piezas superpuestas. Ahora sólo cuentan las pistas explícitas y los reintentos están acotados.
-- Los listeners de la luz conectada se registran una vez por mosaico y leen la capa actual (antes se duplicaban si la capa se quitaba y volvía).
+- `audit()` ignora las imágenes y vídeos a sangre (recortarlos es la intención).
 
 ### Sitio
-- Landing rediseñada en Astro, por componentes: hero con mosaico, antes y después, muro de presets, playground (atributo, ruta SVG y CSS `shape()`), bordes en degradado y luz en U (con una tabla de precios real), mosaico interactivo, las 12 animaciones de borde, componentes funcionando, aperturas y View Transitions, anatomía con callouts y formas responsive, ficha técnica en bento unificado sobre fondo aura y la isla de navegación en móvil. Firmada por Kodec Agency.
+- Landing rediseñada en Astro, por componentes: hero con mosaico, antes y después, muro de presets, playground (atributo, ruta SVG y CSS `shape()`), bordes en degradado y luz en U (con una tabla de precios real), mosaico interactivo, las 11 animaciones de borde, componentes funcionando, aperturas y View Transitions, anatomía con callouts y formas responsive, ficha técnica en bento unificado sobre fondo aura y la isla de navegación en móvil. Firmada por Kodec Agency.
 - La galería antigua (`galeria.html`) se retira: todas las demos viven en la landing.
-- Los controles del mosaico van en una barra fija (en el móvil, una fila que se desliza): se cambia de opción sin subir y bajar. Al cambiar de plantilla sólo se animan las piezas; la barra superior y la isla quedan por encima durante la transición.
-- La isla usa `ns-frame/isle` y el menú lleva suave hasta la sección elegida.
-- Contorno suave, teñido con el tono de cada pieza, en el muro de formas y en las tarjetas de aperturas.
 - Sitio más ligero y seguro: secciones con `content-visibility: auto` (saltos a anclas exactos con `scripts/jump.ts`), fuentes autoalojadas con la API de fuentes de Astro (Mona Sans variable con su eje de anchura), fotos de demostración en WebP, sin `backdrop-filter` en táctil, CSP estricta generada por Astro con hashes (sin `unsafe-inline`; en las guías sólo se permiten atributos de estilo para el resaltado de código), caché inmutable para `/_astro/*`, HSTS y COOP. En un móvil emulado (CPU ×4): bloqueo del hilo principal de ~700 a ~290 ms y LCP de ~1,65 a ~1,2 s.
 
 ## 0.8.0 — primera versión pública

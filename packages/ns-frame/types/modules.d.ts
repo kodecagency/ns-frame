@@ -1,6 +1,7 @@
 // Tipos de los módulos opcionales de ns-frame. Cada módulo se importa por su ruta:
 // ns-frame/css, ns-frame/static, ns-frame/vt, ns-frame/toast, ns-frame/skel, ns-frame/carousel,
-// ns-frame/pop, ns-frame/bento, ns-frame/mosaic, ns-frame/sheet, ns-frame/isle, ns-frame/link, ns-frame/fx, ns-frame/audit.
+// ns-frame/pop, ns-frame/bento, ns-frame/mosaic, ns-frame/sheet, ns-frame/isle, ns-frame/concentric,
+// ns-frame/flow, ns-frame/mark, ns-frame/liquid, ns-frame/link, ns-frame/fx, ns-frame/audit.
 import type { Shape } from './ns-frame'
 
 // ── ns-frame/css ──
@@ -34,8 +35,8 @@ export interface ToastOptions {
 export function toast(message: string, options?: ToastOptions): { el: HTMLElement; close: () => void }
 export function config(options: { x?: 'start' | 'center' | 'end'; y?: 'top' | 'bottom'; max?: number; time?: number; shape?: Shape; enter?: ToastEnter }): void
 
-// ── ns-frame/skel, ns-frame/bento, ns-frame/mosaic, ns-frame/link ──
-/** Vuelve a medir (skeletons: uno o todos; bento, mosaicos y callouts: todos). */
+// ── ns-frame/skel, bento, mosaic, link, concentric, flow, mark ──
+/** Vuelve a medir (skeletons: uno o todos; el resto: todos sus elementos). */
 export function refresh(el?: Element): void
 
 // ── ns-frame/mosaic ──
@@ -84,6 +85,40 @@ export interface IsleOptions {
 export interface Isle { open(): void; close(): void; toggle(): void; go(index: number): void; readonly index: number; destroy(): void }
 /** Isla de navegación: cápsula que sigue la sección actual y abre una hoja arrastrable. */
 export function isle(el: HTMLElement, options?: IsleOptions): Isle
+
+// ── ns-frame/concentric ──
+/**
+ * Forma concéntrica del hijo: la del padre (`shape`, w×h) desplazada el hueco `ins`
+ * [arriba, derecha, abajo, izquierda]. `min`: radio de las esquinas que quedarían más pequeñas.
+ * Automático con `data-ns-concentric` (y `--ns-concentric-min`).
+ */
+export function concentric(shape: Shape, w: number, h: number, ins: [number, number, number, number], min?: number): string
+
+// ── ns-frame/flow ──
+/** Filas interiores de un path (w×h) a `pad` px del contorno: [izquierda, derecha] o null. */
+export function profile(d: string, w: number, h: number, pad: number): ([number, number] | null)[]
+/** El texto de `k` recorre el interior del path `d`. false si la forma es demasiado pequeña. Automático con `data-ns-flow`. */
+export function flow(job: { k: HTMLElement; d: string; w: number; h: number }, pad: number): boolean
+/** Quita los flotantes de flow(). */
+export function unflow(k: HTMLElement): void
+
+// ── ns-frame/mark ──
+/** Contorno de un texto resaltado: polígonos (sin fillets) de los rectángulos de cada línea. Automático con `data-ns-mark`. */
+export function outline(rects: Iterable<{ left: number; right: number; top: number; bottom: number; width: number; height: number }>, px?: number, py?: number): [number, number][][]
+
+// ── ns-frame/liquid ──
+export interface LiquidOptions {
+  /** Qué hijos cuentan: selector o función (por defecto [data-ns-blob] o todos los hijos). */
+  blobs?: string | ((el: HTMLElement) => Element[])
+  /** Hueco máximo que se funde, en px (si no, --ns-liquid o 14). */
+  k?: number
+  /** Resolución del contorno en px (2). */
+  step?: number
+}
+/** Grupo líquido: los hijos cercanos se funden en un solo contorno vectorial. Automático con `data-ns-liquid`. */
+export function liquid(el: HTMLElement, options?: LiquidOptions): { update(): void; destroy(): void }
+/** Contorno fundido (path `d`) de rectángulos redondeados; `k` es el alcance interno del mínimo suave. */
+export function blend(boxes: { x: number; y: number; w: number; h: number; r?: number }[], k?: number, step?: number): string
 
 // ── ns-frame/fx ──
 /** Efecto de texto que se "descifra". */

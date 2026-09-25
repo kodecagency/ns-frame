@@ -1,6 +1,6 @@
 # ns-frame components and modules
 
-Every module is optional. With npm: `import 'ns-frame/<module>'`. With the CDN: `…/packages/ns-frame/dist/ns-<module>.js`.
+Every module is optional. Not on npm yet (do not install any npm package named `ns-frame`). With the CDN: `https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.9.0/packages/ns-frame/dist/ns-<module>.js`, same version as the core. With an import map or a bundler alias to a vendored `dist/`: `import 'ns-frame/<module>'` (see `docs/instalacion.md`). `isle`, `concentric`, `flow`, `mark` and `liquid` are not in `v0.9.0`: use `@main` for them and the core until the next tagged release.
 
 ## Attributes handled by the core
 
@@ -87,10 +87,35 @@ A bento whose pieces can be L, T, U or staircase shapes. Children need `data-ns-
 
 - Concave corners = `--ns-round` + gap, so interlocking pieces keep a constant gap around bends.
 - `--ns-orb: col row radius [circle|hex|diamond|square|tri|oct] [deg]`, comma-separated for several; positions are grid LINES (3 = the gap between columns 2 and 3). Each entry pairs with a `[data-ns-orb]` child, which may hold content (photo, stat, button). Put orbs where 3–4 pieces meet.
-- Content is padded into each piece's largest free rectangle automatically; keep rows tall enough.
+- In non-rectangular pieces the text flows through the real outline (uses `ns-frame/flow`); content must be block/inline, not a flex/grid child. `data-ns-flow="off"` (on the mosaic or a piece) puts content in the largest free rectangle instead. Keep rows tall enough.
 - Effects: `wave ripple glow sweep scan` (borders + backgrounds), `trace pulse` (borders), `aurora dots grid` (backgrounds, continuous across pieces, drawn in each piece's `::before` — don't combine with ns-fx pattern classes on the same piece).
 - Keep 2 columns on mobile; never collapse a mosaic to a single-column list.
 - On mobile the bento module also keeps ≥ 2 columns (`--ns-cols-min`).
+
+## Sheet — `ns-frame/sheet`
+
+```js
+import { sheet } from 'ns-frame/sheet'
+const s = sheet(panel, { onClose: () => dialog.close(), onProgress: p => dialog.style.setProperty('--p', p) })
+```
+
+Panel follows the finger/mouse down (rubber band up), closes on release past 35 % of its height or on a downward fling. Moves only `translate`. Options `handle`, `threshold` (6 px). Returns `{ close(), reset(), destroy() }`. Escape/backdrop are yours (`<dialog>` `cancel` → `s.close()`). Pure helpers: `rubber(x, h)`, `release(y, v, h)`.
+
+## Navigation island — `ns-frame/isle`
+
+`<nav data-ns-isle>` with `[data-ns-isle-toggle]` (+ `-icon`, `-label`, `-pos`) and a `[data-ns-isle-panel]` sheet of section links (`[data-ns-isle-close]`, `[data-ns-isle-handle]`); `isle(el, { pos, onChange })` → `{ open(), close(), toggle(), go(i), index, destroy() }`. Tracks the current section with IntersectionObserver, collapses on scroll down, swipe = previous/next section. Uses `ns-frame/sheet`. Full options in `docs/componentes.md`.
+
+## What CSS can't do yet — `concentric`, `flow`, `mark`, `liquid`
+
+All four activate by attribute (also on elements added later) and export `refresh()` (`liquid()` returns `update()` instead).
+
+**`ns-frame/concentric`** — `<img data-ns-concentric>` inside a shaped parent gets the parent's shape offset by the measured gap on each side (round/squircle: radius − gap; bevel: diagonal moved by the gap; notch keeps its step; edge features, fillets and `poly` too). Parent = nearest `[data-ns]`/`[data-ns-nest]`/`<ns-frame>` or a selector in the attribute (`data-ns-concentric=".card"`); a parent without ns shape contributes its CSS `border-radius`. `--ns-concentric-min`: radius for corners far from the parent's (0 = square). It **writes the child's `data-ns`** — do not set one yourself. Pure: `concentric(shape, w, h, [t, r, b, l], min)`.
+
+**`ns-frame/flow`** — `data-ns-flow` on a `data-ns` element: text fills the shape (the `shape-inside` CSS never shipped), via invisible `shape-outside` floats. Margin: attribute px (`data-ns-flow="22"`), else `--ns-pad`, else the element's padding. **Needs a defined height** (height, aspect-ratio, grid cell); with auto height it retries 3 times and stops. Content must be block/inline. `data-ns-flow="off"` disables. Exports `flow`, `unflow`, `profile`, `refresh`.
+
+**`ns-frame/mark`** — `<mark data-ns-mark>…</mark>`: one continuous highlight across all lines, with convex and concave fillets (no blur filter). Set `background: none` on the `<mark>`. Vars: `--ns-mark` (default system color `Mark`), `--ns-mark-pad` (`2px 6px`, vertical horizontal), `--ns-mark-round` (8px), `--ns-mark-border`, `--ns-mark-width`, `--ns-mark-time`. `data-ns-mark="draw"` draws left to right on entering the viewport. Pure: `outline(rects, px, py)`.
+
+**`ns-frame/liquid`** — `<nav data-ns-liquid>` with children: nearby children melt into one blob with a crisp SVG edge (no gooey filter). Children must have no background; the group paints `--ns-liquid-fill` (+ `--ns-liquid-border`, `--ns-liquid-width`). `--ns-liquid`: max gap that melts (14px; 0 = plain union). `data-ns-blob` limits which children count. Children are treated as rounded rectangles (their `border-radius`), not ns shapes. Redraws only while something moves. JS: `liquid(el, { blobs, k, step })` → `{ update(), destroy() }`; pure `blend(boxes, k, step)`.
 
 ## Callouts — `ns-frame/link`
 

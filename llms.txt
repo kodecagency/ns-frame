@@ -1,6 +1,8 @@
 # ns-frame
 
-> Tiny (8 KB gzip core), dependency-free library for native UI shapes on the web: bevels, notches, scoops, squircles and fillets on any corner of any element via a small shape language in HTML attributes (`data-ns="tl+br bevel 18; radius 3"`), with borders that follow the cut (`--ns-border`), geometry morphing, shape-preserving apertures, shaped components (toasts, carousel, skeletons, popovers, View Transitions), free-form mosaics and build-time compilation to CSS `shape()`. Strict-CSP safe, accessible, MIT. Docs are in Spanish.
+> Tiny (9 KB gzip core), dependency-free library for native UI shapes on the web: bevels, notches, scoops, squircles and fillets on any corner of any element via a small shape language in HTML attributes (`data-ns="tl+br bevel 18; radius 3"`), with borders that follow the cut (`--ns-border`), geometry morphing, shape-preserving apertures, shaped components (toasts, carousel, skeletons, popovers, View Transitions, draggable sheet, navigation island), free-form mosaics, concentric corners, text that fills a shape, multi-line highlights, liquid (gooey) groups and build-time compilation to CSS `shape()`. Strict-CSP safe, accessible, MIT. Docs are in Spanish.
+
+Install: not on npm yet (any npm package named ns-frame is not ours). Load `https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.9.0/packages/ns-frame/dist/ns-frame.js`; modules come from the same `dist/` folder and version (`dist/ns-toast.js`…). `isle`, `concentric`, `flow`, `mark` and `liquid` are not in v0.9.0: use `@main` for them and the core until the next tagged release.
 
 Key rules: import the core once (`import 'ns-frame'`); never use CSS `border` on shaped elements (use `--ns-border`); use `data-ns-pad` for text containers; optional modules are imported by path (`ns-frame/toast`, `ns-frame/vt`…); verify with `audit({ clearance: 5 })` from `ns-frame/audit`.
 
@@ -14,13 +16,13 @@ Key rules: import the core once (`import 'ns-frame'`); never use CSS `border` on
 ## Docs (Spanish)
 
 - [Introducción](https://github.com/kodecagency/ns-frame/blob/main/docs/introduccion.md)
-- [Instalación](https://github.com/kodecagency/ns-frame/blob/main/docs/instalacion.md): CDN, npm, Astro, React, Vue, Svelte
+- [Instalación](https://github.com/kodecagency/ns-frame/blob/main/docs/instalacion.md): CDN (jsDelivr), import maps, bundlers, Astro, React, Vue, Svelte
 - [Sintaxis de formas](https://github.com/kodecagency/ns-frame/blob/main/docs/sintaxis.md)
 - [Estilo y bordes](https://github.com/kodecagency/ns-frame/blob/main/docs/estilo.md)
 - [Movimiento](https://github.com/kodecagency/ns-frame/blob/main/docs/movimiento.md)
 - [Layout](https://github.com/kodecagency/ns-frame/blob/main/docs/layout.md)
 - [Mosaico](https://github.com/kodecagency/ns-frame/blob/main/docs/mosaico.md): `ns-frame/mosaic` — free-form bento (L/T/U pieces with a constant gap), shaped orbs (circle, hex, diamond, triangle) that cut their neighbours and can hold content, connected light effects via `data-ns-mosaic`
-- [Componentes](https://github.com/kodecagency/ns-frame/blob/main/docs/componentes.md)
+- [Componentes](https://github.com/kodecagency/ns-frame/blob/main/docs/componentes.md): popovers, toasts, carousel, skeletons, View Transitions, `ns-frame/sheet`, `ns-frame/isle`, callouts, and what CSS can't do yet: `ns-frame/concentric` (`data-ns-concentric`), `ns-frame/flow` (`data-ns-flow`), `ns-frame/mark` (`data-ns-mark`), `ns-frame/liquid` (`data-ns-liquid`)
 - [Efectos](https://github.com/kodecagency/ns-frame/blob/main/docs/efectos.md)
 - [Formas sin JS](https://github.com/kodecagency/ns-frame/blob/main/docs/sin-js.md)
 - [API de JavaScript](https://github.com/kodecagency/ns-frame/blob/main/docs/api.md)

@@ -179,3 +179,85 @@ const nav = isle(document.querySelector('[data-ns-isle]'), {
 ```
 
 Traza una línea recta más una diagonal a 45° desde el lado del elemento que mira hacia el destino. Usa coordenadas de página (el scroll no cuesta nada) y se recalcula al cambiar el tamaño de los extremos, del `<body>` o de la ventana (`refresh()` para forzarlo). Se ilumina al pasar el mouse por cualquiera de los extremos. Variables: `--ns-link`, `--ns-link-width`, `--ns-link-z` (en `:root`).
+
+## Lo que CSS todavía no hace
+
+Cuatro módulos para cosas que la web pide desde hace años y CSS no resuelve. Se activan solos con su atributo, también en elementos añadidos después, y no hace falta llamar a nada. Todos son CSP-safe y sólo dependen del núcleo.
+
+> Aún no están en la etiqueta `v0.9.0`. Hasta la próxima versión etiquetada, cárgalos desde `@main`, con el núcleo también de `@main`:
+>
+> ```html
+> <script type="module" src="https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@main/packages/ns-frame/dist/ns-frame.js"></script>
+> <script type="module" src="https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@main/packages/ns-frame/dist/ns-concentric.js"></script>
+> ```
+
+### Esquinas concéntricas (`ns-frame/concentric`)
+
+```html
+<article data-ns="tl+br bevel 36; tr+bl round 24">
+  <img data-ns-concentric src="foto.jpg" alt="…">
+</article>
+```
+
+- **Qué resuelve:** lo que va dentro de una forma redondeada debe llevar el radio exterior menos la distancia al borde, o las curvas no casan (la regla de `ConcentricRectangle` en SwiftUI). CSS no tiene una propiedad para eso: hay una propuesta abierta en el CSSWG ([issue #7707](https://github.com/w3c/csswg-drafts/issues/7707)), y mientras tanto se calcula a mano con `calc()`.
+- **Con cualquier forma, no sólo redondeos.** Redondeo y squircle: radio − hueco. Chaflán: la diagonal se desplaza el hueco en perpendicular (baja ≈ 0,59 × hueco). Notch: el escalón conserva su tamaño. Scoop: el arco crece con el hueco. Cortes, pestañas y scoops de los bordes, fillets (`rN`, `radius`) y polígonos (`poly`) también se desplazan.
+- **El hueco se mide en cada lado** y en cada cambio de tamaño del padre o del hijo: un botón al pie de una tarjeta hereda sólo las esquinas de abajo.
+- **El padre** es el marco más cercano (`[data-ns]`, `[data-ns-nest]` o `<ns-frame>`), o el que indique el atributo con un selector: `data-ns-concentric=".card"`. Si el padre no tiene forma de ns-frame, se usa su `border-radius` de CSS.
+- `--ns-concentric-min`: radio de las esquinas que quedan lejos de las del padre (`0` = en ángulo recto).
+- **Escribe el `data-ns` del hijo:** no le pongas uno propio, se sobrescribe. Si cambias la forma del padre por JS sin tocar su `data-ns` ni su clase, llama a `refresh()`.
+- Diferencia con `data-ns-nest` (núcleo, ver [Layout](layout.md)): `data-ns-nest` hereda las esquinas del marco padre; `data-ns-concentric` además sigue rasgos de los bordes y polígonos, mide el hueco de cada lado y funciona con padres que sólo tienen `border-radius`.
+
+### Texto que llena la forma (`ns-frame/flow`)
+
+```html
+<article data-ns="all bevel 60; top cut center 40% 14" data-ns-flow style="height: 320px">
+  <h3>…</h3>
+  <p>…</p>
+</article>
+```
+
+- **Qué resuelve:** el texto siempre se reparte en un rectángulo, aunque la caja tenga otra forma. CSS especificó `shape-inside` hace más de una década y ningún navegador lo ha implementado.
+- **Cómo:** el contorno real de la forma (curvas, cortes, notches, polígonos) se mide y se describe con pares de flotantes invisibles con `shape-outside`, que sí es nativo. El navegador acomoda cada línea entre ellos. El elemento necesita una forma (`data-ns`).
+- **Margen:** el valor del atributo en px (`data-ns-flow="22"`); si no, `--ns-pad`; si no, el padding que tuviera el elemento (y si no hay ninguno, 20 px). Se respeta en todo el borde, también en las curvas.
+- **Necesita un alto definido** (`height`, `aspect-ratio`, una celda de grid…): la forma depende del alto y el texto del contorno. Con alto automático se ajusta como mucho tres veces y se detiene.
+- **Contenido de bloque o en línea.** El elemento pasa a `display: flow-root` con `padding: 0` (clase `.ns-flow`). Un hijo con `display: flex`, `grid` u `overflow: hidden` se coloca como un rectángulo entero debajo de los flotantes.
+- Se recalcula al cambiar el tamaño, la forma (`data-ns`) o las fuentes; nada si no cambió. `refresh()` fuerza una nueva medición.
+- El orden y la selección del texto no cambian: los flotantes son `<i aria-hidden="true">` vacíos.
+- `data-ns-flow="off"` lo desactiva. Dentro de un mosaico no hace falta: `ns-frame/mosaic` usa este mismo módulo en cada pieza.
+
+### Resaltado en varias líneas (`ns-frame/mark`)
+
+```html
+<h2>Diseña con <mark data-ns-mark>formas que se adaptan a cada línea del texto</mark></h2>
+```
+
+```css
+h2 mark { background: none; color: inherit; --ns-mark: #ffe066 }
+```
+
+- **Qué resuelve:** un fondo por línea es fácil (`box-decoration-break`), pero uno solo que abrace todas las líneas, con curvas hacia fuera y hacia dentro donde una línea es más corta que otra (el resaltado de las stories de Instagram), sólo se imitaba con un filtro de desenfoque + contraste: bordes borrosos, caro de repintar y sin trazo posible.
+- **Cómo:** la unión de los rectángulos de cada línea, con un fillet en cada vértice (convexo o cóncavo) calculado por el motor de ns-frame. Un solo `<path>` SVG detrás del texto, que se redibuja al cambiar el ajuste de línea, el tamaño o el texto.
+- **Color:** `--ns-mark`. Por defecto, el color de sistema `Mark`, legible en alto contraste. Quita el fondo nativo de `<mark>` (`background: none`) para que no se sume al resaltado.
+- `--ns-mark-pad`: margen alrededor del texto, "vertical horizontal" (`2px 6px`). `--ns-mark-round`: radio de las curvas (`8px`); las que no caben se ajustan solas.
+- `--ns-mark-border` y `--ns-mark-width`: trazo opcional del contorno.
+- `data-ns-mark="draw"`: se dibuja de izquierda a derecha al entrar en pantalla (`--ns-mark-time`, `.9s`). Con `prefers-reduced-motion` aparece sin transición.
+- Las líneas que no se tocan en horizontal quedan como piezas separadas.
+- El SVG se inserta justo después del resaltado; el primer antecesor que no es en línea recibe `position: relative` e `isolation: isolate` (clase `.ns-mark-host`). `refresh()` redibuja si cambias algo que no detecta.
+
+### Formas líquidas (`ns-frame/liquid`)
+
+```html
+<nav data-ns-liquid style="--ns-liquid: 14px; --ns-liquid-fill: #1c1c1f">
+  <button>…</button> <button>…</button> <button>…</button>
+</nav>
+```
+
+- **Qué resuelve:** el efecto "gooey" de la web es un filtro (desenfoque + contraste sobre píxeles): borde borroso, caro de repintar, sin trazo y con problemas en Safari. Aquí es geometría, con borde vectorial nítido.
+- **Cómo:** cada hijo es un rectángulo redondeado, con su `border-radius` real (el de la esquina superior izquierda) y su posición real, transformaciones incluidas. Las formas a menos de `--ns-liquid` se funden con un puente cóncavo, como dos gotas, y el contorno se dibuja como un `<path>` SVG detrás de los hijos.
+- `--ns-liquid`: hueco máximo (px) que se funde (`14`). Más cerca, puente más grueso; más lejos, gotas separadas. `0` = unión sin fundido.
+- `--ns-liquid-fill` (por defecto `currentColor`), `--ns-liquid-border`, `--ns-liquid-width`: relleno y trazo del conjunto.
+- **Los hijos no llevan fondo:** el conjunto lo pinta. `data-ns-blob` marca cuáles cuentan; si ninguno lo lleva, cuentan todos. Los ocultos (`visibility: hidden` u `opacity: 0`) no cuentan.
+- **Sólo redibuja mientras algo se mueve** (transiciones, Web Animations, hover, foco, cambios de clase o estilo). En reposo no hace nada.
+- Desde JS: `liquid(el, { blobs, k, step })` devuelve `{ update(), destroy() }`. `blobs` es un selector o una función que devuelve los elementos.
+- Las transiciones de los hijos son tuyas: respeta tú `prefers-reduced-motion`. En alto contraste deja un trazo del sistema (`CanvasText`).
+- Limitación: sólo entiende rectángulos redondeados. Un hijo con `data-ns` o `clip-path` se funde como su caja, no como su forma.

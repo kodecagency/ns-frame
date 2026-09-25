@@ -35,9 +35,11 @@ export default defineConfig({
     // el proveedor de Google entrega Mona Sans sin el eje de anchura (wdth), que usan los titulares:
     // se sirve un archivo variable propio, recortado a lo que usa el sitio con fontTools (ejes: peso
     // 400–700 y anchura 100–112 %; caracteres: Latin-1 y la tipografía de las páginas): 98 → 54 KB.
-    // Se regenera con scripts/font-slim.py si se añaden pesos, anchos o caracteres (licencia OFL)
-    { provider: fontProviders.local(), name: 'Mona Sans', cssVariable: '--font-mona', fallbacks: ['system-ui', 'sans-serif'],
-      options: { variants: [{ src: ['./src/assets/fonts/MonaSans-latin.woff2'], weight: '400 700', style: 'normal', stretch: '100% 112%' }] } },
+    // Se regenera con scripts/font-slim.py si se añaden pesos, anchos o caracteres. Licencia OFL 1.1:
+    // una versión modificada no puede usar el nombre reservado "Mona", así que el recorte se llama
+    // Frame Sans (el copyright y la licencia originales van en el archivo y en OFL-MonaSans.txt).
+    { provider: fontProviders.local(), name: 'Frame Sans', cssVariable: '--font-mona', fallbacks: ['system-ui', 'sans-serif'],
+      options: { variants: [{ src: ['./src/assets/fonts/FrameSans-latin.woff2'], weight: '400 700', style: 'normal', stretch: '100% 112%' }] } },
     { provider: fontProviders.google(), name: 'JetBrains Mono', cssVariable: '--font-mono', weights: ['400', '500'], styles: ['normal'], subsets: ['latin'], fallbacks: ['ui-monospace', 'monospace'] },
   ],
   // CSP estricta: Astro añade el hash de cada script y estilo que genera (sin 'unsafe-inline').

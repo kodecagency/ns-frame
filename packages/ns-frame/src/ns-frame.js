@@ -264,6 +264,9 @@ function geo(src, w, h) {
 const cmds = V => V._c ||= Object.assign(commands(V), { d: '' })
 const dOf = V => { const c = cmds(V); return c.d ||= svgD(c.C) }
 
+/** Declaraciones de una forma para un ancho dado (esquinas, rasgos de borde, radius, poly), sin resolver a px. */
+export const spec = (shape, w) => resolve(parsed(shape), w)
+
 /** SVG path `d` para una caja w×h (útil en <svg>, canvas Path2D, React, etc). */
 export const path = (shape, w, h) => dOf(geo(shape, w, h))
 

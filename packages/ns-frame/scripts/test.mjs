@@ -7,6 +7,11 @@ import { css as cssMin } from '../dist/ns-css.js'
 import { extract } from '../src/ns-static.js'
 import { parseAreas } from '../src/ns-mosaic.js'
 import { rubber, release } from '../src/ns-sheet.js'
+import { concentric } from '../src/ns-concentric.js'
+import { concentric as concentricMin } from '../dist/ns-concentric.js'
+import { outline } from '../src/ns-mark.js'
+import { blend } from '../src/ns-liquid.js'
+import { blend as blendMin } from '../dist/ns-liquid.js'
 
 let seed = 7
 const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647)
@@ -59,6 +64,29 @@ eq(release(160, 0, 400), true, 'sheet: se cierra al pasar el 35 %')
 eq(release(60, 0, 400), false, 'sheet: vuelve si bajó poco')
 eq(release(40, .9, 400), true, 'sheet: se cierra al lanzarla')
 eq(release(4, .9, 400), false, 'sheet: un toque rápido no la cierra')
+// concéntricas: redondeo − hueco, chaflán − 0,59·hueco, muesca igual, rasgos de borde desplazados
+const C = (s, i, m) => concentric(s, 300, 200, i, m)
+eq(C('all round 24', [8, 8, 8, 8]), 'tl round 16 16; tr round 16 16; br round 16 16; bl round 16 16', 'concentric: redondeo')
+eq(C('tl bevel 36', [12, 12, 12, 12]), 'tl bevel 29 29', 'concentric: chaflán (36 − 0,59 × 12)')
+eq(C('all notch 12', [10, 10, 10, 10]).split('; ').every(x => / 12 12$/.test(x)), true, 'concentric: la muesca conserva su tamaño')
+eq(C('all round 24', [30, 30, 30, 30]), '', 'concentric: hueco mayor que el radio → recto')
+eq(C('br bevel 34', [60, 12, 12, 60], 10), 'tl round 10; tr round 10; br bevel 27 27; bl round 10', 'concentric: min en las esquinas libres')
+eq(C('top cut center 34% 6', [10, 10, 10, 10]), 'top cut 85 195 6 6', 'concentric: corte del borde más ancho, misma profundidad')
+eq(/^poly /.test(C('poly 0 0 r8, 100% 0 r8, 100% 100% r8, 50% 70% r8, 0 100% r8', [10, 10, 10, 10])), true, 'concentric: poly')
+for (const [s, i] of [['panel', [10, 10, 10, 10]], ['ticket', [8, 8, 8, 8]], ['tab', [4, 6, 6, 6]], ['hud', [9, 9, 9, 9]]])
+  eq(C(s, i), concentricMin(s, 300, 200, i), `concentric: build = fuente (${s})`)
+eq(/NaN|undefined/.test(shapes.slice(0, 120).map(s => C(s, [7, 9, 11, 5])).join()), false, 'concentric: sin NaN en formas aleatorias')
+// resaltado: tres líneas → un solo polígono ortogonal; líneas que no se tocan → piezas separadas
+const R = (l, r, t) => ({ left: l, right: r, top: t, bottom: t + 20, width: r - l, height: 20 })
+eq(outline([R(100, 400, 0), R(0, 400, 30), R(0, 180, 60)]).length, 1, 'mark: líneas seguidas, una pieza')
+eq(outline([R(300, 400, 0), R(0, 120, 30)]).length, 2, 'mark: líneas que no se tocan, dos piezas')
+eq(outline([R(0, 100, 0), R(0, 100, 30)])[0].length, 4, 'mark: líneas iguales, un rectángulo (sin vértices sobrantes)')
+// líquido: dos píldoras cercanas se funden en un contorno; lejos, dos; build = fuente
+const P = x => ({ x, y: 0, w: 48, h: 48, r: 24 })
+eq((blend([P(0), P(58)], 16 * 2.4).match(/M/g) || []).length, 1, 'liquid: hueco de 10 px con alcance 16 → una gota')
+eq((blend([P(0), P(120)], 16 * 2.4).match(/M/g) || []).length, 2, 'liquid: hueco de 72 px → dos gotas')
+eq(blend([P(0), P(58), P(116)], 38), blendMin([P(0), P(58), P(116)], 38), 'liquid: build = fuente')
+eq(/NaN/.test(blend([P(0), { x: 20, y: 10, w: 48, h: 48, r: 24 }], 38)), false, 'liquid: solapadas, sin NaN')
 // formas sin JS: data-ns-static se compila a una clase + CSS shape()
 const X = extract('<div class="a" data-ns-static="card">x</div><p data-ns-static="card"></p><i data-ns-static="tl bevel 30%"></i>')
 eq(/^<div class="a ns-s-\w+">x<\/div><p class="ns-s-\w+"><\/p><i data-ns="tl bevel 30%"><\/i>$/.test(X.html), true, 'static: html')

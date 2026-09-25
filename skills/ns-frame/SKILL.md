@@ -1,11 +1,13 @@
 ---
 name: ns-frame
-description: Build shaped web UI with the ns-frame library — bevels, notches, scoops, squircles and fillets on any corner of any element, borders that follow the cut, morph, apertures, and shaped components (toasts, carousel, skeletons, popovers, View Transitions) and free-form mosaics (L/T/U pieces that interlock with a constant gap, shaped orbs, connected light effects). Use when the project imports ns-frame, uses data-ns attributes or <ns-frame>, or the user asks for cut/chamfered/HUD/sci-fi/futuristic corners, squircle corners, shaped cards, buttons, panels or tickets without images.
+description: Build shaped web UI with the ns-frame library — bevels, notches, scoops, squircles and fillets on any corner of any element, borders that follow the cut, morph, apertures, and shaped components (toasts, carousel, skeletons, popovers, View Transitions, draggable sheet, navigation island), free-form mosaics (L/T/U pieces that interlock with a constant gap, shaped orbs, connected light effects), concentric corners, text that fills a shape, multi-line highlights and liquid (gooey) groups. Use when the project imports ns-frame, uses data-ns attributes or <ns-frame>, or the user asks for cut/chamfered/HUD/sci-fi/futuristic corners, squircle corners, shaped cards, buttons, panels or tickets without images.
 ---
 
 # ns-frame
 
-ns-frame draws shapes with a small shape language written in HTML attributes. The core (`ns-frame`, 8 KB gzip) activates every element with `data-ns` automatically, including elements added later. Optional modules add components. Docs in Spanish live in `docs/`; this skill is the working summary.
+ns-frame draws shapes with a small shape language written in HTML attributes. The core (`ns-frame`, 9 KB gzip) activates every element with `data-ns` automatically, including elements added later. Optional modules add components. Docs in Spanish live in `docs/`; this skill is the working summary.
+
+**Install from jsDelivr, not npm.** ns-frame is not published on npm yet; never install an npm package named `ns-frame` (it is not ours). Load `https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.9.0/packages/ns-frame/dist/ns-frame.js` (modules from the same `dist/` folder, same version), map the bare names with an import map, or vendor `dist/` and alias it — see `docs/instalacion.md`. `isle`, `concentric`, `flow`, `mark` and `liquid` are not in `v0.9.0`: until the next tagged release, load them and the core from `@main`.
 
 ## Decide what to use
 
@@ -27,6 +29,12 @@ ns-frame draws shapes with a small shape language written in HTML attributes. Th
 | Bento whose pieces are L/T/U shapes, or a central orb (circle, hex, diamond, triangle) that cuts its neighbours | `ns-frame/mosaic`: `--ns-areas`, `data-ns-area`, `--ns-orb`, `[data-ns-orb]` |
 | Light/pattern that flows across a whole mosaic | `data-ns-mosaic="wave ripple glow sweep scan trace pulse aurora dots grid"` |
 | Glow / patterns | classes from `ns-fx.css` (`ns-u`, `ns-u-live`, `ns-aura`, `ns-grid`…) |
+| Bottom sheet that follows the finger and closes on release | `sheet(panel, { onClose })` from `ns-frame/sheet` |
+| Floating nav capsule that tracks the current section and opens a sheet | `data-ns-isle` + `isle(el)` from `ns-frame/isle` |
+| Child whose corners are concentric with its parent (any shape, or a CSS `border-radius` parent) | `data-ns-concentric` + `ns-frame/concentric` (writes the child's `data-ns`) |
+| Text that fills a non-rectangular shape (shape-inside) | `data-ns-flow` on a `data-ns` element with a defined height + `ns-frame/flow` |
+| One continuous highlight across several lines, with inner and outer curves | `<mark data-ns-mark>` + `ns-frame/mark` |
+| Nearby elements that melt together (gooey) with a crisp vector edge | `data-ns-liquid` (+ `data-ns-blob`) + `ns-frame/liquid` |
 
 Read `references/shapes.md` before writing any non-trivial shape and `references/components.md` before using a module.
 
@@ -47,7 +55,7 @@ Units are px; `%` is relative to the side; negative positions count from the end
 
 ## Rules
 
-1. **Import the core once** (`import 'ns-frame'` or one `<script type="module">`). Do not call `attach()` for normal use.
+1. **Import the core once** (`import 'ns-frame'` via an import map or alias, or one `<script type="module">` from the CDN). Core and modules must come from the same version. Do not call `attach()` for normal use.
 2. **No CSS `border` on shaped elements** — it is clipped. Use `--ns-border`. Backgrounds are fine: they get clipped to the shape.
 3. **Text near cuts:** add `data-ns-pad` to shaped containers with text, or give enough padding. Verify with the audit (below).
 4. **Morph needs matching structure:** same corner types count and same number of edge features, otherwise the shape switches instantly. `round` ↔ `squircle` and size changes morph fine.

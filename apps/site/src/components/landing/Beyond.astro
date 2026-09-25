@@ -1,0 +1,211 @@
+---
+// Lo que CSS todavía no hace: cuatro módulos que resuelven con geometría real lo que en la web se
+// imitaba con capturas, filtros borrosos o cálculos a mano. Cada demo es un caso de uso real.
+import SectionHead from '../SectionHead.astro'
+import Icon from '../Icon.astro'
+import Arrow from '../Arrow.astro'
+
+const GAPS = [['6', '6 px'], ['12', '12 px'], ['20', '20 px']]
+const SHAPES = [
+  ['all bevel 64', 'Octógono'],
+  ['poly 26% 0 r14, 74% 0 r14, 100% 50% r14, 74% 100% r14, 26% 100% r14, 0 50% r14', 'Hexágono'],
+  ['poly 0 0 r22, 100% 0 r22, 100% 56% r40, 50% 100% r16, 0 56% r40', 'Escudo'],
+  ['tl+br round 50%; tr+bl bevel 40', 'Hoja'],
+]
+const MARKS = [['go', 'Verde'], ['amber', 'Ámbar'], ['line', 'Contorno']]
+const PERIODS = ['Semana', 'Mes', 'Año']
+const ACTIONS = [
+  ['Compartir', 'M13.5 5.5a2 2 0 1 0 0-.01 M6.5 10a2 2 0 1 0 0-.01 M13.5 14.5a2 2 0 1 0 0-.01 M8.3 9 11.7 6.5 M8.3 11l3.4 2.5'],
+  ['Guardar', 'M6 3.5h8v13l-4-3-4 3Z'],
+  ['Editar', 'M12.5 4.5 15.5 7.5 7.5 15.5H4.5v-3Z'],
+  ['Descargar', 'M10 4v8.5 M6.5 9.5 10 13l3.5-3.5 M4.5 16h11'],
+]
+---
+<section class="sec" id="imposibles" aria-labelledby="t-imp">
+  <div class="wrap">
+    <SectionHead id="t-imp">
+      <Fragment slot="title">Lo que CSS todavía no sabe hacer.</Fragment>
+      Cuatro cosas que la web lleva años pidiendo y que hoy sólo se imitan con capturas, filtros borrosos o números a mano. Aquí son geometría real: <b>nítidas, animables, accesibles y con CSP estricta.</b>
+    </SectionHead>
+
+    <div class="grid">
+      <!-- 1 · esquinas concéntricas -->
+      <article class="x x1" data-ns="all round 22">
+        <div class="stage s1">
+          <article class="prod" id="cc" data-ns="tl+br bevel 34; tr+bl round 26">
+            <img data-ns-concentric src="https://picsum.photos/seed/ns-cliff-house/760/440.webp" alt="Muelle de madera sobre un lago al atardecer" width="760" height="440" loading="lazy">
+            <div class="meta">
+              <div><b>Cabaña del lago</b><small>Bled · 3 noches</small></div>
+              <button type="button" class="cta" data-ns-concentric>Reservar</button>
+            </div>
+          </article>
+          <div class="seg" id="cc-gap" role="group" aria-label="Hueco">{GAPS.map(([v, n], i) => <button type="button" data-g={v} aria-pressed={String(i == 1)}>{n}</button>)}</div>
+        </div>
+        <div class="cap">
+          <h3>Esquinas concéntricas</h3>
+          <p>La foto y el botón repiten la forma de la tarjeta menos el hueco: el redondeo pierde el hueco entero y el chaflán, 0,59 veces. Cambia el hueco y todo se recalcula. CSS no tiene nada parecido, y SwiftUI sólo lo hace con redondeos.</p>
+          <code class="tag"><b>data-ns-concentric</b></code>
+        </div>
+      </article>
+
+      <!-- 2 · texto que llena la forma -->
+      <article class="x x2" data-ns="all round 22">
+        <div class="stage s2">
+          <div class="quote" id="fq" data-ns={SHAPES[0][0]} data-ns-flow="22">
+            <p><b>El texto llena la forma.</b> Cada línea mide lo que le deja el contorno, con el mismo margen en las diagonales, en las curvas y en los vértices. CSS lo especificó hace más de diez años con shape-inside y ningún navegador lo ha implementado.</p>
+          </div>
+          <div class="seg" id="fq-shape" role="group" aria-label="Forma">{SHAPES.map(([s, n], i) => <button type="button" data-s={s} aria-pressed={String(!i)}>{n}</button>)}</div>
+        </div>
+        <div class="cap">
+          <h3>Texto que llena la forma</h3>
+          <p>El contorno real se mide y el navegador acomoda cada línea entre dos bordes invisibles. El texto sigue siendo texto: se selecciona, se traduce y se lee en orden.</p>
+          <code class="tag"><b>data-ns-flow</b></code>
+        </div>
+      </article>
+
+      <!-- 3 · resaltado continuo -->
+      <article class="x x3" data-ns="all round 22">
+        <div class="stage s3">
+          <p class="hl" id="hl">Titulares con <mark data-ns-mark id="mk" class="go" contenteditable="plaintext-only" spellcheck="false">un resaltado que abraza cada línea y se adapta mientras escribes</mark></p>
+          <div class="row">
+            <div class="seg" id="mk-style" role="group" aria-label="Estilo del resaltado">{MARKS.map(([c, n], i) => <button type="button" data-c={c} aria-pressed={String(!i)}>{n}</button>)}</div>
+            <small class="hint">Escribe en el texto verde</small>
+          </div>
+        </div>
+        <div class="cap">
+          <h3>Resaltado continuo</h3>
+          <p>Un solo contorno para todas las líneas, con curvas hacia fuera y hacia dentro donde una línea es más corta. Hasta ahora se imitaba con un filtro de desenfoque: bordes borrosos y sin trazo posible.</p>
+          <code class="tag"><b>data-ns-mark</b></code>
+        </div>
+      </article>
+
+      <!-- 4 · formas líquidas -->
+      <article class="x x4" data-ns="all round 22">
+        <div class="stage s4">
+          <div class="lt" id="lt" data-ns-liquid role="group" aria-label="Periodo">
+            <i class="ind" data-ns-blob></i><i class="trail" data-ns-blob></i>
+            {PERIODS.map((p, i) => <button type="button" data-i={i} aria-pressed={String(i == 1)}>{p}</button>)}
+          </div>
+          <div class="fab" id="fab" data-ns-liquid>
+            {ACTIONS.map(([n, d], i) => <button type="button" class={`act a${i + 1}`} aria-label={n} inert><Icon d={d} /></button>)}
+            <button type="button" class="main" aria-expanded="false" aria-label="Más acciones"><Icon d="M10 4.5v11 M4.5 10h11" /></button>
+          </div>
+        </div>
+        <div class="cap">
+          <h3>Formas líquidas</h3>
+          <p>Elementos cercanos se funden con un puente curvo y se separan en gotas al alejarse, como en el Liquid Glass de Apple. Es un contorno vectorial calculado en cada frame del movimiento, no un filtro: nítido y con trazo.</p>
+          <code class="tag"><b>data-ns-liquid</b></code>
+        </div>
+      </article>
+    </div>
+    <p class="after"><a class="more" href="/docs/componentes">Cómo usarlos<Arrow /></a></p>
+  </div>
+</section>
+
+<script>
+  import 'ns-frame/concentric'
+  import 'ns-frame/flow'
+  import 'ns-frame/mark'
+  import 'ns-frame/liquid'
+
+  const $ = (id: string) => document.getElementById(id)!
+  const press = (g: HTMLElement, b: Element) => g.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x == b)))
+  const on = (id: string, attr: string, fn: (v: string) => void) => $(id).addEventListener('click', e => {
+    const b = (e.target as Element).closest<HTMLElement>(`button[${attr}]`)
+    if (b) { press($(id), b); fn(b.getAttribute(attr)!) }
+  })
+
+  on('cc-gap', 'data-g', v => $('cc').style.setProperty('--g', v + 'px'))
+  on('fq-shape', 'data-s', v => $('fq').setAttribute('data-ns', v))
+  on('mk-style', 'data-c', v => { $('mk').className = v })
+
+  // selector de periodo: el indicador llega primero y su estela después (se estira y se recoge)
+  const lt = $('lt')
+  lt.addEventListener('click', e => {
+    const b = (e.target as Element).closest<HTMLElement>('button')
+    if (!b) return
+    press(lt, b)
+    lt.style.setProperty('--x', b.dataset.i!)
+  })
+  lt.style.setProperty('--x', '1')
+
+  // acciones: salen del botón como gotas que se separan
+  const fab = $('fab'), main = fab.querySelector<HTMLElement>('.main')!
+  main.addEventListener('click', () => {
+    const open = fab.classList.toggle('open')
+    main.setAttribute('aria-expanded', String(open))
+    fab.querySelectorAll<HTMLElement>('.act').forEach(a => { a.inert = !open })
+  })
+</script>
+
+<style>
+  .grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 14px }
+  .x { background: var(--surface); --ns-border: var(--line-2); display: flex; flex-direction: column; min-width: 0; overflow: hidden }
+  .x1, .x3 { grid-column: span 7 } .x2, .x4 { grid-column: span 5 }
+  .stage { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 32px 24px 8px; min-height: 360px }
+  .cap { padding: 18px 24px 24px; display: grid; gap: 6px }
+  .cap h3 { font-size: var(--t-title) }
+  .cap p { margin: 0; color: var(--text-2); font-size: var(--t-ui); line-height: 1.5; max-width: 60ch }
+  .stage .seg button { min-height: 36px; padding: 0 12px; font-size: var(--t-small) }
+
+  /* 1 · tarjeta de reserva: foto y botón concéntricos con la tarjeta */
+  .s1 { background: radial-gradient(70% 80% at 50% 30%, rgba(0, 230, 118, .08), transparent 70%) }
+  .prod { --g: 12px; width: min(100%, 420px); padding: var(--g); box-sizing: border-box; background: #f4f4f5; color: #0a0a0a; display: grid; gap: calc(var(--g) + 4px); --ns-border: none; filter: drop-shadow(0 24px 40px rgba(0, 0, 0, .45)); transition: padding .3s var(--ease), gap .3s var(--ease) }
+  .prod img { display: block; width: 100%; height: 190px; object-fit: cover; --ns-morph-time: 0 }
+  .meta { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 0 0 0 calc(12px - var(--g) / 3) }
+  .meta b { display: block; font: 700 var(--t-title)/1.2 var(--display); font-stretch: 106%; letter-spacing: -.01em }
+  .meta small { color: var(--ink-2); font-size: var(--t-small) }
+  .cta { flex: none; min-height: 46px; padding: 0 28px 0 22px; border: 0; background: #0a0a0a; color: #fff; font: 600 var(--t-control)/1 var(--body); cursor: pointer; --ns-concentric-min: 10px; --ns-morph-time: 0 }
+
+  /* 2 · pieza editorial que cambia de silueta */
+  .s2 { background: radial-gradient(70% 70% at 50% 35%, rgba(255, 181, 71, .07), transparent 70%) }
+  .quote { width: min(100%, 290px); height: 290px; box-sizing: border-box; background: #f4f4f5; color: #18181b; --ns-border: none; --ns-morph-time: 0; font: 500 var(--t-ui)/1.42 var(--body) }
+  .quote p { margin: 0; text-wrap: pretty }
+  .quote b { display: block; font: 700 var(--t-title-lg)/1.1 var(--display); font-stretch: 108%; letter-spacing: -.02em; color: #0a0a0a; margin-bottom: 6px; text-align: center }
+
+  /* 3 · titular con resaltado editable */
+  .s3 { align-items: flex-start; justify-content: center; background: radial-gradient(60% 70% at 20% 30%, rgba(0, 230, 118, .08), transparent 70%) }
+  .hl { margin: 0; max-width: 560px; font: 700 clamp(28px, 3.2vw, 42px)/1.22 var(--display); font-stretch: 106%; letter-spacing: -.03em; color: var(--text) }
+  .hl mark { background: none; color: var(--ink-go); outline: none; --ns-mark: var(--signal); --ns-mark-pad: 3px 10px; --ns-mark-round: 12px; caret-color: currentColor }
+  .hl mark.amber { color: #1d1303; --ns-mark: #ffb547 }
+  .hl mark.line { color: var(--text); --ns-mark: rgba(0, 230, 118, .08); --ns-mark-border: var(--signal); --ns-mark-width: 1.5px }
+  .row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap }
+  .hint { color: var(--text-3); font-size: var(--t-caption) }
+
+  /* 4 · líquido: selector de periodo y acciones que salen en gotas */
+  .s4 { gap: 44px; background: radial-gradient(70% 70% at 50% 40%, rgba(212, 212, 216, .06), transparent 70%) }
+  .lt { position: relative; display: inline-flex; padding: 5px; background: var(--surface-3); border-radius: 26px; --ns-liquid: 18px; --ns-liquid-fill: var(--text) }
+  .lt button { position: relative; width: 92px; height: 42px; border: 0; background: none; color: var(--text-2); font: 600 var(--t-small)/1 var(--body); cursor: pointer; transition: color .25s }
+  .lt button[aria-pressed=true] { color: #0a0a0a }
+  .lt i { position: absolute; left: 5px; top: 5px; width: 92px; height: 42px; border-radius: 21px; translate: calc(var(--x, 1) * 92px) 0 }
+  .ind { transition: translate .34s cubic-bezier(.3, .9, .3, 1) }
+  .trail { transition: translate .5s cubic-bezier(.35, .75, .3, 1) }
+  .fab { position: relative; width: 60px; height: 60px; --ns-liquid: 20px; --ns-liquid-fill: var(--signal); color: var(--ink-go) }
+  .fab button { position: absolute; left: 0; top: 0; border: 0; background: none; color: inherit; border-radius: 50%; display: grid; place-items: center; cursor: pointer }
+  .main { width: 60px; height: 60px }
+  .main :global(svg) { width: 24px; height: 24px; transition: rotate .4s var(--ease) }
+  .fab.open .main :global(svg) { rotate: 45deg }
+  .a1 { --i: -2 } .a2 { --i: -1 } .a3 { --i: 1 } .a4 { --i: 2 }
+  .act { width: 46px; height: 46px; margin: 7px; transition: translate .5s cubic-bezier(.3, .9, .3, 1) }
+  .act :global(svg) { opacity: 0; transition: opacity .2s }
+  .fab.open .act { translate: calc(var(--i) * 76px) 0 }
+  .fab.open .a1, .fab.open .a4 { transition-delay: 60ms }
+  .fab.open .act :global(svg) { opacity: 1; transition-delay: .16s }
+
+  @media (max-width: 960px) {
+    .x1, .x2, .x3, .x4 { grid-column: 1 / -1 }
+    .stage { min-height: 0; padding: 28px 18px 6px }
+  }
+  @media (max-width: 560px) {
+    .grid { gap: 10px }
+    .cap { padding: 16px 18px 20px }
+    .cap p { font-size: var(--t-small) }
+    .prod img { height: 150px }
+    .lt button, .lt i { width: 80px }
+    .lt i { translate: calc(var(--x, 1) * 80px) 0 }
+    /* acciones: cabe en 320 px; con menos separación, menos alcance (siguen siendo gotas sueltas) */
+    .fab { --ns-liquid: 14px }
+    .fab.open .act { translate: calc(var(--i) * 64px) 0 }
+  }
+  @media (prefers-reduced-motion: reduce) { .prod, .ind, .trail, .act, .act :global(svg), .main :global(svg) { transition: none } }
+</style>
