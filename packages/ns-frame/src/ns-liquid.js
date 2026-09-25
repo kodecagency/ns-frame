@@ -19,8 +19,9 @@
 //      desplazamiento sale del mismo campo de distancias: cada punto cerca del borde toma el
 //      fondo un poco más allá, en la dirección de la normal. En Chromium, feDisplacementMap en
 //      backdrop-filter; en Safari y Firefox (que no admiten filtros SVG en backdrop-filter), sobre
-//      una copia alineada del fondo si se indica cuál es: data-ns-liquid-src="selector" (una
-//      imagen o un elemento con background-image; el más cercano subiendo por los antepasados);
+//      una copia alineada del fondo: la imagen, el vídeo o el fondo que haya detrás, lo que diga
+//      data-ns-liquid-src="selector", o si no hay nada limpio, la página entera (un clon sólo de
+//      la zona bajo el grupo);
 //   3. canto: un anillo junto al borde con más brillo, saturación y contraste (en todos los
 //      navegadores: es lo que da el grosor al vidrio donde no hay lente);
 //   4. luz: un reflejo especular fino arriba, uno tenue abajo y un brillo interior.
@@ -28,6 +29,8 @@
 //   (fuerza de la lente en px, 34; 0 = sin lente), --ns-glass-depth (hasta dónde llega la lente
 //   desde el borde, 24px), --ns-glass-edge (ancho del canto, 8px),
 //   --ns-glass-shine (0–1). Con prefers-reduced-transparency se vuelve opaco (--ns-glass-solid).
+//   Sobre un fondo claro liso, el vidrio se aclara solo (clase ns-glass-light, tinte
+//   --ns-glass-tint-light) y --ns-glass-ink da el color de texto que contrasta (#111 o #fff).
 //   La lente necesita img-src data: en la CSP (el mapa es una imagen generada en local).
 // · Los hijos no llevan fondo: el conjunto lo pinta. data-ns-blob marca cuáles cuentan (si no, todos).
 // · Mientras algún hijo se anima (transiciones, Web Animations, hover), se redibuja cada frame; en
@@ -41,12 +44,14 @@ const CSS = `@layer ns{
 .ns-liquid{position:relative}
 :where(.ns-liquid>:not(.ns-liquid-fx,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-src)){position:relative}
 .ns-liquid-fx,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-src{position:absolute;pointer-events:none;margin:0}
-.ns-liquid-src{overflow:hidden}.ns-liquid-src>div{position:absolute}
+.ns-liquid-src{overflow:hidden}.ns-liquid-src>div{position:absolute;inset:0}.ns-liquid-src>div>div{position:absolute}
 .ns-liquid-fx{overflow:visible}
 .ns-liquid-fx .ns-lf{fill:var(--ns-liquid-fill,currentColor);stroke:var(--ns-liquid-border,none);stroke-width:var(--ns-liquid-width,1.5px)}
 .ns-liquid-fx .ns-lr,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-src{display:none}
 .ns-glass>.ns-liquid-src:not([hidden]){display:block}
-.ns-glass>.ns-liquid-glass{display:block;background:var(--ns-glass-tint,rgba(22,22,26,.22));-webkit-backdrop-filter:blur(var(--ns-glass-blur,4px)) saturate(var(--ns-glass-sat,1.3));backdrop-filter:blur(var(--ns-glass-blur,4px)) saturate(var(--ns-glass-sat,1.3))}
+.ns-glass>.ns-liquid-glass{display:block;transition:background-color .35s;background:var(--ns-glass-tint,rgba(22,22,26,.22));-webkit-backdrop-filter:blur(var(--ns-glass-blur,4px)) saturate(var(--ns-glass-sat,1.3));backdrop-filter:blur(var(--ns-glass-blur,4px)) saturate(var(--ns-glass-sat,1.3))}
+.ns-glass{--ns-glass-ink:#fff}.ns-glass.ns-glass-light{--ns-glass-ink:#111}
+.ns-glass.ns-glass-light>.ns-liquid-glass{background:var(--ns-glass-tint,var(--ns-glass-tint-light,rgba(255,255,255,.34)))}
 .ns-glass>.ns-liquid-rim{display:block;-webkit-backdrop-filter:blur(1.5px) brightness(1.22) saturate(1.15) contrast(1.06);backdrop-filter:blur(1.5px) brightness(1.22) saturate(1.15) contrast(1.06)}
 .ns-glass>.ns-liquid-fx .ns-lf{stroke:none;opacity:var(--ns-glass-shine,1)}
 .ns-liquid-fx .ns-lg{fill:none}
@@ -55,7 +60,7 @@ const CSS = `@layer ns{
 @media (prefers-reduced-transparency:reduce){.ns-glass>.ns-liquid-glass{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:var(--ns-glass-solid,#232327)}.ns-glass>.ns-liquid-rim,.ns-glass>.ns-liquid-src{display:none!important}}
 @media (forced-colors:active){.ns-liquid-fx .ns-lf{fill:Canvas;stroke:CanvasText}.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-src{display:none!important}}
 }`
-const SVG = 'http://www.w3.org/2000/svg'
+const SVG = 'http://www.w3.org/2000/svg', HTML = 'http://www.w3.org/1999/xhtml'
 const r2 = n => Math.round(n * 100) / 100 || 0
 let styled = 0
 // lente en backdrop-filter sólo donde admite filtros SVG (Chromium); en los demás, sobre la copia
@@ -76,6 +81,8 @@ const LOOK = ('display position top right bottom left width height min-width min
   'flex-direction flex-wrap flex-grow flex-shrink flex-basis align-items align-content align-self justify-content justify-items justify-self row-gap column-gap ' +
   'grid-template-columns grid-template-rows grid-column-start grid-column-end grid-row-start grid-row-end grid-auto-flow grid-auto-rows grid-auto-columns order ' +
   'object-fit object-position aspect-ratio box-shadow filter z-index vertical-align list-style-type clip-path mask-image fill stroke stroke-width').split(' ')
+// (sin data-ns*: el clon ya lleva la forma pintada; con ellos, la biblioteca lo activaría otra vez)
+const NOATTR = /^(id|style|on.*|autofocus|tabindex|contenteditable|loading|data-ns.*)$/i
 const CAP = 1500, SKIP =/^(SCRIPT|STYLE|TEMPLATE|NOSCRIPT|IFRAME|OBJECT|EMBED|DIALOG)$/
 // lo que hay detrás del centro de `el` sin indicarlo: subiendo por los antepasados, un hermano
 // anterior (pinta debajo) que sea o contenga una imagen, un vídeo o un canvas que cubra ese punto,
@@ -93,7 +100,8 @@ const paints = n => {
 }
 function behind(el) {
   const r = el.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2
-  if (!r.width || x < 0 || y < 0 || x > innerWidth || y > innerHeight) return null
+  // (fuera de la vista: todavía no se sabe; null, en cambio, es «no hay una fuente limpia»)
+  if (!r.width || x < 0 || y < 0 || x > innerWidth || y > innerHeight) return undefined
   // debajo del grupo (lo que va antes en la lista está encima) y sin contar sus antepasados: su
   // fondo pinta por debajo de todos sus hijos, así que nunca queda en medio
   const L = document.elementsFromPoint(x, y), i = Math.max(0, L.findIndex(n => el.contains(n)))
@@ -111,6 +119,25 @@ function behind(el) {
     if (getComputedStyle(a).backgroundImage != 'none') return first && a.contains(first) ? null : a
   }
   return null
+}
+// ¿Lo de detrás es claro? El primer color de fondo casi opaco bajo el centro del grupo (lo que
+// está encima de él no cuenta). Una imagen, un vídeo o un degradado: no se sabe (undefined), y el
+// vidrio se queda como estaba
+function bright(el) {
+  const r = el.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2
+  if (!r.width || x < 0 || y < 0 || x > innerWidth || y > innerHeight) return undefined
+  const L = document.elementsFromPoint(x, y), i = Math.max(0, L.findIndex(n => el.contains(n)))
+  const lum = c => (.2126 * c[0] + .7152 * c[1] + .0722 * c[2]) / 255 > .6
+  for (const n of L.slice(i)) {
+    if (el.contains(n) || n.closest('.ns-liquid-src')) continue
+    if (/^(IMG|VIDEO|CANVAS|svg)$/.test(n.tagName)) return undefined
+    const s = getComputedStyle(n), c = s.backgroundColor.match(/[\d.]+/g)
+    if (s.backgroundImage != 'none') return undefined
+    if (c && +(c[3] ?? 1) >= .5) return lum(c)
+  }
+  // (el lienzo: el fondo de <html>, o el del esquema de color)
+  const c = getComputedStyle(document.documentElement).backgroundColor.match(/[\d.]+/g)
+  return c && +(c[3] ?? 1) > 0 ? lum(c) : !matchMedia('(prefers-color-scheme: dark)').matches
 }
 // máscara del canto como imagen: el trazo del contorno, desenfocado y recortado a la forma
 const rimImage = (d, w, h, e) => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns="${SVG}" width="${r2(w)}" height="${r2(h)}"><filter id="b" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="${r2(e / 2.2)}"/></filter><clipPath id="c"><path d="${d}"/></clipPath><g clip-path="url(#c)"><path d="${d}" fill="none" stroke="#fff" stroke-width="${r2(e * 1.6)}" filter="url(#b)"/></g></svg>`)}")`
@@ -515,7 +542,10 @@ export function liquid(el, o = {}) {
   // se pinta una copia alineada debajo del vidrio y la lente se le aplica con filter: url(), que sí
   // funciona en todos. El cuerpo del vidrio la desenfoca y la tiñe encima, como al fondo real.
   const back = div('ns-liquid-src'), copy = document.createElement('div')
-  back.append(copy); back.hidden = true
+  // (hold recorta la copia a la forma antes de la lente, como hace Chromium con el fondo: lo de fuera
+  // no entra doblado por el canto)
+  const hold = document.createElement('div')
+  hold.append(copy); back.append(hold); back.hidden = true
   // orden de pintado: copia del fondo, cuerpo, canto, luz y encima los hijos
   el.prepend(back, glass, edge, svg)
   const cv = document.createElement('canvas')
@@ -527,7 +557,10 @@ export function liquid(el, o = {}) {
     // (un grupo dentro de otro, como el indicador de unas pestañas, hereda el fondo del de fuera)
     const s = o.source ?? el.closest('[data-ns-liquid-src]')?.getAttribute('data-ns-liquid-src')
     if (s == 'none') return null
-    if (!s || s == 'auto') return behind(el)
+    if (s == 'page') return document.body
+    // sin una imagen limpia detrás (texto, tarjetas, una foto con algo encima), la página entera:
+    // un clon de lo que queda bajo el grupo (scene)
+    if (!s || s == 'auto') { const b = behind(el); return b === null ? document.body : b ?? null }
     if (typeof s != 'string') return s
     for (let a = el.parentElement; a; a = a.parentElement) { const n = a.querySelector(s); if (n) return n }
     return null
@@ -540,11 +573,18 @@ export function liquid(el, o = {}) {
   //   -moz-element(), el elemento en vivo; en Safari, un clon del DOM con los estilos calculados en
   //   línea, que se rehace cuando el original cambia (hasta CAP nodos; más, sólo el desenfoque).
   let mirrored = null, kind = '', live = 0, vis = true, cc = null, smo = null, redo = 0
-  const unmirror = () => { cancelAnimationFrame(live); live = 0; smo?.disconnect(); smo = null; clearTimeout(redo); copy.replaceChildren(); copy.removeAttribute('style'); cc = null; kind = ''; placed = '' }
+  const unmirror = () => { cancelAnimationFrame(live); live = 0; smo?.disconnect(); smo = null; clearTimeout(redo); cancelAnimationFrame(redo); redo = 0; zone = null; copy.replaceChildren(); copy.removeAttribute('style'); cc = null; kind = ''; placed = '' }
   const mirror = n => {
     unmirror()
     const s = getComputedStyle(n), c = copy.style, t = n.tagName
-    if (t == 'IMG') {
+    if (n.contains(el)) {
+      // la página (o un antepasado): clon de la zona bajo el grupo, que se rehace cuando la página
+      // cambia o el grupo se aleja de la zona clonada (una barra fija al desplazarse)
+      kind = 'scene'
+      scene(n)
+      smo = new MutationObserver(R => { if (R.some(r => !quiet(r.target))) later() })
+      smo.observe(n, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class', 'style', 'src', 'hidden', 'open'] })
+    } else if (t == 'IMG') {
       const u = n.currentSrc || n.src
       // (con loading="lazy" o srcset, la fuente definitiva se conoce al cargar)
       if (!n.complete) n.addEventListener('load', stale, { once: true })
@@ -571,7 +611,7 @@ export function liquid(el, o = {}) {
       kind = 'bg'
       Object.assign(c, { backgroundImage: s.backgroundImage, backgroundSize: s.backgroundSize, backgroundPosition: s.backgroundPosition, backgroundRepeat: s.backgroundRepeat, backgroundColor: s.backgroundColor })
     }
-    if (kind != 'dom') c.filter = s.filter == 'none' ? '' : s.filter
+    if (kind != 'dom' && kind != 'scene') c.filter = s.filter == 'none' ? '' : s.filter
   }
   // vídeo y canvas: cada fotograma, con su object-fit, sólo mientras el grupo está a la vista
   const frames = n => {
@@ -603,7 +643,7 @@ export function liquid(el, o = {}) {
       if (m.nodeType == 3) return document.createTextNode(m.data)
       if (m.nodeType != 1 || budget-- <= 0 || SKIP.test(m.tagName)) return null
       const c = document.createElementNS(m.namespaceURI, m.localName)
-      for (const a of m.attributes) if (!/^(id|style|on.*|autofocus|tabindex|contenteditable|loading)$/i.test(a.name)) c.setAttribute(a.name, a.value)
+      for (const a of m.attributes) if (!NOATTR.test(a.name)) c.setAttribute(a.name, a.value)
       // sólo lo que cambia cómo se ve (unas 100 propiedades, no las ~370 del estilo calculado)
       const s = getComputedStyle(m)
       for (const p of LOOK) { const v = s.getPropertyValue(p); v && c.style.setProperty(p, v) }
@@ -620,11 +660,82 @@ export function liquid(el, o = {}) {
     copy.append(root)
     syncScroll()
   }
+  // La escena: la página clonada sólo donde hace falta. Se recorre desde la raíz y
+  // · lo que corta la zona bajo el grupo (con un margen para desplazarse sin rehacerla) se clona
+  //   con su aspecto, como en snap;
+  // · un bloque que no la toca se deja como una caja vacía e invisible del mismo tamaño, para que
+  //   el resto quede donde está (lo que no ocupa sitio, fijo o absoluto, ni eso);
+  // · el propio grupo y las capas de otros vidrios no se copian.
+  // zone: la posición del grupo respecto a la raíz al clonar; si se aleja más de medio margen (una
+  // barra fija al desplazar la página), se rehace
+  let zone = null
+  const BOX = ('display position top right bottom left float clear box-sizing width height margin-top margin-right margin-bottom margin-left ' +
+    'padding-top padding-right padding-bottom padding-left border-top-width border-right-width border-bottom-width border-left-width ' +
+    'border-top-style border-right-style border-bottom-style border-left-style flex-grow flex-shrink flex-basis align-self justify-self order ' +
+    'grid-column-start grid-column-end grid-row-start grid-row-end vertical-align').split(' ')
+  const scene = n => {
+    const E = el.getBoundingClientRect(), N = n.getBoundingClientRect()
+    const mx = 40 + (V?.lens || 34), my = Math.max(innerHeight * .75, 400)
+    const R = { l: E.left - mx, r: E.right + mx, t: E.top - my, b: E.bottom + my }
+    zone = { x: E.left - N.left, y: E.top - N.top, my }
+    let budget = CAP * 2
+    scrolls = []
+    const walk = (m, top) => {
+      if (m.nodeType == 3) return document.createTextNode(m.data)
+      if (m.nodeType != 1 || SKIP.test(m.tagName) || m.matches('.ns-liquid-src,.ns-liquid-glass,.ns-liquid-rim')) return null
+      const s = getComputedStyle(m), html = m.namespaceURI == HTML
+      if (s.display == 'none' || (!top && s.position == 'fixed')) return null
+      const b = m.getBoundingClientRect(), hit = b.right > R.l && b.left < R.r && b.bottom > R.t && b.top < R.b
+      // (el grupo, o un bloque fuera de la zona: su hueco; un elemento en línea se copia entero,
+      // porque sus líneas pueden cruzar la zona aunque su caja no)
+      if (html && (m == el || (!hit && !/^(inline|contents)$/.test(s.display)))) {
+        if (s.position == 'absolute' || s.position == 'fixed') return null
+        const c = document.createElement('div')
+        for (const p of BOX) c.style.setProperty(p, s.getPropertyValue(p))
+        c.style.display = /inline/.test(s.display) ? 'inline-block' : /^(flex|grid|table|flow-root|list-item)$/.test(s.display) ? 'block' : s.display
+        c.style.visibility = 'hidden'
+        return c
+      }
+      if (budget-- <= 0) return null
+      const c = document.createElementNS(m.namespaceURI, m.localName)
+      for (const a of m.attributes) if (!NOATTR.test(a.name)) c.setAttribute(a.name, a.value)
+      for (const p of LOOK) { const v = s.getPropertyValue(p); v && c.style.setProperty(p, v) }
+      c.style.animation = c.style.transition = 'none'
+      // (lo pegajoso, en su sitio de ahora; en la copia no hay desplazamiento que lo mueva)
+      if (s.position == 'sticky') c.style.position = 'relative'
+      if (html && (m.scrollHeight > m.clientHeight + 1 || m.scrollWidth > m.clientWidth + 1)) scrolls.push([c, m])
+      for (const k of m.childNodes) { const x = walk(k); x && c.append(x) }
+      return c
+    }
+    const root = walk(n, true)
+    if (budget < 0 || !root) { copy.replaceChildren(); return }
+    Object.assign(root.style, { position: 'absolute', left: 0, top: 0, margin: 0, transform: 'none', translate: 'none', rotate: 'none', scale: 'none' })
+    // (el fondo del body puede estar en <html>: el lienzo de la página)
+    if (/^(transparent|rgba\(.*,\s*0\))$/.test(root.style.backgroundColor)) {
+      const h = getComputedStyle(document.documentElement)
+      root.style.backgroundColor = h.backgroundColor; if (h.backgroundImage != 'none') root.style.backgroundImage = h.backgroundImage
+    }
+    root.setAttribute('inert', ''); root.setAttribute('aria-hidden', 'true')
+    copy.replaceChildren(root)
+    syncScroll()
+  }
+  // cambios que no se ven en la escena: los del propio grupo y los de otros grupos líquidos (sus
+  // capas y sus piezas se mueven en cada fotograma)
+  const quiet = t => { const e = t.nodeType == 1 ? t : t.parentElement; return !e || el.contains(e) || !!e.closest('.ns-liquid') }
+  // rehacer la escena, como mucho cuatro veces por segundo y en un momento libre
+  const later = () => { redo ||= setTimeout(() => { const f = () => { redo = 0; if (kind == 'scene' && mirrored) scene(mirrored) }; globalThis.requestIdleCallback ? requestIdleCallback(f, { timeout: 300 }) : f() }, 250) }
   // lo que el original tiene desplazado por dentro, también (y al desplazarse, sin rehacer el clon)
   let scrolls = []
   const syncScroll = () => { for (const [c, m] of scrolls) { c.scrollTop = m.scrollTop; c.scrollLeft = m.scrollLeft } }
   // al desplazarse la página o un contenedor, la copia se recoloca (y el clon copia el desplazamiento)
-  const onScroll = () => { if (V?.src && vis) fr ||= requestAnimationFrame(follow) }
+  const onScroll = () => {
+    if (V?.src && vis) fr ||= requestAnimationFrame(follow)
+    // (lo de detrás cambia al desplazarse: una barra fija pasa de una zona clara a una oscura)
+    if (vis && performance.now() - toned > 150) tone()
+  }
+  // vidrio claro sobre fondos claros (como el de Apple), salvo que se fije --ns-glass-tint
+  let toned = 0
+  const tone = () => { toned = performance.now(); const b = glassy() ? bright(el) : undefined; if (b !== undefined) el.classList.toggle('ns-glass-light', b) }
   // La copia, donde está el original respecto a las capas. OX, OY: origen del grupo en pantalla;
   // SC: su escala (un grupo con scale o transform: la barra que se encoge al desplazar); LX, LY:
   // origen de las capas en coordenadas del grupo. La copia se desescala para verse a tamaño real
@@ -643,9 +754,14 @@ export function liquid(el, o = {}) {
     fr = 0
     const s = V?.src
     if (!s || back.hidden) return
-    if (kind == 'dom') syncScroll()
+    if (kind == 'dom' || kind == 'scene') syncScroll()
     // el grupo también puede haberse movido (si no es fijo): el origen se relee
-    origin()
+    const E = origin()
+    // la escena se rehace antes de que el grupo salga de la zona clonada
+    if (kind == 'scene' && zone && !redo) {
+      const N = s.getBoundingClientRect()
+      if (Math.abs(E.top - N.top - zone.y) > zone.my / 2 || Math.abs(E.left - N.left - zone.x) > 40) { redo = requestAnimationFrame(() => { redo = 0; kind == 'scene' && scene(s) }) }
+    }
     put(s.getBoundingClientRect())
   }
   let raf = 0, idle = 0, cost = 3, last = '', lastPre = '', lastVk = '', remap = false, msig = '', now = null, cur = -1, lensKey = '', token = 0, frame = 0, dirty = true, V = null
@@ -668,6 +784,7 @@ export function liquid(el, o = {}) {
       if (lenses[0].prism !== V.prism) { lenses.forEach(L => chain(L, V.prism)); lensKey = ''; lastPre = '' }
       // (el clon del DOM y el de fotogramas se rehacen sólo si cambia el original; la imagen y el
       // fondo, que no cuestan nada, siempre: pueden haber cambiado de src o de estilo)
+      tone()
       if (V.src != mirrored || ((kind == 'img' || kind == 'bg') && sig(V.src) != msig)) { mirrored = V.src; msig = V.src ? sig(V.src) : ''; V.src ? mirror(V.src) : unmirror() }
     }
     dirty = false; frame++
@@ -747,7 +864,7 @@ export function liquid(el, o = {}) {
     setRim(me)
     // y además clip-path: si un navegador no aplica una máscara SVG del documento a un elemento
     // HTML, el vidrio sigue teniendo la forma exacta (nunca un rectángulo)
-    glass.style.clipPath = edge.style.clipPath = back.style.clipPath = g && d ? `path("${d}")` : ''
+    glass.style.clipPath = edge.style.clipPath = back.style.clipPath = hold.style.clipPath = g && d ? `path("${d}")` : ''
     back.style.mask = back.style.webkitMask = mb
     back.hidden = !(src && d)
     if (!g || !d) { glass.style.backdropFilter = back.style.filter = ''; now = null; return }
@@ -873,8 +990,8 @@ export function liquid(el, o = {}) {
   const nio = new IntersectionObserver(es => { const n = es[es.length - 1].isIntersecting; if (n != near) { near = n; n && stale() } }, { rootMargin: '50% 0px' })
   nio.observe(el)
   let io = null
+  addEventListener('scroll', onScroll, { capture: true, passive: true })
   if (!LENS) {
-    addEventListener('scroll', onScroll, { capture: true, passive: true })
     io = new IntersectionObserver(es => { vis = es[es.length - 1].isIntersecting; if (vis) { if (kind == 'frames' && !live) frames(mirrored); if (!V?.src) stale() } })
     io.observe(el)
   }

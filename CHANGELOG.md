@@ -4,7 +4,11 @@
 
 ### Compatibilidad
 - Sin el error global «ResizeObserver loop completed with undelivered notifications» (WebKit lo lanzaba como excepción): el margen seguro de `data-ns-pad` se aplica en el frame siguiente cuando viene de un ResizeObserver, y `ns-link` ya no observa el `<body>` (compara la altura del documento en eventos baratos).
-- Todas las páginas del sitio revisadas en WebKit (motor de Safari) sin errores.
+- Todas las páginas del sitio revisadas en WebKit (motor de Safari) y Firefox sin errores.
+- Vidrio en Safari y Firefox sobre **cualquier** fondo: si detrás no hay una imagen limpia (una barra fija sobre texto y tarjetas, una foto con un título encima), la lente se aplica a la **escena**, un clon de la página sólo en la zona bajo el vidrio, que se rehace al cambiar la página o al desplazarse. Antes se quedaba sin lente. `data-ns-liquid-src="page"` la fuerza.
+- La copia se recorta a la forma antes de la lente, como Chromium: el canto ya no muestra lo de fuera doblado ni dentado.
+- Los clones ya no llevan los atributos `data-ns*` (la biblioteca los activaba otra vez).
+- Tono automático: sobre un fondo claro liso el vidrio se aclara (`ns-glass-light`, `--ns-glass-tint-light`) y `--ns-glass-ink` da el color de texto que contrasta; sobre fotos no cambia.
 
 ### La luz de la página (`ns-frame/light`, nuevo)
 - Motor compartido: una sola luz direccional para toda la página y materiales compilados en filtros SVG de iluminación (una vez por combinación, compartidos). Lo usan el relieve y el canto del vidrio: todo se ilumina desde el mismo sitio y combina.

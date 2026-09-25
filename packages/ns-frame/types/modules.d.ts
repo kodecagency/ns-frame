@@ -112,7 +112,7 @@ export interface LiquidOptions {
   blobs?: string | ((el: HTMLElement) => Element[])
   /** Vidrio líquido (si no, el atributo data-ns-liquid="glass"). */
   glass?: boolean
-  /** Fondo que hay detrás del vidrio (elemento o selector), para la lente en Safari y Firefox (si no, data-ns-liquid-src). */
+  /** Fondo que hay detrás del vidrio (elemento, selector, 'page' para la página clonada o 'none'), para la lente en Safari y Firefox (si no, data-ns-liquid-src; sin nada, se detecta). */
   source?: Element | string | null
   /** Hueco máximo que se funde, en px (si no, --ns-liquid o 14). */
   k?: number

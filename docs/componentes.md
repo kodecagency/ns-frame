@@ -277,14 +277,18 @@ El material del Liquid Glass de Apple, en capas, con la forma exacta del grupo (
    | elemento con `background-image` | sus propiedades de fondo |
    | contenido HTML (texto, tarjetas, una lista que se desplaza por detrás de una barra fija) | en Firefox, `-moz-element()` en vivo; en Safari, un clon con los estilos calculados que se rehace cuando el original cambia (hasta 1500 nodos) |
 
-   **Sin indicar nada**, se detecta: una imagen, un vídeo o un canvas anterior que cubra el centro del grupo, o el antepasado con `background-image`, y sólo si es de verdad lo primero que se ve debajo (si hay un texto en medio, la copia lo taparía y se queda sin lente). Para elegirlo tú —imprescindible para contenido HTML—:
+   | la página, sin nada que elegir (una barra fija sobre texto y tarjetas, una foto con un título encima) | la **escena**: un clon de la página sólo en la zona bajo el grupo, más un margen para desplazarse; los bloques de fuera quedan como cajas vacías del mismo tamaño para que todo siga en su sitio. Se rehace cuando la página cambia o cuando el grupo se aleja de la zona (unos 20–80 nodos para una barra) |
+
+   **Sin indicar nada**, se detecta: una imagen, un vídeo o un canvas anterior que cubra el centro del grupo, o el antepasado con `background-image`, si es de verdad lo primero que se ve debajo; si no, la escena. Para elegirlo tú:
 
    ```html
    <main id="feed">…</main>
    <nav data-ns-liquid="glass" data-ns-liquid-src="#feed">…</nav>   <!-- barra fija sobre el feed -->
    ```
 
-   `data-ns-liquid-src` (o la opción `source`) es un selector —se busca el más cercano subiendo por los antepasados—, un elemento, o `none` para desactivarlo. La copia sigue al original al desplazarse, sin recalcular la forma.
+   `data-ns-liquid-src` (o la opción `source`) es un selector —se busca el más cercano subiendo por los antepasados—, un elemento, `page` para la escena o `none` para desactivarlo. La copia sigue al original al desplazarse, sin recalcular la forma, y se recorta a la forma antes de la lente (como hace Chromium con el fondo): lo que queda fuera no entra doblado por el canto.
+
+   **Tono:** sobre un fondo claro liso el vidrio se aclara solo, como el de Apple (clase `ns-glass-light`, tinte `--ns-glass-tint-light`), y vuelve a oscurecerse sobre uno oscuro al desplazarse. Sobre una foto o un degradado no cambia. `--ns-glass-ink` da el color de texto que contrasta con el tono actual (`color: var(--ns-glass-ink)`); un `--ns-glass-tint` propio manda sobre todo esto.
 3. **Canto:** un brillo junto al borde que se desvanece hacia dentro, sin línea interior (`--ns-glass-edge`, 8px). En todos los navegadores.
 4. **Luz:** un reflejo especular fino que recoge la luz arriba y la devuelve tenue abajo, y un brillo interior (`--ns-glass-shine`, 0–1).
 
