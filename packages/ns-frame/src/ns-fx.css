@@ -158,6 +158,17 @@
 }
 @keyframes ns-pulse-o { 50% { opacity: .55 } }
 
+/* Alto contraste (colores forzados): el sistema ya quita fondos y degradados; aquí se quitan los
+   brillos que quedarían (halo, pulso) y la máscara que apagaba el borde de la luz en U animada:
+   el contorno del sistema se ve entero y el texto con degradado vuelve a ser texto normal */
+@media (forced-colors: active) {
+  :is(.ns-u, .ns-u-top, .ns-u-left, .ns-u-right, .ns-aura, .ns-aura-top)::after, :is(.ns-aura, .ns-aura-top)::before,
+  :is(.ns-dots, .ns-grid, .ns-lines, .ns-stripes, .ns-scan, .ns-scales)::before, .ns-shimmer::after { display: none }
+  :is(.ns-u-live, .ns-u-tide, .ns-u-surge) > .ns-svg { -webkit-mask: none; mask: none; opacity: 1 }
+  .ns-halo, .ns-pulse > .ns-svg { filter: none; animation: none }
+  .ns-text-shimmer, .ns-text-aurora { background: none; color: CanvasText; animation: none }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ns-u-hover { transition: none }
   :is(.ns-aura, .ns-aura-top)::before, .ns-u-breathe::after, .ns-u-hue, .ns-u-live, .ns-u-tide, .ns-u-surge, .ns-scan::before, .ns-shimmer::after, .ns-text-shimmer, .ns-text-aurora, .ns-pulse > .ns-svg { animation: none }

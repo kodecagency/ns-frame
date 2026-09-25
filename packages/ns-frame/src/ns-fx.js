@@ -5,12 +5,20 @@ const scramble = t => t.replace(/\S/g, () => G[(Math.random() * G.length) | 0])
 export function decode(el, dur = +el.dataset.nsDecodeTime || 900) {
   const txt = (el.dataset.nsText ??= el.textContent), t0 = performance.now()
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return
-  el.setAttribute('aria-label', txt)
   cancelAnimationFrame(el._nsd)
+  // Mientras se descifra, los signos van en un span oculto a los lectores de pantalla y el texto
+  // real en otro sólo para ellos (un aria-label en un <span> o un <h2> se ignora: leerían los
+  // signos). Al terminar vuelve a ser el texto tal cual
+  const shown = document.createElement('span'), real = document.createElement('span')
+  shown.setAttribute('aria-hidden', 'true')
+  Object.assign(real.style, { position: 'absolute', width: '1px', height: '1px', overflow: 'hidden', clipPath: 'inset(50%)', whiteSpace: 'nowrap' })
+  real.textContent = txt
+  el.replaceChildren(shown, real)
   const tick = now => {
     const n = Math.floor(Math.min(1, (now - t0) / dur) * txt.length)
-    el.textContent = txt.slice(0, n) + scramble(txt.slice(n))
-    el._nsd = n < txt.length && requestAnimationFrame(tick)
+    shown.textContent = txt.slice(0, n) + scramble(txt.slice(n))
+    if (n < txt.length) el._nsd = requestAnimationFrame(tick)
+    else { el._nsd = 0; el.textContent = txt }
   }
   el._nsd = requestAnimationFrame(tick)
 }
