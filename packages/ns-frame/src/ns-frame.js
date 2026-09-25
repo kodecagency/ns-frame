@@ -521,7 +521,7 @@ function read(s) {
 function write(s, r, animate) {
   if (!s.w || !s.h) return
   const { src, look } = r
-  const key = [s.w, s.h, src, look.border, look.inner, look.bl, look.bt, r.accent, r.motion, r.mt, r.spin, r.fo, r.ss, r.pad, r.nat, r.scr].join('|')
+  const key = [s.w, s.h, src, look.border, look.inner, look.bl, look.bt, r.accent, r.motion, r.mt, r.spin, r.fo, r.ss, r.pad, r.nat, r.scr, FORCED.matches].join('|')
   if (key == s.key) return
   const moved = src != s.src
   Object.assign(s, r)
@@ -657,6 +657,9 @@ export function attach(el) {
     // de una pantalla de distancia; el resto queda pendiente y se pinta al acercarse (antes de verse)
     lo = new IntersectionObserver(onNear, { rootMargin: '100% 0px' })
     addEventListener('beforeprint', () => { for (const s of LATE) refresh(s); LATE.clear() })
+    // alto contraste activado o quitado con la página abierta: todos los marcos se releen (el
+    // borde del sistema, y la vía rápida nativa, que allí perdería el borde)
+    FORCED.addEventListener?.('change', () => document.querySelectorAll(SEL).forEach(e => { const s = S.get(e); s && refresh(s) }))
     delegate()
   }
   let s = S.get(el)

@@ -53,7 +53,11 @@ En pantallas táctiles (`hover: none` y `pointer: coarse`) `--ns-glow` no se apl
 
 ## Foco
 
-`clip-path` corta el contorno de foco nativo, así que en los elementos enfocables ns-frame dibuja un anillo que sigue la forma con `:focus-visible`. Se ajusta con `--ns-focus` (color) y `--ns-focus-width`.
+`clip-path` corta el contorno de foco nativo, así que en los elementos enfocables ns-frame dibuja un anillo que sigue la forma con `:focus-visible`. Se ajusta con `--ns-focus` (color) y `--ns-focus-width`. El anillo va por dentro del recorte: su color tiene que contrastar con el **fondo de la pieza**, no con el de la página (por defecto es `currentColor`, el color del texto, que ya contrasta).
+
+**Sombras:** con `clip-path`, el recorte se come cualquier sombra exterior (`box-shadow`, `filter: drop-shadow()`) del propio elemento. `--ns-shadow` sólo sigue la forma en el modo nativo. Para cualquier forma, pon la sombra en un contenedor: `filter: drop-shadow(0 12px 24px rgb(0 0 0 / .18))` en el padre sigue el contorno recortado exacto.
+
+**Alto contraste** (colores forzados de Windows): cada marco recibe un borde del sistema aunque no tenga `--ns-border`, y no usa la vía rápida nativa (el sistema quita las sombras interiores que la dibujan). Si se activa con la página abierta, los marcos se releen solos.
 
 ## Modo nativo (`data-ns-native`)
 
