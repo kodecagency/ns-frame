@@ -531,7 +531,10 @@ function write(s, r, animate) {
   // --ns-safe-t/r/b/l: padding que respeta los cortes (lo usa [data-ns-pad])
   if (sk != (s.sk ?? '')) {
     s.sk = sk; s.sa = sa
-    for (let i = 0; i < 4; i++) sa.length ? s.el.style.setProperty('--ns-safe-' + 'trbl'[i], sa[i] + 'px') : s.el.style.removeProperty('--ns-safe-' + 'trbl'[i])
+    // (cambia el tamaño del propio marco: dentro de un ResizeObserver se aplica en el frame
+    // siguiente, o el navegador lo avisa como bucle y en WebKit salta un error global)
+    const set = () => { const a = s.sa; for (let i = 0; i < 4; i++) a.length ? s.el.style.setProperty('--ns-safe-' + 'trbl'[i], a[i] + 'px') : s.el.style.removeProperty('--ns-safe-' + 'trbl'[i]) }
+    INRO ? requestAnimationFrame(set) : set()
   }
   if (typeof NS_LITE == 'undefined' && animate && moved && s.cur && !s.ap && !reduced()) morph(s)
   else if (!s.anim && !s.ap?.raf) paint(s, G, 1)
@@ -557,9 +560,11 @@ async function onResize(es) {
   for (let i = 0; i < todo.length; i += 150) {
     if (i) await pause()
     const part = todo.slice(i, i + 150)
-    part.map(read).forEach((r, k) => write(part[k], r))
+    INRO = !i
+    try { part.map(read).forEach((r, k) => write(part[k], r)) } finally { INRO = false }
   }
 }
+let INRO = false
 
 const LATE = new Set()
 // un marco pendiente que la API necesita ya (open, close…) se pinta en el acto

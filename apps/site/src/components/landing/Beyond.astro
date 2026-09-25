@@ -5,7 +5,7 @@ import SectionHead from '../SectionHead.astro'
 import Icon from '../Icon.astro'
 import Arrow from '../Arrow.astro'
 
-const GAPS = [['6', '6 px'], ['12', '12 px'], ['20', '20 px']]
+const GAPS = [['6', '6 px'], ['12', '12 px'], ['20', '20 px']]
 const SHAPES = [
   ['all bevel 64', 'Octógono'],
   ['poly 26% 0 r14, 74% 0 r14, 100% 50% r14, 74% 100% r14, 26% 100% r14, 0 50% r14', 'Hexágono'],
@@ -83,12 +83,12 @@ const ACTIONS = [
       <article class="x x4" data-ns="all round 22">
         <div class="stage s4">
           <img class="bg" src="https://picsum.photos/seed/ns-glass-coast/900/700.webp" alt="" width="900" height="700" loading="lazy">
-          <div class="lt" id="lt" data-ns-liquid="glass" data-ns-liquid-src=".bg" role="group" aria-label="Periodo">
+          <div class="lt" id="lt" data-ns-liquid="glass" role="group" aria-label="Periodo">
             <i class="trk" data-ns-blob></i>
-            <div class="pills" id="pills" data-ns-liquid="glass" data-ns-liquid-src=".bg"><i class="ind" data-ns-blob></i><i class="trail" data-ns-blob></i></div>
+            <div class="pills" id="pills" data-ns-liquid="glass"><i class="ind" data-ns-blob></i><i class="trail" data-ns-blob></i></div>
             {PERIODS.map((p, i) => <button type="button" data-i={i} aria-pressed={String(i == 1)}>{p}</button>)}
           </div>
-          <div class="fab" id="fab" data-ns-liquid="glass" data-ns-liquid-src=".bg">
+          <div class="fab" id="fab" data-ns-liquid="glass">
             {ACTIONS.map(([n, d], i) => <button type="button" class={`act a${i + 1}`} aria-label={n} inert><Icon d={d} /></button>)}
             <button type="button" class="main" aria-expanded="false" aria-label="Más acciones"><Icon d="M10 4.5v11 M4.5 10h11" /></button>
           </div>

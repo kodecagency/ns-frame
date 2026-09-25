@@ -60,6 +60,41 @@ let styled = 0
 const LENS = typeof navigator != 'undefined' && !!navigator.userAgentData?.brands?.some(b => b.brand == 'Chromium')
 // WebKit (Safari y todos los navegadores de iPhone)
 const WK = !LENS && typeof navigator != 'undefined' && /AppleWebKit/.test(navigator.userAgent)
+// -moz-element(): Firefox pinta cualquier elemento, en vivo, como imagen de fondo
+const MOZ = !!globalThis.CSS?.supports?.('background-image', '-moz-element(#a)')
+const FIT = { cover: 'cover', contain: 'contain', fill: '100% 100%', none: 'auto', 'scale-down': 'contain' }
+const CAP = 1500, SKIP = /^(SCRIPT|STYLE|TEMPLATE|NOSCRIPT|IFRAME|OBJECT|EMBED|DIALOG)$/
+// lo que hay detrás del centro de `el` sin indicarlo: subiendo por los antepasados, un hermano
+// anterior (pinta debajo) que sea o contenga una imagen, un vídeo o un canvas que cubra ese punto,
+// o el primer antepasado con background-image
+// Sólo si es de verdad lo que se ve en ese punto (lo primero bajo el grupo): si hay algo en medio
+// (un texto sobre la foto), la copia lo taparía, y es mejor quedarse sin lente. Si el grupo no está
+// a la vista todavía, se vuelve a mirar cuando entre.
+// ¿pinta algo? (un contenedor transparente, como el hueco de otro grupo líquido, no tapa nada)
+const paints = n => {
+  if (/^(IMG|VIDEO|CANVAS|svg|INPUT|TEXTAREA|SELECT|IFRAME)$/.test(n.tagName)) return true
+  const s = getComputedStyle(n)
+  if (s.visibility == 'hidden' || +s.opacity == 0) return false
+  return s.backgroundImage != 'none' || !/^(transparent|rgba\(.*,\s*0\))$/.test(s.backgroundColor) || parseFloat(s.borderTopWidth) > 0 || s.boxShadow != 'none' ||
+    [...n.childNodes].some(t => t.nodeType == 3 && t.data.trim())
+}
+function behind(el) {
+  const r = el.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2
+  if (!r.width || x < 0 || y < 0 || x > innerWidth || y > innerHeight) return null
+  // debajo del grupo (lo que va antes en la lista está encima) y sin contar sus antepasados: su
+  // fondo pinta por debajo de todos sus hijos, así que nunca queda en medio
+  const L = document.elementsFromPoint(x, y), i = Math.max(0, L.findIndex(n => el.contains(n)))
+  const first = L.slice(i).find(n => !el.contains(n) && !n.contains(el) && !n.closest('.ns-liquid-src') && paints(n))
+  const covers = n => { const b = n.getBoundingClientRect(); return b.width > 0 && x >= b.left && x <= b.right && y >= b.top && y <= b.bottom }
+  for (let c = el, a = el.parentElement; a && a != document.documentElement; c = a, a = a.parentElement) {
+    for (let s = c.previousElementSibling; s; s = s.previousElementSibling) {
+      const m = [s, ...s.querySelectorAll('img,video,canvas')].reverse().find(n => /^(IMG|VIDEO|CANVAS)$/.test(n.tagName) && covers(n))
+      if (m) return m == first ? m : null
+    }
+    if (getComputedStyle(a).backgroundImage != 'none') return first && a.contains(first) ? null : a
+  }
+  return null
+}
 // máscara del canto como imagen: el trazo del contorno, desenfocado y recortado a la forma
 const rimImage = (d, w, h, e) => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns="${SVG}" width="${r2(w)}" height="${r2(h)}"><filter id="b" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="${r2(e / 2.2)}"/></filter><clipPath id="c"><path d="${d}"/></clipPath><g clip-path="url(#c)"><path d="${d}" fill="none" stroke="#fff" stroke-width="${r2(e * 1.6)}" filter="url(#b)"/></g></svg>`)}")`
 
@@ -311,26 +346,123 @@ export function liquid(el, o = {}) {
   const cv = document.createElement('canvas')
   let cv2 = null
   const list = () => typeof o.blobs == 'function' ? o.blobs(el) : [...el.querySelectorAll(o.blobs || (el.querySelector(':scope > [data-ns-blob]') ? ':scope > [data-ns-blob]' : ':scope > :not(.ns-liquid-fx, .ns-liquid-glass, .ns-liquid-rim, .ns-liquid-src)'))]
-  // el fondo que se copia: el más cercano que coincida con el selector, subiendo por los antepasados
+  // el fondo que se copia: el selector de data-ns-liquid-src (el más cercano subiendo por los
+  // antepasados), o.source, o si no se indica nada, lo que haya detrás (behind)
   const source = () => {
     const s = o.source ?? el.getAttribute('data-ns-liquid-src')
-    if (!s || typeof s != 'string') return s || null
+    if (s == 'none') return null
+    if (!s || s == 'auto') return behind(el)
+    if (typeof s != 'string') return s
     for (let a = el.parentElement; a; a = a.parentElement) { const n = a.querySelector(s); if (n) return n }
     return null
   }
-  // la copia pinta lo mismo que el original: una imagen como fondo con su object-fit y
-  // object-position; otro elemento, con sus propiedades de fondo. Con su filtro (brillo, etc.)
-  const FIT = { cover: 'cover', contain: 'contain', fill: '100% 100%', none: 'auto', 'scale-down': 'contain' }
+  // La copia pinta lo mismo que el original, con su filtro (brillo, etc.):
+  // · imagen: como fondo, con su object-fit y object-position;
+  // · vídeo o canvas: un canvas que se redibuja con cada fotograma mientras el grupo se ve;
+  // · elemento sin hijos: sus propiedades de fondo;
+  // · elemento con contenido (texto, tarjetas, una lista que se desplaza por detrás): en Firefox,
+  //   -moz-element(), el elemento en vivo; en Safari, un clon del DOM con los estilos calculados en
+  //   línea, que se rehace cuando el original cambia (hasta CAP nodos; más, sólo el desenfoque).
+  let mirrored = null, kind = '', live = 0, vis = true, cc = null, smo = null, redo = 0
+  const unmirror = () => { cancelAnimationFrame(live); live = 0; smo?.disconnect(); smo = null; clearTimeout(redo); copy.replaceChildren(); copy.removeAttribute('style'); cc = null; kind = ''; placed = '' }
   const mirror = n => {
-    const s = getComputedStyle(n), c = copy.style
-    if (n.tagName == 'IMG') {
+    unmirror()
+    const s = getComputedStyle(n), c = copy.style, t = n.tagName
+    if (t == 'IMG') {
       const u = n.currentSrc || n.src
       // (con loading="lazy" o srcset, la fuente definitiva se conoce al cargar)
       if (!n.complete) n.addEventListener('load', stale, { once: true })
-      Object.assign(c, { backgroundImage: u ? `url(${JSON.stringify(u)})` : '', backgroundSize: FIT[s.objectFit] || '100% 100%', backgroundPosition: s.objectPosition, backgroundRepeat: 'no-repeat', backgroundColor: '' })
-    } else Object.assign(c, { backgroundImage: s.backgroundImage, backgroundSize: s.backgroundSize, backgroundPosition: s.backgroundPosition, backgroundRepeat: s.backgroundRepeat, backgroundColor: s.backgroundColor })
-    c.filter = s.filter == 'none' ? '' : s.filter
+      kind = 'img'
+      Object.assign(c, { backgroundImage: u ? `url(${JSON.stringify(u)})` : '', backgroundSize: FIT[s.objectFit] || '100% 100%', backgroundPosition: s.objectPosition, backgroundRepeat: 'no-repeat' })
+    } else if (MOZ && (t == 'VIDEO' || t == 'CANVAS' || n.children.length || n.textContent.trim())) {
+      if (!n.id) n.id = 'ns-src-' + ++uid
+      kind = 'moz'
+      Object.assign(c, { backgroundImage: `-moz-element(#${globalThis.CSS.escape(n.id)})`, backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat' })
+    } else if (t == 'VIDEO' || t == 'CANVAS') {
+      kind = 'frames'
+      cc = document.createElement('canvas'); copy.append(cc)
+      cc.style.cssText = 'width:100%;height:100%;display:block'
+      frames(n)
+    } else if (n.children.length || n.textContent.trim()) {
+      kind = 'dom'
+      snap(n)
+      // el clon se rehace cuando el original cambia (como mucho cuatro veces por segundo)
+      smo = new MutationObserver(() => { redo ||= setTimeout(() => { redo = 0; if (kind == 'dom') { copy.replaceChildren(); snap(n) } }, 250) })
+      smo.observe(n, { subtree: true, childList: true, characterData: true, attributes: true })
+    } else {
+      kind = 'bg'
+      Object.assign(c, { backgroundImage: s.backgroundImage, backgroundSize: s.backgroundSize, backgroundPosition: s.backgroundPosition, backgroundRepeat: s.backgroundRepeat, backgroundColor: s.backgroundColor })
+    }
+    if (kind != 'dom') c.filter = s.filter == 'none' ? '' : s.filter
   }
+  // vídeo y canvas: cada fotograma, con su object-fit, sólo mientras el grupo está a la vista
+  const frames = n => {
+    const x = cc.getContext('2d'), vid = n.tagName == 'VIDEO'
+    const paint = () => {
+      live = 0
+      if (kind != 'frames' || !vis || back.hidden) return
+      const W = copy.offsetWidth, H = copy.offsetHeight, q = Math.min(2, devicePixelRatio || 1)
+      if (W && H) {
+        if (cc.width != Math.round(W * q) || cc.height != Math.round(H * q)) { cc.width = Math.round(W * q); cc.height = Math.round(H * q) }
+        const sw = vid ? n.videoWidth : n.width, sh = vid ? n.videoHeight : n.height, fit = getComputedStyle(n).objectFit
+        if (sw && sh) {
+          let dw = W, dh = H
+          if (fit == 'cover' || fit == 'contain') { const k = (fit == 'cover' ? Math.max : Math.min)(W / sw, H / sh); dw = sw * k; dh = sh * k }
+          x.clearRect(0, 0, cc.width, cc.height)
+          try { x.drawImage(n, (W - dw) / 2 * q, (H - dh) / 2 * q, dw * q, dh * q) } catch {}
+        }
+      }
+      live = requestAnimationFrame(paint)
+    }
+    live = requestAnimationFrame(paint)
+  }
+  // clon del DOM: elementos nuevos con los mismos atributos (sin id, sin eventos, sin style en
+  // texto: con una CSP estricta sólo vale el CSSOM) y el estilo calculado entero en línea
+  const snap = n => {
+    let budget = CAP
+    scrolls = []
+    const walk = m => {
+      if (m.nodeType == 3) return document.createTextNode(m.data)
+      if (m.nodeType != 1 || budget-- <= 0 || SKIP.test(m.tagName)) return null
+      const c = document.createElementNS(m.namespaceURI, m.localName)
+      for (const a of m.attributes) if (!/^(id|style|on.*|autofocus|tabindex|contenteditable)$/i.test(a.name)) c.setAttribute(a.name, a.value)
+      const s = getComputedStyle(m)
+      for (let i = 0; i < s.length; i++) c.style.setProperty(s[i], s.getPropertyValue(s[i]))
+      c.style.animation = c.style.transition = 'none'
+      if (m.scrollHeight > m.clientHeight + 1 || m.scrollWidth > m.clientWidth + 1) scrolls.push([c, m])
+      for (const k of m.childNodes) { const x = walk(k); x && c.append(x) }
+      return c
+    }
+    const root = walk(n)
+    if (budget < 0 || !root) { copy.replaceChildren(); return }
+    // la raíz, en el origen de la copia (la copia ya se coloca donde está el original)
+    Object.assign(root.style, { position: 'absolute', left: 0, top: 0, margin: 0, transform: 'none', translate: 'none', rotate: 'none', scale: 'none' })
+    root.setAttribute('inert', ''); root.setAttribute('aria-hidden', 'true')
+    copy.append(root)
+    syncScroll()
+  }
+  // lo que el original tiene desplazado por dentro, también (y al desplazarse, sin rehacer el clon)
+  let scrolls = []
+  const syncScroll = () => { for (const [c, m] of scrolls) { c.scrollTop = m.scrollTop; c.scrollLeft = m.scrollLeft } }
+  // al desplazarse la página o un contenedor, la copia se recoloca (y el clon copia el desplazamiento)
+  const onScroll = () => { if (V?.src && vis) fr ||= requestAnimationFrame(follow) }
+  // la copia, donde está el original respecto a las capas (BX, BY: origen de las capas en pantalla)
+  let BX = 0, BY = 0, placed = '', fr = 0
+  const put = S => {
+    const at = [r2(S.left - BX), r2(S.top - BY), r2(S.width), r2(S.height)], k = at.join()
+    if (k != placed) { placed = k; Object.assign(copy.style, { left: at[0] + 'px', top: at[1] + 'px', width: at[2] + 'px', height: at[3] + 'px' }) }
+  }
+  const follow = () => {
+    fr = 0
+    const s = V?.src
+    if (!s || back.hidden) return
+    if (kind == 'dom') syncScroll()
+    // el grupo también puede haberse movido (si no es fijo): el origen de las capas se relee
+    const E = el.getBoundingClientRect(), dx = E.left + el.clientLeft - ox0, dy = E.top + el.clientTop - oy0
+    ox0 += dx; oy0 += dy; BX += dx; BY += dy
+    put(s.getBoundingClientRect())
+  }
+  let ox0 = 0, oy0 = 0
   let raf = 0, idle = 0, last = '', now = null, cur = -1, lensKey = '', token = 0, frame = 0, dirty = true, V = null
   // estilos leídos en caché: las variables del grupo y el radio/visibilidad de cada hijo se leen al
   // despertar por un cambio (clase, estilo, tamaño) y cada pocos frames en marcha, no en cada frame
@@ -339,8 +471,10 @@ export function liquid(el, o = {}) {
     const E = el.getBoundingClientRect(), fresh = dirty || frame % 6 == 0
     if (dirty || !V) {
       const cs = getComputedStyle(el), num = (k, d) => { const v = parseFloat(cs.getPropertyValue(k)); return v >= 0 ? v : d }
-      V = { k: num('--ns-liquid', 14), lens: num('--ns-glass-lens', 34), edge: num('--ns-glass-edge', 8), depth: num('--ns-glass-depth', 24), blur: num('--ns-glass-blur', 4), sat: num('--ns-glass-sat', 1.3), src: LENS ? null : source() }
-      if (V.src) mirror(V.src)
+      V = { k: num('--ns-liquid', 14), lens: num('--ns-glass-lens', 34), edge: num('--ns-glass-edge', 8), depth: num('--ns-glass-depth', 24), blur: num('--ns-glass-blur', 4), sat: num('--ns-glass-sat', 1.3), src: LENS || !glassy() ? null : source() }
+      // (el clon del DOM y el de fotogramas se rehacen sólo si cambia el original; la imagen y el
+      // fondo, que no cuestan nada, siempre: pueden haber cambiado de src o de estilo)
+      if (V.src != mirrored || kind == 'img' || kind == 'bg') { mirrored = V.src; V.src ? mirror(V.src) : unmirror() }
     }
     dirty = false; frame++
     const k = o.k ?? V.k
@@ -363,7 +497,10 @@ export function liquid(el, o = {}) {
     // así que k = 2,4 × hueco deja un cuello visible justo en el límite
     // rejilla de 2 px; en grupos grandes, 3 px (el contorno sigue suave: se traza con curvas)
     const f = field(boxes.map(b => ({ ...b, x: b.x - bx, y: b.y - by })), K, o.step || (bw * bh > 60000 ? 3 : 2)), d = contour(f)
-    const key = d + '|' + bx + '|' + by + '|' + g + '|' + lensPx + '|' + edgePx + (S ? `|${S.left - ox}|${S.top - oy}|${S.width}|${S.height}` : '')
+    const key = d + '|' + bx + '|' + by + '|' + g + '|' + lensPx + '|' + edgePx + '|' + !!src
+    // la copia sigue al original (al desplazarse la página, por ejemplo) sin rehacer la forma
+    BX = bx + ox; BY = by + oy; ox0 = ox; oy0 = oy
+    if (S) put(S)
     if (key == last) return
     last = key
     for (const e of [svg, glass, edge, back]) Object.assign(e.style, { left: r2(bx) + 'px', top: r2(by) + 'px', width: r2(bw) + 'px', height: r2(bh) + 'px' })
@@ -383,7 +520,6 @@ export function liquid(el, o = {}) {
     glass.style.clipPath = edge.style.clipPath = back.style.clipPath = g && d ? `path("${d}")` : ''
     back.style.mask = back.style.webkitMask = mb
     back.hidden = !(src && d)
-    if (S) Object.assign(copy.style, { left: r2(S.left - ox - bx) + 'px', top: r2(S.top - oy - by) + 'px', width: r2(S.width) + 'px', height: r2(S.height) + 'px' })
     if (!g || !d) { glass.style.backdropFilter = back.style.filter = ''; now = null; return }
     for (const M of [maskB, maskE]) setA(M, { width: r2(bw), height: r2(bh) })
     mBody.setAttribute('d', d); mEdge.setAttribute('d', d); cEdge.setAttribute('d', d)
@@ -453,13 +589,20 @@ export function liquid(el, o = {}) {
     ['transitionrun', on], ['animationstart', on], ['transitionend', off], ['transitioncancel', off], ['animationend', off], ['animationcancel', off]]
   EV.forEach(([e, f]) => el.addEventListener(e, f, true))
   // (sus propias capas no cuentan: cambiar su estilo no debe despertar otro frame)
-  const own = n => n == svg || n == glass || n == edge || n == back || n == copy || svg.contains(n)
+  const own = n => n == svg || n == glass || n == edge || back.contains(n) || svg.contains(n)
   const mo = new MutationObserver(ms => { if (ms.some(m => !own(m.target))) stale() })
-  mo.observe(el, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden', 'data-ns-liquid'] })
+  mo.observe(el, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden', 'data-ns-liquid', 'data-ns-liquid-src'] })
+  // fuera de Chromium: la copia sigue al desplazamiento, y el fondo se busca al entrar a la vista
+  let io = null
+  if (!LENS) {
+    addEventListener('scroll', onScroll, { capture: true, passive: true })
+    io = new IntersectionObserver(es => { vis = es[es.length - 1].isIntersecting; if (vis) { if (kind == 'frames' && !live) frames(mirrored); if (!V?.src) stale() } })
+    io.observe(el)
+  }
   wake()
   return {
-    update: wake,
-    destroy() { cancelAnimationFrame(raf); token++; ro.disconnect(); mo.disconnect(); EV.forEach(([e, f]) => el.removeEventListener(e, f, true)); svg.remove(); glass.remove(); edge.remove(); back.remove(); el.classList.remove('ns-liquid', 'ns-glass') },
+    update: stale,
+    destroy() { cancelAnimationFrame(raf); cancelAnimationFrame(fr); token++; unmirror(); ro.disconnect(); mo.disconnect(); io?.disconnect(); removeEventListener('scroll', onScroll, { capture: true }); EV.forEach(([e, f]) => el.removeEventListener(e, f, true)); svg.remove(); glass.remove(); edge.remove(); back.remove(); el.classList.remove('ns-liquid', 'ns-glass') },
   }
 }
 

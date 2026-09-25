@@ -17,14 +17,14 @@ const max = 8.9 // el núcleo es el módulo más grande
     <div class="ns-bento bn" data-ns-bento="outer bevel 30; inner round 12; radius 2">
       <article class="ns-big t" data-ns-motion="spot">
         <span class="k">Núcleo, con gzip</span>
-        <b class="v num">8,9 KB</b>
+        <b class="v num">8,9 KB</b>
         <p>Formas, bordes, morph y foco. Cada módulo se carga sólo si se usa.</p>
         <ul class="bars" aria-label="Tamaño de cada módulo en KB">
           {SIZES.map(([n, v], k) => <li><span>{n}</span><svg viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><rect width={(v / max * 100).toFixed(1)} height="6" rx="3" class:list={[{ hi: k < 3 }]} /></svg><b class="num">{v.toFixed(1).replace('.', ',')}</b></li>)}
         </ul>
       </article>
       <article class="t" data-ns-motion="spot"><h3>Sin dependencias</h3><p>Ni una petición de red en tiempo de ejecución: todo lo dibuja el propio navegador.</p></article>
-      <article class="t" data-ns-motion="spot"><h3>4.000 marcos, menos de 50 ms</h3><p>La tarea más larga al montarlos todos a la vez.</p></article>
+      <article class="t" data-ns-motion="spot"><h3>4.000 marcos, menos de 50 ms</h3><p>La tarea más larga al montarlos todos a la vez.</p></article>
       <article class="ns-w2 t" data-ns-motion="spot"><h3>Segura con una CSP estricta</h3><p>Sin <code>innerHTML</code> ni <code>unsafe-inline</code>: se prueba en cada versión con atributos maliciosos.</p></article>
       <article class="t" data-ns-motion="spot"><h3>Accesible de serie</h3><p>Foco con forma, alto contraste, movimiento reducido y RTL.</p></article>
       <article class="ns-w2 t" data-ns-motion="spot"><h3>Con cualquier framework</h3><p>Es un atributo HTML: HTML plano, Astro, React, Vue o Svelte. También compila a CSS <code>shape()</code> sin JS.</p></article>

@@ -2,6 +2,10 @@
 
 ## Sin publicar
 
+### Compatibilidad
+- Sin el error global «ResizeObserver loop completed with undelivered notifications» (WebKit lo lanzaba como excepción): el margen seguro de `data-ns-pad` se aplica en el frame siguiente cuando viene de un ResizeObserver, y `ns-link` ya no observa el `<body>` (compara la altura del documento en eventos baratos).
+- Todas las páginas del sitio revisadas en WebKit (motor de Safari) sin errores.
+
 ### Vidrio líquido (`ns-frame/liquid`)
 - `data-ns-liquid="glass"`: el material del Liquid Glass de Apple, con la forma exacta del grupo: cuerpo desenfocado y tintado, **lente** que curva el fondo junto al borde (mapa de desplazamiento sacado del propio campo de distancias; Chromium), canto que brilla y se desvanece hacia dentro sin línea interior, y reflejo especular. `prefers-reduced-transparency` lo vuelve opaco.
 - El recorte del vidrio usa además una máscara: Chromium ignora un `clip-path` libre en el desenfoque de fondo dentro de un contenedor redondeado y pintaba el rectángulo entero.
@@ -9,6 +13,7 @@
 - El puente entre gotas sale redondo, no en punta hacia la vecina.
 - `field()` y `contour()` exponen el campo y sus contornos a cualquier nivel.
 - **Lente en Safari y Firefox:** con `data-ns-liquid-src="selector"` (u `o.source`) el vidrio pinta debajo una copia alineada del fondo (imagen o `background-image`) y le aplica la lente con `filter: url()`, que sí funciona fuera de Chromium. Allí el filtro usa la región del objeto y un mapa a tamaño de la capa: WebKit hace desaparecer el elemento con `filterUnits="userSpaceOnUse"`.
+- **Lente sobre cualquier fondo fuera de Chromium:** detección automática del fondo (imagen, vídeo, canvas o `background-image`, sólo si es lo primero que se ve debajo); vídeo y canvas fotograma a fotograma; contenido HTML con `-moz-element()` en Firefox y, en Safari, un clon con los estilos calculados que se rehace al cambiar el original y sigue al desplazamiento.
 - **Vidrio visible en Safari:** WebKit no aplica a HTML una máscara `url(#…)` del documento y la capa del cuerpo desaparecía (el vidrio no desenfocaba nada). En WebKit el cuerpo se recorta sólo con `clip-path` y el canto usa la máscara como imagen SVG en línea.
 - **Sin parpadeo:** el recorte pasa a una máscara SVG del documento (sin imágenes por frame) y la lente usa dos filtros que se turnan; el mapa nuevo sólo entra cuando ya está decodificado (antes, durante un frame el filtro leía un mapa vacío y desplazaba todo el fondo). En movimiento el mapa se estira; al detenerse se regenera con `toBlob`, fuera del hilo principal.
 - **Más rápido:** unión suave sólo cerca de los puentes, sin desestructurar en el bucle caliente, rejilla adaptativa, movimiento detectado por eventos y estilos en caché. CPU ×4: de ~38 a ~17 ms por frame, sin fotogramas largos.

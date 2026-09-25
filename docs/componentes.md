@@ -268,16 +268,23 @@ h2 mark { background: none; color: inherit; --ns-mark: #ffe066 }
 El material del Liquid Glass de Apple, en capas, con la forma exacta del grupo (también mientras se funde y se estira):
 
 1. **Cuerpo:** el fondo desenfocado, saturado y tintado (`--ns-glass-blur` 4px, `--ns-glass-sat` 1.3, `--ns-glass-tint`).
-2. **Lente:** el fondo se curva junto al borde como a través de un cristal grueso. El mapa de desplazamiento sale del mismo campo de distancias: cada punto a menos de `--ns-glass-depth` (24px) del borde toma el fondo un poco más allá, en la dirección de la normal, con una caída suave; `--ns-glass-lens` (34px) es la fuerza. En Chromium va en `backdrop-filter` con un `feDisplacementMap`. Safari (y todos los navegadores de iPhone) y Firefox no admiten filtros SVG en `backdrop-filter`, pero sí en `filter`: si le dices qué hay detrás, el vidrio pinta debajo una copia alineada de ese fondo, le aplica la lente y la desenfoca y tiñe encima, igual que al fondo real:
+2. **Lente:** el fondo se curva junto al borde como a través de un cristal grueso. El mapa de desplazamiento sale del mismo campo de distancias: cada punto a menos de `--ns-glass-depth` (24px) del borde toma el fondo un poco más allá, en la dirección de la normal, con una caída suave; `--ns-glass-lens` (34px) es la fuerza. En Chromium va en `backdrop-filter` con un `feDisplacementMap`. Safari (y todos los navegadores de iPhone) y Firefox no admiten filtros SVG en `backdrop-filter`, pero sí en `filter`. Allí el vidrio pinta debajo una copia alineada del fondo, le aplica la lente y la desenfoca y tiñe encima, igual que al fondo real. Qué se copia:
+
+   | Fondo | Copia |
+   |---|---|
+   | `<img>` | la misma imagen, con su `object-fit`, `object-position` y `filter` |
+   | `<video>`, `<canvas>` | un canvas que se redibuja con cada fotograma mientras el grupo está a la vista |
+   | elemento con `background-image` | sus propiedades de fondo |
+   | contenido HTML (texto, tarjetas, una lista que se desplaza por detrás de una barra fija) | en Firefox, `-moz-element()` en vivo; en Safari, un clon con los estilos calculados que se rehace cuando el original cambia (hasta 1500 nodos) |
+
+   **Sin indicar nada**, se detecta: una imagen, un vídeo o un canvas anterior que cubra el centro del grupo, o el antepasado con `background-image`, y sólo si es de verdad lo primero que se ve debajo (si hay un texto en medio, la copia lo taparía y se queda sin lente). Para elegirlo tú —imprescindible para contenido HTML—:
 
    ```html
-   <div class="tarjeta">
-     <img class="foto" src="…" alt="">
-     <nav data-ns-liquid="glass" data-ns-liquid-src=".foto">…</nav>
-   </div>
+   <main id="feed">…</main>
+   <nav data-ns-liquid="glass" data-ns-liquid-src="#feed">…</nav>   <!-- barra fija sobre el feed -->
    ```
 
-   `data-ns-liquid-src` (o la opción `source`) es un selector —se busca el más cercano subiendo por los antepasados— o un elemento: una imagen (con su `object-fit`, `object-position` y `filter`) o cualquier elemento con `background-image`. Sin él, en esos navegadores queda el resto de capas. Un fondo que no es una imagen (texto, vídeo, contenido que se desplaza por detrás) sólo tiene lente en Chromium.
+   `data-ns-liquid-src` (o la opción `source`) es un selector —se busca el más cercano subiendo por los antepasados—, un elemento, o `none` para desactivarlo. La copia sigue al original al desplazarse, sin recalcular la forma.
 3. **Canto:** un brillo junto al borde que se desvanece hacia dentro, sin línea interior (`--ns-glass-edge`, 8px). En todos los navegadores.
 4. **Luz:** un reflejo especular fino que recoge la luz arriba y la devuelve tenue abajo, y un brillo interior (`--ns-glass-shine`, 0–1).
 

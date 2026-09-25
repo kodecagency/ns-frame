@@ -1,6 +1,6 @@
 /*! ns-frame/link · líneas HUD que conectan un elemento con otro: data-ns-link="#destino" */
 // Las coordenadas son de página (no de ventana): el scroll no obliga a recalcular nada.
-// Se recalcula sólo cuando cambia el tamaño de algún extremo, del <body> o de la ventana.
+// Se recalcula sólo cuando cambia el tamaño de algún extremo, la altura del documento o la ventana.
 
 const NS = 'http://www.w3.org/2000/svg', L = new Map()
 let svg, ro, raf
@@ -20,8 +20,16 @@ function add(el) {
     Object.assign(svg.style, { position: 'absolute', left: 0, top: 0, width: '1px', height: '1px', overflow: 'visible', pointerEvents: 'none', zIndex: getComputedStyle(document.documentElement).getPropertyValue('--ns-link-z').trim() || 5 })
     document.body.append(svg)
     ro = new ResizeObserver(schedule)
-    ro.observe(document.body)
+    // Lo que mueve los extremos sin cambiarles el tamaño (algo encima que crece: una imagen que
+    // carga, una sección con content-visibility que se pinta) cambia la altura del documento. No se
+    // observa el <body> con ResizeObserver: al ser tan poco profundo, cualquier cambio de altura
+    // durante otro ResizeObserver quedaba sin entregar y el navegador lo lanzaba como error global
+    // ("ResizeObserver loop…"). Se compara la altura en eventos baratos y sólo se redibuja si cambió.
+    let H = 0
+    const check = () => { raf ||= requestAnimationFrame(() => { raf = 0; const h = document.documentElement.scrollHeight; if (h != H) { H = h; draw() } }) }
     addEventListener('resize', schedule)
+    addEventListener('scroll', check, { passive: true })
+    addEventListener('load', check, true)
     document.fonts?.ready.then(schedule)
   }
   const g = mk('g'), p = mk('path', { fill: 'none', 'stroke-linejoin': 'round' }), a = mk('circle', { r: 2.5 }), b = mk('circle', { r: 4, fill: 'none' })
@@ -77,7 +85,7 @@ if (typeof document != 'undefined') {
   const scan = n => { if (n.nodeType != 1) return; n.matches('[data-ns-link]') && add(n); n.querySelectorAll('[data-ns-link]').forEach(add) }
   const boot = () => {
     scan(document.body)
-    new MutationObserver(ms => { for (const m of ms) { m.addedNodes.forEach(scan); if (m.removedNodes.length) schedule() } })
+    new MutationObserver(ms => { for (const m of ms) { m.addedNodes.forEach(scan); if (L.size && (m.removedNodes.length || m.addedNodes.length)) schedule() } })
       .observe(document.body, { childList: true, subtree: true })
   }
   document.readyState == 'loading' ? addEventListener('DOMContentLoaded', boot) : boot()
