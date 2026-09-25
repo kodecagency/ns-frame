@@ -87,6 +87,28 @@ eq((blend([P(0), P(58)], 16 * 2.4).match(/M/g) || []).length, 1, 'liquid: hueco 
 eq((blend([P(0), P(120)], 16 * 2.4).match(/M/g) || []).length, 2, 'liquid: hueco de 72 px → dos gotas')
 eq(blend([P(0), P(58), P(116)], 38), blendMin([P(0), P(58), P(116)], 38), 'liquid: build = fuente')
 eq(/NaN/.test(blend([P(0), { x: 20, y: 10, w: 48, h: 48, r: 24 }], 38)), false, 'liquid: solapadas, sin NaN')
+// el contorno pasa por el campo: un círculo sale redondo (error radial < 0,1 px) y los lados rectos, rectos
+{
+  const pts = d => {
+    const t = d.match(/[MLCZ]|-?[\d.]+/g), out = []
+    let i = 0, c = [0, 0], k = ''
+    while (i < t.length) {
+      if (/[MLCZ]/.test(t[i])) k = t[i++]
+      if (k == 'Z') continue
+      if (k == 'M' || k == 'L') { const p = [+t[i++], +t[i++]]; for (let s = 1; s <= 10; s++) out.push([c[0] + (p[0] - c[0]) * s / 10, c[1] + (p[1] - c[1]) * s / 10]); c = p }
+      else { const a = [+t[i++], +t[i++]], b = [+t[i++], +t[i++]], p = [+t[i++], +t[i++]]; for (let s = 1; s <= 8; s++) { const u = s / 8, v = 1 - u; out.push([0, 1].map(j => v * v * v * c[j] + 3 * v * v * u * a[j] + 3 * v * u * u * b[j] + u * u * u * p[j])) } c = p }
+    }
+    return out
+  }
+  for (const [r, step] of [[23, 2], [30, 3], [12, 1.25]]) {
+    const e = Math.max(...pts(blend([{ x: 0, y: 0, w: 2 * r, h: 2 * r, r }], 0, step)).slice(10).map(([x, y]) => Math.abs(Math.hypot(x - r, y - r) - r)))
+    eq(e < .1, true, `liquid: círculo de radio ${r} redondo (error ${e.toFixed(3)} px)`)
+  }
+  const side = pts(blend([{ x: 0, y: 0, w: 200, h: 40, r: 20 }], 0, 2)).filter(([x]) => x > 25 && x < 175)
+  eq(Math.max(...side.map(([, y]) => Math.min(Math.abs(y), Math.abs(y - 40)))) < .05, true, 'liquid: lados rectos de una píldora, rectos')
+}
+// pestañas: el módulo carga sin DOM (servidor, SSR)
+eq(typeof (await import('../src/ns-tabs.js')).tabs, 'function', 'tabs: carga sin DOM')
 // formas sin JS: data-ns-static se compila a una clase + CSS shape()
 const X = extract('<div class="a" data-ns-static="card">x</div><p data-ns-static="card"></p><i data-ns-static="tl bevel 30%"></i>')
 eq(/^<div class="a ns-s-\w+">x<\/div><p class="ns-s-\w+"><\/p><i data-ns="tl bevel 30%"><\/i>$/.test(X.html), true, 'static: html')

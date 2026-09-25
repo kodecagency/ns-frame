@@ -296,3 +296,23 @@ El material del Liquid Glass de Apple, en capas, con la forma exacta del grupo (
 - Con `prefers-reduced-transparency` se vuelve opaco (`--ns-glass-solid`); en alto contraste desaparece y queda el trazo del sistema.
 - Las transiciones de los hijos son tuyas: respeta tú `prefers-reduced-motion`. En alto contraste deja un trazo del sistema (`CanvasText`).
 - Limitación: sólo entiende rectángulos redondeados. Un hijo con `data-ns` o `clip-path` se funde como su caja, no como su forma.
+- El contorno pasa por puntos exactos del campo y se traza con cúbicas (Catmull-Rom), con los lados rectos en línea: un círculo sale redondo con menos de 0,05 px de error. La rejilla se adapta al tamaño (entre 1,25 y 3 px). Para que dos gotas separadas no se abomben una hacia la otra, déjalas a más de `--ns-liquid × 2,4` de hueco.
+- Si mueves piezas por JS en cada frame, `liquid(el).frame()` redibuja sin releer estilos (los estilos en línea de las piezas ya sólo despiertan el bucle).
+
+#### Pestañas de vidrio líquido (`ns-frame/tabs`)
+
+```html
+<nav data-ns-tabs aria-label="Periodo">
+  <button>Semana</button> <button aria-pressed="true">Mes</button> <button>Año</button>
+</nav>
+```
+
+La barra de pestañas de iOS 26, hecha con dos grupos de `ns-frame/liquid` (la barra y el indicador):
+
+- **Pulsa** una pestaña y el indicador viaja con un muelle (llega con un rebote corto), se **estira** en la dirección del movimiento según la velocidad (y se aplana, para conservar el volumen) y deja una **gota** detrás que se funde con él.
+- **Arrastra** desde cualquier pestaña, o mantén pulsada la activa, y el indicador **se levanta**: crece un 14 % y se vuelve una lente clara que aumenta lo que hay debajo (`--ns-tabs-lens-lift`, `--ns-tabs-tint-lift`). Sigue al dedo; más allá de los extremos se resiste como una goma, y al soltar encaja en la pestaña más cercana. Un gesto más vertical que horizontal es un desplazamiento de la página, no un arrastre.
+- **Teclado:** flechas (dan la vuelta en los extremos; al revés en RTL), Inicio y Fin. Con `role="tablist"` y `role="tab"` usa `aria-selected` y foco itinerante; si no, `aria-pressed`.
+- La pestaña bajo el indicador lleva la clase `ns-tabs-hot` mientras la lente pasa por encima (para cambiar el color del texto a la vez). Evento `change` con `detail { index, tab }`; `tabs(el).select(i)` la cambia por código.
+- Vidrio o sólido como cualquier grupo líquido (`data-ns-liquid="glass"` por defecto; `""` para sólido, con `--ns-tabs-fill`). El indicador sigue al material de la barra.
+- Variables: `--ns-tabs-radius` (999px), `--ns-tabs-ind-radius`, `--ns-tabs-fuse` (16px, cuánto se funde la gota), `--ns-tabs-tint`, `--ns-tabs-blur`, `--ns-tabs-lens`, `--ns-tabs-depth`, `--ns-tabs-edge` y sus versiones `-lift`.
+- Con `prefers-reduced-motion`: sin muelle, sin estiramiento y sin levantarse. Los muelles se integran en subpasos: con pocos frames (un móvil con carga) siguen estables y llegan a tiempo.

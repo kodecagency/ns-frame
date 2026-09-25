@@ -66,7 +66,8 @@ Añade una entrada por cada módulo que uses. Cada ruta corresponde a un archivo
 | `ns-frame/concentric` | `ns-concentric.js` | Esquinas concéntricas automáticas |
 | `ns-frame/flow` | `ns-flow.js` | Texto que llena la forma |
 | `ns-frame/mark` | `ns-mark.js` | Resaltado continuo en varias líneas |
-| `ns-frame/liquid` | `ns-liquid.js` | Formas líquidas que se funden |
+| `ns-frame/liquid` | `ns-liquid.js` | Formas líquidas que se funden y vidrio líquido |
+| `ns-frame/tabs` | `ns-tabs.js` | Pestañas de vidrio líquido que se arrastran |
 | `ns-frame/fx` · `ns-frame/fx.css` | `ns-fx.js` · `ns-fx.css` | Efectos |
 | `ns-frame/audit` | `ns-audit.js` | Auditoría de texto recortado (sólo desarrollo) |
 

@@ -83,10 +83,8 @@ const ACTIONS = [
       <article class="x x4" data-ns="all round 22">
         <div class="stage s4">
           <img class="bg" src="https://picsum.photos/seed/ns-glass-coast/900/700.webp" alt="" width="900" height="700" loading="lazy">
-          <div class="lt" id="lt" data-ns-liquid="glass" role="group" aria-label="Periodo">
-            <i class="trk" data-ns-blob></i>
-            <div class="pills" id="pills" data-ns-liquid="glass"><i class="ind" data-ns-blob></i><i class="trail" data-ns-blob></i></div>
-            {PERIODS.map((p, i) => <button type="button" data-i={i} aria-pressed={String(i == 1)}>{p}</button>)}
+          <div class="lt" id="lt" data-ns-tabs data-ns-liquid="glass" role="group" aria-label="Periodo">
+            {PERIODS.map((p, i) => <button type="button" aria-pressed={String(i == 1)}>{p}</button>)}
           </div>
           <div class="fab" id="fab" data-ns-liquid="glass">
             {ACTIONS.map(([n, d], i) => <button type="button" class={`act a${i + 1}`} aria-label={n} inert><Icon d={d} /></button>)}
@@ -96,8 +94,8 @@ const ACTIONS = [
         </div>
         <div class="cap">
           <h3>Formas líquidas y vidrio</h3>
-          <p>Elementos cercanos se funden con un puente curvo y se separan en gotas al alejarse. En vidrio, como el Liquid Glass de Apple, el fondo se desenfoca dentro de la forma exacta y el borde recoge la luz. Es un contorno vectorial calculado en cada frame del movimiento, no un filtro de desenfoque sobre píxeles.</p>
-          <code class="tag"><b>data-ns-liquid="glass"</b></code>
+          <p>Elementos cercanos se funden con un puente curvo y se separan en gotas al alejarse. En vidrio, como el Liquid Glass de Apple, el fondo se desenfoca dentro de la forma exacta y el borde recoge la luz. Es un contorno vectorial calculado en cada frame del movimiento, no un filtro de desenfoque sobre píxeles. Arrastra el indicador entre las pestañas: se levanta como una lente y encaja al soltarlo.</p>
+          <code class="tag"><b>data-ns-liquid="glass"</b> · <b>data-ns-tabs</b></code>
         </div>
       </article>
     </div>
@@ -110,6 +108,7 @@ const ACTIONS = [
   import 'ns-frame/flow'
   import 'ns-frame/mark'
   import 'ns-frame/liquid'
+  import 'ns-frame/tabs'
 
   const $ = (id: string) => document.getElementById(id)!
   const press = (g: HTMLElement, b: Element) => g.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x == b)))
@@ -122,18 +121,9 @@ const ACTIONS = [
   on('fq-shape', 'data-s', v => $('fq').setAttribute('data-ns', v))
   on('mk-style', 'data-c', v => { $('mk').className = v })
 
-  // selector de periodo: el indicador llega primero y su estela después (se estira y se recoge)
-  const lt = $('lt')
-  lt.addEventListener('click', e => {
-    const b = (e.target as Element).closest<HTMLElement>('button')
-    if (!b) return
-    press(lt, b)
-    lt.style.setProperty('--x', b.dataset.i!)
-  })
-  lt.style.setProperty('--x', '1')
-
-  // material: vidrio líquido o sólido (el módulo relee el atributo)
-  on('lq-mode', 'data-m', v => ['lt', 'pills', 'fab'].forEach(id => $(id).setAttribute('data-ns-liquid', v)))
+  // selector de periodo: ns-frame/tabs (se pulsa o se arrastra el indicador entre pestañas)
+  // material: vidrio líquido o sólido (los módulos releen el atributo; el indicador sigue a la barra)
+  on('lq-mode', 'data-m', v => ['lt', 'fab'].forEach(id => $(id).setAttribute('data-ns-liquid', v)))
 
   // acciones: salen del botón como gotas que se separan
   const fab = $('fab'), main = fab.querySelector<HTMLElement>('.main')!
@@ -184,21 +174,18 @@ const ACTIONS = [
   .s4 { gap: 36px; overflow: hidden; padding-bottom: 22px }
   .s4 .bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(.82) }
   .s4 > :not(.bg) { position: relative }
-  .lt { position: relative; display: inline-flex; padding: 5px; --ns-liquid: 0px; --ns-liquid-fill: var(--surface-3); --ns-glass-tint: rgba(16, 16, 20, .3); --ns-glass-blur: 4px; --ns-glass-lens: 34px; --ns-glass-depth: 22px; --ns-glass-edge: 8px }
-  .trk { position: absolute; inset: 0; border-radius: 26px }
-  .pills { position: absolute; inset: 0; --ns-liquid: 18px; --ns-liquid-fill: var(--text); --ns-glass-tint: rgba(255, 255, 255, .16); --ns-glass-blur: 2px; --ns-glass-lens: 26px; --ns-glass-depth: 16px; --ns-glass-edge: 6px; --ns-glass-sat: 1.1 }
-  .lt button { position: relative; width: 92px; height: 42px; border: 0; background: none; color: var(--text-2); font: 600 var(--t-small)/1 var(--body); cursor: pointer; transition: color .25s }
-  .lt button[aria-pressed=true] { color: #0a0a0a }
-  /* vidrio: la barra es un cristal oscuro y el indicador, una lente clara que se estira */
+  /* ns-frame/tabs: la barra es un cristal oscuro y el indicador, una lente clara que se arrastra */
+  .lt { padding: 5px; --ns-liquid: 0px; --ns-liquid-fill: var(--surface-3); --ns-glass-tint: rgba(16, 16, 20, .3); --ns-glass-blur: 4px; --ns-glass-lens: 34px; --ns-glass-depth: 22px; --ns-glass-edge: 8px; --ns-tabs-radius: 26px; --ns-tabs-ind-radius: 21px; --ns-tabs-fill: var(--text) }
+  .lt button { width: 92px; height: 42px; border: 0; background: none; color: var(--text-2); font: 600 var(--t-small)/1 var(--body); cursor: pointer; transition: color .25s }
+  .lt button.ns-tabs-hot { color: #0a0a0a }
   /* (sin filter ni opacity en los contenedores: harían de raíz del fondo y el vidrio no vería la foto) */
-  .lt[data-ns-liquid~=glass] button { color: rgba(255, 255, 255, .78); text-shadow: 0 1px 2px rgba(0, 0, 0, .35) }
-  .lt[data-ns-liquid~=glass] button[aria-pressed=true] { color: #fff }
+  .lt[data-ns-liquid~=glass] button { color: rgba(255, 255, 255, .72); text-shadow: 0 1px 2px rgba(0, 0, 0, .35) }
+  .lt[data-ns-liquid~=glass] button.ns-tabs-hot { color: #fff }
   .fab[data-ns-liquid~=glass] { color: #fff; --ns-glass-tint: rgba(18, 18, 22, .22); --ns-glass-blur: 3px; --ns-glass-lens: 34px; --ns-glass-depth: 20px; --ns-glass-edge: 7px }
   .fab[data-ns-liquid~=glass] button :global(svg) { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .35)) }
-  .pills i { position: absolute; left: 5px; top: 5px; width: 92px; height: 42px; border-radius: 21px; translate: calc(var(--x, 1) * 92px) 0 }
-  .ind { transition: translate .34s cubic-bezier(.3, .9, .3, 1) }
-  .trail { transition: translate .5s cubic-bezier(.35, .75, .3, 1) }
-  .fab { position: relative; width: 60px; height: 60px; --ns-liquid: 15px; --ns-liquid-fill: var(--signal); color: var(--ink-go) }
+  /* --ns-liquid 8: al salir se funden y se separan; abiertas quedan más lejos que el alcance del
+     fundido (8 × 2,4 < 23 px de hueco) y cada gota es un círculo perfecto, sin abombarse */
+  .fab { position: relative; width: 60px; height: 60px; --ns-liquid: 8px; --ns-liquid-fill: var(--signal); color: var(--ink-go) }
   .fab button { position: absolute; left: 0; top: 0; border: 0; background: none; color: inherit; border-radius: 50%; display: grid; place-items: center; cursor: pointer }
   .main { width: 60px; height: 60px }
   .main :global(svg) { width: 24px; height: 24px; transition: rotate .4s var(--ease) }
@@ -219,11 +206,13 @@ const ACTIONS = [
     .cap { padding: 16px 18px 20px }
     .cap p { font-size: var(--t-small) }
     .prod img { height: 150px }
-    .lt button, .pills i { width: 80px }
-    .pills i { translate: calc(var(--x, 1) * 80px) 0 }
-    /* acciones: cabe en 320 px; con menos separación, menos alcance (siguen siendo gotas sueltas) */
-    .fab { --ns-liquid: 6px }
-    .fab.open .act { translate: calc(var(--i) * 62px) 0 }
+    .lt button { width: 80px }
+    /* acciones: caben en 320 px; gotas algo más pequeñas para que queden separadas (hueco de
+       11 px con el botón y 18 entre ellas; el fundido llega a 4 × 2,4 = 9,6) */
+    .fab { width: 56px; height: 56px; --ns-liquid: 4px }
+    .main { width: 56px; height: 56px }
+    .act { width: 42px; height: 42px }
+    .fab.open .act { translate: calc(var(--i) * 60px) 0 }
   }
-  @media (prefers-reduced-motion: reduce) { .prod, .ind, .trail, .act, .act :global(svg), .main :global(svg) { transition: none } }
+  @media (prefers-reduced-motion: reduce) { .prod, .act, .act :global(svg), .main :global(svg) { transition: none } }
 </style>

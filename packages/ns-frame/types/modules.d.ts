@@ -1,7 +1,7 @@
 // Tipos de los módulos opcionales de ns-frame. Cada módulo se importa por su ruta:
 // ns-frame/css, ns-frame/static, ns-frame/vt, ns-frame/toast, ns-frame/skel, ns-frame/carousel,
 // ns-frame/pop, ns-frame/bento, ns-frame/mosaic, ns-frame/sheet, ns-frame/isle, ns-frame/concentric,
-// ns-frame/flow, ns-frame/mark, ns-frame/liquid, ns-frame/link, ns-frame/fx, ns-frame/audit.
+// ns-frame/flow, ns-frame/mark, ns-frame/liquid, ns-frame/tabs, ns-frame/link, ns-frame/fx, ns-frame/audit.
 import type { Shape } from './ns-frame'
 
 // ── ns-frame/css ──
@@ -116,11 +116,17 @@ export interface LiquidOptions {
   source?: Element | string | null
   /** Hueco máximo que se funde, en px (si no, --ns-liquid o 14). */
   k?: number
-  /** Resolución del contorno en px (2). */
+  /** Resolución del contorno en px (si no, adaptativa entre 1,25 y 3). */
   step?: number
 }
-/** Grupo líquido: los hijos cercanos se funden en un solo contorno vectorial. Automático con `data-ns-liquid`. */
-export function liquid(el: HTMLElement, options?: LiquidOptions): { update(): void; destroy(): void }
+/** Grupo líquido: los hijos cercanos se funden en un solo contorno vectorial. Automático con `data-ns-liquid`. Una sola instancia por elemento. */
+export function liquid(el: HTMLElement, options?: LiquidOptions): {
+  /** Relee estilos (variables, radios, fondo) y redibuja. */
+  update(): void
+  /** Sólo redibuja: para quien mueve las piezas por JS en cada frame. */
+  frame(): void
+  destroy(): void
+}
 export interface LiquidField { F: Float32Array; nx: number; ny: number; X0: number; Y0: number; step: number }
 /** Campo de distancias fundido (negativo = dentro) de rectángulos redondeados, en una rejilla de `step` px. */
 export function field(boxes: { x: number; y: number; w: number; h: number; r?: number }[], k?: number, step?: number): LiquidField | null
@@ -128,6 +134,10 @@ export function field(boxes: { x: number; y: number; w: number; h: number; r?: n
 export function contour(f: LiquidField | null, level?: number): string
 /** Contorno fundido (path `d`) de rectángulos redondeados; `k` es el alcance interno del mínimo suave. */
 export function blend(boxes: { x: number; y: number; w: number; h: number; r?: number }[], k?: number, step?: number): string
+
+// ── ns-frame/tabs ──
+/** Pestañas de vidrio líquido: indicador que se arrastra, se estira y encaja con un muelle. Automático con `data-ns-tabs`. Emite "change" con detail { index, tab }. */
+export function tabs(el: HTMLElement, options?: { items?: string }): { select(index: number): void; readonly index: number; destroy(): void }
 
 // ── ns-frame/fx ──
 /** Efecto de texto que se "descifra". */

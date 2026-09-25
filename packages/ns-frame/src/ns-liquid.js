@@ -43,12 +43,13 @@ const CSS = `@layer ns{
 .ns-liquid-src{overflow:hidden}.ns-liquid-src>div{position:absolute}
 .ns-liquid-fx{overflow:visible}
 .ns-liquid-fx .ns-lf{fill:var(--ns-liquid-fill,currentColor);stroke:var(--ns-liquid-border,none);stroke-width:var(--ns-liquid-width,1.5px)}
-.ns-liquid-fx .ns-lr,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-src{display:none}
+.ns-liquid-fx .ns-lr,.ns-liquid-fx .ns-lr2,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-src{display:none}
 .ns-glass>.ns-liquid-src:not([hidden]){display:block}
 .ns-glass>.ns-liquid-glass{display:block;background:var(--ns-glass-tint,rgba(22,22,26,.22));-webkit-backdrop-filter:blur(var(--ns-glass-blur,4px)) saturate(var(--ns-glass-sat,1.3));backdrop-filter:blur(var(--ns-glass-blur,4px)) saturate(var(--ns-glass-sat,1.3))}
 .ns-glass>.ns-liquid-rim{display:block;-webkit-backdrop-filter:blur(1.5px) brightness(1.22) saturate(1.15) contrast(1.06);backdrop-filter:blur(1.5px) brightness(1.22) saturate(1.15) contrast(1.06)}
 .ns-glass>.ns-liquid-fx .ns-lf{stroke:none;opacity:var(--ns-glass-shine,1)}
 .ns-glass>.ns-liquid-fx .ns-lr{display:inline;fill:none;stroke-width:1.2px;opacity:var(--ns-glass-shine,1)}
+.ns-glass>.ns-liquid-fx .ns-lr2{display:inline;fill:none;stroke-width:.8px;opacity:calc(var(--ns-glass-shine,1)*.5)}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.ns-glass>.ns-liquid-glass{background:var(--ns-glass-solid,rgba(30,30,34,.92))}}
 @media (prefers-reduced-transparency:reduce){.ns-glass>.ns-liquid-glass{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:var(--ns-glass-solid,#232327)}.ns-glass>.ns-liquid-rim,.ns-glass>.ns-liquid-src{display:none!important}}
 @media (forced-colors:active){.ns-liquid-fx .ns-lf{fill:Canvas;stroke:CanvasText}.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-src{display:none!important}}
@@ -84,7 +85,9 @@ function behind(el) {
   // debajo del grupo (lo que va antes en la lista está encima) y sin contar sus antepasados: su
   // fondo pinta por debajo de todos sus hijos, así que nunca queda en medio
   const L = document.elementsFromPoint(x, y), i = Math.max(0, L.findIndex(n => el.contains(n)))
-  const first = L.slice(i).find(n => !el.contains(n) && !n.contains(el) && !n.closest('.ns-liquid-src') && paints(n))
+  // (si el grupo no recibe el puntero no sale en la lista: lo que va después en el DOM y no es su
+  // antepasado se pinta encima, así que tampoco cuenta)
+  const first = L.slice(i).find(n => !el.contains(n) && !n.contains(el) && !(el.compareDocumentPosition(n) & 4) && !n.closest('.ns-liquid-src') && paints(n))
   const covers = n => { const b = n.getBoundingClientRect(); return b.width > 0 && x >= b.left && x <= b.right && y >= b.top && y <= b.bottom }
   for (let c = el, a = el.parentElement; a && a != document.documentElement; c = a, a = a.parentElement) {
     for (let s = c.previousElementSibling; s; s = s.previousElementSibling) {
@@ -206,20 +209,37 @@ export function contour(f, level = 0) {
       case 14: seg(L(), Bo()); break
     }
   }
-  // encadenar en lazos cerrados; cada lazo, en curvas cuadráticas por los puntos medios: la curva
-  // queda siempre dentro del polígono de control (nunca se pasa de largo junto a un lado recto) y
-  // se desvía como mucho un cuarto del tramo más corto (≤ step/4 en las curvas)
+  // encadenar en lazos cerrados; cada lazo, en curvas que PASAN por los puntos del contorno
+  // (Catmull-Rom convertida a Bézier cúbicas): un círculo sale redondo de verdad, sin el achatado de
+  // las curvas por puntos medios. Los lados rectos largos van en línea, y las curvas que llegan a
+  // ellos salen tangentes a la recta (sin codos ni barrigas junto a un lado recto)
   let d = ''
-  const seen = new Set()
+  const seen = new Set(), far = step * 2.5
   for (const start of next.keys()) {
     if (seen.has(start)) continue
     const P = []
     for (let e = start; e != null && !seen.has(e); e = next.get(e)) { seen.add(e); P.push(pt.get(e)) }
     if (P.length < 3) continue
-    const Q = simplify(P, .05), n = Q.length
-    const mid = i => { const a = Q[i % n], b = Q[(i + 1) % n]; return `${r2((a[0] + b[0]) / 2)} ${r2((a[1] + b[1]) / 2)}` }
-    d += 'M' + mid(0)
-    for (let i = 1; i <= n; i++) d += `Q${r2(Q[i % n][0])} ${r2(Q[i % n][1])} ${mid(i)}`
+    const Q = simplify(P, .05, step * .3), n = Q.length
+    if (n < 3) continue
+    const at = i => Q[(i + n) % n]
+    const len = i => { const a = at(i), b = at(i + 1); return Math.hypot(b[0] - a[0], b[1] - a[1]) }
+    const long = i => len(i) > far
+    // tangente en el punto i (por tramo): junto a un lado recto, la de la recta
+    const tan = i => {
+      const a = at(i - 1), b = at(i), c = at(i + 1)
+      if (long(i - 1) || long(i)) {
+        const [p, q] = long(i - 1) ? [a, b] : [b, c], L = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1, s = long(i - 1) ? len(i) : len(i - 1)
+        return [(q[0] - p[0]) / L * s, (q[1] - p[1]) / L * s]
+      }
+      return [(c[0] - a[0]) / 2, (c[1] - a[1]) / 2]
+    }
+    const T = Q.map((_, i) => tan(i))
+    d += `M${r2(Q[0][0])} ${r2(Q[0][1])}`
+    for (let i = 0; i < n; i++) {
+      const a = Q[i], b = at(i + 1), ta = T[i], tb = T[(i + 1) % n]
+      d += long(i) ? `L${r2(b[0])} ${r2(b[1])}` : `C${r2(a[0] + ta[0] / 3)} ${r2(a[1] + ta[1] / 3)} ${r2(b[0] - tb[0] / 3)} ${r2(b[1] - tb[1] / 3)} ${r2(b[0])} ${r2(b[1])}`
+    }
     d += 'Z'
   }
   return d
@@ -228,11 +248,14 @@ export function contour(f, level = 0) {
 /** Contorno fundido (path `d`) de rectángulos redondeados; `k` es el alcance interno del mínimo suave. */
 export const blend = (boxes, k = 14, step = 2) => contour(field(boxes, k, step))
 
-// quita los puntos que se desvían menos de `eps` px de la recta entre sus vecinos (lados rectos)
-function simplify(P, eps) {
+// quita los puntos que se desvían menos de `eps` px de la recta entre sus vecinos (lados rectos) y
+// los que quedan a menos de `near` px del anterior (cuando el contorno roza un nodo de la rejilla
+// salen dos puntos casi iguales, y una curva que pasa por los dos haría una ondulación)
+function simplify(P, eps, near = 0) {
   const out = []
   for (let i = 0; i < P.length; i++) {
     const a = out[out.length - 1] || P[P.length - 1], b = P[i], c = P[(i + 1) % P.length]
+    if (near && out.length && Math.hypot(b[0] - a[0], b[1] - a[1]) < near) continue
     const L = Math.hypot(c[0] - a[0], c[1] - a[1]) || 1
     if (Math.abs((c[0] - a[0]) * (a[1] - b[1]) - (a[0] - b[0]) * (c[1] - a[1])) / L > eps) out.push(b)
   }
@@ -285,6 +308,9 @@ function lensMap(f, rim, cv, full) {
 
 const px = (v, L) => { v = String(v || '0').split(' ')[0]; return v.endsWith('%') ? parseFloat(v) * L / 100 : parseFloat(v) || 0 }
 let uid = 0
+const REG = new WeakMap()
+// firma de lo que pinta una imagen o un fondo: si no cambia, la copia no se rehace
+const sig = n => { const s = getComputedStyle(n); return n.tagName == 'IMG' ? [n.currentSrc || n.src, s.objectFit, s.objectPosition, s.filter].join('|') : [s.backgroundImage, s.backgroundSize, s.backgroundPosition, s.backgroundColor, s.filter].join('|') }
 const mk = (tag, a = {}) => { const e = document.createElementNS(SVG, tag); for (const k in a) e.setAttribute(k, a[k]); return e }
 const stops = (g, s) => { for (const [o, a] of s) g.append(mk('stop', { offset: o, 'stop-color': '#fff', 'stop-opacity': a })); return g }
 const div = cls => { const e = document.createElement('div'); e.className = cls; e.setAttribute('aria-hidden', 'true'); return e }
@@ -297,6 +323,8 @@ const setA = (e, a) => { for (const k in a) e.setAttribute(k, a[k]) }
  * Devuelve { update(), destroy() }.
  */
 export function liquid(el, o = {}) {
+  // (una sola instancia por elemento: el arranque automático y quien la cree a mano la comparten)
+  if (REG.has(el)) return REG.get(el)
   if (!styled) { styled = 1; styles(CSS) }
   el.classList.add('ns-liquid')
   const glassy = () => o.glass ?? /(^|\s)glass(\s|$)/.test(el.getAttribute('data-ns-liquid') || '')
@@ -331,9 +359,11 @@ export function liquid(el, o = {}) {
     // luz del vidrio: reflejo especular (fuerte arriba, tenue abajo) y un brillo interior arriba
     stops(mk('linearGradient', { id: id + 'r', x1: 0, y1: 0, x2: .3, y2: 1 }), [[0, .85], [.2, .35], [.5, .06], [.8, .1], [1, .4]]),
     stops(mk('radialGradient', { id: id + 's', cx: .5, cy: -.15, r: .95 }), [[0, .22], [.55, .05], [1, 0]]),
+    // segundo reflejo, por dentro y al revés: la luz que vuelve por el otro lado del cristal
+    stops(mk('linearGradient', { id: id + 'q', x1: 1, y1: 1, x2: .6, y2: 0 }), [[0, .7], [.3, .18], [.6, 0], [1, 0]]),
     maskB, maskE, clipE, fEdge, ...lenses.map(l => l.f))
-  const path = mk('path', { class: 'ns-lf' }), rim = mk('path', { class: 'ns-lr', stroke: `url(#${id}r)` })
-  svg.append(defs, path, rim)
+  const path = mk('path', { class: 'ns-lf' }), rim = mk('path', { class: 'ns-lr', stroke: `url(#${id}r)` }), rim2 = mk('path', { class: 'ns-lr2', stroke: `url(#${id}q)` })
+  svg.append(defs, path, rim, rim2)
   const glass = div('ns-liquid-glass'), edge = div('ns-liquid-rim')
   // Lente donde backdrop-filter no admite filtros SVG (Safari, Firefox): si se indica qué hay
   // detrás (data-ns-liquid-src="selector" u o.source: una imagen o un elemento con background-image),
@@ -463,7 +493,7 @@ export function liquid(el, o = {}) {
     put(s.getBoundingClientRect())
   }
   let ox0 = 0, oy0 = 0
-  let raf = 0, idle = 0, last = '', now = null, cur = -1, lensKey = '', token = 0, frame = 0, dirty = true, V = null
+  let raf = 0, idle = 0, last = '', lastPre = '', msig = '', now = null, cur = -1, lensKey = '', token = 0, frame = 0, dirty = true, V = null
   // estilos leídos en caché: las variables del grupo y el radio/visibilidad de cada hijo se leen al
   // despertar por un cambio (clase, estilo, tamaño) y cada pocos frames en marcha, no en cada frame
   const look = new WeakMap()
@@ -474,7 +504,7 @@ export function liquid(el, o = {}) {
       V = { k: num('--ns-liquid', 14), lens: num('--ns-glass-lens', 34), edge: num('--ns-glass-edge', 8), depth: num('--ns-glass-depth', 24), blur: num('--ns-glass-blur', 4), sat: num('--ns-glass-sat', 1.3), src: LENS || !glassy() ? null : source() }
       // (el clon del DOM y el de fotogramas se rehacen sólo si cambia el original; la imagen y el
       // fondo, que no cuestan nada, siempre: pueden haber cambiado de src o de estilo)
-      if (V.src != mirrored || kind == 'img' || kind == 'bg') { mirrored = V.src; V.src ? mirror(V.src) : unmirror() }
+      if (V.src != mirrored || ((kind == 'img' || kind == 'bg') && sig(V.src) != msig)) { mirrored = V.src; msig = V.src ? sig(V.src) : ''; V.src ? mirror(V.src) : unmirror() }
     }
     dirty = false; frame++
     const k = o.k ?? V.k
@@ -493,19 +523,28 @@ export function liquid(el, o = {}) {
     const K = k * 2.4, m = K + 6 + lensPx / 2
     const bx = boxes.length ? Math.min(...boxes.map(b => b.x)) - m : 0, by = boxes.length ? Math.min(...boxes.map(b => b.y)) - m : 0
     const bw = boxes.length ? Math.max(...boxes.map(b => b.x + b.w)) + m - bx : 0, bh = boxes.length ? Math.max(...boxes.map(b => b.y + b.h)) + m - by : 0
-    // --ns-liquid es el hueco máximo que se funde; el mínimo suave acerca como mucho k/4 por lado,
-    // así que k = 2,4 × hueco deja un cuello visible justo en el límite
-    // rejilla de 2 px; en grupos grandes, 3 px (el contorno sigue suave: se traza con curvas)
-    const f = field(boxes.map(b => ({ ...b, x: b.x - bx, y: b.y - by })), K, o.step || (bw * bh > 60000 ? 3 : 2)), d = contour(f)
-    const key = d + '|' + bx + '|' + by + '|' + g + '|' + lensPx + '|' + edgePx + '|' + !!src
     // la copia sigue al original (al desplazarse la página, por ejemplo) sin rehacer la forma
     BX = bx + ox; BY = by + oy; ox0 = ox; oy0 = oy
     if (S) put(S)
+    // si las piezas y los parámetros no cambiaron, la forma tampoco: ni campo ni contorno (un grupo
+    // se despierta a menudo por otro que se mueve dentro o cerca, y así no le cuesta nada)
+    const pre = boxes.map(b => `${r2(b.x)},${r2(b.y)},${r2(b.w)},${r2(b.h)},${r2(b.r)}`).join(';') + `|${K}|${g}|${lensPx}|${edgePx}|${!!src}|${depth}|${V.blur}|${V.sat}`
+    if (pre == lastPre) return
+    lastPre = pre
+    // --ns-liquid es el hueco máximo que se funde; el mínimo suave acerca como mucho k/4 por lado,
+    // así que k = 2,4 × hueco deja un cuello visible justo en el límite
+    // rejilla adaptativa: unos 9000 nodos, entre 1,25 y 3 px (el contorno pasa por puntos exactos
+    // del campo y se traza con cúbicas: un círculo sale redondo al píxel a cualquier tamaño)
+    const step = o.step || Math.min(3, Math.max(1.25, Math.sqrt(bw * bh / 9000)))
+    const f = field(boxes.map(b => ({ ...b, x: b.x - bx, y: b.y - by })), K, step), d = contour(f)
+    const key = d + '|' + bx + '|' + by + '|' + g + '|' + lensPx + '|' + edgePx + '|' + !!src
     if (key == last) return
     last = key
     for (const e of [svg, glass, edge, back]) Object.assign(e.style, { left: r2(bx) + 'px', top: r2(by) + 'px', width: r2(bw) + 'px', height: r2(bh) + 'px' })
     svg.setAttribute('viewBox', `0 0 ${r2(bw)} ${r2(bh)}`)
     path.setAttribute('d', d); rim.setAttribute('d', d)
+    // segundo reflejo: un contorno 1,6 px hacia dentro (sólo en vidrio)
+    rim2.setAttribute('d', g && d ? contour(f, -1.6) : '')
     el.classList.toggle('ns-glass', g)
     // (estilo en línea: el relleno de la capa en CSS ganaría a un atributo fill)
     path.style.fill = g ? `url(#${id}s)` : ''
@@ -566,6 +605,8 @@ export function liquid(el, o = {}) {
   // bucle sólo mientras algo se mueve: dos frames sin cambios y sin animaciones → se detiene
   const tick = () => {
     raf = 0
+    // lejos de la pantalla no se dibuja nada: se retoma al acercarse (near)
+    if (!near) return
     const before = last
     draw()
     // en marcha mientras haya transiciones o animaciones CSS activas (por eventos); antes de parar,
@@ -577,7 +618,7 @@ export function liquid(el, o = {}) {
     if (idle < 2) raf = requestAnimationFrame(tick)
   }
   const wake = () => { idle = 0; raf ||= requestAnimationFrame(tick) }
-  const stale = () => { dirty = true; wake() }
+  const stale = () => { dirty = true; lastPre = ''; wake() }
   const ro = new ResizeObserver(stale)
   ro.observe(el)
   // elementos con transiciones o animaciones CSS en curso (si uno termina antes que otra de sus
@@ -590,9 +631,24 @@ export function liquid(el, o = {}) {
   EV.forEach(([e, f]) => el.addEventListener(e, f, true))
   // (sus propias capas no cuentan: cambiar su estilo no debe despertar otro frame)
   const own = n => n == svg || n == glass || n == edge || back.contains(n) || svg.contains(n)
-  const mo = new MutationObserver(ms => { if (ms.some(m => !own(m.target))) stale() })
+  // Un estilo en línea que cambia en una pieza (una animación por JS que la mueve) sólo despierta el
+  // bucle: la geometría se lee en cada frame. Clases, atributos o el estilo del propio grupo pueden
+  // cambiar variables y radios: ésos obligan a releer. Las capas de otros grupos anidados no cuentan.
+  const mo = new MutationObserver(ms => {
+    let s = 0, w = 0
+    for (const m of ms) {
+      if (own(m.target) || m.target.closest?.('.ns-liquid-fx,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-src')) continue
+      if (m.attributeName == 'style' && m.target != el) w = 1; else s = 1
+    }
+    s ? stale() : w && wake()
+  })
   mo.observe(el, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden', 'data-ns-liquid', 'data-ns-liquid-src'] })
   // fuera de Chromium: la copia sigue al desplazamiento, y el fondo se busca al entrar a la vista
+  // sólo trabaja cerca de la pantalla (media pantalla de margen): un grupo al final de la página no
+  // calcula formas ni mapas de lente durante la carga
+  let near = false
+  const nio = new IntersectionObserver(es => { const n = es[es.length - 1].isIntersecting; if (n != near) { near = n; n && stale() } }, { rootMargin: '50% 0px' })
+  nio.observe(el)
   let io = null
   if (!LENS) {
     addEventListener('scroll', onScroll, { capture: true, passive: true })
@@ -600,10 +656,15 @@ export function liquid(el, o = {}) {
     io.observe(el)
   }
   wake()
-  return {
+  const handle = {
+    // update: relee estilos y vuelve a dibujar; frame: sólo redibuja (para quien mueve las piezas
+    // por JS en cada frame, sin cambiar variables ni radios)
     update: stale,
-    destroy() { cancelAnimationFrame(raf); cancelAnimationFrame(fr); token++; unmirror(); ro.disconnect(); mo.disconnect(); io?.disconnect(); removeEventListener('scroll', onScroll, { capture: true }); EV.forEach(([e, f]) => el.removeEventListener(e, f, true)); svg.remove(); glass.remove(); edge.remove(); back.remove(); el.classList.remove('ns-liquid', 'ns-glass') },
+    frame: wake,
+    destroy() { REG.delete(el); cancelAnimationFrame(raf); cancelAnimationFrame(fr); token++; unmirror(); ro.disconnect(); mo.disconnect(); nio.disconnect(); io?.disconnect(); removeEventListener('scroll', onScroll, { capture: true }); EV.forEach(([e, f]) => el.removeEventListener(e, f, true)); svg.remove(); glass.remove(); edge.remove(); back.remove(); el.classList.remove('ns-liquid', 'ns-glass') },
   }
+  REG.set(el, handle)
+  return handle
 }
 
 if (typeof document != 'undefined') {

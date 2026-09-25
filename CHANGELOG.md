@@ -6,7 +6,14 @@
 - Sin el error global «ResizeObserver loop completed with undelivered notifications» (WebKit lo lanzaba como excepción): el margen seguro de `data-ns-pad` se aplica en el frame siguiente cuando viene de un ResizeObserver, y `ns-link` ya no observa el `<body>` (compara la altura del documento en eventos baratos).
 - Todas las páginas del sitio revisadas en WebKit (motor de Safari) sin errores.
 
+### Pestañas de vidrio líquido (`ns-frame/tabs`, nuevo)
+- `data-ns-tabs`: la barra de pestañas de iOS 26. El indicador viaja con un muelle, se estira con la velocidad y deja una gota que se funde; se arrastra entre pestañas levantándose como una lente clara, con resistencia de goma en los extremos, y encaja al soltar. Teclado, ARIA (`tablist`/`tab` o `aria-pressed`), evento `change` y `prefers-reduced-motion`.
+
 ### Vidrio líquido (`ns-frame/liquid`)
+- **Contorno exacto:** curvas que pasan por los puntos del campo (Catmull-Rom → Bézier cúbicas) con los lados rectos en línea; un círculo sale redondo con menos de 0,05 px de error (antes, las cuadráticas por puntos medios lo achataban). Rejilla adaptativa entre 1,25 y 3 px.
+- Segundo reflejo por dentro del canto, en sentido contrario (la luz que vuelve por el otro lado del cristal).
+- **Más rápido:** si las piezas no cambian, no se recalcula ni el campo ni el contorno; los estilos en línea de las piezas sólo despiertan el bucle (sin releer variables); la copia del fondo no se rehace si la imagen no cambia. Una sola instancia por elemento y `frame()` para quien anima por JS.
+- La detección del fondo ignora lo que se pinta encima (lo que va después en el DOM), también en grupos anidados que no reciben el puntero.
 - `data-ns-liquid="glass"`: el material del Liquid Glass de Apple, con la forma exacta del grupo: cuerpo desenfocado y tintado, **lente** que curva el fondo junto al borde (mapa de desplazamiento sacado del propio campo de distancias; Chromium), canto que brilla y se desvanece hacia dentro sin línea interior, y reflejo especular. `prefers-reduced-transparency` lo vuelve opaco.
 - El recorte del vidrio usa además una máscara: Chromium ignora un `clip-path` libre en el desenfoque de fondo dentro de un contenedor redondeado y pintaba el rectángulo entero.
 - El contenedor ya no usa `isolation` (hacía de raíz del fondo) y las capas se apilan por orden.

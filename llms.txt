@@ -22,7 +22,7 @@ Key rules: import the core once (`import 'ns-frame'`); never use CSS `border` on
 - [Movimiento](https://github.com/kodecagency/ns-frame/blob/main/docs/movimiento.md)
 - [Layout](https://github.com/kodecagency/ns-frame/blob/main/docs/layout.md)
 - [Mosaico](https://github.com/kodecagency/ns-frame/blob/main/docs/mosaico.md): `ns-frame/mosaic` — free-form bento (L/T/U pieces with a constant gap), shaped orbs (circle, hex, diamond, triangle) that cut their neighbours and can hold content, connected light effects via `data-ns-mosaic`
-- [Componentes](https://github.com/kodecagency/ns-frame/blob/main/docs/componentes.md): popovers, toasts, carousel, skeletons, View Transitions, `ns-frame/sheet`, `ns-frame/isle`, callouts, and what CSS can't do yet: `ns-frame/concentric` (`data-ns-concentric`), `ns-frame/flow` (`data-ns-flow`), `ns-frame/mark` (`data-ns-mark`), `ns-frame/liquid` (`data-ns-liquid`)
+- [Componentes](https://github.com/kodecagency/ns-frame/blob/main/docs/componentes.md): popovers, toasts, carousel, skeletons, View Transitions, `ns-frame/sheet`, `ns-frame/isle`, callouts, and what CSS can't do yet: `ns-frame/concentric` (`data-ns-concentric`), `ns-frame/flow` (`data-ns-flow`), `ns-frame/mark` (`data-ns-mark`), `ns-frame/liquid` (`data-ns-liquid`; `="glass"` for liquid glass with a lens in every engine), `ns-frame/tabs` (`data-ns-tabs`, liquid-glass tabs whose indicator can be dragged)
 - [Efectos](https://github.com/kodecagency/ns-frame/blob/main/docs/efectos.md)
 - [Formas sin JS](https://github.com/kodecagency/ns-frame/blob/main/docs/sin-js.md)
 - [API de JavaScript](https://github.com/kodecagency/ns-frame/blob/main/docs/api.md)
