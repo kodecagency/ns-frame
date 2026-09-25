@@ -44,7 +44,7 @@ const CSS = `@layer ns{
 .ns-liquid{position:relative}
 :where(.ns-liquid>:not(.ns-liquid-fx,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-src)){position:relative}
 .ns-liquid-fx,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-src{position:absolute;pointer-events:none;margin:0}
-.ns-liquid-src{overflow:hidden}.ns-liquid-src>div{position:absolute;inset:0}.ns-liquid-src>div>div{position:absolute}
+.ns-liquid-src{overflow:hidden}.ns-liquid-gl{position:absolute;left:0;top:0;display:block}.ns-liquid-src>div{position:absolute;inset:0}.ns-liquid-src>div>div{position:absolute}
 .ns-liquid-fx{overflow:visible}
 .ns-liquid-fx .ns-lf{fill:var(--ns-liquid-fill,currentColor);stroke:var(--ns-liquid-border,none);stroke-width:var(--ns-liquid-width,1.5px)}
 .ns-liquid-fx .ns-lr,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-src{display:none}
@@ -125,14 +125,16 @@ function behind(el) {
 // ¿Lo de detrás es claro? El primer color de fondo casi opaco bajo el centro del grupo (lo que
 // está encima de él no cuenta). Una imagen, un vídeo o un degradado: no se sabe (undefined), y el
 // vidrio se queda como estaba
-function bright(el) {
+function bright(el, again) {
   const r = el.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2
   if (!r.width || x < 0 || y < 0 || x > innerWidth || y > innerHeight) return undefined
   const L = document.elementsFromPoint(x, y), i = Math.max(0, L.findIndex(n => el.contains(n)))
   const lum = c => (.2126 * c[0] + .7152 * c[1] + .0722 * c[2]) / 255 > .6
   for (const n of L.slice(i)) {
     if (el.contains(n) || n.closest('.ns-liquid-src')) continue
-    if (/^(IMG|VIDEO|CANVAS|svg)$/.test(n.tagName)) return undefined
+    // (una foto: se mide la zona que queda debajo, si la imagen se puede leer)
+    if (n.tagName == 'IMG') return imgLum(n, r, again)
+    if (/^(VIDEO|CANVAS|svg)$/.test(n.tagName)) return undefined
     const s = getComputedStyle(n), c = s.backgroundColor.match(/[\d.]+/g)
     if (s.backgroundImage != 'none') return undefined
     if (c && +(c[3] ?? 1) >= .5) return lum(c)
@@ -409,6 +411,29 @@ function simplify(P, eps, near = 0) {
 // unas pestañas al levantarse): cada punto toma el fondo un poco más cerca del centro de la forma,
 // en proporción a su distancia al centro (aumento uniforme)
 function lensMap(f, rim, cv, full, hard, zoom = 0) {
+  paintMap(f, rim, cv, hard, zoom)
+  // `full` ({ cv, w, h }): el mapa a tamaño de la capa, neutro fuera de la rejilla y estirado con
+  // suavizado. Es el que usa filter: url() fuera de Chromium: WebKit sólo coloca bien un feImage
+  // sin posición ni tamaño (a su tamaño propio, en el origen de la región del objeto)
+  let out = cv
+  if (full) {
+    out = full.cv
+    out.width = Math.max(1, Math.round(full.w)); out.height = Math.max(1, Math.round(full.h))
+    const y = out.getContext('2d')
+    y.fillStyle = 'rgb(128,128,128)'; y.fillRect(0, 0, out.width, out.height)
+    y.drawImage(cv, f.X0, f.Y0, f.nx * f.step, f.ny * f.step)
+  }
+  // toBlob codifica el PNG fuera del hilo principal (toDataURL lo bloqueaba al detenerse la forma)
+  return new Promise(res => out.toBlob(b => {
+    if (!b) return res(out.toDataURL())
+    const r = new FileReader()
+    r.onload = () => res(r.result)
+    r.readAsDataURL(b)
+  }))
+}
+// el mapa en el canvas de la rejilla, sin codificar (la lente en WebGL lo sube tal cual). En azul,
+// la franja del canto: 1 en el borde y 0 a `edge` px hacia dentro
+function paintMap(f, rim, cv, hard, zoom = 0, edge = 0) {
   const { F, nx, ny, step } = f
   cv.width = nx; cv.height = ny
   // willReadFrequently: canvas en CPU. Uno acelerado por GPU obliga a leerlo de vuelta para
@@ -433,27 +458,120 @@ function lensMap(f, rim, cv, full, hard, zoom = 0) {
       gx -= (i - cx) / R * zoom * e; gy -= (j - cy) / R * zoom * e
       gx = Math.max(-1, Math.min(1, gx)); gy = Math.max(-1, Math.min(1, gy))
     }
-    D[k] = 128 + gx * 127; D[k + 1] = 128 + gy * 127; D[k + 2] = 128; D[k + 3] = 255
+    D[k] = 128 + gx * 127; D[k + 1] = 128 + gy * 127; D[k + 3] = 255
+    D[k + 2] = edge && v < 0 ? 255 * Math.max(0, 1 + v / edge) ** 1.6 : edge ? 0 : 128
   }
   x.putImageData(img, 0, 0)
-  // `full` ({ cv, w, h }): el mapa a tamaño de la capa, neutro fuera de la rejilla y estirado con
-  // suavizado. Es el que usa filter: url() fuera de Chromium: WebKit sólo coloca bien un feImage
-  // sin posición ni tamaño (a su tamaño propio, en el origen de la región del objeto)
-  let out = cv
-  if (full) {
-    out = full.cv
-    out.width = Math.max(1, Math.round(full.w)); out.height = Math.max(1, Math.round(full.h))
-    const y = out.getContext('2d')
-    y.fillStyle = 'rgb(128,128,128)'; y.fillRect(0, 0, out.width, out.height)
-    y.drawImage(cv, f.X0, f.Y0, nx * step, ny * step)
+}
+
+// Dónde se pinta de verdad la imagen de un <img>, <video> o <canvas> dentro de su caja S (con su
+// object-fit y object-position): [x, y, ancho, alto], en las mismas unidades que S
+function fitRect(n, S, iw, ih) {
+  const s = getComputedStyle(n), fit = s.objectFit
+  let w = S.width, h = S.height
+  if (iw && ih && fit != 'fill') {
+    const k = fit == 'cover' ? Math.max(w / iw, h / ih) : fit == 'none' ? 1 : fit == 'scale-down' ? Math.min(1, w / iw, h / ih) : Math.min(w / iw, h / ih)
+    w = iw * k; h = ih * k
   }
-  // toBlob codifica el PNG fuera del hilo principal (toDataURL lo bloqueaba al detenerse la forma)
-  return new Promise(res => out.toBlob(b => {
-    if (!b) return res(out.toDataURL())
-    const r = new FileReader()
-    r.onload = () => res(r.result)
-    r.readAsDataURL(b)
-  }))
+  const [ox, oy] = (s.objectPosition || '50% 50%').split(' '), at = (v, free) => v?.endsWith('%') ? parseFloat(v) / 100 * free : parseFloat(v) || 0
+  return [S.left + at(ox, S.width - w), S.top + at(oy ?? ox, S.height - h), w, h]
+}
+
+// ¿Es clara la zona de una imagen que queda bajo el grupo (su rectángulo r en pantalla)? Se lee una
+// copia de la imagen pedida con CORS, reducida a 6×6: si el servidor no lo permite, no se sabe
+// (undefined) y el vidrio se queda como está. `again` se llama cuando la copia llega
+const LUMS = new Map()
+function imgLum(n, r, again) {
+  const u = n.currentSrc || n.src
+  if (!u) return
+  let e = LUMS.get(u)
+  if (!e) {
+    LUMS.set(u, e = { cb: new Set() })
+    const im = new Image()
+    im.crossOrigin = 'anonymous'
+    im.onload = () => { e.im = im; e.cb.forEach(f => f()); e.cb.clear() }
+    im.onerror = () => { e.bad = 1; e.cb.clear() }
+    im.src = u
+  }
+  if (e.bad) return
+  if (!e.im) { e.cb.add(again); return }
+  const S = n.getBoundingClientRect(), [x, y, w, h] = fitRect(n, S, e.im.naturalWidth, e.im.naturalHeight)
+  const k = e.im.naturalWidth / w, sx = (r.left - x) * k, sy = (r.top - y) * k, sw = r.width * k, sh = r.height * k
+  if (sw <= 0 || sh <= 0) return
+  const c = e.cv ||= Object.assign(document.createElement('canvas'), { width: 6, height: 6 }), g = c.getContext('2d', { willReadFrequently: true })
+  try {
+    g.clearRect(0, 0, 6, 6); g.drawImage(e.im, sx, sy, sw, sh, 0, 0, 6, 6)
+    const D = g.getImageData(0, 0, 6, 6).data
+    let L = 0
+    for (let i = 0; i < D.length; i += 4) L += (.2126 * D[i] + .7152 * D[i + 1] + .0722 * D[i + 2]) / 255
+    return L / 36 > .6
+  } catch { e.bad = 1 }
+}
+
+// ── Lente en WebGL (Safari y Firefox con una imagen, un vídeo o un canvas detrás) ──
+// Los filtros SVG sobre HTML son frágiles en WebKit (en iPhone el desplazamiento puede no aplicarse
+// y queda un desenfoque plano) y el mapa, codificado como imagen, llega tarde mientras la forma se
+// mueve. Aquí, un solo paso en la GPU por fotograma: refracción con el mapa de la forma actual,
+// desenfoque (leyendo de un nivel más pequeño de la imagen), saturación y el canto
+const GLVS = 'attribute vec2 a;varying vec2 p;uniform vec2 S;void main(){p=a*S;gl_Position=vec4(a.x*2.-1.,1.-a.y*2.,0.,1.);}'
+const GLFS = `precision mediump float;varying vec2 p;uniform sampler2D B,M;uniform vec4 T,U;uniform float K,Z,L,A,E,C,Q;
+vec3 bg(vec2 q){return texture2D(B,q*T.xy+T.zw,L).rgb;}
+float lu(vec3 c){return dot(c,vec3(.2126,.7152,.0722));}
+void main(){vec2 u=(p-U.xy)/U.zw;vec3 m=(u.x<0.||u.y<0.||u.x>1.||u.y>1.)?vec3(.5,.5,0.):texture2D(M,u).rgb;
+vec2 q=p+K*(m.rg-.5);vec3 c=vec3(0.);float w=0.;
+for(int i=0;i<16;i++){float f=float(i),r=sqrt((f+.5)/16.)*Z,a=f*2.39996,g=exp(-2.*r*r/max(Z*Z,.01));c+=bg(q+vec2(cos(a),sin(a))*r)*g;w+=g;}
+c/=w;c=mix(vec3(lu(c)),c,A);vec3 e=mix(vec3(lu(c)),c,Q);e=(e*C+(.5-.5*C))*E;c=mix(c,clamp(e,0.,1.),m.b);
+gl_FragColor=vec4(c,1.);}`
+const GLOK = !LENS && typeof document != 'undefined' && (() => { try { return !!document.createElement('canvas').getContext('webgl') } catch { return false } })()
+function glLens(cv) {
+  const gl = cv.getContext('webgl', { alpha: false, antialias: false, premultipliedAlpha: false })
+  if (!gl) return null
+  const sh = (t, s) => { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); return o }
+  const pr = gl.createProgram()
+  gl.attachShader(pr, sh(gl.VERTEX_SHADER, GLVS)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, GLFS)); gl.linkProgram(pr)
+  if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return null
+  gl.useProgram(pr)
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]), gl.STATIC_DRAW)
+  const a = gl.getAttribLocation(pr, 'a')
+  gl.enableVertexAttribArray(a); gl.vertexAttribPointer(a, 2, gl.FLOAT, false, 0, 0)
+  const U = {}
+  for (const k of 'S B M T U K Z L A E C Q'.split(' ')) U[k] = gl.getUniformLocation(pr, k)
+  const tex = i => {
+    const t = gl.createTexture()
+    gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(gl.TEXTURE_2D, t)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+    return t
+  }
+  const tB = tex(0), tM = tex(1)
+  gl.uniform1i(U.B, 0); gl.uniform1i(U.M, 1)
+  const pot = document.createElement('canvas')
+  return {
+    // el fondo, copiado a un lienzo de lado potencia de dos con mipmaps: el desenfoque lee de un
+    // nivel más pequeño y sólo afina con 16 muestras. Lanza SecurityError si la imagen no es legible
+    bg(src, w, h) {
+      const P = n => 2 ** Math.max(1, Math.min(11, Math.ceil(Math.log2(Math.max(2, n)))))
+      const W = P(w), H = P(h)
+      if (pot.width != W || pot.height != H) { pot.width = W; pot.height = H }
+      pot.getContext('2d').drawImage(src, 0, 0, W, H)
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tB)
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, pot)
+      gl.generateMipmap(gl.TEXTURE_2D); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR)
+      return W
+    },
+    map(c) { gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, tM); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, c) },
+    // o: { w, h (capa, px), q (densidad), T: [sx, sy, ox, oy] de px de la capa a uv de la imagen,
+    // M: [x, y, w, h] del mapa en la capa, k (lente px), z (desenfoque px), l (nivel), sat, rim }
+    draw(o) {
+      gl.viewport(0, 0, cv.width, cv.height)
+      gl.uniform2f(U.S, o.w, o.h); gl.uniform4f(U.T, ...o.T); gl.uniform4f(U.U, ...o.M)
+      gl.uniform1f(U.K, o.k); gl.uniform1f(U.Z, o.z); gl.uniform1f(U.L, o.l); gl.uniform1f(U.A, o.sat)
+      gl.uniform1f(U.E, o.rim[0]); gl.uniform1f(U.C, o.rim[1]); gl.uniform1f(U.Q, o.rim[2])
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
+    },
+    lost: () => gl.isContextLost(),
+  }
 }
 
 const px = (v, L) => { v = String(v || '0').split(' ')[0]; return v.endsWith('%') ? parseFloat(v) * L / 100 : parseFloat(v) || 0 }
@@ -576,7 +694,17 @@ export function liquid(el, o = {}) {
     if (s == 'page') return document.body
     // sin una imagen limpia detrás (texto, tarjetas, una foto con algo encima), la página entera:
     // un clon de lo que queda bajo el grupo (scene)
-    if (!s || s == 'auto') { const b = behind(el); return b === null ? document.body : b ?? null }
+    if (!s || s == 'auto') {
+      const b = behind(el)
+      // (a media animación, como unas gotas que salen, behind puede no ver claro un fotograma: si la
+      // foto que ya se copiaba sigue bajo el centro del grupo, se queda; si no, se pasaría a la
+      // escena y luego no volvería)
+      if (b === null && mirrored && !mirrored.contains(el)) {
+        const r = el.getBoundingClientRect(), m = mirrored.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2
+        if (x >= m.left && x <= m.right && y >= m.top && y <= m.bottom) return mirrored
+      }
+      return b === null ? document.body : b ?? null
+    }
     if (typeof s != 'string') return s
     for (let a = el.parentElement; a; a = a.parentElement) { const n = a.querySelector(s); if (n) return n }
     return null
@@ -589,7 +717,15 @@ export function liquid(el, o = {}) {
   //   -moz-element(), el elemento en vivo; en Safari, un clon del DOM con los estilos calculados en
   //   línea, que se rehace cuando el original cambia (hasta CAP nodos; más, sólo el desenfoque).
   let mirrored = null, kind = '', live = 0, vis = true, cc = null, smo = null, redo = 0
-  const unmirror = () => { cancelAnimationFrame(live); live = 0; smo?.disconnect(); smo = null; clearTimeout(redo); cancelAnimationFrame(redo); redo = 0; zone = null; copy.replaceChildren(); copy.removeAttribute('style'); cc = null; kind = ''; placed = '' }
+  // lente en WebGL: G (el motor), glc (su canvas), gsrc (lo que se sube: la imagen pedida con CORS,
+  // el vídeo o el canvas), gsz (su tamaño natural), gW (ancho de la textura), gU (la url de la imagen)
+  let G = null, glc = null, gsrc = null, gsz = null, gW = 1, gU = '', shaped = '', gTok = 0
+  const unmirror = () => {
+    cancelAnimationFrame(live); live = 0; smo?.disconnect(); smo = null; clearTimeout(redo); cancelAnimationFrame(redo); redo = 0; zone = null
+    if (kind == 'gl') { glc.remove(); glass.style.backdropFilter = ''; lensKey = '' }
+    gTok++; gsrc = null; gU = ''
+    copy.replaceChildren(); copy.removeAttribute('style'); cc = null; kind = ''; placed = ''
+  }
   const mirror = n => {
     unmirror()
     const s = getComputedStyle(n), c = copy.style, t = n.tagName
@@ -628,6 +764,64 @@ export function liquid(el, o = {}) {
       Object.assign(c, { backgroundImage: s.backgroundImage, backgroundSize: s.backgroundSize, backgroundPosition: s.backgroundPosition, backgroundRepeat: s.backgroundRepeat, backgroundColor: s.backgroundColor })
     }
     if (kind != 'dom' && kind != 'scene') c.filter = s.filter == 'none' ? '' : s.filter
+    glTry(n)
+  }
+  // La lente pasa a WebGL si se puede leer el fondo: una imagen (se pide otra vez con CORS; mientras
+  // llega, sigue la copia con filtros), un vídeo o un canvas del mismo origen. Si no, se queda así
+  const glTry = n => {
+    const t = n.tagName
+    if (!GLOK || !/^(IMG|VIDEO|CANVAS)$/.test(t)) return
+    const tok = gTok
+    const go = src => {
+      if (tok != gTok || mirrored != n) return
+      const w = src.naturalWidth || src.videoWidth || src.width, h = src.naturalHeight || src.videoHeight || src.height
+      if (!w || !h) return
+      try {
+        glc ||= Object.assign(document.createElement('canvas'), { className: 'ns-liquid-gl' })
+        G ||= glLens(glc)
+        if (!G) return
+        gW = G.bg(src, w, h)
+      } catch { return }
+      cancelAnimationFrame(live); live = 0
+      kind = 'gl'; gsrc = src; gsz = [w, h]; shaped = ''
+      copy.replaceChildren(); copy.style.display = 'none'; hold.append(glc)
+      back.style.filter = ''; glass.style.backdropFilter = 'none'
+      glc.style.filter = getComputedStyle(n).filter.replace('none', '')
+      glFrame()
+      if (t != 'IMG') glLive()
+    }
+    if (t == 'IMG') {
+      const u = gU = n.currentSrc || n.src
+      if (!u) return
+      const im = new Image()
+      im.crossOrigin = 'anonymous'
+      im.onload = () => go(im)
+      im.src = u
+    } else go(n)
+  }
+  // vídeo o canvas: la textura se renueva cada fotograma mientras el grupo se ve
+  const glLive = () => {
+    live = requestAnimationFrame(() => {
+      live = 0
+      if (kind != 'gl' || !vis || back.hidden) return
+      try { G.bg(gsrc, gsz[0], gsz[1]) } catch { }
+      glFrame(); glLive()
+    })
+  }
+  // un fotograma de la lente: el mapa de la forma actual (sólo si cambió) y la imagen colocada donde
+  // está el original respecto a la capa (con su object-fit)
+  const glFrame = () => {
+    if (kind != 'gl' || !now || !G || !mirrored) return
+    const q = Math.min(2, devicePixelRatio || 1), W = Math.max(1, Math.round(now.bw * q)), H = Math.max(1, Math.round(now.bh * q))
+    if (glc.width != W || glc.height != H) { glc.width = W; glc.height = H; shaped = '' }
+    Object.assign(glc.style, { width: r2(now.bw) + 'px', height: r2(now.bh) + 'px' })
+    const f = now.f, sk = [now.d, now.bw, now.bh, now.depth, now.hard, now.zoom, now.edge].join('|')
+    if (sk != shaped) { shaped = sk; paintMap(f, now.depth, cv, now.hard, now.zoom, now.edge); G.map(cv) }
+    const [ix, iy, iw, ih] = fitRect(mirrored, mirrored.getBoundingClientRect(), gsz[0], gsz[1])
+    const x0 = (ix - OX) / SC - LX, y0 = (iy - OY) / SC - LY, w = iw / SC, h = ih / SC, b = V.blur
+    G.draw({ w: now.bw, h: now.bh, T: [1 / w, 1 / h, -x0 / w, -y0 / h], M: [f.X0, f.Y0, f.nx * f.step, f.ny * f.step],
+      k: now.lensPx, z: b * 2, l: Math.max(0, Math.log2(Math.max(1, b * gW / w)) - 1), sat: V.sat,
+      rim: now.light ? [1.04, 1.05, 1.1] : [1.22, 1.06, 1.15] })
   }
   // vídeo y canvas: cada fotograma, con su object-fit, sólo mientras el grupo está a la vista
   const frames = n => {
@@ -751,7 +945,7 @@ export function liquid(el, o = {}) {
   }
   // vidrio claro sobre fondos claros (como el de Apple), salvo que se fije --ns-glass-tint
   let toned = 0
-  const tone = () => { toned = performance.now(); const b = glassy() ? bright(el) : undefined; if (b !== undefined) el.classList.toggle('ns-glass-light', b) }
+  const tone = () => { toned = performance.now(); const b = glassy() ? bright(el, stale) : undefined; if (b !== undefined) el.classList.toggle('ns-glass-light', b) }
   // La copia, donde está el original respecto a las capas. OX, OY: origen del grupo en pantalla;
   // SC: su escala (un grupo con scale o transform: la barra que se encoge al desplazar); LX, LY:
   // origen de las capas en coordenadas del grupo. La copia se desescala para verse a tamaño real
@@ -779,6 +973,7 @@ export function liquid(el, o = {}) {
       if (Math.abs(E.top - N.top - zone.y) > zone.my / 2 || Math.abs(E.left - N.left - zone.x) > 40) { redo = requestAnimationFrame(() => { redo = 0; kind == 'scene' && scene(s) }) }
     }
     put(s.getBoundingClientRect())
+    glFrame()
   }
   let raf = 0, idle = 0, cost = 3, last = '', lastPre = '', lastVk = '', remap = false, msig = '', now = null, cur = -1, lensKey = '', token = 0, frame = 0, dirty = true, V = null
   // estilos leídos en caché: las variables del grupo y el radio/visibilidad de cada hijo se leen al
@@ -802,7 +997,10 @@ export function liquid(el, o = {}) {
       if (lenses[0].prism !== V.prism) { lenses.forEach(L => chain(L, V.prism)); lensKey = ''; lastPre = '' }
       // (el clon del DOM y el de fotogramas se rehacen sólo si cambia el original; la imagen y el
       // fondo, que no cuestan nada, siempre: pueden haber cambiado de src o de estilo)
-      if (V.src != mirrored || ((kind == 'img' || kind == 'bg') && sig(V.src) != msig)) { mirrored = V.src; msig = V.src ? sig(V.src) : ''; V.src ? mirror(V.src) : unmirror() }
+      // (en WebGL, un filtro nuevo en la imagen, como el del editor, sólo cambia el del canvas; otra
+      // url sí rehace la copia)
+      if (kind == 'gl' && V.src == mirrored) glc.style.filter = getComputedStyle(V.src).filter.replace('none', '')
+      if (V.src != mirrored || ((kind == 'img' || kind == 'bg') && sig(V.src) != msig) || (kind == 'gl' && gU && gU != (V.src.currentSrc || V.src.src))) { mirrored = V.src; msig = V.src ? sig(V.src) : ''; V.src ? mirror(V.src) : unmirror() }
     }
     dirty = false; frame++
     const k = o.k ?? V.k
@@ -850,7 +1048,7 @@ export function liquid(el, o = {}) {
     if (S) put(S)
     // si las piezas y los parámetros no cambiaron, la forma tampoco: ni campo ni contorno (un grupo
     // se despierta a menudo por otro que se mueve dentro o cerca, y así no le cuesta nada)
-    if (pre == lastPre) return
+    if (pre == lastPre) { glFrame(); return }
     lastPre = pre
     const [f, d] = make()
     const key = d + '|' + bx + '|' + by + '|' + g + '|' + lensPx + '|' + edgePx + '|' + !!src
@@ -892,7 +1090,7 @@ export function liquid(el, o = {}) {
     edge.style.display = lensPx && (LENS || src) ? 'none' : ''
     if (!lensPx) { glass.style.backdropFilter = back.style.filter = ''; now = null; return }
     // sobre la copia, la lente sólo desplaza: el desenfoque y la saturación los pone el cuerpo encima
-    now = { f, d, bw, bh, depth, lensPx, blur: src ? 0 : V.blur, sat: src ? 1 : V.sat, src: !!src, hard: V.hard, zoom: V.zoom, light: V.light, rim: me.slice(5, -2) }
+    now = { f, d, bw, bh, depth, lensPx, blur: src ? 0 : V.blur, sat: src ? 1 : V.sat, src: !!src, hard: V.hard, zoom: V.zoom, light: V.light, rim: me.slice(5, -2), edge: edgePx }
     // en marcha: el mapa vigente sigue a la forma (se estira); el nuevo llega al detenerse. Sobre la
     // copia (fuera de Chromium) el mapa va con la capa y se estira a su tamaño: vale mientras la
     // forma se desplaza o se estira un poco (un indicador que se levanta); si cambia mucho (unas
@@ -901,6 +1099,8 @@ export function liquid(el, o = {}) {
       if (now.src) lkT = mapWH && Math.abs(bw / mapWH[0] - 1) < .35 && Math.abs(bh / mapWH[1] - 1) < .35 ? 1 : 0
       place(lenses[cur], now)
     }
+    // (en WebGL no hay mapa que esperar: la lente sigue a la forma en el mismo fotograma)
+    glFrame()
   }
   // fuerza de la lente sobre la copia (0–1), con transición
   let lk = 1, lkT = 1, mapWH = null, rimTok = 0
@@ -931,7 +1131,7 @@ export function liquid(el, o = {}) {
   // mapa nuevo en el filtro libre; se cambia de filtro cuando la imagen ya está decodificada
   const refreshLens = () => {
     const s = now
-    if (!s) return
+    if (!s || kind == 'gl') return
     const k = [s.d, s.bw, s.bh, s.depth, s.lensPx, s.blur, s.sat, s.src, s.hard, s.zoom, s.light, s.rim.length].join('|')
     if (k == lensKey) return
     lensKey = k
@@ -946,7 +1146,7 @@ export function liquid(el, o = {}) {
       // que carga el feImage aparte, seis (si no, un frame con el mapa vacío desplazaba todo)
       const after = (k, fn) => requestAnimationFrame(() => k > 1 ? after(k - 1, fn) : fn())
       const swap = () => after(WK ? 6 : 2, () => {
-        if (t != token || !now) return
+        if (t != token || !now || kind == 'gl') return
         cur = n
         if (now.src) { mapWH = [s.bw, s.bh]; lkT = 1; wake() }
         place(L, now)
@@ -1018,7 +1218,7 @@ export function liquid(el, o = {}) {
   let io = null
   addEventListener('scroll', onScroll, { capture: true, passive: true })
   if (!LENS) {
-    io = new IntersectionObserver(es => { vis = es[es.length - 1].isIntersecting; if (vis) { if (kind == 'frames' && !live) frames(mirrored); if (!V?.src) stale() } })
+    io = new IntersectionObserver(es => { vis = es[es.length - 1].isIntersecting; if (vis) { if (kind == 'frames' && !live) frames(mirrored); if (kind == 'gl' && !live && gsrc?.tagName != 'IMG') glLive(); if (!V?.src) stale() } })
     io.observe(el)
   }
   wake()

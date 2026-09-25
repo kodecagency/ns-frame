@@ -272,6 +272,7 @@ El material del Liquid Glass de Apple, en capas, con la forma exacta del grupo (
 
    | Fondo | Copia |
    |---|---|
+   | `<img>`, `<video>`, `<canvas>` legibles (mismo origen, o CORS) | **lente en WebGL**: refracción, desenfoque, saturación y canto en un solo paso en la GPU, recalculados con la forma de cada fotograma. Es el camino preferido |
    | `<img>` | la misma imagen, con su `object-fit`, `object-position` y `filter` |
    | `<video>`, `<canvas>` | un canvas que se redibuja con cada fotograma mientras el grupo está a la vista |
    | elemento con `background-image` | sus propiedades de fondo |
