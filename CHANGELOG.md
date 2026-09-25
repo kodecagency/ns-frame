@@ -7,7 +7,7 @@
 - Todas las páginas del sitio revisadas en WebKit (motor de Safari) sin errores.
 
 ### Relieve (`ns-frame/relief`, nuevo) y vidrio que aumenta
-- `data-ns-relief`: superficies con un volumen mínimo y exacto calculado de la forma, como el hardware bien hecho: cara con un degradado casi imperceptible, canto de 1 px de luz tramo a tramo con la normal real del contorno, sombra de contacto y ambiental. Cerámica, metal y papel. Dibujado con vectores, sólo a la vista.
+- `data-ns-relief`: un **motor de materiales** sobre los filtros de iluminación de SVG (difusa, especular y luz direccional), calculado por el navegador a la resolución real de la pantalla: nítido a cualquier zoom y en todos los motores. De la silueta exacta salen la cara de su color, la línea de luz del canto, dos sombras (contacto y ambiente) y el hundido. Materiales como parámetros (`surface`, `raised`, `knob`, `inset`; tonos `metal`, `paper`; variables finas), compilados una vez en filtros compartidos; una sola luz para la página.
 - Estado en el volumen: se hunde al pulsar (puntero y teclado), con `aria-pressed` / `aria-checked` y con `inset`; `select` sube al estar elegido (el segmento activo en su carril, como iOS) y `ghost` no dibuja nada hasta pulsarse.
 - `polyline(d)` en `ns-frame/liquid`: el contorno de un path como polígono (lo comparten el vidrio y el relieve).
 - Vidrio: aumento (`--ns-glass-zoom`), usado por el indicador de pestañas al levantarse; el mapa de la lente se regenera al cambiar sus variables aunque la forma siga en marcha; un grupo anidado hereda el fondo (`data-ns-liquid-src`) del de fuera; variante `data-ns-glass="u"` con la luz en U dentro del cristal.

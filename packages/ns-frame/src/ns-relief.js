@@ -1,47 +1,112 @@
-/*! ns-frame/relief · superficies con volumen sutil: la luz y la sombra salen de la propia forma */
+/*! ns-frame/relief · motor de materiales: volumen y luz calculados de la silueta exacta */
 // <article data-ns="card" data-ns-relief>…</article>
 // <button data-ns-relief aria-pressed="false">Auto</button>
-// <button role="switch" aria-checked="true" data-ns-relief="inset"><i data-ns-relief></i></button>
+// <button role="switch" aria-checked="true" data-ns-relief="inset"><i data-ns-relief="knob"></i></button>
 //
-// Volumen como el del hardware bien hecho, no como el plástico del esqueuomorfismo: casi nada, pero
-// exacto y con cualquier forma (chaflanes, muescas, cortes, curvas de ns-frame, o su border-radius).
-// · La cara: un degradado mínimo en la dirección de la luz (convexa: más clara hacia ella).
-// · El canto: una línea de luz de 1 px donde el borde mira a la luz y una sombra finísima enfrente,
-//   calculadas tramo a tramo con la normal real del contorno (un chaflán es una cara con su luz).
-// · Dos sombras: una de contacto, pequeña y nítida, y otra ambiental, amplia y muy suave.
-// · La luz viene de arriba; el puntero sólo la inclina un poco (en el móvil, el desplazamiento).
-// · El estado se ve en el volumen: al pulsar (puntero, Espacio, Enter) se hunde en ~120 ms; con
-//   aria-pressed / aria-checked="true" queda abajo; "inset" la deja siempre hundida (un carril, un
-//   campo); "ghost" no dibuja nada hasta que se pulsa (segmentos no elegidos); "select" sube al estar
-//   elegido en vez de hundirse (el segmento activo dentro de un carril hundido). Hundida, el degradado
-//   se invierte, las sombras exteriores se apagan y aparece una interior suave.
-// · Materiales: data-ns-relief="ceramic" (satinado, por defecto), "metal" (vetas finas), "paper"
-//   (grano). --ns-relief (color de la cara: por defecto, el del fondo del padre), --ns-relief-shadow
-//   ("none" para quitarlas).
+// Un motor de materiales sobre los filtros de iluminación de SVG (feDiffuseLighting y
+// feSpecularLighting, con una luz direccional), que el navegador calcula a la resolución real de la
+// pantalla: nítido a cualquier zoom y en todos los motores. La silueta es la forma exacta de la pieza
+// (chaflanes, muescas, cortes, curvas de ns-frame, o su border-radius); desenfocada, es el mapa de
+// alturas del bisel. De ahí salen, sin costuras:
+// · la cara, exactamente de su color (la difusa sólo oscurece, con un mínimo, lo que no mira a la luz);
+// · una línea de luz en el canto que mira a la luz (especular dura: no toca la cara plana);
+// · dos sombras: de contacto, pequeña y nítida, y ambiental, amplia y suave;
+// · hundido: la altura se invierte (el canto queda arriba) y aparece una sombra interior.
+// Un material es un conjunto de parámetros; cada combinación se compila una vez en un <filter>
+// compartido por todas las piezas que lo usan (cien botones, un filtro). La luz es una para toda la
+// página: moverla es cambiar un atributo de cada filtro.
+// · data-ns-relief: "surface" (paneles; por defecto si mide 60 px o más), "raised" (controles; por
+//   defecto si es menor), "knob" (el mando de un interruptor: más redondo), "inset" (hundido: carriles
+//   y campos), "select" (sube al estar elegido: el segmento activo en su carril), "ghost" (invisible
+//   hasta que se elige o se pulsa). Tonos: "metal" (brillo más duro), "paper" (mate).
+// · El estado se ve en el volumen: se hunde mientras se pulsa (puntero, Espacio, Enter); con
+//   aria-pressed / aria-checked="true" queda hundido (salvo "select", que sube).
+// · Color de la cara: --ns-relief, o el fondo del primer antepasado que lo tenga. Ajustes finos:
+//   --ns-relief-bevel (px), --ns-relief-height, --ns-relief-gloss (0–1), --ns-relief-shadow (0–1, 0 = sin sombras).
 // · La capa va detrás del contenido; un marco de ns-frame con relieve no se recorta con clip-path.
 
 import { styles, path, shapeOf, update } from './ns-frame.js'
-import { polyline } from './ns-liquid.js'
 
 const CSS = `@layer ns{
 [data-ns-relief]{position:relative;isolation:isolate;background:none;--ns-border:transparent}
-.ns-relief{position:absolute;z-index:-1;pointer-events:none;margin:0}
+.ns-relief{position:absolute;z-index:-1;pointer-events:none;overflow:visible}
 @media (forced-colors:active){.ns-relief{display:none}}
 }`
-// grano (papel) y vetas (metal); intensidad del degradado de la cara y del canto
-const MAT = {
-  ceramic: { grain: 0, brush: 0, face: .055, rim: .75, dark: .09 },
-  metal: { grain: 0, brush: .05, face: .08, rim: .9, dark: .14 },
-  paper: { grain: .035, brush: 0, face: .03, rim: .55, dark: .07 },
+const NS = 'http://www.w3.org/2000/svg'
+const mk = (t, a = {}, ...k) => { const e = document.createElementNS(NS, t); for (const n in a) e.setAttribute(n, a[n]); e.append(...k); return e }
+// b: ancho del bisel (desenfoque de la silueta); s: altura; ks, n: brillo del canto y su dureza;
+// amb: luz mínima de la cara en sombra; sh: sombras [dy, desenfoque, opacidad]; inset: sombra interior
+const PRESET = {
+  surface: { b: 1.6, s: 1.3, ks: .7, n: 90, amb: .72, sh: [[1, .7, .1], [10, 16, .08]] },
+  raised: { b: 1.3, s: 1.2, ks: .65, n: 80, amb: .72, sh: [[.8, .5, .16], [3, 5, .07]] },
+  knob: { b: 2.4, s: 1.4, ks: .6, n: 70, amb: .72, sh: [[1, .6, .18], [3, 5, .12]] },
+  inset: { b: 1.4, s: 1.1, ks: .4, n: 60, amb: .72, inset: .14 },
+  pressed: { b: 1.3, s: .9, ks: .3, n: 60, amb: .76, inset: .1 },
 }
-let styled = 0
-const R = new WeakMap(), ALL = new Set()
-let lx = -1, ly = -1, lraf = 0, MQ = null
-const fine = () => (MQ ||= [matchMedia('(hover: hover) and (pointer: fine)'), matchMedia('(prefers-reduced-motion: reduce)')])[0].matches
-const calm = () => (fine(), MQ[1].matches)
-const relight = () => { lraf ||= requestAnimationFrame(() => { lraf = 0; const on = [...ALL].filter(r => r.on()); const B = on.map(r => r.el.getBoundingClientRect()); on.forEach((r, i) => r.lit(B[i])) }) }
-const smooth = (a, b, v) => { const t = Math.min(1, Math.max(0, (v - a) / (b - a))); return t * t * (3 - 2 * t) }
-// rectángulo con el border-radius real, esquina por esquina
+const TONE = { metal: { ks: 1.15, n: .6 }, paper: { ks: .35, n: 1 } }
+const EL = 52
+let styled = 0, defs = null, uid = 0, AZ = 258
+const FILTERS = new Map(), LIGHTS = [], R = new WeakMap(), ALL = new Set()
+
+// compila un material en un <filter> (una vez por combinación de parámetros)
+function filter(M) {
+  const key = JSON.stringify(M)
+  if (FILTERS.has(key)) return FILTERS.get(key)
+  if (!defs) { defs = mk('svg', { 'aria-hidden': 'true', focusable: 'false' }); defs.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden'; document.body.append(defs) }
+  const id = 'nsr' + ++uid, k = 1 / Math.sin(EL * Math.PI / 180)
+  const light = () => { const l = mk('feDistantLight', { azimuth: AZ, elevation: EL }); LIGHTS.push(l); return l }
+  const f = mk('filter', { id, x: '-30%', y: '-30%', width: '160%', height: '160%', 'color-interpolation-filters': 'sRGB' })
+  f.append(mk('feGaussianBlur', { in: 'SourceAlpha', stdDeviation: M.b, result: 'h0' }))
+  // alturas (hundido: invertidas, el canto arriba y el centro abajo)
+  f.append(mk('feComponentTransfer', { in: 'h0', result: 'h' }, mk('feFuncA', M.inset ? { type: 'linear', slope: -1, intercept: 1 } : { type: 'identity' })))
+  // difusa, llevada a [amb, 1]: la cara plana queda exactamente de su color; lo que no mira a la luz
+  // se oscurece con un mínimo. Un desenfoque mínimo quita el grano de cuantizar las alturas a 8 bits
+  f.append(mk('feDiffuseLighting', { in: 'h', surfaceScale: M.s, diffuseConstant: 1, 'lighting-color': '#fff', result: 'd0' }, light()))
+  f.append(mk('feComponentTransfer', { in: 'd0', result: 'd1' }, ...['R', 'G', 'B'].map(c => mk('feFunc' + c, { type: 'linear', slope: k * (1 - M.amb), intercept: M.amb }))))
+  f.append(mk('feGaussianBlur', { in: 'd1', stdDeviation: .35, result: 'd' }))
+  f.append(mk('feBlend', { in: 'SourceGraphic', in2: 'd', mode: 'multiply', result: 'lit' }))
+  // especular dura: sólo el canto que mira a la luz
+  f.append(mk('feSpecularLighting', { in: 'h', surfaceScale: M.s, specularConstant: M.ks, specularExponent: M.n, 'lighting-color': '#fff', result: 'sp' }, light()))
+  f.append(mk('feComposite', { in: 'sp', in2: 'lit', operator: 'arithmetic', k2: 1, k3: 1, result: 'sum' }))
+  f.append(mk('feComposite', { in: 'sum', in2: 'SourceAlpha', operator: 'in', result: 'face' }))
+  const merge = []
+  ;(M.sh || []).forEach(([dy, b, o], i) => {
+    f.append(mk('feGaussianBlur', { in: 'SourceAlpha', stdDeviation: b, result: 'sb' + i }))
+    f.append(mk('feOffset', { in: 'sb' + i, dx: 0, dy, result: 'so' + i }))
+    f.append(mk('feFlood', { 'flood-color': '#000', 'flood-opacity': o, result: 'sf' + i }))
+    f.append(mk('feComposite', { in: 'sf' + i, in2: 'so' + i, operator: 'in', result: 'sh' + i }))
+    merge.push('sh' + i)
+  })
+  merge.push('face')
+  if (M.inset) {
+    f.append(mk('feComponentTransfer', { in: 'SourceAlpha', result: 'iv' }, mk('feFuncA', { type: 'linear', slope: -1, intercept: 1 })))
+    f.append(mk('feGaussianBlur', { in: 'iv', stdDeviation: 2, result: 'ib' }))
+    f.append(mk('feOffset', { in: 'ib', dx: 0, dy: 1.5, result: 'io' }))
+    f.append(mk('feFlood', { 'flood-color': '#000', 'flood-opacity': M.inset, result: 'if' }))
+    f.append(mk('feComposite', { in: 'if', in2: 'io', operator: 'in', result: 'i0' }))
+    f.append(mk('feComposite', { in: 'i0', in2: 'SourceAlpha', operator: 'in', result: 'is' }))
+    merge.push('is')
+  }
+  f.append(mk('feMerge', {}, ...merge.map(n => mk('feMergeNode', { in: n }))))
+  defs.append(f)
+  FILTERS.set(key, id)
+  return id
+}
+
+// la luz, una para toda la página: arriba, algo a la izquierda; el puntero la gira un poco (en el
+// móvil, el desplazamiento); con movimiento reducido, fija
+let MQ = null, lraf = 0, px = .5
+const calm = () => (MQ ||= [matchMedia('(prefers-reduced-motion: reduce)'), matchMedia('(hover: hover) and (pointer: fine)')])[0].matches
+const aimLight = () => {
+  lraf = 0
+  const az = (258 + (calm() ? 0 : (px - .5) * 36)).toFixed(1)
+  if (az == AZ) return
+  AZ = az
+  for (const l of LIGHTS) l.setAttribute('azimuth', az)
+}
+const moveLight = v => { px = v; lraf ||= requestAnimationFrame(aimLight) }
+
+// rectángulo con el border-radius real, esquina por esquina (elíptico si hace falta)
 function rounded(el, w, h) {
   const s = getComputedStyle(el), r = ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].map(c => {
     const [a, b = a] = s['border' + c + 'Radius'].split(' '), v = (x, L) => x.endsWith('%') ? parseFloat(x) * L / 100 : parseFloat(x) || 0
@@ -53,164 +118,64 @@ function rounded(el, w, h) {
   return `M${tl[0]} 0L${w - tr[0]} 0${A(tr, w, tr[1])}L${w} ${h - br[1]}${A(br, w - br[0], h)}L${bl[0]} ${h}${A(bl, 0, h - bl[1])}L0 ${tl[1]}${A(tl, tl[0], 0)}Z`
 }
 // color de la cara: --ns-relief, o el fondo del primer antepasado que lo tenga
-function faceColor(el, probe) {
+function face(el) {
   const v = getComputedStyle(el).getPropertyValue('--ns-relief').trim()
-  if (v) { probe.style.color = v; return getComputedStyle(probe).color }
+  if (v) return v
   for (let a = el.parentElement; a; a = a.parentElement) { const c = getComputedStyle(a).backgroundColor; if (!/^(transparent|rgba\(.*,\s*0\))$/.test(c)) return c }
-  return 'rgb(236,234,230)'
+  return '#ecebe8'
 }
-const rgb = c => (c.match(/[\d.]+/g) || [236, 234, 230]).slice(0, 3).map(Number)
-const mix = (c, t, k) => c.map((v, i) => Math.round(v + (t[i] - v) * k))
 
 /** Relieve en `el` con su forma de ns-frame o su border-radius. */
 export function relief(el) {
   if (R.has(el)) return R.get(el)
   if (!styled) { styled = 1; styles(CSS) }
-  const cv = document.createElement('canvas'), x = cv.getContext('2d')
-  cv.className = 'ns-relief'; cv.setAttribute('aria-hidden', 'true')
-  el.prepend(cv)
-  const PAD = 30
-  let G = null, key = '', vis = false, last = ''
-  // geometría (una vez por forma y tamaño): el path, sus tramos con su normal y el color
-  const build = () => {
+  const PAD = 32
+  const svg = mk('svg', { class: 'ns-relief', 'aria-hidden': 'true', focusable: 'false' }), p = mk('path')
+  svg.append(p)
+  el.prepend(svg)
+  let down = false, key = ''
+  const draw = () => {
     const w = el.offsetWidth, h = el.offsetHeight
     if (!w || !h) return
-    const s = shapeOf(el), d = s ? path(s, w, h) : rounded(el, w, h), cs = getComputedStyle(el)
-    const tok = (el.getAttribute('data-ns-relief') || '').split(/\s+/), M = MAT[tok.find(t => MAT[t])] || MAT.ceramic
-    const base = rgb(faceColor(el, cv)), shadow = cs.getPropertyValue('--ns-relief-shadow').trim()
-    const k = [d, w, h, base, shadow, tok.join()].join('|')
+    const tok = (el.getAttribute('data-ns-relief') || '').split(/\s+/), cs = getComputedStyle(el)
+    const on = el.getAttribute('aria-pressed') == 'true' || el.getAttribute('aria-checked') == 'true', select = tok.includes('select')
+    // qué material toca según el estado
+    const kind = down ? 'pressed' : tok.includes('inset') || (on && !select && !tok.includes('ghost')) ? 'inset'
+      : tok.includes('knob') ? 'knob' : tok.includes('surface') ? 'surface' : tok.includes('raised') || select || h < 60 ? 'raised' : 'surface'
+    const hide = tok.includes('ghost') && !down && !(select && on)
+    const M = { ...PRESET[kind] }, T = TONE[tok.find(t => TONE[t])]
+    if (T) { M.ks *= T.ks; M.n = Math.round(M.n * T.n) }
+    const num = (k, d) => { const v = parseFloat(cs.getPropertyValue(k)); return v >= 0 ? v : d }
+    M.b = num('--ns-relief-bevel', M.b); M.s = num('--ns-relief-height', M.s); M.ks *= num('--ns-relief-gloss', 1)
+    const shK = num('--ns-relief-shadow', 1)
+    if (M.sh) M.sh = shK ? M.sh.map(([a, b, o]) => [a, b, +(o * shK).toFixed(3)]) : null
+    const s = shapeOf(el), d = s ? path(s, w, h) : rounded(el, w, h), fill = face(el)
+    const k = [d, w, h, fill, hide, JSON.stringify(M)].join('|')
     if (k == key) return
-    key = k; last = ''
-    const q = Math.min(2, devicePixelRatio || 1), W = w + PAD * 2, H = h + PAD * 2
-    cv.width = Math.round(W * q); cv.height = Math.round(H * q)
-    Object.assign(cv.style, { left: -el.clientLeft - PAD + 'px', top: -el.clientTop - PAD + 'px', width: W + 'px', height: H + 'px' })
-    const P = polyline(d, 4), n = P.length
-    let area = 0
-    for (let j = 0; j < n; j++) { const a = P[j], b = P[(j + 1) % n]; area += a[0] * b[1] - b[0] * a[1] }
-    const out = area > 0 ? 1 : -1, segs = []
-    for (let j = 0; j < n; j++) {
-      const a = P[j], b = P[(j + 1) % n], L = Math.hypot(b[0] - a[0], b[1] - a[1])
-      if (L > .3) segs.push([a, b, (b[1] - a[1]) / L * out, -(b[0] - a[0]) / L * out])
-    }
-    G = { d: new Path2D(d), w, h, q, segs, base, M, shadow: shadow != 'none', ghost: tok.includes('ghost'), tex: null }
-    lit()
+    key = k
+    Object.assign(svg.style, { left: -PAD - el.clientLeft + 'px', top: -PAD - el.clientTop + 'px', width: w + PAD * 2 + 'px', height: h + PAD * 2 + 'px' })
+    svg.setAttribute('viewBox', `${-PAD} ${-PAD} ${w + PAD * 2} ${h + PAD * 2}`)
+    p.setAttribute('d', d)
+    p.style.fill = fill
+    p.style.display = hide ? 'none' : ''
+    p.setAttribute('filter', `url(#${filter(M)})`)
   }
-  // textura fija (grano o vetas), muy tenue
-  const texture = () => {
-    if (G.tex || !(G.M.grain || G.M.brush)) return G.tex
-    const T = document.createElement('canvas'); T.width = Math.round(G.w * G.q); T.height = Math.round(G.h * G.q)
-    const t = T.getContext('2d'), I = t.createImageData(T.width, T.height), D = I.data
-    let r = 0
-    for (let j = 0; j < T.height; j++) {
-      r = r * .8 + (Math.random() - .5) * .6
-      for (let i = 0; i < T.width; i++) {
-        const o = (j * T.width + i) * 4, v = G.M.brush ? r * G.M.brush * 255 : (Math.random() - .5) * G.M.grain * 510
-        D[o] = D[o + 1] = D[o + 2] = v > 0 ? 255 : 0; D[o + 3] = Math.abs(v)
-      }
-    }
-    t.putImageData(I, 0, 0)
-    return G.tex = T
-  }
-  const lit = (r = el.getBoundingClientRect()) => {
-    if (!G || !vis) return
-    // luz desde arriba; el puntero (o el desplazamiento) sólo la inclina un poco
-    let tx = 0, ty = 0
-    if (!calm()) {
-      if (fine() && lx >= 0) { tx = Math.max(-1, Math.min(1, (lx - (r.left + r.width / 2)) / (innerWidth * .5))); ty = Math.max(-1, Math.min(1, (ly - (r.top + r.height / 2)) / (innerHeight * .5))) }
-      else tx = Math.max(-1, Math.min(1, ((r.top + r.height / 2) / innerHeight) * 2 - 1)) * .6
-    }
-    let Lx = -.18 + tx * .35, Ly = -1 + Math.max(0, ty) * .25
-    const Ll = Math.hypot(Lx, Ly); Lx /= Ll; Ly /= Ll
-    const k = Math.round(Lx * 60) + ',' + Math.round(Ly * 60) + ',' + Math.round(Pd * 40)
-    if (k == last) return
-    last = k
-    const { q, w, h, base, M, d, segs } = G, up = Math.max(0, Pd), dn = Math.max(0, -Pd)
-    x.setTransform(1, 0, 0, 1, 0, 0)
-    x.clearRect(0, 0, cv.width, cv.height)
-    if (G.ghost && Pd > .95) return
-    x.setTransform(q, 0, 0, q, PAD * q, PAD * q)
-    // sombras exteriores (sólo en relieve): contacto, pequeña y nítida; ambiente, amplia y suave
-    if (G.shadow && up > .02) {
-      x.save()
-      x.fillStyle = `rgb(${base})`
-      x.shadowColor = `rgba(0,0,0,${(.14 * up).toFixed(3)})`; x.shadowBlur = 2 * q; x.shadowOffsetY = 1 * q
-      x.fill(d)
-      x.shadowColor = `rgba(0,0,0,${(.09 * up).toFixed(3)})`; x.shadowBlur = 22 * q; x.shadowOffsetX = -Lx * 4 * q; x.shadowOffsetY = 10 * q
-      x.fill(d)
-      x.restore()
-    }
-    // cara: degradado mínimo en la dirección de la luz (hundida, al revés)
-    const R2 = Math.hypot(w, h) / 2, cx = w / 2, cy = h / 2, f = M.face * Pd
-    const g = x.createLinearGradient(cx + Lx * R2, cy + Ly * R2, cx - Lx * R2, cy - Ly * R2)
-    const lit0 = f > 0 ? mix(base, [255, 255, 255], f) : mix(base, [0, 0, 0], -f), dark0 = f > 0 ? mix(base, [0, 0, 0], f * .9) : mix(base, [255, 255, 255], -f * .6)
-    g.addColorStop(0, `rgb(${lit0})`); g.addColorStop(1, `rgb(${dark0})`)
-    x.fillStyle = g; x.fill(d)
-    x.save(); x.clip(d)
-    const T = texture()
-    if (T) { x.globalAlpha = .6; x.drawImage(T, 0, 0, w, h); x.globalAlpha = 1 }
-    // hundida: sombra interior suave, del lado de la luz (el borde la tapa)
-    if (dn > .02) {
-      const ring = new Path2D(); ring.rect(-PAD, -PAD, w + PAD * 2, h + PAD * 2); ring.addPath(d)
-      x.shadowColor = `rgba(0,0,0,${(.2 * dn).toFixed(3)})`; x.shadowBlur = 7 * q; x.shadowOffsetX = Lx * -2.5 * dn * q; x.shadowOffsetY = -Ly * 2.5 * dn * q
-      x.fillStyle = '#000'; x.fill(ring, 'evenodd')
-      x.shadowColor = 'transparent'
-    }
-    // canto: 1 px de luz donde el borde mira a la luz y una sombra finísima enfrente (por tramos,
-    // con mezcla lighten/darken: sin costuras entre tramos)
-    x.lineCap = 'round'; x.lineWidth = 2
-    x.globalCompositeOperation = 'lighten'
-    for (const [a, b, nx, ny] of segs) {
-      const s = nx * Lx + ny * Ly, i = up > 0 ? smooth(-.1, 1, s) * M.rim * up : smooth(.2, 1, -s) * M.rim * .45 * dn
-      if (i < .01) continue
-      x.strokeStyle = `rgba(255,255,255,${i.toFixed(3)})`
-      x.beginPath(); x.moveTo(a[0], a[1]); x.lineTo(b[0], b[1]); x.stroke()
-    }
-    x.globalCompositeOperation = 'darken'
-    for (const [a, b, nx, ny] of segs) {
-      const s = nx * Lx + ny * Ly, i = up > 0 ? smooth(.1, 1, -s) * M.dark * up * 2.2 : smooth(-.1, 1, s) * M.dark * 2.5 * dn
-      if (i < .01) continue
-      x.strokeStyle = `rgba(0,0,0,${i.toFixed(3)})`
-      x.beginPath(); x.moveTo(a[0], a[1]); x.lineTo(b[0], b[1]); x.stroke()
-    }
-    x.restore()
-  }
-  // Profundidad Pd: 1 en relieve, −1 hundido. Va de un estado a otro en ~120 ms
-  let Pd = 1, PT = 1, down = false, praf = 0
-  const aim = () => {
-    const tok = (el.getAttribute('data-ns-relief') || '').split(/\s+/)
-    const on = el.getAttribute('aria-pressed') == 'true' || el.getAttribute('aria-checked') == 'true'
-    // (con "select", lo elegido sube en vez de hundirse: el segmento activo de un carril, como en iOS)
-    PT = tok.includes('inset') ? -1 : down ? -.7 : on && !tok.includes('ghost') && !tok.includes('select') ? -.55 : 1
-    if (calm()) { Pd = PT; last = ''; lit(); return }
-    const step = () => { praf = 0; Pd += (PT - Pd) * .38; if (Math.abs(PT - Pd) < .02) Pd = PT; last = ''; lit(); if (Pd != PT) praf = requestAnimationFrame(step) }
-    praf ||= requestAnimationFrame(step)
-  }
-  const press = v => () => { if (down != v) { down = v; aim() } }
+  const press = v => () => { if (down != v) { down = v; draw() } }
   const EV = [['pointerdown', press(true)], ['pointerup', press(false)], ['pointerleave', press(false)], ['pointercancel', press(false)],
     ['keydown', e => (e.key == ' ' || e.key == 'Enter') && press(true)()], ['keyup', press(false)], ['blur', press(false)]]
   EV.forEach(([t, f]) => el.addEventListener(t, f))
-  // (la geometría sólo se calcula a la vista: fuera de pantalla, al entrar)
-  const ro = new ResizeObserver(() => { key = ''; vis && build() })
+  const ro = new ResizeObserver(draw)
   ro.observe(el)
-  const mo = new MutationObserver(ms => {
-    if (ms.some(m => m.attributeName.startsWith('aria') || m.attributeName == 'data-ns-relief')) aim()
-    // (un estado puede cambiar el color de la cara: un interruptor encendido)
-    vis && build()
-  })
+  const mo = new MutationObserver(draw)
   mo.observe(el, { attributes: true, attributeFilter: ['data-ns', 'data-ns-relief', 'class', 'style', 'aria-pressed', 'aria-checked'] })
-  const io = new IntersectionObserver(es => { vis = es[es.length - 1].isIntersecting; if (vis) { build(); last = ''; lit() } })
-  io.observe(el)
-  aim()
+  draw()
   // un marco de ns-frame deja de recortarse (el recorte cortaría la sombra)
   if (el.hasAttribute('data-ns') || el.localName == 'ns-frame') update(el)
-  const api = {
-    el, lit, on: () => vis && !!G, update: () => { key = ''; build() },
-    destroy() { cancelAnimationFrame(praf); EV.forEach(([t, f]) => el.removeEventListener(t, f)); ro.disconnect(); mo.disconnect(); io.disconnect(); ALL.delete(api); R.delete(el); cv.remove() },
-  }
+  const api = { update: () => { key = ''; draw() }, destroy() { EV.forEach(([t, f]) => el.removeEventListener(t, f)); ro.disconnect(); mo.disconnect(); ALL.delete(api); R.delete(el); svg.remove() } }
   ALL.add(api)
   if (ALL.size == 1) {
-    addEventListener('pointermove', e => { if (e.pointerType == 'mouse' || e.pointerType == 'pen') { lx = e.clientX; ly = e.clientY; relight() } }, { passive: true })
-    addEventListener('scroll', relight, { passive: true, capture: true })
+    addEventListener('pointermove', e => { if (e.pointerType == 'mouse' || e.pointerType == 'pen') moveLight(e.clientX / innerWidth) }, { passive: true })
+    addEventListener('scroll', () => { if (!MQ?.[1].matches) moveLight(Math.min(1, scrollY / Math.max(1, document.documentElement.scrollHeight - innerHeight))) }, { passive: true })
   }
   R.set(el, api)
   return api

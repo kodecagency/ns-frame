@@ -333,13 +333,16 @@ El material de `ns-frame/liquid` (cuerpo, lente, canto, reflejos) sobre cualquie
 
 La tendencia propia de ns-frame: superficies con un **volumen mínimo y exacto, calculado de la forma**, como el hardware bien hecho (no el plástico del esqueuomorfismo). Con cualquier forma: chaflanes, muescas, cortes, curvas o `border-radius`.
 
-- **Cara:** un degradado casi imperceptible en la dirección de la luz. Su color es el de `--ns-relief` o, si no, el del fondo del padre (la pieza se lee por el volumen, no por un borde).
-- **Canto:** una línea de luz de 1 px donde el borde mira a la luz y una sombra finísima enfrente, tramo a tramo con la normal real del contorno (el chaflán de una tarjeta recibe su propia luz), con mezcla `lighten`/`darken`: sin costuras.
-- **Dos sombras:** de contacto (pequeña y nítida) y ambiental (amplia y muy suave). `--ns-relief-shadow: none` las quita.
-- **Luz:** desde arriba; el puntero sólo la inclina un poco (en el móvil, el desplazamiento). Con movimiento reducido, fija.
-- **El estado se ve en el volumen:** al pulsar (puntero, Espacio o Enter) se hunde en ~120 ms; con `aria-pressed` / `aria-checked="true"` queda abajo; `inset` la deja siempre hundida (carriles, campos); `select` hace lo contrario: sube al estar elegida (el segmento activo dentro de un carril, como en iOS); `ghost` no dibuja nada hasta que se pulsa. Hundida, el degradado se invierte, las sombras exteriores se apagan y aparece una interior suave.
-- **Materiales:** `ceramic` (satinado, por defecto), `metal` (vetas finas), `paper` (grano).
-- Dibujado con vectores (un degradado, dos sombras y los tramos del canto): nítido a cualquier escala y barato; sólo se calcula a la vista. La capa va detrás del contenido (el elemento aísla su apilamiento) y un marco de ns-frame con relieve no se recorta con `clip-path` (cortaría la sombra).
+**Un motor de materiales** sobre los filtros de iluminación de SVG (`feDiffuseLighting`, `feSpecularLighting` y una luz direccional), que el navegador calcula a la resolución real de la pantalla: nítido a cualquier zoom y en todos los motores, Safari incluido. La silueta exacta de la pieza, desenfocada, es el mapa de alturas del bisel, y de ahí sale todo sin costuras:
+
+- **Cara** exactamente de su color (`--ns-relief`, o el fondo del padre: la pieza se lee por el volumen, no por un borde). La difusa sólo oscurece, con un mínimo, lo que no mira a la luz.
+- **Canto:** una línea de luz donde el borde mira a la luz (especular dura: no toca la cara plana). El chaflán de una tarjeta recibe su propia luz.
+- **Dos sombras:** de contacto (pequeña y nítida) y ambiental (amplia y suave).
+- **Hundido:** la altura se invierte (el canto queda arriba) y aparece una sombra interior.
+- **Materiales como parámetros:** `surface` (paneles; por defecto a partir de 60 px), `raised` (controles), `knob` (mando de interruptor, más redondo), `inset`; tonos `metal` y `paper`. Ajuste fino: `--ns-relief-bevel`, `--ns-relief-height`, `--ns-relief-gloss`, `--ns-relief-shadow` (0 = sin sombras). **Cada combinación se compila una vez en un `<filter>` compartido** por todas las piezas que la usan: cien botones, un filtro.
+- **Una luz para toda la página:** desde arriba; el puntero sólo la gira un poco (en el móvil, el desplazamiento; con movimiento reducido, fija). Moverla es cambiar un atributo de cada filtro.
+- **El estado se ve en el volumen:** se hunde mientras se pulsa (puntero, Espacio o Enter); con `aria-pressed` / `aria-checked="true"` queda hundido; `select` hace lo contrario, sube al estar elegido (el segmento activo en su carril, como en iOS); `ghost` no dibuja nada hasta que se elige o se pulsa. El color se relee al cambiar el estado (un interruptor encendido en verde con `--ns-relief` en su selector).
+- La capa va detrás del contenido (el elemento aísla su apilamiento) y un marco de ns-frame con relieve no se recorta con `clip-path` (cortaría la sombra).
 
 #### Pestañas de vidrio líquido (`ns-frame/tabs`)
 

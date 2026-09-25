@@ -151,9 +151,9 @@ export function glass(el: HTMLElement, options?: LiquidOptions): { update(): voi
 
 // ── ns-frame/relief ──
 /**
- * Superficie con volumen sutil calculado de la forma (ns-frame o border-radius). Automático con
- * `data-ns-relief` ("ceramic", "metal", "paper"; "inset" = hundido; "select" = sube al estar elegido;
- * "ghost" = invisible hasta pulsarse). Se hunde al pulsarlo y con aria-pressed / aria-checked="true".
+ * Motor de materiales (filtros de iluminación SVG) sobre la silueta exacta de la pieza (ns-frame o
+ * border-radius). Automático con `data-ns-relief` ("surface", "raised", "knob", "inset", "select",
+ * "ghost"; tonos "metal", "paper"). Se hunde al pulsarlo y con aria-pressed / aria-checked="true".
  */
 export function relief(el: HTMLElement): { update(): void; destroy(): void }
 
