@@ -306,6 +306,40 @@ export function pathField(d, w, h, step = 1) {
   }
   return { F, nx, ny, X0: 0, Y0: 0, step }
 }
+/**
+ * Contorno de un path (M, L, A, C, Z absolutos, como los de ns-frame) como polígono cerrado [[x, y]]:
+ * rectas tal cual, curvas y arcos en tramos de ~`seg` px. Lo usan la luz del vidrio y el relieve.
+ */
+export function polyline(d, seg = 5) {
+  const t = d.match(/[A-Za-z]|-?\d*\.?\d+(?:e-?\d+)?/g) || [], P = []
+  let i = 0, c = '', x = 0, y = 0
+  const n = () => +t[i++]
+  while (i < t.length) {
+    if (/[A-Za-z]/.test(t[i])) { c = t[i++]; if (c == 'Z') continue }
+    if (c == 'M' || c == 'L') { x = n(); y = n(); P.push([x, y]) }
+    else if (c == 'C') {
+      const a = [n(), n()], b = [n(), n()], e = [n(), n()], k = Math.max(2, Math.ceil(Math.hypot(e[0] - x, e[1] - y) / seg))
+      for (let s = 1; s <= k; s++) { const u = s / k, v = 1 - u; P.push([v * v * v * x + 3 * v * v * u * a[0] + 3 * v * u * u * b[0] + u * u * u * e[0], v * v * v * y + 3 * v * v * u * a[1] + 3 * v * u * u * b[1] + u * u * u * e[1]]) }
+      x = e[0]; y = e[1]
+    } else if (c == 'A') {
+      // arco elíptico (SVG, parametrización por el centro)
+      let rx = n(), ry = n(); n(); const la = n(), sw = n(), X = n(), Y = n()
+      const dx = (x - X) / 2, dy = (y - Y) / 2, l = dx * dx / (rx * rx) + dy * dy / (ry * ry)
+      if (l > 1) { rx *= Math.sqrt(l); ry *= Math.sqrt(l) }
+      const q = Math.sqrt(Math.max(0, (rx * rx * ry * ry - rx * rx * dy * dy - ry * ry * dx * dx) / (rx * rx * dy * dy + ry * ry * dx * dx))) * (la == sw ? -1 : 1)
+      const cx = q * rx * dy / ry + (x + X) / 2, cy = -q * ry * dx / rx + (y + Y) / 2
+      const a0 = Math.atan2((y - cy) / ry, (x - cx) / rx)
+      let da = Math.atan2((Y - cy) / ry, (X - cx) / rx) - a0
+      if (sw && da < 0) da += 2 * Math.PI; if (!sw && da > 0) da -= 2 * Math.PI
+      const k = Math.max(2, Math.ceil(Math.abs(da) * Math.max(rx, ry) / seg))
+      for (let s = 1; s <= k; s++) { const a = a0 + da * s / k; P.push([cx + rx * Math.cos(a), cy + ry * Math.sin(a)]) }
+      x = X; y = Y
+    }
+  }
+  // sin puntos repetidos (el cierre vuelve al inicio)
+  return P.filter((p, j) => { const q = P[(j + P.length - 1) % P.length]; return Math.hypot(p[0] - q[0], p[1] - q[1]) > .05 })
+}
+
 /** Desplaza un path `d` absoluto (M, L, C, A, Q, Z, como los de ns-frame) en (dx, dy). */
 export function shift(d, dx, dy) {
   const t = d.match(/[A-Za-z]|-?\d*\.?\d+(?:e-?\d+)?/g) || []
@@ -342,12 +376,19 @@ function simplify(P, eps, near = 0) {
 // `hard` (cristal tallado): dentro de la banda, el desvío es constante en cada cara (sin caída),
 // así que el fondo se ve partido en cada corte, como a través de una gema; el borde de la banda se
 // suaviza 1,5 px para que el corte sea limpio y no un escalón pixelado
-function lensMap(f, rim, cv, full, hard) {
+// `zoom` (0–1): además, todo el interior aumenta lo que hay debajo, como una lupa (el indicador de
+// unas pestañas al levantarse): cada punto toma el fondo un poco más cerca del centro de la forma,
+// en proporción a su distancia al centro (aumento uniforme)
+function lensMap(f, rim, cv, full, hard, zoom = 0) {
   const { F, nx, ny, step } = f
   cv.width = nx; cv.height = ny
   // willReadFrequently: canvas en CPU. Uno acelerado por GPU obliga a leerlo de vuelta para
   // codificar el PNG, y eso era lo más caro al detenerse la forma
   const x = cv.getContext('2d', { willReadFrequently: true }), img = x.createImageData(nx, ny), D = img.data
+  // centro y semieje mayor de la forma (para el aumento)
+  let x0 = nx, x1 = 0, y0 = ny, y1 = 0
+  if (zoom) for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) if (F[j * nx + i] < 0) { if (i < x0) x0 = i; if (i > x1) x1 = i; if (j < y0) y0 = j; if (j > y1) y1 = j }
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, R = Math.max(1, (x1 - x0) / 2, (y1 - y0) / 2)
   for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
     const k = (j * nx + i) * 4, v = F[j * nx + i]
     let gx = 0, gy = 0
@@ -356,6 +397,12 @@ function lensMap(f, rim, cv, full, hard) {
       gy = (F[Math.min(ny - 1, j + 1) * nx + i] - F[Math.max(0, j - 1) * nx + i]) / (2 * step)
       const L = Math.hypot(gx, gy) || 1, t = hard ? Math.min(1, (v + rim) / 1.5) * .7 : (1 + v / rim) ** 2
       gx = gx / L * t; gy = gy / L * t
+    }
+    if (zoom && v < 0) {
+      // (se atenúa en el último píxel del borde: el aumento no rompe el canto)
+      const e = Math.min(1, -v / 2)
+      gx -= (i - cx) / R * zoom * e; gy -= (j - cy) / R * zoom * e
+      gx = Math.max(-1, Math.min(1, gx)); gy = Math.max(-1, Math.min(1, gy))
     }
     D[k] = 128 + gx * 127; D[k + 1] = 128 + gy * 127; D[k + 2] = 128; D[k + 3] = 255
   }
@@ -478,7 +525,8 @@ export function liquid(el, o = {}) {
   // el fondo que se copia: el selector de data-ns-liquid-src (el más cercano subiendo por los
   // antepasados), o.source, o si no se indica nada, lo que haya detrás (behind)
   const source = () => {
-    const s = o.source ?? el.getAttribute('data-ns-liquid-src')
+    // (un grupo dentro de otro, como el indicador de unas pestañas, hereda el fondo del de fuera)
+    const s = o.source ?? el.closest('[data-ns-liquid-src]')?.getAttribute('data-ns-liquid-src')
     if (s == 'none') return null
     if (!s || s == 'auto') return behind(el)
     if (typeof s != 'string') return s
@@ -601,7 +649,7 @@ export function liquid(el, o = {}) {
     origin()
     put(s.getBoundingClientRect())
   }
-  let raf = 0, idle = 0, cost = 3, last = '', lastPre = '', msig = '', now = null, cur = -1, lensKey = '', token = 0, frame = 0, dirty = true, V = null
+  let raf = 0, idle = 0, cost = 3, last = '', lastPre = '', lastVk = '', remap = false, msig = '', now = null, cur = -1, lensKey = '', token = 0, frame = 0, dirty = true, V = null
   // estilos leídos en caché: las variables del grupo y el radio/visibilidad de cada hijo se leen al
   // despertar por un cambio (clase, estilo, tamaño) y cada pocos frames en marcha, no en cada frame
   const look = new WeakMap()
@@ -610,7 +658,11 @@ export function liquid(el, o = {}) {
     const fresh = dirty || frame % 6 == 0
     if (dirty || !V) {
       const cs = getComputedStyle(el), num = (k, d) => { const v = parseFloat(cs.getPropertyValue(k)); return v >= 0 ? v : d }
-      V = { k: num('--ns-liquid', 14), lens: num('--ns-glass-lens', 34), edge: num('--ns-glass-edge', 8), depth: num('--ns-glass-depth', 24), blur: num('--ns-glass-blur', 4), sat: num('--ns-glass-sat', 1.3), src: LENS || !glassy() ? null : source(), prism: !!o.prism?.(), hard: !!o.hard?.(), shadow: cs.getPropertyValue('--ns-glass-shadow').trim(), glow: cs.getPropertyValue('--ns-glass-glow').trim(), glowSize: num('--ns-glass-glow-size', 16) }
+      V = { k: num('--ns-liquid', 14), lens: num('--ns-glass-lens', 34), edge: num('--ns-glass-edge', 8), depth: num('--ns-glass-depth', 24), blur: num('--ns-glass-blur', 4), sat: num('--ns-glass-sat', 1.3), src: LENS || !glassy() ? null : source(), prism: !!o.prism?.(), hard: !!o.hard?.(), shadow: cs.getPropertyValue('--ns-glass-shadow').trim(), glow: cs.getPropertyValue('--ns-glass-glow').trim(), glowSize: num('--ns-glass-glow-size', 16), zoom: Math.min(1, num('--ns-glass-zoom', 0)) }
+      // si cambió algo del mapa de la lente (al levantarse un indicador, por ejemplo), se regenera ya,
+      // aunque la forma siga en marcha; si no, sólo al detenerse
+      const vk = [V.lens, V.depth, V.zoom, V.hard, V.prism].join()
+      if (vk != lastVk) { lastVk = vk; remap = true }
       // prisma: se monta o se desmonta la cadena de los dos filtros (y se regenera la lente)
       if (lenses[0].prism !== V.prism) { lenses.forEach(L => chain(L, V.prism)); lensKey = ''; lastPre = '' }
       // (el clon del DOM y el de fotogramas se rehacen sólo si cambia el original; la imagen y el
@@ -703,7 +755,7 @@ export function liquid(el, o = {}) {
     mEdge.setAttribute('stroke-width', r2(edgePx * 1.6)); eBlur.setAttribute('stdDeviation', r2(edgePx / 2.2))
     if (!lensPx) { glass.style.backdropFilter = back.style.filter = ''; now = null; return }
     // sobre la copia, la lente sólo desplaza: el desenfoque y la saturación los pone el cuerpo encima
-    now = { f, d, bw, bh, depth, lensPx, blur: src ? 0 : V.blur, sat: src ? 1 : V.sat, src: !!src, hard: V.hard }
+    now = { f, d, bw, bh, depth, lensPx, blur: src ? 0 : V.blur, sat: src ? 1 : V.sat, src: !!src, hard: V.hard, zoom: V.zoom }
     // en marcha: el mapa vigente sigue a la forma (se estira); el nuevo llega al detenerse. Sobre la
     // copia (fuera de Chromium) el mapa va con la capa y se estira a su tamaño: vale mientras la
     // forma se desplaza o se estira un poco (un indicador que se levanta); si cambia mucho (unas
@@ -736,11 +788,11 @@ export function liquid(el, o = {}) {
   const refreshLens = () => {
     const s = now
     if (!s) return
-    const k = [s.d, s.bw, s.bh, s.depth, s.lensPx, s.blur, s.sat, s.src, s.hard].join('|')
+    const k = [s.d, s.bw, s.bh, s.depth, s.lensPx, s.blur, s.sat, s.src, s.hard, s.zoom].join('|')
     if (k == lensKey) return
     lensKey = k
     const n = cur < 0 ? 0 : 1 - cur, L = lenses[n], t = ++token
-    lensMap(s.f, s.depth, cv, s.src ? { cv: cv2 ||= document.createElement('canvas'), w: s.bw, h: s.bh } : null, s.hard).then(url => {
+    lensMap(s.f, s.depth, cv, s.src ? { cv: cv2 ||= document.createElement('canvas'), w: s.bw, h: s.bh } : null, s.hard, s.zoom).then(url => {
       if (t != token) return
       place(L, s)
       L.map.setAttribute('href', url)
@@ -778,7 +830,7 @@ export function liquid(el, o = {}) {
     let moving = active.size > 0
     if (!moving && last == before && idle == 1) moving = !!el.getAnimations?.({ subtree: true }).some(a => a.playState == 'running')
     idle = last == before && !moving ? idle + 1 : 0
-    if (idle >= 1 || cur < 0) refreshLens()
+    if (idle >= 1 || cur < 0 || remap) { remap = false; refreshLens() }
     // la lente de la copia se desvanece o vuelve en unos 150 ms
     let fading = false
     if (now?.src && cur >= 0 && Math.abs(lk - lkT) > .01) { lk += (lkT - lk) * .25; place(lenses[cur], now); fading = true }

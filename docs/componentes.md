@@ -318,6 +318,29 @@ El material de `ns-frame/liquid` (cuerpo, lente, canto, reflejos) sobre cualquie
 - **Con los efectos de `ns-fx.css`:** con `data-ns-glass`, la luz en U y el aura quedan dentro del cristal (sin aislar el elemento ni ponerle fondo opaco), los patrones (`ns-dots`, `ns-grid`…) se ven a través de él, y `ns-halo` pasa a ser el halo del propio vidrio (sin `filter` en el elemento). El borde que gira, el cometa, el destello y el pulso funcionan tal cual.
 - **Rendimiento:** la forma y el campo sólo se recalculan si cambian el tamaño o la forma; la luz de las facetas sólo cambia opacidades (como atributo SVG, sin despertar a nadie), lee todas las posiciones antes de escribir y sólo en las piezas a la vista; y los vidrios que aparecen a la vez se reparten entre frames con un presupuesto de ~8 ms por frame. Doce piezas con la CPU ×4: 16 ms de bloqueo al cargar y 14,6 ms por frame moviendo el puntero, sin frames lentos.
 
+- **`"u"` — luz en U dentro del cristal.** El tinte del vidrio lleva la luz en U de la base (`--ns-u`) y el canto de abajo brilla con su color aunque la luz venga de otro lado, como el borde de `ns-u`.
+- **Aumento** (`--ns-glass-zoom`, 0–1): todo el interior aumenta lo que hay debajo, como una lupa (lo usa el indicador de `ns-frame/tabs` al levantarse). El mapa de la lente se regenera en cuanto cambian sus variables, aunque la forma siga en marcha.
+
+#### Relieve (`ns-frame/relief`)
+
+```html
+<article data-ns="card" data-ns-relief>…</article>
+<button role="switch" aria-checked="true" data-ns-relief="inset"><i data-ns-relief></i></button>
+<div role="group" data-ns-relief="inset">
+  <button data-ns-relief="select" aria-pressed="true">Auto</button><button data-ns-relief="ghost" aria-pressed="false">Frío</button>
+</div>
+```
+
+La tendencia propia de ns-frame: superficies con un **volumen mínimo y exacto, calculado de la forma**, como el hardware bien hecho (no el plástico del esqueuomorfismo). Con cualquier forma: chaflanes, muescas, cortes, curvas o `border-radius`.
+
+- **Cara:** un degradado casi imperceptible en la dirección de la luz. Su color es el de `--ns-relief` o, si no, el del fondo del padre (la pieza se lee por el volumen, no por un borde).
+- **Canto:** una línea de luz de 1 px donde el borde mira a la luz y una sombra finísima enfrente, tramo a tramo con la normal real del contorno (el chaflán de una tarjeta recibe su propia luz), con mezcla `lighten`/`darken`: sin costuras.
+- **Dos sombras:** de contacto (pequeña y nítida) y ambiental (amplia y muy suave). `--ns-relief-shadow: none` las quita.
+- **Luz:** desde arriba; el puntero sólo la inclina un poco (en el móvil, el desplazamiento). Con movimiento reducido, fija.
+- **El estado se ve en el volumen:** al pulsar (puntero, Espacio o Enter) se hunde en ~120 ms; con `aria-pressed` / `aria-checked="true"` queda abajo; `inset` la deja siempre hundida (carriles, campos); `select` hace lo contrario: sube al estar elegida (el segmento activo dentro de un carril, como en iOS); `ghost` no dibuja nada hasta que se pulsa. Hundida, el degradado se invierte, las sombras exteriores se apagan y aparece una interior suave.
+- **Materiales:** `ceramic` (satinado, por defecto), `metal` (vetas finas), `paper` (grano).
+- Dibujado con vectores (un degradado, dos sombras y los tramos del canto): nítido a cualquier escala y barato; sólo se calcula a la vista. La capa va detrás del contenido (el elemento aísla su apilamiento) y un marco de ns-frame con relieve no se recorta con `clip-path` (cortaría la sombra).
+
 #### Pestañas de vidrio líquido (`ns-frame/tabs`)
 
 ```html
@@ -330,7 +353,7 @@ La barra de pestañas de iOS 26, hecha con dos grupos de `ns-frame/liquid` (la b
 
 - **Pulsa** una pestaña y el indicador viaja con un muelle (llega con un rebote corto), se **estira** un poco en la dirección del movimiento según la velocidad (y se aplana, para conservar el volumen). Con `data-ns-tabs="drop"`, además deja una gota detrás que se funde con él (por defecto no: más limpio).
 - **`data-ns-tabs="shrink"`:** como la barra de iOS 26, se encoge un poco (`--ns-tabs-min`, 0,84) al desplazar hacia abajo y vuelve al subir o al tocarla. Escucha la página, o el contenedor de `data-ns-tabs-scroll="selector"`. Sólo cambia `scale`: el vidrio escala con la barra sin recalcular nada (`ns-frame/liquid` mide sus piezas en coordenadas del grupo, así que funciona bajo cualquier escala).
-- **Arrastra** desde cualquier pestaña, o mantén pulsada la activa, y el indicador **se levanta**: crece un 14 % y se vuelve una lente clara que aumenta lo que hay debajo (`--ns-tabs-lens-lift`, `--ns-tabs-tint-lift`). Sigue al dedo; más allá de los extremos se resiste como una goma, y al soltar encaja en la pestaña más cercana. Un gesto más vertical que horizontal es un desplazamiento de la página, no un arrastre.
+- **Arrastra** desde cualquier pestaña, o mantén pulsada la activa, y el indicador **se levanta**: crece un 14 % y se vuelve una lente clara que **aumenta** lo que hay debajo (`--ns-tabs-zoom-lift`, 0,55; `--ns-tabs-lens-lift`, `--ns-tabs-tint-lift`). Dentro de una barra con `data-ns-liquid-src`, el indicador hereda ese fondo (en Safari, su lente se aplica sobre la misma copia). Sigue al dedo; más allá de los extremos se resiste como una goma, y al soltar encaja en la pestaña más cercana. Un gesto más vertical que horizontal es un desplazamiento de la página, no un arrastre.
 - **Teclado:** flechas (dan la vuelta en los extremos; al revés en RTL), Inicio y Fin. Con `role="tablist"` y `role="tab"` usa `aria-selected` y foco itinerante; si no, `aria-pressed`.
 - La pestaña elegida lleva la clase `ns-tabs-on`. La pestaña bajo el indicador lleva la clase `ns-tabs-hot` mientras la lente pasa por encima (para cambiar el color del texto a la vez). Evento `change` con `detail { index, tab }`; `tabs(el).select(i)` la cambia por código.
 - Vidrio o sólido como cualquier grupo líquido (`data-ns-liquid="glass"` por defecto; `""` para sólido, con `--ns-tabs-fill`). El indicador sigue al material de la barra.

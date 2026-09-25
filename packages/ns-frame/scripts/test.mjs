@@ -112,6 +112,7 @@ eq(/NaN/.test(blend([P(0), { x: 20, y: 10, w: 48, h: 48, r: 24 }], 38)), false, 
   const { shift } = await import('../src/ns-liquid.js')
   eq(shift('M0 10L20 0A5 5 0 0 1 25 5C1 2 3 4 5 6Z', 10, 100), 'M10 110 L30 100 A5 5 0 0 1 35 105 C11 102 13 104 15 106 Z', 'glass: shift de un path absoluto')
   eq(typeof (await import('../src/ns-glass.js')).glass, 'function', 'glass: carga sin DOM')
+  eq(typeof (await import('../src/ns-relief.js')).relief, 'function', 'relief: carga sin DOM')
 }
 // pestañas: el módulo carga sin DOM (servidor, SSR)
 eq(typeof (await import('../src/ns-tabs.js')).tabs, 'function', 'tabs: carga sin DOM')

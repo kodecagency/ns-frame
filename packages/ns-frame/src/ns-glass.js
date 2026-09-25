@@ -16,7 +16,7 @@
 // · Como cualquier vidrio: sin filter, opacity < 1, mask ni backdrop-filter en sus antepasados.
 
 import { styles, path, shapeOf, update } from './ns-frame.js'
-import { liquid } from './ns-liquid.js'
+import { liquid, polyline } from './ns-liquid.js'
 
 const CSS = `@layer ns{
 [data-ns-glass]{background:none;--ns-glass-shadow:rgba(0,0,0,.28)}
@@ -25,6 +25,7 @@ const CSS = `@layer ns{
 .ns-glass-light{position:absolute;pointer-events:none}
 [data-ns-glass~=clear]{--ns-glass-tint:rgba(255,255,255,.02);--ns-glass-blur:1.5px}
 [data-ns-glass~=tint]{--ns-glass-tint:rgba(18,18,22,.46);--ns-glass-blur:10px}
+[data-ns-glass~=u]{--ns-glass-tint:radial-gradient(55% 45% at 6% 100%,color-mix(in srgb,var(--ns-u,#3de0ff) 42%,transparent),transparent),radial-gradient(55% 45% at 94% 100%,color-mix(in srgb,var(--ns-u,#3de0ff) 42%,transparent),transparent),linear-gradient(to top,color-mix(in srgb,var(--ns-u,#3de0ff) 26%,transparent),transparent 58%),rgba(12,14,18,.26)}
 @media (forced-colors:active){.ns-glass-light{display:none}}
 }`
 let styled = 0
@@ -54,36 +55,7 @@ function rounded(el, w, h) {
 // ilumina con ella y una arista de corte, y la lente es plana por caras (el fondo se parte en cada
 // corte, como en una gema).
 
-// contorno de un path (M, L, A, C, Z absolutos) como polígono: rectas tal cual, curvas en tramos de ~5 px
-function flatten(d) {
-  const t = d.match(/[A-Za-z]|-?\d*\.?\d+(?:e-?\d+)?/g) || [], P = []
-  let i = 0, c = '', x = 0, y = 0
-  const n = () => +t[i++]
-  while (i < t.length) {
-    if (/[A-Za-z]/.test(t[i])) { c = t[i++]; if (c == 'Z') continue }
-    if (c == 'M' || c == 'L') { x = n(); y = n(); P.push([x, y, 1]) }
-    else if (c == 'C') {
-      const a = [n(), n()], b = [n(), n()], e = [n(), n()], L = Math.hypot(e[0] - x, e[1] - y), k = Math.max(2, Math.ceil(L / 5))
-      for (let s = 1; s <= k; s++) { const u = s / k, v = 1 - u; P.push([v * v * v * x + 3 * v * v * u * a[0] + 3 * v * u * u * b[0] + u * u * u * e[0], v * v * v * y + 3 * v * v * u * a[1] + 3 * v * u * u * b[1] + u * u * u * e[1], s == k]) }
-      x = e[0]; y = e[1]
-    } else if (c == 'A') {
-      // arco elíptico (SVG, parametrización por el centro)
-      let rx = n(), ry = n(); n(); const la = n(), sw = n(), X = n(), Y = n()
-      const dx = (x - X) / 2, dy = (y - Y) / 2, l = dx * dx / (rx * rx) + dy * dy / (ry * ry)
-      if (l > 1) { rx *= Math.sqrt(l); ry *= Math.sqrt(l) }
-      const q = Math.sqrt(Math.max(0, (rx * rx * ry * ry - rx * rx * dy * dy - ry * ry * dx * dx) / (rx * rx * dy * dy + ry * ry * dx * dx))) * (la == sw ? -1 : 1)
-      const cx = q * rx * dy / ry + (x + X) / 2, cy = -q * ry * dx / rx + (y + Y) / 2
-      const a0 = Math.atan2((y - cy) / ry, (x - cx) / rx)
-      let da = Math.atan2((Y - cy) / ry, (X - cx) / rx) - a0
-      if (sw && da < 0) da += 2 * Math.PI; if (!sw && da > 0) da -= 2 * Math.PI
-      const k = Math.max(2, Math.ceil(Math.abs(da) * Math.max(rx, ry) / 5))
-      for (let s = 1; s <= k; s++) { const a = a0 + da * s / k; P.push([cx + rx * Math.cos(a), cy + ry * Math.sin(a), s == k]) }
-      x = X; y = Y
-    }
-  }
-  // sin puntos repetidos (el cierre vuelve al inicio)
-  return P.filter((p, j) => { const q = P[(j + P.length - 1) % P.length]; return Math.hypot(p[0] - q[0], p[1] - q[1]) > .05 })
-}
+const flatten = polyline
 const FAC = new Set()
 let lx = -1, ly = -1, lraf = 0, MQ = null
 const fine = () => (MQ ||= [matchMedia('(hover: hover) and (pointer: fine)'), matchMedia('(prefers-reduced-motion: reduce)')])[0].matches
@@ -102,11 +74,13 @@ function lights(el) {
   const cv = document.createElement('canvas')
   cv.className = 'ns-liquid-fx ns-glass-light'; cv.setAttribute('aria-hidden', 'true')
   const x = cv.getContext('2d')
-  let F = [], key = '', vis = false, clip = null, W = 0, H = 0, q = 1, last = '', cut = false, fw = 7
-  const build = (d, w, h, facet) => {
-    const k = d + w + h + facet
+  let F = [], key = '', vis = false, clip = null, W = 0, H = 0, q = 1, last = '', cut = false, fw = 7, U = null
+  const build = (d, w, h, facet, u) => {
+    const k = d + w + h + facet + u
     if (k == key) return
     key = k; cut = facet; W = w; H = h; last = ''
+    // luz en U: el canto de abajo brilla con el color de la U (se resuelve a rgb en la propia capa)
+    if (u) { cv.style.color = getComputedStyle(el).getPropertyValue('--ns-u').trim() || '#3de0ff'; U = (getComputedStyle(cv).color.match(/[\d.]+/g) || [61, 224, 255]).slice(0, 3).map(Number) } else U = null
     q = Math.min(2, devicePixelRatio || 1)
     cv.width = Math.round(w * q); cv.height = Math.round(h * q)
     Object.assign(cv.style, { left: -el.clientLeft + 'px', top: -el.clientTop + 'px', width: w + 'px', height: h + 'px' })
@@ -164,7 +138,13 @@ function lights(el) {
         x.strokeStyle = `rgba(255,255,255,${(i * .22).toFixed(3)})`; x.lineWidth = .8
         x.beginPath(); x.moveTo(a[0] - nx * fw, a[1] - ny * fw); x.lineTo(b[0] - nx * fw, b[1] - ny * fw); x.stroke()
       }
-      // el canto: un trazo que el recorte deja en su mitad interior (fino y nítido)
+      // el canto: un trazo que el recorte deja en su mitad interior (fino y nítido). Con la luz en U,
+      // los tramos que miran hacia abajo brillan con su color aunque la luz venga de otro lado
+      const ub = U ? smooth(.15, .95, ny) : 0
+      if (ub > .01) {
+        x.strokeStyle = `rgba(${U},${(ub * .95).toFixed(3)})`; x.lineWidth = 2.4
+        x.beginPath(); x.moveTo(a[0], a[1]); x.lineTo(b[0], b[1]); x.stroke()
+      }
       x.strokeStyle = `rgba(255,255,255,${(base + i * .85).toFixed(3)})`
       x.lineWidth = 1.2 + i * 1.2
       x.beginPath(); x.moveTo(a[0], a[1]); x.lineTo(b[0], b[1]); x.stroke()
@@ -196,7 +176,7 @@ export function glass(el, o = {}) {
     const d = s ? path(s, w, hh) : rounded(el, w, hh)
     // la luz del canto: encima del vidrio y debajo del contenido
     if (!fc) { fc = lights(el); (el.querySelector(':scope > .ns-liquid-fx') || el.firstChild)?.after(fc.cv) }
-    fc.build(d, w, hh, tok().includes('facet'))
+    fc.build(d, w, hh, tok().includes('facet'), tok().includes('u'))
     return { d, w, h: hh }
   }
   const h = liquid(el, { glass: true, prism: () => tok().includes('prism'), hard: () => tok().includes('facet'), path: shape, ...o })

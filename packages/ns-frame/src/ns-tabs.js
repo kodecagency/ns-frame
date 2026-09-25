@@ -30,7 +30,7 @@ const CSS = `@layer ns{
 .ns-tabs{position:relative;display:inline-flex;touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 .ns-tabs>.ns-tabs-track.ns-tabs-track{position:absolute;inset:0;border-radius:var(--ns-tabs-radius,999px);pointer-events:none}
 .ns-tabs>.ns-tabs-lens.ns-tabs-lens{position:absolute;inset:0;pointer-events:none;--ns-liquid:var(--ns-tabs-fuse,16px);--ns-liquid-fill:var(--ns-tabs-fill,currentColor);--ns-glass-tint:var(--ns-tabs-tint,rgba(255,255,255,.16));--ns-glass-blur:var(--ns-tabs-blur,2px);--ns-glass-lens:var(--ns-tabs-lens,26px);--ns-glass-depth:var(--ns-tabs-depth,16px);--ns-glass-edge:var(--ns-tabs-edge,6px);--ns-glass-sat:1.1}
-.ns-tabs.ns-tabs-lift>.ns-tabs-lens.ns-tabs-lens{--ns-glass-tint:var(--ns-tabs-tint-lift,rgba(255,255,255,.05));--ns-glass-blur:var(--ns-tabs-blur-lift,.4px);--ns-glass-lens:var(--ns-tabs-lens-lift,42px);--ns-glass-depth:var(--ns-tabs-depth-lift,22px)}
+.ns-tabs.ns-tabs-lift>.ns-tabs-lens.ns-tabs-lens{--ns-glass-tint:var(--ns-tabs-tint-lift,rgba(255,255,255,.05));--ns-glass-blur:var(--ns-tabs-blur-lift,.4px);--ns-glass-lens:var(--ns-tabs-lens-lift,42px);--ns-glass-depth:var(--ns-tabs-depth-lift,22px);--ns-glass-zoom:var(--ns-tabs-zoom-lift,.55)}
 .ns-tabs .ns-tabs-lens>.ns-tabs-ind.ns-tabs-ind,.ns-tabs .ns-tabs-lens>.ns-tabs-drop.ns-tabs-drop{position:absolute;left:0;top:0;border-radius:var(--ns-tabs-ind-radius,var(--ns-tabs-radius,999px));transform-origin:50% 50%}
 .ns-tabs[data-ns-tabs~=shrink]{transform-origin:var(--ns-tabs-origin,50% 100%);transition:scale .5s cubic-bezier(.3,1.25,.4,1)}
 .ns-tabs.ns-tabs-min{scale:var(--ns-tabs-min,.84)}

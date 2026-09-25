@@ -28,15 +28,8 @@ const POSTS = [
   ['ns-feed-sea', 'Mar de fondo', 'Choroní · ayer'],
   ['ns-feed-peak', 'Cumbre nevada', 'Pico Bolívar · hace 3 días'],
 ]
-// galería de vidrio: forma de ns-frame (vacía = círculo con border-radius), material y nombre
-const GEMS = [
-  ['card', '', 'card'],
-  ['notch', '', 'notch'],
-  ['ticket', '', 'ticket'],
-  ['hud', 'facet', 'tallado'],
-  ['all squircle 34', 'prism', 'prisma'],
-  ['', 'clear', 'lente'],
-]
+// editor de fotos: filtros que se aplican a la imagen
+const FILTERS = [['Original'], ['Vívido'], ['Cálido'], ['Noir'], ['Frío']]
 const ACTIONS = [
   ['Compartir', 'M13.5 5.5a2 2 0 1 0 0-.01 M6.5 10a2 2 0 1 0 0-.01 M13.5 14.5a2 2 0 1 0 0-.01 M8.3 9 11.7 6.5 M8.3 11l3.4 2.5'],
   ['Guardar', 'M6 3.5h8v13l-4-3-4 3Z'],
@@ -150,19 +143,56 @@ const ACTIONS = [
         </div>
       </article>
 
-      <!-- 6 · cristal tallado: vidrio en cualquier forma, con luz por faceta -->
+      <!-- 6 · editor de fotos: controles de vidrio con forma sobre la imagen que se edita -->
       <article class="x x6" data-ns="all round 22">
         <div class="stage s6">
-          <img class="bg" src="https://picsum.photos/seed/ns-facet-night/1200/760.webp" alt="" width="1200" height="760" loading="lazy">
-          <div class="gems" id="gems" aria-hidden="true">
-            {GEMS.map(([shape, mode, name]) => <div class={`gem${shape ? '' : ' orb'}`} data-ns={shape || undefined} data-ns-glass={mode}><b>{name}</b></div>)}
+          <img class="bg" id="ed-img" src="https://picsum.photos/seed/ns-facet-night/1200/760.webp" alt="La foto que se edita" width="1200" height="760" loading="lazy">
+          <p class="ed-name" data-ns="button" data-ns-glass aria-live="polite"><span id="ed-name">Original</span></p>
+          <div class="ed-panel" data-ns="card" data-ns-glass="u">
+            <label for="ed-k">Intensidad</label>
+            <input type="range" id="ed-k" min="0" max="100" value="70">
+            <output for="ed-k" id="ed-out">70</output>
           </div>
-          <small class="drag-hint">Arrastra las piezas</small>
+          <nav class="ed-tools" id="ed-tools" data-ns-tabs data-ns-liquid="glass" aria-label="Filtro">
+            {FILTERS.map(([n], i) => <button type="button" aria-pressed={String(!i)}>{n}</button>)}
+          </nav>
         </div>
         <div class="cap">
-          <h3>Vidrio con cualquier forma</h3>
-          <p>El mismo cristal en cualquier elemento: chaflanes, muescas, cortes, squircles y círculos. Sin contorno: el canto lo dibuja la luz, que brilla donde el borde mira hacia ella y sigue al puntero (en el móvil, al desplazar). Arrastra una pieza sobre la foto y mira cómo la lente curva el fondo en cada forma. El tallado parte el fondo en cada corte, como una gema.</p>
-          <code class="tag"><b>data-ns-glass</b> · <b>facet</b> · <b>prism</b> · <b>ns-frame/glass</b></code>
+          <h3>Controles de vidrio sobre lo que editas</h3>
+          <p>Un editor de fotos de verdad: los controles flotan sobre la imagen sin taparla. La barra de filtros es vidrio líquido (arrastra el indicador), el panel de intensidad es una forma de ns-frame con luz en U y la etiqueta, un chaflán. El texto sigue legible sobre cualquier foto y los filtros se aplican de verdad.</p>
+          <code class="tag"><b>data-ns-glass</b> · <b>data-ns-glass="u"</b> · <b>data-ns-tabs</b></code>
+        </div>
+      </article>
+
+      <!-- 7 · relieve: un panel de casa inteligente con controles que se hunden de verdad -->
+      <article class="x x7" data-ns="all round 22">
+        <div class="stage s7">
+          <div class="home" data-ns="card" data-ns-relief>
+            <header><b>Salón</b><small id="hm-info">21 °C · Auto</small></header>
+            <div class="hrow">
+              <span id="hm-l">Luz</span>
+              <button type="button" class="sw" id="hm-light" role="switch" aria-checked="true" aria-labelledby="hm-l" data-ns-relief="inset"><i data-ns-relief></i></button>
+            </div>
+            <div class="hrow">
+              <span>Modo</span>
+              <div class="hseg" id="hm-mode" role="group" aria-label="Modo" data-ns-relief="inset">
+                {['Auto', 'Frío', 'Calor'].map((m, i) => <button type="button" data-ns-relief={i ? 'ghost' : 'select'} aria-pressed={String(!i)}>{m}</button>)}
+              </div>
+            </div>
+            <div class="hrow">
+              <span>Temperatura</span>
+              <div class="hstep">
+                <button type="button" id="hm-down" data-ns-relief aria-label="Bajar un grado">−</button>
+                <output id="hm-t" aria-live="polite">21°</output>
+                <button type="button" id="hm-up" data-ns-relief aria-label="Subir un grado">+</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="cap">
+          <h3>Relieve: el estado se ve en el volumen</h3>
+          <p>La tendencia propia de ns-frame: superficies con un volumen mínimo y exacto, calculado de la forma (el chaflán de la tarjeta recibe su propia luz). No es decoración, es información: lo que pulsas se hunde, el segmento elegido sube dentro de su carril y el interruptor encendido se colorea. Con teclado y lectores de pantalla (aria-pressed, aria-checked). Lo que el neumorfismo prometía, con contraste y sin plástico.</p>
+          <code class="tag"><b>data-ns-relief</b> · <b>inset</b> · <b>select</b> · <b>ns-frame/relief</b></code>
         </div>
       </article>
     </div>
@@ -177,6 +207,7 @@ const ACTIONS = [
   import 'ns-frame/liquid'
   import 'ns-frame/tabs'
   import 'ns-frame/glass'
+  import 'ns-frame/relief'
 
   const $ = (id: string) => document.getElementById(id)!
   const press = (g: HTMLElement, b: Element) => g.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x == b)))
@@ -200,30 +231,37 @@ const ACTIONS = [
     $('tb-feed').scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
   })
 
-  // galería de vidrio: las piezas se arrastran (y vuelven con un muelle corto al soltarlas si salen
-  // del escenario); el vidrio las sigue solo, redibujándose donde estén
-  const stage = document.querySelector<HTMLElement>('.s6')!
-  document.querySelectorAll<HTMLElement>('#gems .gem').forEach(g => {
-    let sx = 0, sy = 0, px = 0, py = 0, on = false
-    g.addEventListener('pointerdown', e => { on = true; sx = e.clientX - px; sy = e.clientY - py; g.setPointerCapture(e.pointerId); g.style.transition = '' })
-    g.addEventListener('pointermove', e => {
-      if (!on) return
-      px = e.clientX - sx; py = e.clientY - sy
-      g.style.translate = `${px}px ${py}px`
-    })
-    const end = () => {
-      if (!on) return
-      on = false
-      // fuera del escenario: vuelve a su sitio
-      const r = g.getBoundingClientRect(), s = stage.getBoundingClientRect()
-      if (r.right < s.left + 30 || r.left > s.right - 30 || r.bottom < s.top + 30 || r.top > s.bottom - 30) {
-        px = py = 0
-        g.style.transition = matchMedia('(prefers-reduced-motion: reduce)').matches ? '' : 'translate .45s cubic-bezier(.3, 1.3, .4, 1)'
-        g.style.translate = ''
-      }
-    }
-    g.addEventListener('pointerup', end); g.addEventListener('pointercancel', end)
+  // editor de fotos: el filtro elegido (barra de vidrio) y su intensidad (panel) se aplican a la foto
+  const FX: Record<string, (k: number) => string> = {
+    Original: () => 'none',
+    'Vívido': k => `saturate(${1 + .9 * k}) contrast(${1 + .12 * k})`,
+    'Cálido': k => `sepia(${.35 * k}) saturate(${1 + .35 * k}) hue-rotate(${-8 * k}deg)`,
+    Noir: k => `grayscale(${k}) contrast(${1 + .35 * k}) brightness(${1 - .05 * k})`,
+    'Frío': k => `saturate(${1 - .15 * k}) hue-rotate(${16 * k}deg) brightness(${1 + .04 * k})`,
+  }
+  let fx = 'Original'
+  const img = $('ed-img'), k = $('ed-k') as HTMLInputElement
+  const apply = () => {
+    img.style.filter = FX[fx](+k.value / 100)
+    $('ed-out').textContent = k.value
+    $('ed-name').textContent = fx
+  }
+  $('ed-tools').addEventListener('change', e => { fx = (e as CustomEvent<{ tab: HTMLElement }>).detail.tab.textContent!.trim(); apply() })
+  k.addEventListener('input', apply)
+
+  // panel con relieve: interruptor, modo y temperatura (el estado se ve en el volumen)
+  let temp = 21, mode = 'Auto'
+  const info = () => { $('hm-info').textContent = `${temp} °C · ${mode}`; $('hm-t').textContent = temp + '°' }
+  $('hm-light').addEventListener('click', e => { const s = e.currentTarget as HTMLElement; s.setAttribute('aria-checked', String(s.getAttribute('aria-checked') != 'true')) })
+  $('hm-mode').addEventListener('click', e => {
+    const b = (e.target as Element).closest('button')
+    if (!b) return
+    // el elegido sube en su carril; los demás quedan como texto
+    $('hm-mode').querySelectorAll('button').forEach(x => { x.setAttribute('aria-pressed', String(x == b)); x.setAttribute('data-ns-relief', x == b ? 'select' : 'ghost') })
+    mode = b.textContent!; info()
   })
+  $('hm-down').addEventListener('click', () => { temp = Math.max(16, temp - 1); info() })
+  $('hm-up').addEventListener('click', () => { temp = Math.min(28, temp + 1); info() })
 
   // acciones: salen del botón como gotas que se separan
   const fab = $('fab'), main = fab.querySelector<HTMLElement>('.main')!
@@ -318,20 +356,48 @@ const ACTIONS = [
   .tb button span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
   .tb button.ns-tabs-hot { color: #fff }
 
-  /* 6 · cristal tallado: piezas de vidrio con forma sobre una foto */
+  /* 6 · editor de fotos: controles de vidrio sobre la imagen (la foto va primero y se filtra de
+     verdad; los controles, posicionados, encima) */
   .x6 { grid-column: 1 / -1 }
-  .s6 { min-height: 420px; padding-top: 48px; overflow: hidden }
-  .s6 .bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(.78) saturate(1.1) }
-  /* piezas de vidrio sin contorno (el canto lo dibuja la luz), que se arrastran sobre la foto */
-  .gems { position: relative; display: grid; grid-template-columns: repeat(3, auto); align-items: center; justify-items: center; gap: 28px 34px }
-  .gem { position: relative; width: 176px; height: 112px; padding: 16px 18px; box-sizing: border-box; display: grid; align-content: end; color: #fff; cursor: grab; touch-action: none; --ns-glass-tint: rgba(14, 14, 18, .16); --ns-glass-blur: 4px; --ns-glass-lens: 26px; --ns-glass-depth: 18px }
-  .gem:active { cursor: grabbing }
-  .gem b { font: 600 var(--t-small)/1 var(--mono); letter-spacing: .02em; color: rgba(255, 255, 255, .86); text-shadow: 0 1px 3px rgba(0, 0, 0, .45) }
-  .gem.orb { width: 112px; height: 112px; padding: 0; border-radius: 50%; place-items: center; align-content: center }
-  .drag-hint { position: relative; margin-top: 20px; color: rgba(255, 255, 255, .7); font-size: var(--t-caption); text-shadow: 0 1px 2px rgba(0, 0, 0, .5) }
+  .s6 { min-height: 470px; padding: 0; overflow: hidden; justify-content: flex-end }
+  .s6 .bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: filter .45s var(--ease) }
+  .s6 > :not(.bg) { color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, .4) }
+  .ed-name { position: absolute; left: 22px; top: 22px; margin: 0; padding: 10px 18px; font: 600 var(--t-small)/1 var(--body); --ns-glass-tint: rgba(12, 12, 16, .2) }
+  .ed-panel { position: absolute; right: 22px; top: 22px; width: 220px; padding: 18px 20px 20px; box-sizing: border-box; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px 10px; font: 600 var(--t-small)/1 var(--body); --ns-u: #00e676 }
+  .ed-panel input { grid-column: 1 / -1; width: 100%; margin: 0; accent-color: #fff }
+  .ed-panel output { font: 600 var(--t-small)/1 var(--mono); opacity: .8 }
+  .ed-tools { position: relative; margin: 0 auto 22px; padding: 5px; --ns-liquid: 0px; --ns-glass-tint: rgba(14, 14, 18, .22); --ns-glass-blur: 6px; --ns-glass-lens: 22px; --ns-glass-depth: 16px; --ns-tabs-radius: 26px; --ns-tabs-ind-radius: 21px }
+  .ed-tools button { width: 88px; height: 42px; border: 0; background: none; color: rgba(255, 255, 255, .74); font: 600 var(--t-small)/1 var(--body); cursor: pointer; transition: color .25s }
+  .ed-tools button.ns-tabs-hot { color: #fff }
+
+  /* 7 · relieve: panel claro sobre su propio fondo (la cerámica se lee por el volumen, no por un borde) */
+  .x7 { grid-column: 1 / -1; flex-direction: row }
+  .x7 .cap { flex: 0 0 42%; align-content: center; padding: 32px 36px }
+  .s7 { background: #ecebe8; padding: 56px 24px; color: #1d1d1f }
+  .home { width: min(360px, 100%); padding: 24px 24px 26px; box-sizing: border-box; display: grid; gap: 18px }
+  .home header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px }
+  .home header b { font: 600 var(--t-title)/1.1 var(--display); letter-spacing: -.01em }
+  .home header small { color: rgba(29, 29, 31, .5); font-size: var(--t-small) }
+  .hrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: var(--t-ui) }
+  .home button, .home output { border: 0; background: none; color: inherit; padding: 0; font: 500 var(--t-small)/1 var(--body); cursor: pointer }
+  /* interruptor: carril hundido que se colorea al encenderse, mando blanco que se desliza */
+  .sw { width: 52px; height: 30px; padding: 2px; box-sizing: border-box; border-radius: 15px; display: flex }
+  .sw[aria-checked=true] { --ns-relief: #34c759 }
+  .sw i { display: block; width: 26px; height: 26px; border-radius: 50%; --ns-relief: #fff; transition: translate .28s cubic-bezier(.3, 1.2, .4, 1) }
+  .sw[aria-checked=true] i { translate: 22px 0 }
+  /* segmentos: carril hundido y el elegido en relieve (como iOS) */
+  .hseg { display: flex; padding: 2px; border-radius: 10px }
+  .hseg button { height: 28px; padding: 0 14px; border-radius: 8px; opacity: .7 }
+  .hseg button[aria-pressed=true] { opacity: 1 }
+  .hstep { display: flex; align-items: center; gap: 14px }
+  .hstep button { width: 32px; height: 32px; border-radius: 50%; font-size: 17px }
+  .hstep output { min-width: 34px; text-align: center; font-size: 17px; font-variant-numeric: tabular-nums }
+  @media (prefers-reduced-motion: reduce) { .sw i { transition: none } }
 
   @media (max-width: 960px) {
     .x1, .x2, .x3, .x4 { grid-column: 1 / -1 }
+    .x7 { flex-direction: column }
+    .x7 .cap { flex: none; padding: 18px 24px 24px }
     .x5 { flex-direction: column }
     .x5 .cap { flex: none; padding: 18px 24px 24px }
     .stage { min-height: 0; padding: 28px 18px 6px }
@@ -341,9 +407,11 @@ const ACTIONS = [
     .cap, .x5 .cap { padding: 16px 18px 20px }
     .s5 { padding: 24px 14px }
     .phone { width: min(300px, 100%); height: 520px }
-    .gems { grid-template-columns: repeat(2, auto); gap: 20px 18px }
-    .gem { width: 144px; height: 96px }
-    .gem.orb { width: 96px; height: 96px }
+    .s6 { min-height: 440px }
+    .ed-panel { left: 14px; right: auto; top: auto; bottom: 76px; width: calc(100% - 28px) }
+    .ed-name { left: 14px; top: 14px }
+    .ed-tools button { width: 62px; font-size: 12px }
+    .ed-tools { margin-bottom: 14px }
     .cap p { font-size: var(--t-small) }
     .prod img { height: 150px }
     .lt button { width: 80px }

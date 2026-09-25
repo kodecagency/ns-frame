@@ -6,6 +6,13 @@
 - Sin el error global «ResizeObserver loop completed with undelivered notifications» (WebKit lo lanzaba como excepción): el margen seguro de `data-ns-pad` se aplica en el frame siguiente cuando viene de un ResizeObserver, y `ns-link` ya no observa el `<body>` (compara la altura del documento en eventos baratos).
 - Todas las páginas del sitio revisadas en WebKit (motor de Safari) sin errores.
 
+### Relieve (`ns-frame/relief`, nuevo) y vidrio que aumenta
+- `data-ns-relief`: superficies con un volumen mínimo y exacto calculado de la forma, como el hardware bien hecho: cara con un degradado casi imperceptible, canto de 1 px de luz tramo a tramo con la normal real del contorno, sombra de contacto y ambiental. Cerámica, metal y papel. Dibujado con vectores, sólo a la vista.
+- Estado en el volumen: se hunde al pulsar (puntero y teclado), con `aria-pressed` / `aria-checked` y con `inset`; `select` sube al estar elegido (el segmento activo en su carril, como iOS) y `ghost` no dibuja nada hasta pulsarse.
+- `polyline(d)` en `ns-frame/liquid`: el contorno de un path como polígono (lo comparten el vidrio y el relieve).
+- Vidrio: aumento (`--ns-glass-zoom`), usado por el indicador de pestañas al levantarse; el mapa de la lente se regenera al cambiar sus variables aunque la forma siga en marcha; un grupo anidado hereda el fondo (`data-ns-liquid-src`) del de fuera; variante `data-ns-glass="u"` con la luz en U dentro del cristal.
+- Sitio: editor de fotos real (filtros e intensidad con controles de vidrio sobre la imagen) y panel de casa inteligente con relieve, en lugar de demos decorativas.
+
 ### Vidrio más limpio y barra que se encoge
 - **Sin contorno:** en `ns-frame/glass` el canto lo dibuja la luz (brillo según el ángulo de cada tramo, en un canvas recortado a la forma y sin costuras) y una sombra suave (`--ns-glass-shadow`) lo separa del fondo; el borde de ns-frame ya no se superpone (doble contorno) salvo con `data-ns-glass="border"`.
 - **Cristal tallado** con lente plana por caras: el fondo se parte en cada corte, como una gema.

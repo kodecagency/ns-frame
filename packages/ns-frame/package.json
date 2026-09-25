@@ -34,6 +34,7 @@
     "./liquid": { "types": "./types/modules.d.ts", "default": "./dist/ns-liquid.js" },
     "./tabs": { "types": "./types/modules.d.ts", "default": "./dist/ns-tabs.js" },
     "./glass": { "types": "./types/modules.d.ts", "default": "./dist/ns-glass.js" },
+    "./relief": { "types": "./types/modules.d.ts", "default": "./dist/ns-relief.js" },
     "./link": { "types": "./types/modules.d.ts", "default": "./dist/ns-link.js" },
     "./fx": { "types": "./types/modules.d.ts", "default": "./dist/ns-fx.js" },
     "./audit": { "types": "./types/modules.d.ts", "default": "./dist/ns-audit.js" },
