@@ -291,7 +291,7 @@ function mk(tag, a = {}, st = {}, ...kids) {
 
 // ───────────────────────────── runtime DOM ─────────────────────────────
 
-const BASE = 'ns-frame{display:block}:where([data-ns],[data-ns-nest],ns-frame){position:relative}.ns-fast{overflow:clip}' +
+const BASE = 'ns-frame{display:block}:where([data-ns],[data-ns-nest],ns-frame){position:relative}.ns-fast{overflow:hidden;overflow:clip}' +
   ':where([data-ns-pad],ns-frame[pad]){--p:var(--ns-pad,1.25rem);padding:calc(var(--ns-safe-t,0px) + var(--p)) calc(var(--ns-safe-r,0px) + var(--p)) calc(var(--ns-safe-b,0px) + var(--p)) calc(var(--ns-safe-l,0px) + var(--p))}'
 const STYLE = `
 .ns-svg{position:absolute;left:0;top:0;pointer-events:none;overflow:visible;z-index:1;filter:var(--ns-glow,none)}
@@ -339,10 +339,12 @@ const need = () => X ? Promise.resolve(X) : (extras(), XP)
 function extras(s) {
   if (X) return X
   if (s) WAIT.add(s)
+  // (la promesa devuelve el módulo: open()/close() la esperan antes de que cargue)
   XP ||= import('./ns-extra.js').then(m => {
     X = m.init({ mk, f, num, geometry, paint, write, read, reduced, styles, lerp })
     for (const q of WAIT) { q.key = 0; refresh(q) }
     WAIT.clear()
+    return X
   })
 }
 
@@ -373,13 +375,15 @@ function part(s, k, on) {
 // el recorte lo hace el motor CSS (border-radius + corner-shape + overflow: clip) en vez de
 // clip-path. Así box-shadow, outline y filtros exteriores siguen la forma.
 const NATIVE = DOM && CSS.supports?.('corner-shape', 'bevel')
+// overflow: clip (Safari 16+): donde falta, hidden recorta igual
+const CLIP = DOM && CSS.supports?.('overflow', 'clip') ? 'clip' : 'hidden'
 function native(s, V, on) {
   const st = s.el.style
   if (on) {
     const r = V.cn.map(([, h, v]) => [h || 0, v || 0])
     st.borderRadius = r.map(x => x[0] + 'px').join(' ') + ' / ' + r.map(x => x[1] + 'px').join(' ')
     st.setProperty('corner-shape', V.cn.map(([t]) => t && t != 'square' ? t : 'round').join(' '))
-    st.overflow = 'clip'
+    st.overflow = CLIP
   } else if (s.nt) { st.borderRadius = st.overflow = ''; st.removeProperty('corner-shape') }
   s.nt = on
 }

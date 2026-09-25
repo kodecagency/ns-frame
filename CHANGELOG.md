@@ -8,19 +8,27 @@
 - El contenedor ya no usa `isolation` (hacía de raíz del fondo) y las capas se apilan por orden.
 - El puente entre gotas sale redondo, no en punta hacia la vecina.
 - `field()` y `contour()` exponen el campo y sus contornos a cualquier nivel.
+- **Sin parpadeo:** el recorte pasa a una máscara SVG del documento (sin imágenes por frame) y la lente usa dos filtros que se turnan; el mapa nuevo sólo entra cuando ya está decodificado (antes, durante un frame el filtro leía un mapa vacío y desplazaba todo el fondo). En movimiento el mapa se estira; al detenerse se regenera con `toBlob`, fuera del hilo principal.
+- **Más rápido:** unión suave sólo cerca de los puentes, sin desestructurar en el bucle caliente, rejilla adaptativa, movimiento detectado por eventos y estilos en caché. CPU ×4: de ~38 a ~17 ms por frame, sin fotogramas largos.
+- Sin `backdrop-filter`, tinte casi opaco.
 
 ### Mosaico
 - Efecto nuevo `stream` (corriente): tres luces corren por los bordes de las piezas y saltan de una a la vecina donde se tocan (el contorno real de cada pieza y del anillo del orbe se muestrea y se buscan los relevos); cada una se desvanece en degradado y lleva un foco que enciende los bordes por donde pasa. `--ns-mo-speed`.
 - **Arreglo:** las capas animadas ya no se rehacen en cada `resize` si nada cambió: en el móvil, la barra del navegador al subir y bajar reiniciaba las animaciones.
 
 ### Arreglos
+- Núcleo: la primera apertura o cierre (`open`, `close`, y con ellos el primer toast) antes de que cargaran los extras fallaba: la promesa de carga no devolvía el módulo.
+- Compatibilidad: toasts y popovers funcionan sin Popover API (Safari < 17, Firefox < 125): antes `toast()` lanzaba un error y los popovers se veían siempre. Los tooltips se abren con un toque en pantallas táctiles.
+- `ns-fx.css`: la luz en U tiene valores de respaldo donde no hay `@property` (Firefox 115, Safari < 16.4); antes desaparecía.
+- `overflow: clip` con respaldo `hidden` (Safari 15).
+- `sheet`: si el navegador cancela el gesto, la hoja vuelve a su sitio (antes podía cerrarse); con todo el panel como asa y contenido con scroll, el scroll táctil ya no se bloquea.
 - `concentric`: con huecos distintos en cada lado, la esquina usa el menor (una foto con 6 px al lado y 70 abajo ya no hereda un chaflán en la esquina lejana).
 - `mark`: el resaltado se redibuja al cambiar una clase (color, margen, radio), no sólo al cambiar el texto.
 - Núcleo: fuera de pantalla sólo se pausa con `animation-play-state` (sin `pauseAnimations()` del SVG, que ya no hacía falta).
 
 ### Sitio
 - Demo de vidrio líquido sobre una foto: barra con lente clara que se estira y acciones que se separan en gotas de vidrio; «Vidrio / Sólido».
-- `content-visibility: auto` sólo en Chromium (en WebKit, todos los navegadores de iPhone, podía reiniciar las animaciones al volver a una sección).
+- `content-visibility: auto` desactivado en WebKit de Apple con una detección en CSS (en iPhone podía reiniciar las animaciones al volver a una sección). Al hacerlo por CSS y no por JS, la carga vuelve a ser rápida.
 - Tarjeta concéntrica con chaflán 24 (el botón al pie ya no queda comido por el chaflán con huecos pequeños).
 
 ## 0.10.0 — lo que CSS todavía no hace

@@ -14,6 +14,7 @@ import { open, close, styles } from './ns-frame.js'
 const CSS_ = `@layer ns{
 .ns-toasts{position:fixed;inset:auto;margin:0;padding:16px;border:0;background:none;color:inherit;overflow:visible;display:none;flex-direction:column;gap:10px;width:min(400px,100%);max-height:100%;pointer-events:none}
 .ns-toasts:popover-open{display:flex}
+.ns-toasts.ns-on{display:flex;z-index:2147483647}
 .ns-toasts[data-y=bottom]{bottom:0;justify-content:flex-end}.ns-toasts[data-y=top]{top:0}
 .ns-toasts[data-x=end]{right:0}.ns-toasts[data-x=start]{left:0}.ns-toasts[data-x=center]{left:calc(50% - min(200px,50%))}
 .ns-toast{--c:var(--ns-toast-c,#3de0ff);pointer-events:auto;display:flex;gap:12px;align-items:flex-start;--ns-pad:14px;background:var(--ns-toast-bg,#0b1520);--ns-border:color-mix(in srgb,var(--c) 45%,transparent);--ns-motion:var(--c);--ns-accent-width:1.5px;font-size:14px;line-height:1.45}
@@ -27,6 +28,11 @@ const CSS_ = `@layer ns{
 
 const C = { x: 'end', y: 'bottom', max: 4, time: 5000, shape: 'tl+br bevel 12; radius 2', enter: 'open' }
 let box, seq = 0
+// sin Popover API (Safari < 17, Firefox < 125): la pila es un div fijo con un z-index máximo
+const POP = typeof HTMLElement != 'undefined' && 'showPopover' in HTMLElement.prototype
+const shown = b => POP ? b.matches(':popover-open') : b.classList.contains('ns-on')
+const show = b => POP ? b.showPopover() : b.classList.add('ns-on')
+const hide = b => POP ? b.hidePopover() : b.classList.remove('ns-on')
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 const make = (tag, props, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e }
 
@@ -38,7 +44,8 @@ function stack() {
   if (box) return box
   styles(CSS_)
   // <div> y no <section>: el CSS del sitio suele estilizar section y ganaría a @layer ns
-  box = make('div', { className: 'ns-toasts', popover: 'manual' })
+  box = make('div', { className: 'ns-toasts' })
+  if (POP) box.popover = 'manual'
   box.setAttribute('role', 'region')
   box.setAttribute('aria-label', 'Notificaciones')
   box.setAttribute('aria-live', 'polite')
@@ -95,12 +102,12 @@ export function toast(msg, o = {}) {
     if (t._gone) return
     t._gone = 1
     t._p()
-    close(t, C.enter, 260).then(() => flip(() => t.remove())).then(() => b.children.length || b.hidePopover())
+    close(t, C.enter, 260).then(() => flip(() => t.remove())).then(() => b.children.length || hide(b))
   }
   if (time) { t.setAttribute('data-ns-motion', 'progress'); t.style.setProperty('--ns-progress', '100') }
 
   // la región viva debe estar visible antes de recibir el contenido para que se anuncie
-  if (!b.matches(':popover-open')) b.showPopover()
+  if (!shown(b)) show(b)
   t._n = ++seq
   t._t = time ? 0 : 1
   // el más nuevo, siempre junto al borde de la pantalla

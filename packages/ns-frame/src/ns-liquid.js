@@ -44,6 +44,7 @@ const CSS = `@layer ns{
 .ns-glass>.ns-liquid-rim{display:block;-webkit-backdrop-filter:blur(1.5px) brightness(1.22) saturate(1.15) contrast(1.06);backdrop-filter:blur(1.5px) brightness(1.22) saturate(1.15) contrast(1.06)}
 .ns-glass>.ns-liquid-fx .ns-lf{stroke:none;opacity:var(--ns-glass-shine,1)}
 .ns-glass>.ns-liquid-fx .ns-lr{display:inline;fill:none;stroke-width:1.2px;opacity:var(--ns-glass-shine,1)}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.ns-glass>.ns-liquid-glass{background:var(--ns-glass-solid,rgba(30,30,34,.92))}}
 @media (prefers-reduced-transparency:reduce){.ns-glass>.ns-liquid-glass{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:var(--ns-glass-solid,#232327)}.ns-glass>.ns-liquid-rim{display:none}}
 @media (forced-colors:active){.ns-liquid-fx .ns-lf{fill:Canvas;stroke:CanvasText}.ns-liquid-glass,.ns-liquid-rim{display:none!important}}
 }`
@@ -60,7 +61,7 @@ function sdBox(x, y, b) {
   const dx = x - b.cx, dy = y - b.cy, sx = dx < 0 ? -1 : 1, sy = dy < 0 ? -1 : 1
   const qx = Math.abs(dx) - b.hx + b.r, qy = Math.abs(dy) - b.hy + b.r
   if (qx > 0 || qy > 0) {
-    const ux = Math.max(qx, 0), uy = Math.max(qy, 0), L = Math.hypot(ux, uy)
+    const ux = Math.max(qx, 0), uy = Math.max(qy, 0), L = Math.sqrt(ux * ux + uy * uy)
     G[0] = L - b.r; G[1] = ux / L * sx; G[2] = uy / L * sy
   } else if (qx > qy) { G[0] = qx - b.r; G[1] = sx; G[2] = 0 } else { G[0] = qy - b.r; G[1] = 0; G[2] = sy }
   return G
@@ -69,10 +70,14 @@ function sdBox(x, y, b) {
 // mezclan y nace el puente) pero escalado por lo opuestos que son los dos gradientes. Entre dos
 // formas separadas se miran de frente (puente completo); en un borde que comparten apuntan igual
 // (nada que mezclar: no se "infla" donde dos formas se solapan alineadas).
+// (sin desestructurar el resultado de sdBox: en el bucle más caliente, crear un iterador por
+// llamada costaba más que el propio cálculo)
 function blendAt(x, y, B, k) {
-  let [d, gx, gy] = sdBox(x, y, B[0])
+  sdBox(x, y, B[0])
+  let d = G[0], gx = G[1], gy = G[2]
   for (let n = 1; n < B.length; n++) {
-    const [e, hx, hy] = sdBox(x, y, B[n])
+    sdBox(x, y, B[n])
+    const e = G[0], hx = G[1], hy = G[2]
     // (la raíz ensancha el peso: el puente sale redondo, no en punta hacia la gota vecina; con
     // gradientes paralelos sigue siendo 0)
     const w = Math.sqrt(Math.max(0, (1 - (gx * hx + gy * hy)) / 2)), kk = k * w
@@ -82,7 +87,7 @@ function blendAt(x, y, B, k) {
     // gradiente de la mezcla: el de la más cercana, promediado dentro del puente
     const mx = t ? hx : gx, my = t ? hy : gy, ox = t ? gx : hx, oy = t ? gy : hy, s = h / 2
     gx = mx * (1 - s) + ox * s; gy = my * (1 - s) + oy * s
-    const L = Math.hypot(gx, gy) || 1; gx /= L; gy /= L
+    const L = Math.sqrt(gx * gx + gy * gy) || 1; gx /= L; gy /= L
   }
   return d
 }
@@ -94,12 +99,27 @@ function blendAt(x, y, B, k) {
 export function field(boxes, k = 14, step = 2) {
   const B = boxes.filter(b => b.w > 0 && b.h > 0).map(b => { const r = Math.min(b.r || 0, b.w / 2, b.h / 2); return { cx: b.x + b.w / 2, cy: b.y + b.h / 2, hx: b.w / 2, hy: b.h / 2, r } })
   if (!B.length) return null
-  const m = k + step * 2
+  const m = k + step * 2, n = B.length
   const X0 = Math.min(...B.map(b => b.cx - b.hx)) - m, Y0 = Math.min(...B.map(b => b.cy - b.hy)) - m
   const nx = Math.ceil((Math.max(...B.map(b => b.cx + b.hx)) + m - X0) / step) + 1
   const ny = Math.ceil((Math.max(...B.map(b => b.cy + b.hy)) + m - Y0) / step) + 1
   const F = new Float32Array(nx * ny)
-  for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) F[j * nx + i] = blendAt(X0 + i * step, Y0 + j * step, B, k)
+  for (let j = 0; j < ny; j++) {
+    const y = Y0 + j * step
+    for (let i = 0; i < nx; i++) {
+      const x = X0 + i * step
+      // vía rápida: si la forma más cercana gana por más del alcance del puente, no hay nada que
+      // mezclar y basta el mínimo (sin gradientes ni raíces extra). Sólo cerca de un puente se
+      // hace la unión suave completa
+      let d1 = 1e9, d2 = 1e9
+      for (let q = 0; q < n; q++) {
+        const b = B[q], qx = Math.abs(x - b.cx) - b.hx + b.r, qy = Math.abs(y - b.cy) - b.hy + b.r
+        const v = qx > 0 || qy > 0 ? Math.sqrt((qx > 0 ? qx * qx : 0) + (qy > 0 ? qy * qy : 0)) - b.r : Math.max(qx, qy) - b.r
+        if (v < d1) { d2 = d1; d1 = v } else if (v < d2) d2 = v
+      }
+      F[j * nx + i] = d2 - d1 >= k ? d1 : blendAt(x, y, B, k)
+    }
+  }
   return { F, nx, ny, X0, Y0, step }
 }
 
@@ -184,7 +204,9 @@ function simplify(P, eps) {
 function lensMap(f, rim, cv) {
   const { F, nx, ny, step } = f
   cv.width = nx; cv.height = ny
-  const x = cv.getContext('2d'), img = x.createImageData(nx, ny), D = img.data
+  // willReadFrequently: canvas en CPU. Uno acelerado por GPU obliga a leerlo de vuelta para
+  // codificar el PNG, y eso era lo más caro al detenerse la forma
+  const x = cv.getContext('2d', { willReadFrequently: true }), img = x.createImageData(nx, ny), D = img.data
   for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
     const k = (j * nx + i) * 4, v = F[j * nx + i]
     let gx = 0, gy = 0
@@ -197,23 +219,13 @@ function lensMap(f, rim, cv) {
     D[k] = 128 + gx * 127; D[k + 1] = 128 + gy * 127; D[k + 2] = 128; D[k + 3] = 255
   }
   x.putImageData(img, 0, 0)
-  return cv.toDataURL()
-}
-
-// recorta una capa de vidrio a la forma: clip-path y, además, una máscara con la misma forma.
-// Chromium no aplica un clip-path con forma libre al desenfoque de fondo si un antepasado recorta
-// con esquinas redondeadas (overflow + border-radius, lo más común en tarjetas): pinta el
-// rectángulo entero. La máscara sí se respeta. Es un SVG generado aquí (data:, img-src en la CSP).
-// Con `soft` (px), la máscara es un canto que se desvanece hacia dentro: el trazo del contorno,
-// desenfocado y recortado a la forma, sin línea interior.
-function shape(e, d, w, h, soft) {
-  e.style.clipPath = d ? `path("${d}")` : ''
-  const body = soft
-    ? `<defs><filter id="b" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="${r2(soft / 2.2)}"/></filter><clipPath id="c"><path d="${d}"/></clipPath></defs><g clip-path="url(#c)"><path d="${d}" fill="none" stroke="#fff" stroke-width="${r2(soft * 1.6)}" filter="url(#b)"/></g>`
-    : `<path d="${d}"/>`
-  const m = d ? `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${r2(w)}" height="${r2(h)}">${body}</svg>`)}")` : ''
-  e.style.maskImage = m; e.style.webkitMaskImage = m
-  e.style.maskSize = e.style.webkitMaskSize = '100% 100%'
+  // toBlob codifica el PNG fuera del hilo principal (toDataURL lo bloqueaba al detenerse la forma)
+  return new Promise(res => cv.toBlob(b => {
+    if (!b) return res(cv.toDataURL())
+    const r = new FileReader()
+    r.onload = () => res(r.result)
+    r.readAsDataURL(b)
+  }))
 }
 
 const px = (v, L) => { v = String(v || '0').split(' ')[0]; return v.endsWith('%') ? parseFloat(v) * L / 100 : parseFloat(v) || 0 }
@@ -221,6 +233,7 @@ let uid = 0
 const mk = (tag, a = {}) => { const e = document.createElementNS(SVG, tag); for (const k in a) e.setAttribute(k, a[k]); return e }
 const stops = (g, s) => { for (const [o, a] of s) g.append(mk('stop', { offset: o, 'stop-color': '#fff', 'stop-opacity': a })); return g }
 const div = cls => { const e = document.createElement('div'); e.className = cls; e.setAttribute('aria-hidden', 'true'); return e }
+const setA = (e, a) => { for (const k in a) e.setAttribute(k, a[k]) }
 
 /**
  * Convierte `el` en un grupo líquido. Opciones: blobs (selector o función → elementos; por defecto
@@ -233,18 +246,35 @@ export function liquid(el, o = {}) {
   const glassy = () => o.glass ?? /(^|\s)glass(\s|$)/.test(el.getAttribute('data-ns-liquid') || '')
   const id = 'nslq' + ++uid
   const svg = mk('svg', { class: 'ns-liquid-fx', 'aria-hidden': 'true', focusable: 'false' })
-  // luz del vidrio: reflejo especular (fuerte arriba, tenue abajo) y un brillo interior arriba
-  const lens = mk('filter', { id: id + 'l', x: 0, y: 0, width: '100%', height: '100%', filterUnits: 'userSpaceOnUse', 'color-interpolation-filters': 'sRGB' })
-  const map = mk('feImage', { result: 'm', preserveAspectRatio: 'none' })
-  const disp = mk('feDisplacementMap', { in: 'SourceGraphic', in2: 'm', xChannelSelector: 'R', yChannelSelector: 'G', result: 'd' })
-  const blur = mk('feGaussianBlur', { in: 'd', result: 'b' })
-  const sat = mk('feColorMatrix', { in: 'b', type: 'saturate' })
-  lens.append(map, disp, blur, sat)
+  // Recorte del vidrio: una máscara SVG de este documento (mask: url(#…)). Se actualiza cambiando
+  // un <path>, en el mismo frame, sin imágenes que decodificar. (Chromium no aplica un clip-path
+  // libre al desenfoque de fondo si un antepasado recorta con esquinas redondeadas: pinta el
+  // rectángulo entero. La máscara sí se respeta.) El canto es otra máscara: el trazo del contorno,
+  // desenfocado y recortado a la forma, que se desvanece hacia dentro sin línea interior.
+  const mBody = mk('path', { fill: '#fff' }), mEdge = mk('path', { fill: 'none', stroke: '#fff', filter: `url(#${id}eb)` }), cEdge = mk('path')
+  const maskB = mk('mask', { id: id + 'm', maskUnits: 'userSpaceOnUse', x: 0, y: 0 }), maskE = mk('mask', { id: id + 'e', maskUnits: 'userSpaceOnUse', x: 0, y: 0 })
+  maskB.append(mBody)
+  const gE = mk('g', { 'clip-path': `url(#${id}c)` }); gE.append(mEdge); maskE.append(gE)
+  const clipE = mk('clipPath', { id: id + 'c' }); clipE.append(cEdge)
+  const eBlur = mk('feGaussianBlur'), fEdge = mk('filter', { id: id + 'eb', x: '-20%', y: '-20%', width: '140%', height: '140%' }); fEdge.append(eBlur)
+  // Lente (Chromium): dos filtros que se turnan. El mapa nuevo se carga en el que no está en uso y
+  // sólo se cambia de filtro cuando ya está decodificado: nunca hay un frame sin mapa (el filtro lo
+  // leería transparente, rojo y verde a 0, y desplazaría todo el fondo en diagonal). Mientras la
+  // forma se mueve, el mapa vigente se estira con ella; al detenerse se regenera.
+  const lenses = [0, 1].map(n => {
+    const f = mk('filter', { id: id + 'l' + n, x: 0, y: 0, filterUnits: 'userSpaceOnUse', 'color-interpolation-filters': 'sRGB' })
+    const map = mk('feImage', { result: 'm', preserveAspectRatio: 'none' })
+    const disp = mk('feDisplacementMap', { in: 'SourceGraphic', in2: 'm', xChannelSelector: 'R', yChannelSelector: 'G', result: 'd' })
+    const blur = mk('feGaussianBlur', { in: 'd', result: 'b' }), sat = mk('feColorMatrix', { in: 'b', type: 'saturate' })
+    f.append(map, disp, blur, sat)
+    return { f, map, disp, blur, sat }
+  })
   const defs = mk('defs')
   defs.append(
+    // luz del vidrio: reflejo especular (fuerte arriba, tenue abajo) y un brillo interior arriba
     stops(mk('linearGradient', { id: id + 'r', x1: 0, y1: 0, x2: .3, y2: 1 }), [[0, .85], [.2, .35], [.5, .06], [.8, .1], [1, .4]]),
     stops(mk('radialGradient', { id: id + 's', cx: .5, cy: -.15, r: .95 }), [[0, .22], [.55, .05], [1, 0]]),
-    lens)
+    maskB, maskE, clipE, fEdge, ...lenses.map(l => l.f))
   const path = mk('path', { class: 'ns-lf' }), rim = mk('path', { class: 'ns-lr', stroke: `url(#${id}r)` })
   svg.append(defs, path, rim)
   const glass = div('ns-liquid-glass'), edge = div('ns-liquid-rim')
@@ -252,18 +282,27 @@ export function liquid(el, o = {}) {
   el.prepend(glass, edge, svg)
   const cv = document.createElement('canvas')
   const list = () => typeof o.blobs == 'function' ? o.blobs(el) : [...el.querySelectorAll(o.blobs || (el.querySelector(':scope > [data-ns-blob]') ? ':scope > [data-ns-blob]' : ':scope > :not(.ns-liquid-fx, .ns-liquid-glass, .ns-liquid-rim)'))]
-  let raf = 0, idle = 0, last = ''
+  let raf = 0, idle = 0, last = '', now = null, cur = -1, lensKey = '', token = 0, frame = 0, dirty = true, V = null
+  // estilos leídos en caché: las variables del grupo y el radio/visibilidad de cada hijo se leen al
+  // despertar por un cambio (clase, estilo, tamaño) y cada pocos frames en marcha, no en cada frame
+  const look = new WeakMap()
   const draw = () => {
-    const E = el.getBoundingClientRect(), cs = getComputedStyle(el)
-    const num = (k, d) => { const v = parseFloat(cs.getPropertyValue(k)); return v >= 0 ? v : d }
-    const k = o.k ?? num('--ns-liquid', 14)
+    const E = el.getBoundingClientRect(), fresh = dirty || frame % 6 == 0
+    if (dirty || !V) {
+      const cs = getComputedStyle(el), num = (k, d) => { const v = parseFloat(cs.getPropertyValue(k)); return v >= 0 ? v : d }
+      V = { k: num('--ns-liquid', 14), lens: num('--ns-glass-lens', 34), edge: num('--ns-glass-edge', 8), depth: num('--ns-glass-depth', 24), blur: num('--ns-glass-blur', 4), sat: num('--ns-glass-sat', 1.3) }
+    }
+    dirty = false; frame++
+    const k = o.k ?? V.k
     const ox = E.left + el.clientLeft, oy = E.top + el.clientTop
     const boxes = list().filter(b => b.getClientRects().length).map(b => {
-      const r = b.getBoundingClientRect(), s = getComputedStyle(b)
-      if (s.visibility == 'hidden' || +s.opacity == 0) return { x: 0, y: 0, w: 0, h: 0 }
-      return { x: r.left - ox, y: r.top - oy, w: r.width, h: r.height, r: px(s.borderTopLeftRadius, Math.min(r.width, r.height)) }
+      const r = b.getBoundingClientRect()
+      let L = look.get(b)
+      if (!L || fresh) { const s = getComputedStyle(b); look.set(b, L = { off: s.visibility == 'hidden' || +s.opacity == 0, rad: s.borderTopLeftRadius }) }
+      if (L.off) return { x: 0, y: 0, w: 0, h: 0 }
+      return { x: r.left - ox, y: r.top - oy, w: r.width, h: r.height, r: px(L.rad, Math.min(r.width, r.height)) }
     }).filter(b => b.w > 0 && b.h > 0)
-    const g = glassy(), lensPx = g ? num('--ns-glass-lens', 34) : 0, edgePx = num('--ns-glass-edge', 8), depth = num('--ns-glass-depth', 24)
+    const g = glassy(), lensPx = g && LENS ? V.lens : 0, edgePx = V.edge, depth = V.depth
     // las capas cubren el contorno real y un margen (los hijos pueden salir del contenedor, y la
     // lente toma fondo un poco más allá del borde)
     const K = k * 2.4, m = K + 6 + lensPx / 2
@@ -271,7 +310,8 @@ export function liquid(el, o = {}) {
     const bw = boxes.length ? Math.max(...boxes.map(b => b.x + b.w)) + m - bx : 0, bh = boxes.length ? Math.max(...boxes.map(b => b.y + b.h)) + m - by : 0
     // --ns-liquid es el hueco máximo que se funde; el mínimo suave acerca como mucho k/4 por lado,
     // así que k = 2,4 × hueco deja un cuello visible justo en el límite
-    const f = field(boxes.map(b => ({ ...b, x: b.x - bx, y: b.y - by })), K, o.step || 2), d = contour(f)
+    // rejilla de 2 px; en grupos grandes, 3 px (el contorno sigue suave: se traza con curvas)
+    const f = field(boxes.map(b => ({ ...b, x: b.x - bx, y: b.y - by })), K, o.step || (bw * bh > 60000 ? 3 : 2)), d = contour(f)
     const key = d + '|' + bx + '|' + by + '|' + g + '|' + lensPx + '|' + edgePx
     if (key == last) return
     last = key
@@ -281,42 +321,84 @@ export function liquid(el, o = {}) {
     el.classList.toggle('ns-glass', g)
     // (estilo en línea: el relleno de la capa en CSS ganaría a un atributo fill)
     path.style.fill = g ? `url(#${id}s)` : ''
-    if (!g || !d) { for (const e of [glass, edge]) shape(e, ''); glass.style.backdropFilter = ''; return }
-    shape(glass, d, bw, bh)
-    // canto: más brillo junto al borde, que se desvanece hacia dentro (sin línea interior)
-    shape(edge, d, bw, bh, edgePx)
-    if (LENS && lensPx > 0) {
-      map.setAttribute('href', lensMap(f, depth, cv))
-      Object.entries({ x: f.X0, y: f.Y0, width: f.nx * f.step, height: f.ny * f.step }).forEach(([a, v]) => map.setAttribute(a, r2(v)))
-      Object.entries({ width: r2(bw), height: r2(bh) }).forEach(([a, v]) => lens.setAttribute(a, v))
-      disp.setAttribute('scale', lensPx)
-      blur.setAttribute('stdDeviation', num('--ns-glass-blur', 4) / 2)
-      sat.setAttribute('values', num('--ns-glass-sat', 1.3))
-      glass.style.backdropFilter = `url(#${id}l)`
-    } else glass.style.backdropFilter = ''
+    const mb = g && d ? `url(#${id}m)` : '', me = g && d ? `url(#${id}e)` : ''
+    glass.style.mask = glass.style.webkitMask = mb
+    edge.style.mask = edge.style.webkitMask = me
+    // y además clip-path: si un navegador no aplica una máscara SVG del documento a un elemento
+    // HTML, el vidrio sigue teniendo la forma exacta (nunca un rectángulo)
+    glass.style.clipPath = edge.style.clipPath = g && d ? `path("${d}")` : ''
+    if (!g || !d) { glass.style.backdropFilter = ''; now = null; return }
+    for (const M of [maskB, maskE]) setA(M, { width: r2(bw), height: r2(bh) })
+    mBody.setAttribute('d', d); mEdge.setAttribute('d', d); cEdge.setAttribute('d', d)
+    mEdge.setAttribute('stroke-width', r2(edgePx * 1.6)); eBlur.setAttribute('stdDeviation', r2(edgePx / 2.2))
+    if (!lensPx) { glass.style.backdropFilter = ''; now = null; return }
+    now = { f, d, bw, bh, depth, lensPx, blur: V.blur, sat: V.sat }
+    // en marcha: el mapa vigente sigue a la forma (se estira); el nuevo llega al detenerse
+    if (cur >= 0) place(lenses[cur], now)
+  }
+  const place = (L, s) => {
+    setA(L.map, { x: r2(s.f.X0), y: r2(s.f.Y0), width: r2(s.f.nx * s.f.step), height: r2(s.f.ny * s.f.step) })
+    setA(L.f, { width: r2(s.bw), height: r2(s.bh) })
+    L.disp.setAttribute('scale', s.lensPx)
+    L.blur.setAttribute('stdDeviation', s.blur / 2)
+    L.sat.setAttribute('values', s.sat)
+  }
+  // mapa nuevo en el filtro libre; se cambia de filtro cuando la imagen ya está decodificada
+  const refreshLens = () => {
+    const s = now
+    if (!s) return
+    const k = [s.d, s.bw, s.bh, s.depth, s.lensPx, s.blur, s.sat].join('|')
+    if (k == lensKey) return
+    lensKey = k
+    const n = cur < 0 ? 0 : 1 - cur, L = lenses[n], t = ++token
+    lensMap(s.f, s.depth, cv).then(url => {
+      if (t != token) return
+      place(L, s)
+      L.map.setAttribute('href', url)
+      const img = new Image()
+      img.src = url
+      const swap = () => requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (t != token || !now) return
+        cur = n
+        place(L, now)
+        glass.style.backdropFilter = `url(#${id}l${n})`
+      }))
+      img.decode ? img.decode().then(swap, swap) : swap()
+    })
   }
   // bucle sólo mientras algo se mueve: dos frames sin cambios y sin animaciones → se detiene
   const tick = () => {
     raf = 0
     const before = last
     draw()
-    const moving = el.getAnimations?.({ subtree: true }).some(a => a.playState == 'running')
+    // en marcha mientras haya transiciones o animaciones CSS activas (por eventos); antes de parar,
+    // una comprobación con getAnimations por si hay Web Animations
+    let moving = active.size > 0
+    if (!moving && last == before && idle == 1) moving = !!el.getAnimations?.({ subtree: true }).some(a => a.playState == 'running')
     idle = last == before && !moving ? idle + 1 : 0
+    if (idle >= 1 || cur < 0) refreshLens()
     if (idle < 2) raf = requestAnimationFrame(tick)
   }
   const wake = () => { idle = 0; raf ||= requestAnimationFrame(tick) }
-  const ro = new ResizeObserver(wake)
+  const stale = () => { dirty = true; wake() }
+  const ro = new ResizeObserver(stale)
   ro.observe(el)
-  const EV = ['pointerenter', 'pointerleave', 'pointerdown', 'pointerup', 'focusin', 'focusout', 'transitionrun', 'animationstart']
-  EV.forEach(e => el.addEventListener(e, wake, true))
+  // elementos con transiciones o animaciones CSS en curso (si uno termina antes que otra de sus
+  // propiedades, la comprobación final con getAnimations evita parar antes de tiempo)
+  const active = new Set()
+  const on = e => { if (!own(e.target)) { active.add(e.target); wake() } }
+  const off = e => { if (!own(e.target)) { active.delete(e.target); wake() } }
+  const EV = [['pointerenter', wake], ['pointerleave', wake], ['pointerdown', wake], ['pointerup', wake], ['focusin', wake], ['focusout', wake],
+    ['transitionrun', on], ['animationstart', on], ['transitionend', off], ['transitioncancel', off], ['animationend', off], ['animationcancel', off]]
+  EV.forEach(([e, f]) => el.addEventListener(e, f, true))
   // (sus propias capas no cuentan: cambiar su estilo no debe despertar otro frame)
   const own = n => n == svg || n == glass || n == edge || svg.contains(n)
-  const mo = new MutationObserver(ms => { if (ms.some(m => !own(m.target))) wake() })
+  const mo = new MutationObserver(ms => { if (ms.some(m => !own(m.target))) stale() })
   mo.observe(el, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden', 'data-ns-liquid'] })
   wake()
   return {
     update: wake,
-    destroy() { cancelAnimationFrame(raf); ro.disconnect(); mo.disconnect(); EV.forEach(e => el.removeEventListener(e, wake, true)); svg.remove(); glass.remove(); edge.remove(); el.classList.remove('ns-liquid', 'ns-glass') },
+    destroy() { cancelAnimationFrame(raf); token++; ro.disconnect(); mo.disconnect(); EV.forEach(([e, f]) => el.removeEventListener(e, f, true)); svg.remove(); glass.remove(); edge.remove(); el.classList.remove('ns-liquid', 'ns-glass') },
   }
 }
 

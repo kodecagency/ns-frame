@@ -15,14 +15,14 @@
    --ns-u-corner tamaño de las esquinas (62%) --ns-u-fade    hasta dónde llega el desvanecido (88%)  */
 .ns-u, .ns-u-top, .ns-aura, .ns-aura-top { position: relative; isolation: isolate }
 .ns-u, .ns-u-top { background-color: var(--ns-u-bg, #0a1119) }
-.ns-aura, .ns-aura-top { overflow: clip }
+.ns-aura, .ns-aura-top { overflow: hidden; overflow: clip }
 :is(.ns-u, .ns-u-top, .ns-u-left, .ns-u-right, .ns-aura, .ns-aura-top)::after {
   content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; border-radius: inherit;
-  --a: color-mix(in srgb, var(--ns-u) 38%, transparent);
-  --b: color-mix(in srgb, var(--ns-u) 20%, transparent);
+  --a: color-mix(in srgb, var(--ns-u, #3de0ff) 38%, transparent);
+  --b: color-mix(in srgb, var(--ns-u, #3de0ff) 20%, transparent);
   /* --ns-u-h (altura) y --ns-u-k (intensidad) son multiplicadores (1 = sin cambio): las animaciones
      mueven todo el conjunto a la vez (base, costados, esquinas y borde) sin tocar tus valores */
-  --h: var(--ns-u-h, 1); --r: calc(var(--ns-u-rise) * var(--h)); --s: calc(var(--ns-u-side, 22%) * (.4 + var(--h) * .6));
+  --h: var(--ns-u-h, 1); --r: calc(var(--ns-u-rise, 42%) * var(--h)); --s: calc(var(--ns-u-side, 22%) * (.4 + var(--h) * .6));
   --k: calc(var(--ns-u-corner, 62%) * (.5 + var(--h) * .5));
   /* dirección (por defecto: desde abajo) */
   --p1: 0% 100%; --p2: 100% 100%; --d: to top; --x: to right; --kx: var(--k); --ky: calc(var(--k) * .75);
@@ -33,14 +33,14 @@
     linear-gradient(var(--x), var(--b), transparent var(--s) calc(100% - var(--s)), var(--b));
   -webkit-mask: linear-gradient(var(--d), #000 12%, transparent var(--ns-u-fade, 88%));
   mask: linear-gradient(var(--d), #000 12%, transparent var(--ns-u-fade, 88%));
-  opacity: calc(var(--ns-u-glow) * var(--ns-u-k, 1));
+  opacity: calc(var(--ns-u-glow, .6) * var(--ns-u-k, 1));
 }
 :is(.ns-u-top, .ns-aura-top)::after { scale: 1 -1 }
 :is(.ns-u-left, .ns-u-right)::after { --p1: 0% 0%; --p2: 0% 100%; --d: to right; --x: to bottom; --kx: calc(var(--k) * .75); --ky: var(--k) }
 .ns-u-right::after { scale: -1 1 }
 .ns-u-left, .ns-u-right { position: relative; isolation: isolate; background-color: var(--ns-u-bg, #0a1119) }
-.ns-u-left { --ns-border: linear-gradient(to right, var(--ns-u), color-mix(in srgb, var(--ns-u) 35%, transparent) 45%, color-mix(in srgb, var(--ns-u) 6%, transparent)) }
-.ns-u-right { --ns-border: linear-gradient(to left, var(--ns-u), color-mix(in srgb, var(--ns-u) 35%, transparent) 45%, color-mix(in srgb, var(--ns-u) 6%, transparent)) }
+.ns-u-left { --ns-border: linear-gradient(to right, var(--ns-u, #3de0ff), color-mix(in srgb, var(--ns-u, #3de0ff) 35%, transparent) 45%, color-mix(in srgb, var(--ns-u, #3de0ff) 6%, transparent)) }
+.ns-u-right { --ns-border: linear-gradient(to left, var(--ns-u, #3de0ff), color-mix(in srgb, var(--ns-u, #3de0ff) 35%, transparent) 45%, color-mix(in srgb, var(--ns-u, #3de0ff) 6%, transparent)) }
 
 /* Variables registradas: se pueden animar/transicionar suavemente (hover, color que cambia) */
 @property --ns-u { syntax: '<color>'; inherits: true; initial-value: #3de0ff }
@@ -51,7 +51,7 @@
 .ns-u-hover:is(:hover, :focus-within) { --ns-u-rise: 78%; --ns-u-glow: .95 }
 /* respira (sólo opacity) */
 .ns-u-breathe::after { animation: ns-breathe var(--ns-u-time, 4s) ease-in-out infinite }
-@keyframes ns-breathe { 50% { opacity: calc(var(--ns-u-glow) * .45) } }
+@keyframes ns-breathe { 50% { opacity: calc(var(--ns-u-glow, .6) * .45) } }
 /* el color recorre una paleta */
 .ns-u-hue { animation: ns-hue var(--ns-u-time, 9s) linear infinite }
 @keyframes ns-hue { 0%, 100% { --ns-u: #3de0ff } 33% { --ns-u: #8b7bff } 66% { --ns-u: #ff6bd6 } }
@@ -76,12 +76,12 @@
 .ns-u-surge { animation: ns-u-surge var(--ns-u-time, 6s) cubic-bezier(.33, 0, .2, 1) infinite }
 @keyframes ns-u-surge { 0%, 100% { --ns-u-h: .9; --ns-u-k: .8 } 32% { --ns-u-h: 1.95; --ns-u-k: 1.1 } 62% { --ns-u-h: 1.35; --ns-u-k: .72 } }
 /* el borde acompaña: su tramo encendido sube y baja con la luz (se "transmite" por los costados) */
-:is(.ns-u-live, .ns-u-tide, .ns-u-surge) { --ns-border: linear-gradient(var(--ns-u-dir, to top), var(--ns-u), color-mix(in srgb, var(--ns-u) 60%, transparent) 55%, color-mix(in srgb, var(--ns-u) 22%, transparent)) }
+:is(.ns-u-live, .ns-u-tide, .ns-u-surge) { --ns-border: linear-gradient(var(--ns-u-dir, to top), var(--ns-u, #3de0ff), color-mix(in srgb, var(--ns-u, #3de0ff) 60%, transparent) 55%, color-mix(in srgb, var(--ns-u, #3de0ff) 22%, transparent)) }
 :is(.ns-u-live, .ns-u-tide, .ns-u-surge) > .ns-svg {
-  --m: calc(var(--ns-u-rise, 42%) * var(--ns-u-h));
+  --m: calc(var(--ns-u-rise, 42%) * var(--ns-u-h, 1));
   -webkit-mask: linear-gradient(var(--ns-u-dir, to top), #000 calc(var(--m) * .75), rgb(0 0 0 / .3) calc(var(--m) * 1.7), rgb(0 0 0 / .12));
   mask: linear-gradient(var(--ns-u-dir, to top), #000 calc(var(--m) * .75), rgb(0 0 0 / .3) calc(var(--m) * 1.7), rgb(0 0 0 / .12));
-  opacity: calc(.5 + var(--ns-u-k) * .5);
+  opacity: calc(.5 + var(--ns-u-k, 1) * .5);
 }
 .ns-idle { animation-play-state: paused }
 /* sección: dos colores que se funden despacio (sólo opacity: se compone en GPU, sin repintar) */

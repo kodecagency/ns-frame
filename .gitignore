@@ -28,4 +28,4 @@ Thumbs.db
 
 # laboratorio local de módulos
 packages/ns-frame/test/lab.*
-packages/ns-frame/test/glasslab.*
+packages/ns-frame/test/glasslab*

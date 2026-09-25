@@ -95,6 +95,13 @@ export function sheet(el, { handle = el, onClose, onProgress, threshold = 6 } = 
     const v = a && b && b[0] > a[0] ? (b[1] - a[1]) / (b[0] - a[0]) : 0
     release(y, v, h) ? close() : to(0)
   }
+  // el navegador canceló el gesto (en iOS, al empezar un scroll): vuelve a su sitio, sin decidir
+  const cancel = e => {
+    if (e.pointerId != id) return
+    id = null
+    el.classList.remove('ns-sheet-drag')
+    if (drag) to(0)
+  }
   const swallow = ev => { ev.stopPropagation(); ev.preventDefault() }
   const close = () => to(h + 24, () => { onClose?.(); reset() })
   const reset = () => { anim?.cancel(); anim = null; y = 0; el.style.translate = ''; el.style.removeProperty('--ns-sheet-p') }
@@ -102,9 +109,12 @@ export function sheet(el, { handle = el, onClose, onProgress, threshold = 6 } = 
   handle.addEventListener('pointerdown', down)
   handle.addEventListener('pointermove', move)
   handle.addEventListener('pointerup', up)
-  handle.addEventListener('pointercancel', up)
-  // sin scroll de página ni gestos del navegador mientras se arrastra el panel
-  handle.style.touchAction = 'none'
+  handle.addEventListener('pointercancel', cancel)
+  handle.addEventListener('lostpointercapture', cancel)
+  // sin scroll de página ni gestos del navegador mientras se arrastra el panel. Si el asa es el
+  // panel entero y su contenido tiene scroll, se deja el scroll vertical al navegador (si no, en
+  // táctil no se podría desplazar la lista)
+  handle.style.touchAction = handle == el && el.scrollHeight > el.clientHeight + 1 ? 'pan-y' : 'none'
   el.style.overscrollBehavior = 'contain'
 
   return {
@@ -114,7 +124,8 @@ export function sheet(el, { handle = el, onClose, onProgress, threshold = 6 } = 
       handle.removeEventListener('pointerdown', down)
       handle.removeEventListener('pointermove', move)
       handle.removeEventListener('pointerup', up)
-      handle.removeEventListener('pointercancel', up)
+      handle.removeEventListener('pointercancel', cancel)
+      handle.removeEventListener('lostpointercapture', cancel)
       handle.style.touchAction = ''
     },
   }
