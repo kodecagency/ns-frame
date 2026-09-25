@@ -110,6 +110,8 @@ export function outline(rects: Iterable<{ left: number; right: number; top: numb
 export interface LiquidOptions {
   /** Qué hijos cuentan: selector o función (por defecto [data-ns-blob] o todos los hijos). */
   blobs?: string | ((el: HTMLElement) => Element[])
+  /** Vidrio líquido (si no, el atributo data-ns-liquid="glass"). */
+  glass?: boolean
   /** Hueco máximo que se funde, en px (si no, --ns-liquid o 14). */
   k?: number
   /** Resolución del contorno en px (2). */
@@ -117,6 +119,11 @@ export interface LiquidOptions {
 }
 /** Grupo líquido: los hijos cercanos se funden en un solo contorno vectorial. Automático con `data-ns-liquid`. */
 export function liquid(el: HTMLElement, options?: LiquidOptions): { update(): void; destroy(): void }
+export interface LiquidField { F: Float32Array; nx: number; ny: number; X0: number; Y0: number; step: number }
+/** Campo de distancias fundido (negativo = dentro) de rectángulos redondeados, en una rejilla de `step` px. */
+export function field(boxes: { x: number; y: number; w: number; h: number; r?: number }[], k?: number, step?: number): LiquidField | null
+/** Contorno (path `d`) del campo al nivel `level` (0 = el borde; −8 = 8 px hacia dentro). */
+export function contour(f: LiquidField | null, level?: number): string
 /** Contorno fundido (path `d`) de rectángulos redondeados; `k` es el alcance interno del mínimo suave. */
 export function blend(boxes: { x: number; y: number; w: number; h: number; r?: number }[], k?: number, step?: number): string
 

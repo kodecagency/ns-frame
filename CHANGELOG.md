@@ -1,5 +1,28 @@
 # Changelog
 
+## Sin publicar
+
+### Vidrio líquido (`ns-frame/liquid`)
+- `data-ns-liquid="glass"`: el material del Liquid Glass de Apple, con la forma exacta del grupo: cuerpo desenfocado y tintado, **lente** que curva el fondo junto al borde (mapa de desplazamiento sacado del propio campo de distancias; Chromium), canto que brilla y se desvanece hacia dentro sin línea interior, y reflejo especular. `prefers-reduced-transparency` lo vuelve opaco.
+- El recorte del vidrio usa además una máscara: Chromium ignora un `clip-path` libre en el desenfoque de fondo dentro de un contenedor redondeado y pintaba el rectángulo entero.
+- El contenedor ya no usa `isolation` (hacía de raíz del fondo) y las capas se apilan por orden.
+- El puente entre gotas sale redondo, no en punta hacia la vecina.
+- `field()` y `contour()` exponen el campo y sus contornos a cualquier nivel.
+
+### Mosaico
+- Efecto nuevo `stream` (corriente): tres luces corren por los bordes de las piezas y saltan de una a la vecina donde se tocan (el contorno real de cada pieza y del anillo del orbe se muestrea y se buscan los relevos); cada una se desvanece en degradado y lleva un foco que enciende los bordes por donde pasa. `--ns-mo-speed`.
+- **Arreglo:** las capas animadas ya no se rehacen en cada `resize` si nada cambió: en el móvil, la barra del navegador al subir y bajar reiniciaba las animaciones.
+
+### Arreglos
+- `concentric`: con huecos distintos en cada lado, la esquina usa el menor (una foto con 6 px al lado y 70 abajo ya no hereda un chaflán en la esquina lejana).
+- `mark`: el resaltado se redibuja al cambiar una clase (color, margen, radio), no sólo al cambiar el texto.
+- Núcleo: fuera de pantalla sólo se pausa con `animation-play-state` (sin `pauseAnimations()` del SVG, que ya no hacía falta).
+
+### Sitio
+- Demo de vidrio líquido sobre una foto: barra con lente clara que se estira y acciones que se separan en gotas de vidrio; «Vidrio / Sólido».
+- `content-visibility: auto` sólo en Chromium (en WebKit, todos los navegadores de iPhone, podía reiniciar las animaciones al volver a una sección).
+- Tarjeta concéntrica con chaflán 24 (el botón al pie ya no queda comido por el chaflán con huecos pequeños).
+
 ## 0.10.0 — lo que CSS todavía no hace
 
 ### Lo que CSS todavía no hace

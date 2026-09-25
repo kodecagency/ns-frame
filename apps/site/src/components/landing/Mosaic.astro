@@ -12,7 +12,7 @@ const HOLES = [
   ['tri 56 38', 'Triángulo', 'M10 3.5 17 16H3Z'],
 ]
 const FILLS = [['', 'Sólido'], ['is-photo', 'Foto'], ['is-data', 'Dato']]
-const FX = [['glow', 'Luz', true], ['ripple', 'Toque', true], ['trace', 'Trazo'], ['wave', 'Onda'], ['pulse', 'Pulso'], ['aurora', 'Aurora'], ['dots', 'Puntos'], ['grid', 'Retícula']] as const
+const FX = [['glow', 'Luz', true], ['ripple', 'Toque', true], ['stream', 'Corriente'], ['trace', 'Trazo'], ['wave', 'Onda'], ['pulse', 'Pulso'], ['aurora', 'Aurora'], ['dots', 'Puntos'], ['grid', 'Retícula']] as const
 const on = FX.filter(f => f[2]).map(f => f[0]).join(' ')
 ---
 <section class="sec dark2" id="mosaico" aria-labelledby="t-mo">

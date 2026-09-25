@@ -587,8 +587,9 @@ function onView(es) {
     }
     if (!svg) continue
     s.vis = e.isIntersecting
+    // (sólo animation-play-state: ya no hay SMIL, y pausar el reloj SVG en WebKit tocaba también
+    // las animaciones CSS de la capa)
     svg.classList.toggle('ns-off', !e.isIntersecting)
-    e.isIntersecting ? svg.unpauseAnimations() : svg.pauseAnimations()
     if (e.intersectionRatio >= .2 && svg.classList.contains('ns-pre')) svg.classList.replace('ns-pre', 'ns-draw')
   }
 }

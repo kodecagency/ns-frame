@@ -79,6 +79,7 @@ Efectos que tratan todo el mosaico como una sola figura. Se combinan libremente:
 | `glow` | bordes y fondos | Una luz sigue al puntero por toda la figura |
 | `sweep` | bordes y fondos | Un barrido diagonal recorre el mosaico |
 | `scan` | bordes y fondos | Una línea horizontal baja por el mosaico |
+| `stream` | bordes | Corriente: tres luces corren por los bordes de las propias piezas y, donde una pieza toca a su vecina, cruzan el hueco y siguen por el borde de la siguiente (también por el anillo de los orbes), en rutas distintas. Cada luz se desvanece en degradado y lleva un foco que enciende los bordes por donde pasa. `--ns-mo-speed` (px/s, 160) |
 | `trace` | bordes | Una luz corta recorre a la vez el contorno de cada pieza |
 | `pulse` | bordes | Todos los bordes respiran juntos |
 | `aurora` | fondos | Dos manchas de color derivan despacio por toda la figura |
@@ -95,7 +96,8 @@ Ajustes: `--ns-mo-light` (color de la luz), `--ns-mo-width` (grosor en los borde
 Si el dispositivo cambia de modo (una tableta a la que se conecta un ratón), la lista se vuelve a elegir sola.
 
 - Los bordes y las luces usan una sola capa SVG sobre el mosaico, con los contornos de todas las piezas como máscara. La aurora y los patrones van en un `::before` de cada pieza, por detrás del contenido, alineados en coordenadas del mosaico.
-- Todo se anima con `transform` y `opacity`. Las animaciones se pausan fuera de pantalla y se desactivan con `prefers-reduced-motion`; en alto contraste la capa desaparece.
+- Todo se anima con `transform`, `opacity` y el desplazamiento del trazo. Las animaciones se pausan fuera de pantalla (y siguen donde iban al volver), se desactivan con `prefers-reduced-motion`, y en alto contraste la capa desaparece.
+- Las capas animadas sólo se rehacen si cambian la figura o los efectos: un `resize` que no cambia nada (en el móvil, la barra del navegador al subir y bajar) no reinicia las animaciones.
 - Como `::before` queda para los fondos compartidos, no combines `aurora`, `dots` o `grid` con las clases de patrón de `ns-fx.css` en la misma pieza.
 
 ## API

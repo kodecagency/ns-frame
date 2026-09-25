@@ -122,9 +122,14 @@ if (typeof document != 'undefined') {
   const scan = n => { if (n.nodeType != 1) return; n.matches('[data-ns-mark]') && add(n); n.querySelectorAll('[data-ns-mark]').forEach(add) }
   const boot = () => {
     scan(document.body)
-    // texto que cambia dentro de un resaltado, o resaltados nuevos
-    new MutationObserver(ms => { for (const m of ms) { m.addedNodes.forEach(scan); for (const el of M.keys()) if (el.contains(m.target)) { schedule(); break } } })
-      .observe(document.body, { childList: true, subtree: true, characterData: true })
+    // texto que cambia dentro de un resaltado, resaltados nuevos, y clases que cambian su estilo (en
+    // el propio resaltado o en un antepasado: un tema, un estado): color, margen y radio se releen
+    new MutationObserver(ms => {
+      for (const m of ms) {
+        m.addedNodes.forEach(scan)
+        for (const el of M.keys()) if (m.type == 'attributes' ? m.target.contains(el) : el.contains(m.target)) { schedule(); break }
+      }
+    }).observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['class', 'data-ns-mark'] })
     addEventListener('resize', schedule, { passive: true })
   }
   document.readyState == 'loading' ? addEventListener('DOMContentLoaded', boot) : boot()

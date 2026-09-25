@@ -119,16 +119,17 @@ h3 { font-size: 18px; line-height: 1.25; font-weight: 600; font-stretch: 104%; l
 .sec { padding: clamp(64px, 8vw, 112px) 0; position: relative }
 .sec + .sec { border-top: 1px solid var(--line) }
 /* táctil: los desenfoques de fondo (backdrop-filter) se recalculan en cada frame de scroll;
-   aquí las superficies translúcidas pasan a casi opacas y sin desenfoque */
+   aquí las superficies translúcidas pasan a casi opacas y sin desenfoque. Salvo el vidrio líquido
+   (ns-frame/liquid "glass"): piezas pequeñas que son la propia demo */
 @media (hover: none) and (pointer: coarse) {
-  :where(*) { -webkit-backdrop-filter: none !important; backdrop-filter: none !important }
+  :where(*):not(.ns-liquid-glass, .ns-liquid-rim) { -webkit-backdrop-filter: none !important; backdrop-filter: none !important }
   .top { background: rgba(11, 11, 12, .97) !important }
 }
 /* las secciones fuera de pantalla no se maquetan ni se pintan hasta acercarse (auto recuerda
    su tamaño real una vez vistas, así el scroll no salta) */
-main > .sec:not(.hero) { content-visibility: auto; contain-intrinsic-size: auto 1100px }
+html.ns-cv main > .sec:not(.hero) { content-visibility: auto; contain-intrinsic-size: auto 1100px }
 /* durante un salto a una sección (scripts/jump.ts) todas se maquetan para medir su alto real */
-html.ns-cv-off main > .sec { content-visibility: visible }
+html.ns-cv.ns-cv-off main > .sec:not(.hero) { content-visibility: visible }
 .head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px 48px; align-items: end; margin-bottom: 36px }
 .head .lede { margin: 0; justify-self: end }
 .head.center { grid-template-columns: 1fr; text-align: center; justify-items: center }

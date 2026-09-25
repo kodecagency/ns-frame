@@ -33,6 +33,10 @@ const { title, description } = Astro.props
     import 'ns-frame/fx'
     import { wire } from '../scripts/jump'
     wire()
+    // content-visibility: auto sólo en Chromium (medido: las animaciones siguen donde iban al
+    // volver). En WebKit (todos los navegadores de iPhone) puede reconstruir la sección al volver a
+    // pintarla y las animaciones empezaban de nuevo.
+    if ((navigator as Navigator & { userAgentData?: { brands: { brand: string }[] } }).userAgentData?.brands.some(b => b.brand == 'Chromium')) document.documentElement.classList.add('ns-cv')
   </script>
 </body>
 </html>

@@ -40,12 +40,13 @@ const CSS = `@layer ns{
 @keyframes ns-mo-wv{0%{transform:scale(0);opacity:1}70%{opacity:1}to{transform:scale(1);opacity:0}}
 .ns-mo-sc{transform-box:fill-box;animation:ns-mo-sc var(--ns-mo-time,4.5s) cubic-bezier(.45,0,.55,1) infinite}
 .ns-mo-pl{animation:ns-mo-pl var(--ns-mo-time,3.6s) ease-in-out infinite}
+.ns-mo-st path{fill:none;stroke:var(--ns-mo-light,var(--ns-motion,#fff));stroke-width:calc(var(--ns-mo-width,1.5px) * 1.6);stroke-linecap:round}
 .ns-mo-tr path{fill:none;stroke:var(--ns-mo-light,var(--ns-motion,#fff));stroke-width:calc(var(--ns-mo-width,1.5px) * 1.4);stroke-linecap:round;stroke-dasharray:6 94;animation:ns-mo-tr var(--ns-mo-time,6s) linear infinite}
 @keyframes ns-mo-sc{0%{transform:translateY(-50%)}75%,to{transform:translateY(50%)}}
 @keyframes ns-mo-pl{0%,to{opacity:.1}50%{opacity:.8}}
 @keyframes ns-mo-au{0%{transform:translate(-8%,-5%)}to{transform:translate(8%,5%)}}
 @keyframes ns-mo-tr{to{stroke-dashoffset:-100}}
-@media (prefers-reduced-motion:reduce){.ns-mo-sw,.ns-mo-wv,.ns-mo-sc,.ns-mo-tr{display:none}.ns-mo-pl{animation:none;opacity:.4}.ns-mosaic>[data-ns-area]::before{animation:none!important}}
+@media (prefers-reduced-motion:reduce){.ns-mo-sw,.ns-mo-wv,.ns-mo-sc,.ns-mo-tr,.ns-mo-st{display:none}.ns-mo-pl{animation:none;opacity:.4}.ns-mosaic>[data-ns-area]::before{animation:none!important}}
 @media (forced-colors:active){.ns-mo-fx{display:none}}
 @media (hover:none) and (pointer:coarse){.ns-mo-glow{filter:none}}
 }`
@@ -358,7 +359,7 @@ function layout() {
     const pad = cs.getPropertyValue('--ns-pad') ? px(cs.getPropertyValue('--ns-pad')) : 22
     for (const f of flows) flow(f, pad) || unflow(f.k)
     fit(el)
-    light(el, parts, W, H, holes, matchMedia('(prefers-reduced-motion: reduce)').matches, px(cs.paddingLeft), px(cs.paddingTop))
+    light(el, parts, W, H, holes, matchMedia('(prefers-reduced-motion: reduce)').matches, px(cs.paddingLeft), px(cs.paddingTop), { G, xs, ys, gx, gy, r: ro_, speed: px(cs.getPropertyValue('--ns-mo-speed')) || 160 })
   }
 }
 
@@ -379,7 +380,7 @@ function mk(tag, a = {}, st = {}, ...kids) {
 const LIGHT = 'var(--ns-mo-light,var(--ns-motion,#fff))'
 const stops = (...s) => s.map(([o, a]) => mk('stop', { offset: o }, { 'stop-color': LIGHT, 'stop-opacity': a }))
 
-function light(el, parts, W, H, holes, reduce, pl, pt) {
+function light(el, parts, W, H, holes, reduce, pl, pt, grid) {
   // efectos por tipo de pantalla: en táctil manda data-ns-mosaic-touch si existe; si no, se quitan
   // los que dependen de un puntero que flota (glow sigue al cursor; ripple es una onda al tocar,
   // incómoda en el móvil, donde cada toque también es scroll)
@@ -397,18 +398,20 @@ function light(el, parts, W, H, holes, reduce, pl, pt) {
     // capas, de atrás hacia delante: luz de fondo, luz de bordes y trazo libre (aurora, puntos y
     // retícula van en CSS, en un ::before de cada pieza, por detrás del contenido)
     const bg = mk('g', { mask: `url(#${id}f)` }, { opacity: 'var(--ns-mo-fill,.07)' })
-    const top = mk('g', { mask: `url(#${id}l)` }), tr = mk('g', { class: 'ns-mo-tr' })
+    const top = mk('g', { mask: `url(#${id}l)` }), tr = mk('g', { class: 'ns-mo-tr' }), st = mk('g', { class: 'ns-mo-st' })
     const svg = mk('svg', { class: 'ns-mo-fx', 'aria-hidden': 'true', focusable: 'false' }, {},
       mk('defs', {}, {}, ml, mf, gg,
         mk('linearGradient', { id: id + 'b', gradientUnits: 'objectBoundingBox', x1: 0, y1: 0, x2: 1, y2: .35 }, {}, ...stops([0, 0], [.47, 0], [.5, 1], [.53, 0], [1, 0])),
         mk('linearGradient', { id: id + 's', gradientUnits: 'objectBoundingBox', x1: 0, y1: 0, x2: 0, y2: 1 }, {}, ...stops([0, 0], [.46, 0], [.5, 1], [.54, 0], [1, 0])),
         mk('radialGradient', { id: id + 'r' }, {}, ...stops([0, 0], [.8, 0], [.93, 1], [1, 0])),
+        // foco de la corriente: luz suave que se apaga hacia fuera
+        mk('radialGradient', { id: id + 'p' }, {}, ...stops([0, .95], [.3, .45], [.65, .12], [1, 0])),
         // resplandor: la luz del borde es un núcleo nítido más un halo difuminado, no una línea plana
         mk('filter', { id: id + 'o', x: '-5%', y: '-5%', width: '110%', height: '110%' }, {},
           mk('feGaussianBlur', { in: 'SourceGraphic', stdDeviation: 3.5, result: 'b' }),
           mk('feMerge', {}, {}, mk('feMergeNode', { in: 'b' }), mk('feMergeNode', { in: 'b' }), mk('feMergeNode', { in: 'SourceGraphic' })))),
-      bg, mk('g', { class: 'ns-mo-glow', filter: `url(#${id}o)` }, {}, top, tr))
-    L = el._nsl = { id, svg, lines, fills, ml, mf, gg, top, bg, tr }
+      bg, mk('g', { class: 'ns-mo-glow', filter: `url(#${id}o)` }, {}, top, tr, st))
+    L = el._nsl = { id, svg, lines, fills, ml, mf, gg, top, bg, tr, st }
     el.append(svg)
     lightIO.observe(el)
   }
@@ -437,10 +440,18 @@ function light(el, parts, W, H, holes, reduce, pl, pt) {
   // contornos: piezas y orbes (los orbes no se repiten en el trazo libre: ya los rodea su hueco)
   const ds = parts.map(p => [path(p.shape, p.w, p.h), `translate(${fx(p.ox)} ${fx(p.oy)})`])
   const os = holes.map(({ O, Ro, sh, Rb }) => sh ? [path(sh, 2 * Rb, 2 * Rb), `translate(${fx(O[0] - Rb)} ${fx(O[1] - Rb)})`] : [`M${fx(O[0] - Ro)} ${fx(O[1])}a${fx(Ro)} ${fx(Ro)} 0 1 0 ${fx(2 * Ro)} 0a${fx(Ro)} ${fx(Ro)} 0 1 0 ${fx(-2 * Ro)} 0Z`, ''])
+  // misma figura y mismos efectos: nada que rehacer. Rehacer las capas reinicia sus animaciones, y
+  // en el móvil cada vez que la barra del navegador aparece o se esconde llega un resize
+  const key = [want, reduce, fx(W), fx(H), ...ds.flat(), ...os.flat()].join('|')
+  if (L._k == key) return
+  L._k = key
   const P = (list, a = {}) => list.map(([d, t]) => mk('path', t ? { d, transform: t, ...a } : { d, ...a }))
   L.lines.replaceChildren(...P([...ds, ...os])); L.fills.replaceChildren(...P([...ds, ...os]))
   // trazo libre: una luz corta recorre a la vez el contorno de cada pieza, al mismo ritmo
   L.tr.replaceChildren(...(want.includes('trace') && !reduce ? P(ds, { pathLength: 100 }) : []))
+  // corriente: dos o tres luces que recorren la figura entera, por fuera y por los huecos del centro
+  const SM = want.includes('stream') && !reduce && grid ? streams([...ds, ...os], Math.min(grid.gx, grid.gy), grid.speed, L.id, L.svg) : null
+  L.st.replaceChildren(...(SM ? SM.lines : []))
   const has = k => want.includes(k), full = (a = {}) => mk('rect', { x: 0, y: 0, width: fx(W), height: fx(H), ...a })
   const C = holes[0]?.O || [W / 2, H / 2], S = Math.max(...[[0, 0], [W, 0], [0, H], [W, H]].map(([x, y]) => Math.hypot(x - C[0], y - C[1])))
   const layer = (g, fill) => {
@@ -454,9 +465,116 @@ function light(el, parts, W, H, holes, reduce, pl, pt) {
     // pulso: todos los bordes respiran juntos
     if (has('pulse') && !fill) kids.push(full({ class: 'ns-mo-pl', fill: LIGHT }))
     if (has('glow')) kids.push(full({ fill: `url(#${L.id}g)`, opacity: fill ? 1 : .8 }))
+    // los focos de la corriente encienden los bordes (y, tenue, el fondo) por donde pasan
+    if (SM) for (const s of SM.spots) kids.push(s(fill ? 70 : 110, fill ? .5 : 1))
     g.replaceChildren(...kids)
   }
   layer(L.top, 0); layer(L.bg, 1)
+}
+
+// ── corriente (stream): la luz corre por los bordes de las propias piezas y salta de una a otra ──
+// Cada pieza (y el anillo de cada orbe) se muestrea por su contorno real. Donde dos piezas quedan
+// a la distancia del hueco hay un relevo: la luz que recorre el borde de una cruza el hueco y sigue
+// por el borde de la vecina, en el sentido que conserva su marcha, y así de pieza en pieza. Tres
+// rutas que empiezan en piezas distintas y a destiempo; todas a --ns-mo-speed (px/s).
+function streams(shapes, gap, speed, id, host) {
+  // 1) contornos muestreados cada ~4 px, en coordenadas del mosaico
+  const probe = mk('path')
+  host.append(probe)
+  const C = shapes.map(([d, t]) => {
+    probe.setAttribute('d', d)
+    const m = /translate\(([-\d.]+) ([-\d.]+)\)/.exec(t || ''), ox = m ? +m[1] : 0, oy = m ? +m[2] : 0
+    const L = probe.getTotalLength(), n = Math.max(12, Math.round(L / 4)), P = []
+    for (let i = 0; i < n; i++) { const q = probe.getPointAtLength(i / n * L); P.push([q.x + ox, q.y + oy]) }
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9
+    for (const [x, y] of P) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y) }
+    return { P, L, box: [x0, y0, x1, y1] }
+  })
+  probe.remove()
+  // 2) relevos: para cada par de piezas vecinas, el punto medio de su frontera en cada lado
+  const reach = gap + 5, H = C.map(() => new Map()) // H[a]: índice de muestra → [pieza b, índice en b]
+  for (let a = 0; a < C.length; a++) for (let b = a + 1; b < C.length; b++) {
+    const A = C[a], B = C[b]
+    if (A.box[0] > B.box[2] + reach || B.box[0] > A.box[2] + reach || A.box[1] > B.box[3] + reach || B.box[1] > A.box[3] + reach) continue
+    const near = []
+    A.P.forEach(([x, y], i) => {
+      let best = 1e9, bj = -1
+      B.P.forEach(([u, v], j) => { const d = (x - u) ** 2 + (y - v) ** 2; if (d < best) { best = d; bj = j } })
+      if (best < reach * reach) near.push([i, bj])
+    })
+    if (near.length < 3) continue
+    const [i, j] = near[near.length >> 1]
+    H[a].set(i, [b, j]); H[b].set(j, [a, i])
+  }
+  // 3) rutas: por el borde de una pieza hasta un relevo, cruzar, seguir por la vecina…
+  const step = (Q, i, dir) => (i + dir + Q.P.length) % Q.P.length
+  const walk = (start, dir0) => {
+    const pts = []
+    let a = start, i = 0, dir = dir0, prev = -1, len = 0, since = 0, hops = 0, guard = 0
+    const target = 2.2 * C.reduce((s, q) => s + q.L, 0) / Math.max(1, C.length) * 3
+    while (len < target && hops < 9 && guard++ < 20000) {
+      const Q = C[a], p = Q.P[i]
+      if (pts.length) { const l = pts[pts.length - 1]; len += Math.hypot(p[0] - l[0], p[1] - l[1]) }
+      pts.push(p)
+      const h = H[a].get(i)
+      if (h && h[0] != prev && since > 70) {
+        // cruza el hueco y sigue en el sentido que conserva la marcha
+        const [b, j] = h, B = C[b], t = [Q.P[step(Q, i, dir)][0] - p[0], Q.P[step(Q, i, dir)][1] - p[1]]
+        const f = B.P[step(B, j, 1)], bd = (f[0] - B.P[j][0]) * t[0] + (f[1] - B.P[j][1]) * t[1] >= 0 ? 1 : -1
+        prev = a; a = b; i = j; dir = bd; since = 0; hops++
+        continue
+      }
+      since += Q.L / Q.P.length
+      if (since > Q.L * 1.05) break // una vuelta entera sin relevo: fin de la ruta
+      i = step(Q, i, dir)
+    }
+    return { pts, len }
+  }
+  const lines = [], spots = []
+  // Una luz = varias capas de trazo que terminan en el mismo punto, cada vez más largas y tenues:
+  // la cola se desvanece en degradado. Y un foco que viaja con la cabeza e ilumina los bordes de
+  // las piezas por donde pasa (va en la capa de bordes, como la luz que sigue al puntero).
+  const TAIL = [[210, .06], [150, .12], [96, .22], [58, .45], [28, 1]]
+  const comet = ({ pts, len: L }, delay) => {
+    if (pts.length < 3 || L < 80) return
+    const d = 'M' + pts.map(([x, y]) => `${fx(x)} ${fx(y)}`).join('L')
+    const acc = [0]
+    for (let k = 1; k < pts.length; k++) acc.push(acc[k - 1] + Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]))
+    const pt = f => {
+      const s = f * acc[acc.length - 1]
+      let lo = 0, hi = acc.length - 1
+      while (hi - lo > 1) { const m = (lo + hi) >> 1; acc[m] <= s ? lo = m : hi = m }
+      const k = (s - acc[lo]) / (acc[hi] - acc[lo] || 1)
+      return [pts[lo][0] + (pts[hi][0] - pts[lo][0]) * k, pts[lo][1] + (pts[hi][1] - pts[lo][1]) * k]
+    }
+    const dur = L / speed * 1000, u = 100 / L, ch = Math.min(40, 28 * u), opt = { duration: dur, iterations: Infinity, delay: delay * dur, easing: 'linear' }
+    for (const [len, op] of TAIL) {
+      // la estela termina donde termina la cabeza: se desplaza hacia atrás lo que mide de más
+      const c = Math.min(60, len * u), sh = c - ch
+      const e = mk('path', { d, pathLength: 100 }, { 'stroke-dasharray': `${fx(c)} 300`, opacity: op })
+      // Web Animations (no var() dentro de @keyframes: en Safari no es fiable): la luz entra por un
+      // extremo de la ruta y sale por el otro
+      e.animate([{ strokeDashoffset: ch + sh }, { strokeDashoffset: -100 + sh }], opt)
+      lines.push(e)
+    }
+    // el foco: la posición de la cabeza en cada instante del mismo ciclo
+    spots.push((rad, op) => {
+      const K = []
+      for (let i = 0; i <= 96; i++) {
+        const t = i / 96, f = ((100 + ch) * t - ch / 2) / 100
+        const fade = Math.min(1, Math.max(0, Math.min(f, 1 - f) * 10))
+        const [x, y] = pt(Math.min(1, Math.max(0, f)))
+        K.push({ offset: t, transform: `translate(${fx(x)}px,${fx(y)}px)`, opacity: fade * op })
+      }
+      const e = mk('circle', { r: rad, cx: 0, cy: 0, fill: `url(#${id}p)` })
+      e.animate(K, opt)
+      return e
+    })
+  }
+  // tres rutas desde piezas repartidas, en sentidos alternos y a destiempo
+  const n = C.length, starts = [...new Set([0, Math.floor(n / 2), n - 1])]
+  starts.forEach((s, k) => comet(walk(s, k % 2 ? -1 : 1), -k / starts.length))
+  return { lines, spots }
 }
 
 // onda puntual (ripple): mismo anillo en bordes y fondo, con Web Animations (nada que limpiar en CSS)
@@ -470,7 +588,13 @@ function ring(L, x, y, S, dur) {
 }
 
 // fuera de pantalla, las animaciones de la capa se pausan
-const lightIO = typeof IntersectionObserver != 'undefined' && new IntersectionObserver(es => es.forEach(e => e.target._nsl?.svg.classList.toggle('ns-off', !e.isIntersecting)))
+const lightIO = typeof IntersectionObserver != 'undefined' && new IntersectionObserver(es => es.forEach(e => {
+  const svg = e.target._nsl?.svg
+  if (!svg) return
+  svg.classList.toggle('ns-off', !e.isIntersecting)
+  // las luces de la corriente son Web Animations: se pausan a mano (siguen donde iban al volver)
+  for (const a of svg.getAnimations?.({ subtree: true }) || []) if (!a.animationName) e.isIntersecting ? a.play() : a.pause()
+}))
 
 const schedule = () => { raf ||= requestAnimationFrame(layout) }
 

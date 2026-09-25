@@ -52,7 +52,9 @@ export function concentric(shape, w, h, ins, min = 0) {
     const c = s.c[k]
     if (!c || !c.type || c.type == 'square') { free(k); continue }
     const a = c.a || [], sh = Math.min(num(a[0], m), iw / 2), sv = Math.min(num(a[1] ?? a[0], m), ih / 2)
-    const [dx, dy] = pad[k], d = (dx + dy) / 2
+    // el hueco visible en la esquina es el menor de sus dos lados: con huecos distintos (una foto
+    // arriba de la tarjeta: 6 px al lado, 70 px abajo) la esquina lejana no debe heredar el corte
+    const [dx, dy] = pad[k], d = Math.min(dx, dy)
     let H = 0, V = 0
     switch (c.type) {
       case 'round': case 'squircle': H = sh - dx; V = sv - dy; break

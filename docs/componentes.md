@@ -253,6 +253,27 @@ h2 mark { background: none; color: inherit; --ns-mark: #ffe066 }
 - `--ns-liquid-fill` (por defecto `currentColor`), `--ns-liquid-border`, `--ns-liquid-width`: relleno y trazo del conjunto.
 - **Los hijos no llevan fondo:** el conjunto lo pinta. `data-ns-blob` marca cuáles cuentan; si ninguno lo lleva, cuentan todos. Los ocultos (`visibility: hidden` u `opacity: 0`) no cuentan.
 - **Sólo redibuja mientras algo se mueve** (transiciones, Web Animations, hover, foco, cambios de clase o estilo). En reposo no hace nada.
-- Desde JS: `liquid(el, { blobs, k, step })` devuelve `{ update(), destroy() }`. `blobs` es un selector o una función que devuelve los elementos.
+- Desde JS: `liquid(el, { blobs, k, step, glass })` devuelve `{ update(), destroy() }`. `blobs` es un selector o una función que devuelve los elementos. `field()` y `contour()` exponen el campo de distancias y sus contornos a cualquier nivel (0 = el borde, −8 = 8 px hacia dentro).
+
+#### Vidrio líquido (`data-ns-liquid="glass"`)
+
+```html
+<nav data-ns-liquid="glass" style="--ns-liquid: 0px">
+  <i data-ns-blob class="cápsula"></i>                      <!-- la barra entera, de vidrio -->
+  <div data-ns-liquid="glass"><i data-ns-blob class="activa"></i></div>  <!-- lente más clara -->
+  <button>…</button> <button>…</button>
+</nav>
+```
+
+El material del Liquid Glass de Apple, en capas, con la forma exacta del grupo (también mientras se funde y se estira):
+
+1. **Cuerpo:** el fondo desenfocado, saturado y tintado (`--ns-glass-blur` 4px, `--ns-glass-sat` 1.3, `--ns-glass-tint`).
+2. **Lente** (Chromium): el fondo se curva junto al borde como a través de un cristal grueso. El mapa de desplazamiento sale del mismo campo de distancias: cada punto a menos de `--ns-glass-depth` (24px) del borde toma el fondo un poco más allá, en la dirección de la normal, con una caída suave; `--ns-glass-lens` (34px) es la fuerza. Va en `backdrop-filter` con un `feDisplacementMap`, que hoy sólo aplica Chromium; en WebKit (todos los navegadores de iPhone) y Firefox queda el resto de capas.
+3. **Canto:** un brillo junto al borde que se desvanece hacia dentro, sin línea interior (`--ns-glass-edge`, 8px). En todos los navegadores.
+4. **Luz:** un reflejo especular fino que recoge la luz arriba y la devuelve tenue abajo, y un brillo interior (`--ns-glass-shine`, 0–1).
+
+- El recorte usa `clip-path` y además una máscara con la misma forma: Chromium no aplica un `clip-path` libre al desenfoque de fondo si un antepasado recorta con esquinas redondeadas (lo normal en una tarjeta) y pinta el rectángulo entero. La máscara y el mapa de la lente son imágenes generadas en local: la CSP necesita `img-src data:`.
+- **No pongas `filter`, `opacity < 1`, `mask` ni `backdrop-filter` en un antepasado del grupo:** lo convierten en la raíz del fondo y el vidrio sólo vería lo que hay dentro de él.
+- Con `prefers-reduced-transparency` se vuelve opaco (`--ns-glass-solid`); en alto contraste desaparece y queda el trazo del sistema.
 - Las transiciones de los hijos son tuyas: respeta tú `prefers-reduced-motion`. En alto contraste deja un trazo del sistema (`CanvasText`).
 - Limitación: sólo entiende rectángulos redondeados. Un hijo con `data-ns` o `clip-path` se funde como su caja, no como su forma.
