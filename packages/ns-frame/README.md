@@ -5,11 +5,11 @@ Native UI shapes for the web — bevels, notches, scoops, squircles and fillets 
 Formas nativas para la web: cortes, chaflanes, notches, scoops, squircles y radius en cualquier vértice de cualquier elemento.
 
 ```html
-<script type="module" src="https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.9.0/packages/ns-frame/dist/ns-frame.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.10.0/packages/ns-frame/dist/ns-frame.js"></script>
 <!-- optional CSS effects -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.9.0/packages/ns-frame/dist/ns-fx.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.10.0/packages/ns-frame/dist/ns-fx.css">
 <script type="module">
-  import { toast } from 'https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.9.0/packages/ns-frame/dist/ns-toast.js'
+  import { toast } from 'https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.10.0/packages/ns-frame/dist/ns-toast.js'
 </script>
 ```
 
@@ -34,7 +34,6 @@ Every entry lives in `dist/` (`ns-frame/toast` → `dist/ns-toast.js`, `ns-frame
 | `ns-frame/css` · `ns-frame/static` · `ns-frame/astro` | Compile shapes to CSS `shape()` (zero runtime JS) |
 | `ns-frame/audit` | Dev tool: finds clipped text |
 
-`isle`, `concentric`, `flow`, `mark` and `liquid` are not in the `v0.9.0` tag yet: until the next tagged release, load them (and the core) from `@main`.
 
 Documentation (Spanish), demo and AI agent skill: **https://github.com/kodecagency/ns-frame**
 

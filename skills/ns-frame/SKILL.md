@@ -7,7 +7,7 @@ description: Build shaped web UI with the ns-frame library — bevels, notches, 
 
 ns-frame draws shapes with a small shape language written in HTML attributes. The core (`ns-frame`, 9 KB gzip) activates every element with `data-ns` automatically, including elements added later. Optional modules add components. Docs in Spanish live in `docs/`; this skill is the working summary.
 
-**Install from jsDelivr, not npm.** ns-frame is not published on npm yet; never install an npm package named `ns-frame` (it is not ours). Load `https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.9.0/packages/ns-frame/dist/ns-frame.js` (modules from the same `dist/` folder, same version), map the bare names with an import map, or vendor `dist/` and alias it — see `docs/instalacion.md`. `isle`, `concentric`, `flow`, `mark` and `liquid` are not in `v0.9.0`: until the next tagged release, load them and the core from `@main`.
+**Install from jsDelivr, not npm.** ns-frame is not published on npm yet; never install an npm package named `ns-frame` (it is not ours). Load `https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.10.0/packages/ns-frame/dist/ns-frame.js` (modules from the same `dist/` folder, same version), map the bare names with an import map, or vendor `dist/` and alias it — see `docs/instalacion.md`.
 
 ## Decide what to use
 

@@ -3,7 +3,7 @@
 **Formas nativas para la web.** Cortes, chaflanes, notches, scoops, esquinas squircle y radius en **cualquier vértice de cualquier elemento** — con bordes reales que siguen el corte, morph, aperturas y componentes con forma. Sin imágenes, sin dependencias, compatible con CSP estricta.
 
 ```html
-<script type="module" src="https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.9.0/packages/ns-frame/dist/ns-frame.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.10.0/packages/ns-frame/dist/ns-frame.js"></script>
 
 <article data-ns="tl+br bevel 18; radius 3" data-ns-pad>Una tarjeta con dos esquinas cortadas</article>
 <a data-ns="button" data-ns-hover="tl+br bevel 20; radius 2" href="#">Un botón que se transforma</a>
@@ -26,9 +26,9 @@
 Desde el CDN de jsDelivr, con la versión fijada en la URL:
 
 ```html
-<script type="module" src="https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.9.0/packages/ns-frame/dist/ns-frame.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.10.0/packages/ns-frame/dist/ns-frame.js"></script>
 <script type="module">
-  import { toast } from 'https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.9.0/packages/ns-frame/dist/ns-toast.js'
+  import { toast } from 'https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.10.0/packages/ns-frame/dist/ns-toast.js'
 </script>
 ```
 

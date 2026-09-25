@@ -56,8 +56,6 @@ await open(panel, 'iris', 500)
 | `ns-frame/audit` | `audit({ root, mark, margin, clearance })` → problemas encontrados |
 | `ns-frame/pop` · `ns-frame/carousel` | Sin exportaciones: se activan con sus atributos |
 
-`isle`, `concentric`, `flow`, `mark` y `liquid` aún no están en la etiqueta `v0.9.0`: hasta la próxima versión etiquetada, cárgalos desde `@main` (ver [Instalación](instalacion.md)).
-
 ## Geometría sin DOM (concentric, flow, mark, liquid)
 
 Los cuatro módulos se activan solos con su atributo (ver [Componentes](componentes.md#lo-que-css-todavía-no-hace)). Sus funciones puras sirven para usar la geometría fuera de ellos (canvas, SVG propio, tests):

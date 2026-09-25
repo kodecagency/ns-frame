@@ -13,32 +13,21 @@ order: 2
 ns-frame se sirve desde jsDelivr, directamente de las etiquetas de este repositorio:
 
 ```html
-<script type="module" src="https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.9.0/packages/ns-frame/dist/ns-frame.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.10.0/packages/ns-frame/dist/ns-frame.js"></script>
 <!-- opcional: efectos 100 % CSS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.9.0/packages/ns-frame/dist/ns-fx.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.10.0/packages/ns-frame/dist/ns-fx.css">
 ```
 
 Los módulos opcionales se cargan igual, desde la misma carpeta `dist/` (por ejemplo `dist/ns-toast.js` o `dist/ns-mosaic.js`). Fija siempre la versión en la URL (`@v0.9.0`): así una actualización nunca te cambia el sitio sin avisar.
 
 ```html
 <script type="module">
-  import { toast } from 'https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.9.0/packages/ns-frame/dist/ns-toast.js'
+  import { toast } from 'https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.10.0/packages/ns-frame/dist/ns-toast.js'
   toast('Cambios guardados', { type: 'ok' })
 </script>
 ```
 
 Cada módulo importa el núcleo por ruta relativa (`./ns-frame.js`), así que núcleo y módulos deben salir **de la misma versión**: con versiones distintas cargarías dos núcleos.
-
-### Módulos que aún no están en `v0.9.0`
-
-`isle`, `concentric`, `flow`, `mark` y `liquid` llegan en la próxima versión etiquetada. Hasta entonces, cárgalos desde `@main`, **con el núcleo también de `@main`**:
-
-```html
-<script type="module" src="https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@main/packages/ns-frame/dist/ns-frame.js"></script>
-<script type="module" src="https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@main/packages/ns-frame/dist/ns-flow.js"></script>
-```
-
-`@main` cambia con cada commit (y jsDelivr lo guarda en caché unas horas): úsalo para probar, y pasa a la etiqueta en cuanto exista.
 
 ## Import map (nombres cortos sin build)
 
@@ -48,9 +37,9 @@ Para escribir `import … from 'ns-frame/toast'`, como en el resto de esta docum
 <script type="importmap">
 {
   "imports": {
-    "ns-frame": "https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.9.0/packages/ns-frame/dist/ns-frame.js",
-    "ns-frame/toast": "https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.9.0/packages/ns-frame/dist/ns-toast.js",
-    "ns-frame/vt": "https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.9.0/packages/ns-frame/dist/ns-vt.js"
+    "ns-frame": "https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.10.0/packages/ns-frame/dist/ns-frame.js",
+    "ns-frame/toast": "https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.10.0/packages/ns-frame/dist/ns-toast.js",
+    "ns-frame/vt": "https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.10.0/packages/ns-frame/dist/ns-vt.js"
   }
 }
 </script>
@@ -71,13 +60,13 @@ Añade una entrada por cada módulo que uses. Cada ruta corresponde a un archivo
 | `ns-frame/static` · `ns-frame/astro` | `ns-static.js` · `ns-astro.js` | Formas sin JS en el build (Node) |
 | `ns-frame/vt` | `ns-vt.js` | View Transitions con cortes |
 | `ns-frame/toast` · `skel` · `carousel` · `pop` · `bento` · `link` | `ns-<nombre>.js` | Componentes |
-| `ns-frame/mosaic` | `ns-mosaic.js` (+ `ns-flow.js` desde la próxima versión) | Mosaicos de piezas libres |
+| `ns-frame/mosaic` | `ns-mosaic.js` (+ `ns-flow.js`) | Mosaicos de piezas libres |
 | `ns-frame/sheet` | `ns-sheet.js` | Hoja arrastrable |
-| `ns-frame/isle` | `ns-isle.js` (usa `ns-sheet.js`) | Isla de navegación · `@main` |
-| `ns-frame/concentric` | `ns-concentric.js` | Esquinas concéntricas automáticas · `@main` |
-| `ns-frame/flow` | `ns-flow.js` | Texto que llena la forma · `@main` |
-| `ns-frame/mark` | `ns-mark.js` | Resaltado continuo en varias líneas · `@main` |
-| `ns-frame/liquid` | `ns-liquid.js` | Formas líquidas que se funden · `@main` |
+| `ns-frame/isle` | `ns-isle.js` (usa `ns-sheet.js`) | Isla de navegación |
+| `ns-frame/concentric` | `ns-concentric.js` | Esquinas concéntricas automáticas |
+| `ns-frame/flow` | `ns-flow.js` | Texto que llena la forma |
+| `ns-frame/mark` | `ns-mark.js` | Resaltado continuo en varias líneas |
+| `ns-frame/liquid` | `ns-liquid.js` | Formas líquidas que se funden |
 | `ns-frame/fx` · `ns-frame/fx.css` | `ns-fx.js` · `ns-fx.css` | Efectos |
 | `ns-frame/audit` | `ns-audit.js` | Auditoría de texto recortado (sólo desarrollo) |
 
@@ -87,7 +76,7 @@ Los tipos de TypeScript están en `packages/ns-frame/types/`.
 
 ## Con un bundler (Vite, Astro, webpack…)
 
-Mientras no haya paquete de npm, copia los archivos de `packages/ns-frame/dist/` de una etiqueta (por ejemplo `v0.9.0`) a tu proyecto, en una carpeta propia (`src/vendor/ns-frame/`), y apunta el alias `ns-frame` a ella. Con Vite:
+Mientras no haya paquete de npm, copia los archivos de `packages/ns-frame/dist/` de una etiqueta (por ejemplo `v0.10.0`) a tu proyecto, en una carpeta propia (`src/vendor/ns-frame/`), y apunta el alias `ns-frame` a ella. Con Vite:
 
 ```js
 // vite.config.js (o `vite` dentro de astro.config.mjs)

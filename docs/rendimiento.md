@@ -30,7 +30,7 @@ order: 13
 | `ns-css.js` · `ns-vt.js` · `ns-fx.js` | 0,7 KB | 0,6 KB | Compilador · View Transitions · decode |
 | `ns-static.js` | 0,5 KB | 0,5 KB | Build (Node) |
 
-Cifras del build actual de `dist/`. `ns-isle.js`, `ns-concentric.js`, `ns-flow.js`, `ns-mark.js` y `ns-liquid.js` todavía no están en la etiqueta `v0.9.0`; en ella, `ns-mosaic.js` lleva el texto que fluye dentro.
+Cifras de `v0.10.0`. Hasta `v0.9.0`, `ns-mosaic.js` llevaba dentro el texto que fluye; desde `v0.10.0` lo comparte con `ns-flow.js`.
 
 Como referencia (bundlephobia, gzip): `@floating-ui/dom` 8,2 KB sólo para posicionar popovers, `augmented-ui` 18,4 KB de CSS de cortes sin animaciones, `flubber` 18,1 KB sólo para morph y `gsap` 27,4 KB.
 

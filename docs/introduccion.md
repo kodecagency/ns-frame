@@ -9,7 +9,7 @@ order: 1
 **ns-frame** es una librería de **formas nativas para la web**: cortes, chaflanes (bevel), escalones (notch), mordidas (scoop), esquinas squircle y radius en **cualquier vértice de cualquier elemento**, sin imágenes y sin dependencias.
 
 ```html
-<script type="module" src="https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.9.0/packages/ns-frame/dist/ns-frame.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.10.0/packages/ns-frame/dist/ns-frame.js"></script>
 
 <article data-ns="tl+br bevel 18; radius 3">Una tarjeta con dos esquinas cortadas</article>
 ```

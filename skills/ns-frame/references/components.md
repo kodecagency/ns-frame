@@ -1,6 +1,6 @@
 # ns-frame components and modules
 
-Every module is optional. Not on npm yet (do not install any npm package named `ns-frame`). With the CDN: `https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.9.0/packages/ns-frame/dist/ns-<module>.js`, same version as the core. With an import map or a bundler alias to a vendored `dist/`: `import 'ns-frame/<module>'` (see `docs/instalacion.md`). `isle`, `concentric`, `flow`, `mark` and `liquid` are not in `v0.9.0`: use `@main` for them and the core until the next tagged release.
+Every module is optional. Not on npm yet (do not install any npm package named `ns-frame`). With the CDN: `https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.10.0/packages/ns-frame/dist/ns-<module>.js`, same version as the core. With an import map or a bundler alias to a vendored `dist/`: `import 'ns-frame/<module>'` (see `docs/instalacion.md`).
 
 ## Attributes handled by the core
 

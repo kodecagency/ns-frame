@@ -4,6 +4,7 @@
 
 | Versión | Soporte |
 |---|---|
+| 0.10.x | ✅ |
 | 0.9.x | ✅ |
 | 0.8.x | Sólo parches de seguridad |
 | < 0.8 | ❌ |

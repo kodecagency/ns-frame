@@ -184,12 +184,7 @@ Traza una línea recta más una diagonal a 45° desde el lado del elemento que m
 
 Cuatro módulos para cosas que la web pide desde hace años y CSS no resuelve. Se activan solos con su atributo, también en elementos añadidos después, y no hace falta llamar a nada. Todos son CSP-safe y sólo dependen del núcleo.
 
-> Aún no están en la etiqueta `v0.9.0`. Hasta la próxima versión etiquetada, cárgalos desde `@main`, con el núcleo también de `@main`:
->
-> ```html
-> <script type="module" src="https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@main/packages/ns-frame/dist/ns-frame.js"></script>
-> <script type="module" src="https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@main/packages/ns-frame/dist/ns-concentric.js"></script>
-> ```
+Desde la versión 0.10.0.
 
 ### Esquinas concéntricas (`ns-frame/concentric`)
 

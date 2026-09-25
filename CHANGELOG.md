@@ -1,6 +1,6 @@
 # Changelog
 
-## Sin publicar
+## 0.10.0 — lo que CSS todavía no hace
 
 ### Lo que CSS todavía no hace
 Cuatro módulos que resuelven con geometría real lo que la web sólo imitaba con capturas, filtros borrosos o cálculos a mano.
