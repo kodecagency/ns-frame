@@ -3,7 +3,9 @@
 ## Sin publicar
 
 ### Isla que se convierte en la hoja (`ns-frame/isle`)
-- Al tocar la cápsula, se convierte en la hoja como la Dynamic Island: primero se ensancha a los lados, después crece hacia arriba (un muelle por eje), y el contenido de la hoja aparece pieza a pieza justo cuando la forma lo alcanza; al llegar, el material de vidrio aparece encima. Al cerrar, el camino inverso: baja hasta ser una barra y se estrecha hasta la cápsula. Canto de luz arriba (`--ns-isle-rim`).
+- Al tocar la cápsula, se convierte en la hoja como la Dynamic Island: primero se ensancha a los lados, después crece hacia arriba (un muelle por eje). La forma que crece es la propia hoja (su color y su radio) y su contenido aparece pieza a pieza justo cuando la forma lo alcanza. Al cerrar, el camino inverso: baja hasta ser una barra y se estrecha hasta la cápsula. Una luz fina en U recorre el contorno durante el recorrido (`--ns-isle-glow`, `--ns-isle-rim`; blanca y gris por defecto).
+- La cápsula oculta se marca con `[data-ns-hidden]` (antes `.ns-hide`): un atributo, para que su vidrio no se relea al ocultarse; y su texto ya no parpadea al abrir.
+- Landing: la hoja de la isla es opaca, gris-negro, con la misma forma que la silueta; arrastrarla vuelve a ser tan fluido como antes del vidrio.
 - Arrastrar la hoja: sigue al dedo en el mismo evento (un fotograma menos de retraso) y su vidrio ya no se relee entero en cada fotograma (el `translate` del arrastre contaba como un cambio de estilo). `morph: false` mantiene la entrada desde abajo; `--ns-isle-radius` y `--ns-isle-morph` fijan el radio final y el color.
 - **Fluida en iPhone:** la silueta sólo anima `transform` y `opacity` (el compositor la mueve en su propio hilo); siete piezas, como un 9-slice, para que las esquinas no se deformen al escalar. Una primera versión animaba `clip-path`, que Safari repinta en el hilo principal en cada fotograma (WebKit, bug 185816) y no iba fluida. Antes, además, la hoja de vidrio se rasterizaba, se subía a la GPU y se copiaba en cada fotograma de la subida.
 - **Con la hoja abierta, la página de detrás ya no se desplaza** (también con el táctil de iOS).

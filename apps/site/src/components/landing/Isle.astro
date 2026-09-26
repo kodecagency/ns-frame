@@ -2,9 +2,9 @@
 // Isla (móvil), hecha con ns-frame/isle: una cápsula y una hoja.
 // · La cápsula muestra la sección actual y su posición mientras se baja; al subir se encoge a un icono. Es un
 //   redondeo simple (vía rápida nativa de ns-frame): plegarla no recalcula ninguna forma.
-// · Al tocarla, la cápsula se convierte en la hoja como la Dynamic Island (ns-frame/isle): una
-//   silueta de vidrio crece de una a otra con un muelle y el contenido entra escalonado. La hoja
-//   se prepara al apoyar el dedo, oculta en su sitio: al aparecer, su vidrio ya está pintado.
+// · Al tocarla, la cápsula se convierte en la hoja como la Dynamic Island (ns-frame/isle): se
+//   ensancha, crece hacia arriba y el contenido aparece a su paso. La hoja es opaca (gris-negro) y
+//   redondeada, igual que la forma que crece: la transformación es exacta y arrastrarla es barato.
 // · La hoja se arrastra como en una app nativa y se cierra al soltarla o lanzarla.
 // · En la hoja, la sección actual es la única pieza con chaflán y luz en U.
 // · Deslizar la cápsula a los lados salta a la sección anterior o siguiente.
@@ -19,7 +19,7 @@ const CUR = 'tl+br bevel 14; tr+bl round 16; radius 2'
     <span class="chev" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 9l4-4 4 4" /></svg></span>
   </button>
 </nav>
-<div class="panel" id="isle-panel" role="dialog" aria-modal="true" aria-label="Secciones" data-ns-isle-panel data-ns="all squircle 30; top cut center 22% 7 r3" data-ns-glass>
+<div class="panel" id="isle-panel" role="dialog" aria-modal="true" aria-label="Secciones" data-ns-isle-panel>
   <header data-ns-isle-handle><i class="handle" aria-hidden="true"></i><b>ns-frame</b><button type="button" data-ns-isle-close aria-label="Cerrar"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 3l8 8M11 3l-8 8" /></svg></button></header>
   <ul>
     {SECTIONS.map((s, i) => (
@@ -67,7 +67,7 @@ const CUR = 'tl+br bevel 14; tr+bl round 16; radius 2'
     .isle { display: block; position: fixed; z-index: 40; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); width: 212px; height: 54px; translate: -50% 0;
       --ns-glass-tint: rgba(16, 16, 20, .42); color: var(--ns-glass-ink, var(--text)); contain: layout style; view-transition-name: ns-isle }
     /* mientras el vidrio no está activo (antes de cargar, o sin JS), un fondo opaco */
-    .isle:not(:global(.ns-glass)), .panel:not(:global(.ns-glass)) { background: rgba(18, 18, 20, .97); --ns-border: rgba(255, 255, 255, .14) }
+    .isle:not(:global(.ns-glass)) { background: rgba(18, 18, 20, .97); --ns-border: rgba(255, 255, 255, .14) }
     .isle:global(.ns-mini) { width: 54px }
     .pill { position: absolute; inset: 0; display: flex; align-items: center; gap: 11px; padding: 0 8px 0 9px; border: 0; background: none; cursor: pointer; text-align: left }
     .ico { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; flex: none; background: var(--text); color: #0a0a0a }
@@ -80,8 +80,10 @@ const CUR = 'tl+br bevel 14; tr+bl round 16; radius 2'
     .isle:global(.ns-mini) .txt, .isle:global(.ns-mini) .chev { opacity: 0; visibility: hidden }
 
     /* hoja: posición y animación las pone ns-frame/isle; aquí sólo el aspecto */
-    /* la hoja, también de vidrio: más desenfoque y más tinte (tiene la página entera detrás) */
-    .panel { display: flex; flex-direction: column; gap: 14px; padding: 18px 16px 16px; --ns-glass-tint: rgba(16, 16, 20, .58); --ns-glass-blur: 16px; color: var(--ns-glass-ink, var(--text)); contain: layout style }
+    /* la hoja: material opaco gris-negro (como las hojas de iOS en oscuro), con la misma forma y el
+       mismo color que la silueta de la isla: al crecer es la propia hoja, y arrastrarla sólo mueve
+       una capa (el vidrio obligaba a Safari a desenfocar el panel entero en cada fotograma) */
+    .panel { display: flex; flex-direction: column; gap: 14px; padding: 18px 16px 16px; border-radius: 32px; background: #161618; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .07), inset 0 1px 0 rgba(255, 255, 255, .1); color: var(--text); contain: layout style }
     header { position: relative; display: flex; align-items: center; justify-content: space-between; padding: 14px 6px 0; cursor: grab }
     .handle { position: absolute; top: 0; left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: var(--r-2xs); background: rgba(255, 255, 255, .22) }
     header b { font: 700 var(--t-title-lg)/1 var(--display); font-stretch: 108%; letter-spacing: -.02em }
