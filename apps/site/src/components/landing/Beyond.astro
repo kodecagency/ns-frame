@@ -284,7 +284,7 @@ const ACTIONS = [
   /* 3 · titular con resaltado editable */
   .s3 { align-items: flex-start; justify-content: center; background: radial-gradient(60% 70% at 20% 30%, rgba(0, 230, 118, .08), transparent 70%) }
   .hl { margin: 0; max-width: 560px; font: 700 clamp(28px, 3.2vw, 42px)/1.22 var(--display); font-stretch: 106%; letter-spacing: -.03em; color: var(--text) }
-  .hl mark { background: none; color: var(--ink-go); outline: none; --ns-mark: var(--signal); --ns-mark-pad: 3px 10px; --ns-mark-radius: 12px; caret-color: currentColor }
+  .hl mark { background: none; color: var(--ink-go); outline: none; --ns-mark: var(--signal); --ns-mark-pad: 3px 7px; --ns-mark-radius: 12px; caret-color: currentColor }
   /* foco de teclado: el contorno del propio resaltado (un outline rectangular no seguiría las líneas) */
   :global(:root:not([data-ns-input=pointer])) .hl:has(mark:focus-visible) :global(.ns-mark-fx path) { stroke: var(--text); stroke-width: 2px }
   .hl mark.amber { color: #1d1303; --ns-mark: #ffb547 }

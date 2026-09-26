@@ -126,7 +126,7 @@ export function unflow(k: HTMLElement): void
 
 // ── ns-frame/mark ──
 /** Contorno de un texto resaltado: polígonos (sin fillets) de los rectángulos de cada línea. Automático con `data-ns-mark`. */
-export function outline(rects: Iterable<{ left: number; right: number; top: number; bottom: number; width: number; height: number }>, px?: number, py?: number): [number, number][][]
+export function outline(rects: Iterable<{ left: number; right: number; top: number; bottom: number; width: number; height: number }>, px?: number, py?: number, /** bordes de líneas vecinas a menos de esto se igualan */ snap?: number): [number, number][][]
 
 // ── ns-frame/liquid ──
 export interface LiquidOptions {

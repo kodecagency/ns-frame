@@ -270,7 +270,7 @@ h2 mark { background: none; color: inherit; --ns-mark: #ffe066 }
 - **Qué resuelve:** un fondo por línea es fácil (`box-decoration-break`), pero uno solo que abrace todas las líneas, con curvas hacia fuera y hacia dentro donde una línea es más corta que otra (el resaltado de las stories de Instagram), sólo se imitaba con un filtro de desenfoque + contraste: bordes borrosos, caro de repintar y sin trazo posible.
 - **Cómo:** la unión de los rectángulos de cada línea, con un fillet en cada vértice (convexo o cóncavo) calculado por el motor de ns-frame. Un solo `<path>` SVG detrás del texto, que se redibuja al cambiar el ajuste de línea, el tamaño o el texto.
 - **Color:** `--ns-mark`. Por defecto, el color de sistema `Mark`, legible en alto contraste. Quita el fondo nativo de `<mark>` (`background: none`) para que no se sume al resaltado.
-- `--ns-mark-pad`: margen alrededor del texto, "vertical horizontal" (`2px 6px`). `--ns-mark-radius` (antes `--ns-mark-round`, que sigue valiendo): radio de las curvas (`8px`); las que no caben se ajustan solas.
+- `--ns-mark-pad`: margen alrededor del texto, "vertical horizontal" (`2px 6px`). `--ns-mark-radius` (antes `--ns-mark-round`, que sigue valiendo): radio de las curvas (`8px`); las que no caben se ajustan solas, y dos líneas cuyos bordes quedan a menos de un radio se igualan (un escalón más pequeño que la curva se vería como un fallo).
 - `--ns-mark-border` y `--ns-mark-width`: trazo opcional del contorno.
 - `data-ns-mark="draw"`: se dibuja de izquierda a derecha al entrar en pantalla (`--ns-mark-time`, `.9s`). Con `prefers-reduced-motion` aparece sin transición.
 - Las líneas que no se tocan en horizontal quedan como piezas separadas.

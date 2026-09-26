@@ -86,4 +86,4 @@ pnpm build          # librería + sitio
 
 ## Licencia
 
-[MIT](LICENSE) © 2026 Kodec Agency
+[MIT](LICENSE) © 2026 Francesco Sierchio · Kodec Agency. La licencia pide conservar este aviso de autoría en toda copia o redistribución (también en los archivos compilados, que lo llevan en su cabecera).

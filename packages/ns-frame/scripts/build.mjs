@@ -25,7 +25,10 @@ for (const f of readdirSync(dir).filter(f => f.endsWith('.js'))) {
   })
   if (t != s) writeFileSync(`${dir}/${f}`, t)
 }
-const esb = o => buildSync({ minify: true, logLevel: 'warning', tsconfigRaw: {}, ...o })
+// cada archivo compilado lleva el aviso de autoría y licencia (la MIT exige conservarlo); terser
+// respeta los comentarios /*! */
+const NOTICE = '/*! ns-frame · MIT © 2026 Francesco Sierchio (Kodec Agency) · https://github.com/kodecagency/ns-frame */'
+const esb = o => buildSync({ minify: true, logLevel: 'warning', tsconfigRaw: {}, legalComments: 'none', banner: { js: NOTICE, css: NOTICE }, ...o })
 const bundle = (src, dst, o) => esb({ entryPoints: [`${dir}/${src}`], bundle: true, format: 'esm', external: ['./ns-extra.js'], outfile: `${out}/${dst}`, ...o })
 
 bundle('ns-frame.js', 'ns-frame.js')

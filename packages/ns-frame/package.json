@@ -4,7 +4,7 @@
   "description": "Native UI shapes for the web: bevels, notches, scoops, squircles and fillets on any corner of any element, with real borders, morph, apertures and shaped components. No images, no dependencies, strict-CSP safe.",
   "type": "module",
   "license": "MIT",
-  "author": "Kodec Agency",
+  "author": "Francesco Sierchio <260309036+kodecagency@users.noreply.github.com> (https://github.com/kodecagency)",
   "homepage": "https://github.com/kodecagency/ns-frame#readme",
   "repository": {
     "type": "git",

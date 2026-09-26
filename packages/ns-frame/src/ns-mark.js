@@ -32,9 +32,10 @@ let styled = 0
 
 /**
  * Contorno de un texto resaltado. `rects`: rectángulos de cada línea (getClientRects, en px de un
- * mismo origen), `px`/`py`: margen, `r`: radio. Devuelve polígonos (listas de [x, y]) sin fillets.
+ * mismo origen), `px`/`py`: margen, `snap`: los bordes de líneas vecinas a menos de esta distancia se
+ * igualan (el runtime pasa el radio). Devuelve polígonos (listas de [x, y]) sin fillets.
  */
-export function outline(rects, px = 6, py = 2) {
+export function outline(rects, px = 6, py = 2, snap = 0) {
   // una franja por línea (los rectángulos de una misma línea se unen)
   const L = []
   for (const q of [...rects].filter(q => q.width > .5 && q.height > .5).sort((a, b) => a.top - b.top || a.left - b.left)) {
@@ -51,6 +52,13 @@ export function outline(rects, px = 6, py = 2) {
     if (p && Math.min(p.x1, b.x1) - Math.max(p.x0, b.x0) > 1) { const m = (p.y1 + b.y0) / 2; p.y1 = b.y0 = m; g.push(b) }
     else groups.push(g = [b])
   })
+  // bordes casi alineados (a menos de `snap`, el radio): se igualan al más ancho. Un escalón más
+  // pequeño que la curva no cabe y se ve como un fallo, no como un contorno
+  if (snap > 0) for (const G of groups) for (let i = 1; i < G.length; i++) {
+    const a = G[i - 1], b = G[i]
+    if (Math.abs(a.x1 - b.x1) < snap) a.x1 = b.x1 = Math.max(a.x1, b.x1)
+    if (Math.abs(a.x0 - b.x0) < snap) a.x0 = b.x0 = Math.min(a.x0, b.x0)
+  }
   // polígono ortogonal: bajando por la derecha y subiendo por la izquierda (sin vértices colineales)
   return groups.map(G => {
     const P = []
@@ -82,7 +90,7 @@ function run() {
     const rects = [...el.getClientRects()].map(q => ({ left: (q.left - ox) / k, right: (q.right - ox) / k, top: (q.top - oy) / k, bottom: (q.bottom - oy) / k, width: q.width / k, height: q.height / k }))
     // el svg es hermano del resaltado: sus variables (color, trazo, tiempo) se copian
     const vars = ['--ns-mark', '--ns-mark-border', '--ns-mark-width', '--ns-mark-time'].map(k => [k, cs.getPropertyValue(k).trim()])
-    jobs.push({ el, st, host, polys: outline(rects, px, py), R, vars })
+    jobs.push({ el, st, host, polys: outline(rects, px, py, R), R, vars })
   }
   for (const { el, st, host, polys, R, vars } of jobs) {
     if (!st.svg) {
