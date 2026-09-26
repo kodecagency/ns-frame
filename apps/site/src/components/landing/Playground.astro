@@ -99,7 +99,8 @@ const PRESETS = ['card', 'button', 'chip', 'soft', 'notch', 'scoop', 'wing', 'pa
   .pg { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.3fr); gap: 14px }
   .lb, label { font: 500 var(--t-caption)/1.3 var(--body); color: var(--text-3) }
   .ed { background: var(--surface); --ns-border: var(--line-2); padding: 22px; display: flex; flex-direction: column; gap: 10px; min-width: 0 }
-  textarea { width: 100%; resize: vertical; min-height: 140px; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--veil-1); color: var(--text); font: var(--t-small)/1.7 var(--mono); outline: none }
+  textarea { width: 100%; resize: vertical; min-height: 140px; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--veil-1); color: var(--text); font: var(--t-small)/1.7 var(--mono) }
+  textarea:focus-visible { outline-offset: 2px; border-color: var(--signal) }
   textarea:focus-visible { border-color: var(--signal); box-shadow: 0 0 0 3px rgba(0, 230, 118, .18) }
   .chips { display: flex; flex-wrap: wrap; gap: 6px }
   .chips button { min-height: 36px; padding: 0 12px; border: 0; background: rgba(255, 255, 255, .06); --ns-border: var(--line); color: var(--text-2); font: var(--t-caption) var(--mono); cursor: pointer }
