@@ -27,7 +27,7 @@ Un bento donde las piezas no tienen que ser rectángulos. Cada área se dibuja c
   --ns-areas: 'a h h b' 'a h h b' 'x x y y';
   --ns-row: 150px;
   --ns-gap: 14px;
-  --ns-round: 22px;
+  --ns-mosaic-radius: 22px;
   --ns-orb: 3 3 90 hex;
 }
 @media (max-width: 760px) {
@@ -42,9 +42,11 @@ Un bento donde las piezas no tienen que ser rectángulos. Cada área se dibuja c
 | `--ns-areas` | Filas entre comillas; cada nombre es un área; `.` deja la celda vacía | — |
 | `--ns-row` | Alto de cada fila | `150px` |
 | `--ns-gap` | Hueco entre piezas | `14px` |
-| `--ns-round` | Radio de las esquinas convexas | `18px` |
-| `--ns-round-in` | Radio de las esquinas cóncavas | `--ns-round` + hueco |
-| `--ns-round-out` | Radio de las esquinas del contorno exterior del mosaico | `--ns-round` |
+| `--ns-mosaic-radius` | Radio de las esquinas convexas | `18px` |
+| `--ns-mosaic-radius-in` | Radio de las esquinas cóncavas | el radio + hueco |
+| `--ns-mosaic-radius-out` | Radio de las esquinas del contorno exterior del mosaico | el radio |
+
+> Hasta ahora se llamaban `--ns-round`, `--ns-round-in` y `--ns-round-out`, `--ns-orb-round` y `--ns-mo-*`: siguen funcionando. Los nombres nuevos siguen la convención de toda la librería (`--ns-<módulo>-radius`, `--ns-<módulo>-…-time`).
 | `--ns-pad` | Padding del contenido de cada pieza | `22px` |
 
 - **Hueco constante:** las esquinas cóncavas miden el radio más el hueco, así que una esquina convexa que encaja en una cóncava deja la misma distancia en la curva.
@@ -65,7 +67,7 @@ Un bento donde las piezas no tienen que ser rectángulos. Cada área se dibuja c
 
 - La posición va en **líneas de la cuadrícula**: `1` es el borde inicial y `3` es el hueco entre la columna 2 y la 3. Se admiten decimales.
 - Formas: `circle`, `hex`, `diamond`, `square`, `tri` y `oct`.
-- El hueco es concéntrico con el orbe: los lados se desplazan el valor de `--ns-orb-gap` (por defecto, el hueco del mosaico) y las esquinas repiten el radio de `--ns-orb-corner` más ese hueco. Donde el borde de la pieza se une al hueco hay una curva de enlace de radio `--ns-orb-round`.
+- El hueco es concéntrico con el orbe: los lados se desplazan el valor de `--ns-orb-gap` (por defecto, el hueco del mosaico) y las esquinas repiten el radio de `--ns-orb-corner` más ese hueco. Donde el borde de la pieza se une al hueco hay una curva de enlace de radio `--ns-orb-radius`.
 - Cada orbe de la lista se empareja, en orden, con un hijo `[data-ns-orb]`, que se posiciona y recorta solo. **Puede tener contenido**: una foto, un dato o un botón. Si sólo es decoración, pon `aria-hidden="true"`.
 
 ## Luz conectada (`data-ns-mosaic`)
@@ -79,13 +81,13 @@ Efectos que tratan todo el mosaico como una sola figura. Se combinan libremente:
 | `glow` | bordes y fondos | Una luz sigue al puntero por toda la figura |
 | `sweep` | bordes y fondos | Un barrido diagonal recorre el mosaico |
 | `scan` | bordes y fondos | Una línea horizontal baja por el mosaico |
-| `stream` | bordes | Corriente: tres luces corren por los bordes de las propias piezas y, donde una pieza toca a su vecina, cruzan el hueco y siguen por el borde de la siguiente (también por el anillo de los orbes), en rutas distintas. Cada luz se desvanece en degradado y lleva un foco que enciende los bordes por donde pasa. `--ns-mo-speed` (px/s, 160) |
+| `stream` | bordes | Corriente: tres luces corren por los bordes de las propias piezas y, donde una pieza toca a su vecina, cruzan el hueco y siguen por el borde de la siguiente (también por el anillo de los orbes), en rutas distintas. Cada luz se desvanece en degradado y lleva un foco que enciende los bordes por donde pasa. `--ns-mosaic-speed` (px/s, 160) |
 | `trace` | bordes | Una luz corta recorre a la vez el contorno de cada pieza |
 | `pulse` | bordes | Todos los bordes respiran juntos |
 | `aurora` | fondos | Dos manchas de color derivan despacio por toda la figura |
 | `dots` / `grid` | fondos | Puntos o retícula continuos: el patrón no se corta entre piezas |
 
-Ajustes: `--ns-mo-light` (color de la luz), `--ns-mo-width` (grosor en los bordes), `--ns-mo-time` (duración), `--ns-mo-fill` (intensidad sobre los fondos), `--ns-mo-a1` y `--ns-mo-a2` (colores de la aurora), `--ns-mo-dot` y `--ns-mo-line` (color de los patrones).
+Ajustes: `--ns-mosaic-light` (color de la luz), `--ns-mosaic-width` (grosor en los bordes), `--ns-mosaic-fx-time` (duración), `--ns-mosaic-fill` (intensidad sobre los fondos), `--ns-mosaic-a1` y `--ns-mosaic-a2` (colores de la aurora), `--ns-mosaic-dot` y `--ns-mosaic-line` (color de los patrones). (`--ns-mosaic-time` es otra cosa: la duración de `arrange()`.)
 
 **Móvil y escritorio por separado.** En pantallas táctiles (`hover: none` y `pointer: coarse`) no hay un puntero que flote: `glow` no tiene a quién seguir y `ripple` convierte cada toque, que casi siempre es para hacer scroll, en una onda. Por eso en táctil se quitan esos dos por defecto. Para elegir tú qué efectos se ven en táctil, usa `data-ns-mosaic-touch` (vacío = ninguno):
 

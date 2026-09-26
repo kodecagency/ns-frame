@@ -91,7 +91,7 @@ const on = FX.filter(f => f[2]).map(f => f[0]).join(' ')
   .fx button:hover { color: var(--text); border-color: var(--line-2) }
   .fx button[aria-pressed=true] { color: var(--text); border-color: rgba(0, 230, 118, .55); background: rgba(0, 230, 118, .08) }
 
-  .mo { --ns-gap: 14px; --ns-row: 150px; --ns-round: 26px; --ns-pad: 24px; --ns-mo-light: #fff }
+  .mo { --ns-gap: 14px; --ns-row: 150px; --ns-mosaic-radius: 26px; --ns-pad: 24px; --ns-mosaic-light: #fff }
   .mo > [data-ns-area] { background: #18181a; --ns-border: rgba(255, 255, 255, .08); min-width: 0 }
   /* rectángulos: columna; piezas con forma (.ns-flow): el texto recorre toda la figura */
   .mo > [data-ns-area]:not(:global(.ns-flow)) { display: flex; flex-direction: column; gap: 6px }
@@ -134,7 +134,7 @@ const on = FX.filter(f => f[2]).map(f => f[0]).join(' ')
     .bar { flex-wrap: nowrap; overflow-x: auto; margin: 0 -24px 12px; padding: 8px 24px; border-radius: 0; border-width: 1px 0; scrollbar-width: none; overscroll-behavior-x: contain }
     .bar::-webkit-scrollbar { display: none }
     .bar > *, .fx { flex: none; flex-wrap: nowrap }
-    .mo { --ns-row: 112px; --ns-gap: 10px; --ns-round: 20px; --ns-pad: 16px }
+    .mo { --ns-row: 112px; --ns-gap: 10px; --ns-mosaic-radius: 20px; --ns-pad: 16px }
     .t-orb { --ns-areas: 'h h' 'h h' 'x y' 'x y' 'a b' 'a c' 'd c' 'e f'; --ns-orb: 2 3 var(--hole-rm, 62) var(--hole, circle) }
     .t-duo { --ns-areas: 'h h' 'h h' 'x y' 'x y' 'a b' 'c b' 'c e' 'd e' 'f f'; --ns-orb: 2 3 50 hex, 2 7 34 circle }
     .t-lock { --ns-areas: 'h h' 'h b' 'a b' 'a a' 'x a' 'x x' 'c y' 'd y' 'e f' }

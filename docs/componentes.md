@@ -179,7 +179,7 @@ Una cápsula flotante que dice en qué sección estás y, al tocarla, se convier
 </div>
 ```
 
-Para ajustarla: `--ns-isle-bg` (fondo de la hoja, `#161618`), `--ns-isle-fg` y `--ns-isle-muted` (texto), `--ns-isle-ink` (texto del botón principal), `--ns-isle-width` (ancho de la cápsula, 212px), o tus propias reglas.
+Para ajustarla: `--ns-isle-bg` (fondo de la hoja, `#161618`), `--ns-isle-ink` y `--ns-isle-ink-muted` (texto; en la cápsula de vidrio, por defecto el `--ns-glass-ink` que contrasta con lo de detrás), `--ns-isle-action-ink` (texto sobre el fondo claro del botón principal y del icono), `--ns-isle-width` (ancho de la cápsula, 212px), `--ns-isle-sheet-width` (ancho máximo de la hoja, 430px), o tus propias reglas.
 
 ```js
 import { isle } from 'ns-frame/isle'
@@ -203,7 +203,7 @@ const nav = isle(document.querySelector('[data-ns-isle]'), {
 - **Accesible**: `aria-expanded` en el botón; la hoja es `inert` mientras está cerrada; al abrir, el foco va a la sección actual y al cerrar vuelve al botón.
 - **Elegir una sección** cierra la hoja, actualiza la URL (`pushState`) y va hasta ella con `go(target, link)`; por defecto `scrollIntoView` suave, que respeta `scroll-padding-top` y `scroll-margin`.
 - `data-ns-isle-panel="top"`: la hoja baja desde arriba.
-- Variables: `--ns-isle-time` (.4s), `--ns-isle-ease`, `--ns-isle-scrim` (color del fondo), `--ns-isle-w` (ancho máximo de la hoja, 430px), `--ns-isle-z` (40), `--ns-isle-glow` y `--ns-isle-rim` (la luz del contorno durante la transformación: blanca y gris por defecto). `[data-ns-hidden]` en la cápsula mientras la hoja está abierta (un atributo y no una clase: así su vidrio no se relee al ocultarse); `.ns-open` en la hoja y el fondo.
+- Variables: `--ns-isle-time` (.4s), `--ns-isle-ease`, `--ns-isle-scrim` (color del fondo), `--ns-isle-z` (40), `--ns-isle-glow` y `--ns-isle-rim` (la luz del contorno durante la transformación: blanca y gris por defecto). `[data-ns-hidden]` en la cápsula mientras la hoja está abierta (un atributo y no una clase: así su vidrio no se relee al ocultarse); `.ns-open` en la hoja y el fondo.
 - **De vidrio líquido:** añade `data-ns-glass` a la cápsula (con `ns-frame/glass`) y un `--ns-glass-tint` oscuro propio, así el texto blanco se lee sobre cualquier sección. (A la hoja también se le puede poner, con más desenfoque, `--ns-glass-blur: 16px`; ver arriba por qué la recomendada es opaca.) No les pongas `background` (ganaría al vidrio) ni `contain: paint` (recortaría el canto); para antes de que cargue el vidrio, usa `:not(.ns-glass)` para un fondo opaco.
 - Accesible: el foco entra en la hoja al abrirla y no sale con Tab mientras está abierta (modal); Escape y el fondo la cierran y el foco vuelve a la cápsula.
 - Devuelve `{ open(), close(), toggle(), go(i), index, destroy() }`. Con `prefers-reduced-motion`, todo es instantáneo.

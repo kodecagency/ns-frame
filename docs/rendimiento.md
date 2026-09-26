@@ -11,7 +11,7 @@ order: 13
 | Archivo | gzip | brotli | |
 |---|---|---|---|
 | `ns-frame.js` | 10,3 KB | 9,4 KB | Núcleo (con grupos de elección, `modal`, `jump` y `watch`) |
-| `ns-mosaic.js` | 9,1 KB | 8,2 KB | Mosaicos de piezas libres, orbes y luz conectada (más `ns-flow.js`) |
+| `ns-mosaic.js` | 9,2 KB | 8,3 KB | Mosaicos de piezas libres, orbes y luz conectada (más `ns-flow.js`) |
 | `ns-frame.lite.js` | 7,7 KB | 7,0 KB | Sólo recortes |
 | `ns-extra.js` | 3,8 KB | 3,6 KB | **Bajo demanda**: degradados, animaciones de borde, acentos, aperturas, formas con scroll |
 | `ns-liquid.js` | 18,4 KB | 16,5 KB | Formas líquidas, vidrio líquido y botón de gotas (más `ns-light.js`) |
@@ -19,7 +19,7 @@ order: 13
 | `ns-tabs.js` | 3,4 KB | 3,1 KB | Pestañas de vidrio líquido (más `ns-liquid.js`) |
 | `ns-relief.js` | 2,0 KB | 1,8 KB | Relieve (más `ns-light.js`) |
 | `ns-light.js` | 1,5 KB | 1,3 KB | La luz de la página y sus materiales (lo comparten vidrio y relieve) |
-| `ns-isle.js` | 7,8 KB | 7,0 KB | Isla de navegación, con su aspecto de serie (más `ns-sheet.js`) |
+| `ns-isle.js` | 7,6 KB | 6,8 KB | Isla de navegación, con su aspecto de serie (más `ns-sheet.js`) |
 | `ns-concentric.js` | 2,5 KB | 2,3 KB | Esquinas concéntricas automáticas |
 | `ns-skel.js` | 2,5 KB | 2,2 KB | Skeletons |
 | `ns-mark.js` | 2,2 KB | 2,0 KB | Resaltado continuo en varias líneas |

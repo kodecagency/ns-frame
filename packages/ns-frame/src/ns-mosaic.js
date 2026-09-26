@@ -4,7 +4,7 @@
 //   <div data-ns-orb></div>   ← opcional: orbe que recorta a las piezas vecinas
 // </div>
 // · Cada área puede tener cualquier forma hecha de celdas (no sólo rectángulos, a diferencia de
-//   grid-template-areas). Las esquinas convexas llevan --ns-round y las cóncavas --ns-round + gap,
+//   grid-template-areas). Las esquinas convexas llevan --ns-mosaic-radius (antes --ns-round) y las cóncavas ese radio + gap,
 //   así dos piezas que encajan mantienen el mismo hueco también en la curva.
 // · La plantilla es una variable CSS: cámbiala con media queries o container queries y las
 //   piezas pasan de una forma a otra con morph.
@@ -15,6 +15,11 @@
 
 import { styles as inject, path } from './ns-frame.js'
 import { flow, unflow } from './ns-flow.js'
+
+// nombres: las variables de efectos se llaman --ns-mosaic-* (light, width, fill, dot, line, a1, a2,
+// speed, y fx-time para el tiempo: --ns-mosaic-time es el de arrange); los antiguos --ns-mo-* siguen
+// valiendo. var(--ns-mo-X,d) → var(--ns-mosaic-X,var(--ns-mo-X,d)) (con un nivel de paréntesis en d)
+const alias = s => s.replace(/var\(--ns-mo-([\w-]+),((?:[^()]|\([^()]*\))*)\)/g, (_, k, d) => `var(--ns-mosaic-${k == 'time' ? 'fx-time' : k},var(--ns-mo-${k},${d}))`)
 
 const CSS = `@layer ns{
 .ns-mosaic{display:grid;position:relative;gap:var(--ns-gap,14px);grid-template-columns:repeat(var(--ns-cn,3),minmax(0,1fr));grid-template-rows:repeat(var(--ns-rn,2),var(--ns-row,150px))}
@@ -259,8 +264,10 @@ function layout() {
     rh.reduce((y, h) => (ys.push(y, y + h), y + h + gy), 0)
     const W = xs[xs.length - 1], H = ys[ys.length - 1]
     el.style.setProperty('--ns-mw', fx(W) + 'px'); el.style.setProperty('--ns-mh', fx(H) + 'px')
-    const r = px(cs.getPropertyValue('--ns-round') || 18), ro_ = px(cs.getPropertyValue('--ns-round-out')) || r
-    const concave = cs.getPropertyValue('--ns-round-in') ? px(cs.getPropertyValue('--ns-round-in')) : r + Math.min(gx, gy)
+    // --ns-mosaic-radius, -radius-out, -radius-in (o los antiguos --ns-round, -round-out, -round-in)
+    const rv = k => cs.getPropertyValue('--ns-mosaic-radius' + k) || cs.getPropertyValue('--ns-round' + k)
+    const r = px(rv('') || 18), ro_ = px(rv('-out')) || r
+    const concave = rv('-in') ? px(rv('-in')) : r + Math.min(gx, gy)
     // orbe: "col fila radio" en líneas de la cuadrícula
     const line = (v, P, gap) => { const k = Math.max(1, Math.min(P.length / 2 + 1, v)), i = Math.floor(k), fr = k - i
       const at = j => j <= 1 ? 0 : j >= P.length / 2 + 1 ? P[P.length - 1] : P[2 * (j - 1)] - gap / 2
@@ -268,7 +275,7 @@ function layout() {
     // uno o varios orbes, separados por comas: "col fila radio [circle|tri|diamond|square|hex|oct] [giro°]"
     // (cada uno se empareja, en orden, con un hijo [data-ns-orb])
     const og = cs.getPropertyValue('--ns-orb-gap') ? px(cs.getPropertyValue('--ns-orb-gap')) : Math.min(gx, gy)
-    const orho = cs.getPropertyValue('--ns-orb-round') ? px(cs.getPropertyValue('--ns-orb-round')) : r
+    const orv = cs.getPropertyValue('--ns-orb-radius') || cs.getPropertyValue('--ns-orb-round'), orho = orv ? px(orv) : r
     // radio de las esquinas del orbe poligonal; el hueco las repite concéntricas (+ gap)
     const okr = cs.getPropertyValue('--ns-orb-corner') ? px(cs.getPropertyValue('--ns-orb-corner')) : 10
     const spec = cs.getPropertyValue('--ns-orb').trim()
@@ -359,15 +366,15 @@ function layout() {
     const pad = cs.getPropertyValue('--ns-pad') ? px(cs.getPropertyValue('--ns-pad')) : 22
     for (const f of flows) flow(f, pad) || unflow(f.k)
     fit(el)
-    light(el, parts, W, H, holes, matchMedia('(prefers-reduced-motion: reduce)').matches, px(cs.paddingLeft), px(cs.paddingTop), { G, xs, ys, gx, gy, r: ro_, speed: px(cs.getPropertyValue('--ns-mo-speed')) || 160 })
+    light(el, parts, W, H, holes, matchMedia('(prefers-reduced-motion: reduce)').matches, px(cs.paddingLeft), px(cs.paddingTop), { G, xs, ys, gx, gy, r: ro_, speed: px(cs.getPropertyValue('--ns-mosaic-speed') || cs.getPropertyValue('--ns-mo-speed')) || 160 })
   }
 }
 
 // ── Luz conectada: una sola capa SVG sobre todo el mosaico. Sus máscaras son los contornos de
 // todas las piezas (y del orbe), así un barrido o una onda recorre la figura entera como un
 // solo objeto: bordes (máscara de trazo) y fondos (máscara de relleno, tenue).
-// data-ns-mosaic="sweep wave ripple glow" · color --ns-mo-light · grosor --ns-mo-width ·
-// tiempo --ns-mo-time · intensidad del fondo --ns-mo-fill
+// data-ns-mosaic="sweep wave ripple glow" · color --ns-mosaic-light · grosor --ns-mosaic-width ·
+// tiempo --ns-mosaic-fx-time · intensidad del fondo --ns-mosaic-fill (o los antiguos --ns-mo-*)
 const SVG = 'http://www.w3.org/2000/svg'
 let uid = 0
 function mk(tag, a = {}, st = {}, ...kids) {
@@ -377,7 +384,7 @@ function mk(tag, a = {}, st = {}, ...kids) {
   e.append(...kids)
   return e
 }
-const LIGHT = 'var(--ns-mo-light,var(--ns-motion,#fff))'
+const LIGHT = alias('var(--ns-mo-light,var(--ns-motion,#fff))')
 const stops = (...s) => s.map(([o, a]) => mk('stop', { offset: o }, { 'stop-color': LIGHT, 'stop-opacity': a }))
 
 function light(el, parts, W, H, holes, reduce, pl, pt, grid) {
@@ -390,14 +397,14 @@ function light(el, parts, W, H, holes, reduce, pl, pt, grid) {
   if (!want.length) { if (L) { L.svg.remove(); lightIO.unobserve?.(el) } el._nsl = null; return }
   if (!L) {
     const id = 'nsmo' + ++uid, box = { maskUnits: 'userSpaceOnUse', x: -40, y: -40 }
-    const lines = mk('g', {}, { fill: 'none', stroke: '#fff', 'stroke-width': 'var(--ns-mo-width,1.5px)' })
+    const lines = mk('g', {}, { fill: 'none', stroke: '#fff', 'stroke-width': alias('var(--ns-mo-width,1.5px)') })
     const fills = mk('g', {}, { fill: '#fff', stroke: 'none' })
     const ml = mk('mask', { id: id + 'l', ...box }, { 'mask-type': 'alpha' }, lines)
     const mf = mk('mask', { id: id + 'f', ...box }, { 'mask-type': 'alpha' }, fills)
     const gg = mk('radialGradient', { id: id + 'g', gradientUnits: 'userSpaceOnUse', cx: -9e3, cy: -9e3, r: 240 }, {}, ...stops([0, .9], [1, 0]))
     // capas, de atrás hacia delante: luz de fondo, luz de bordes y trazo libre (aurora, puntos y
     // retícula van en CSS, en un ::before de cada pieza, por detrás del contenido)
-    const bg = mk('g', { mask: `url(#${id}f)` }, { opacity: 'var(--ns-mo-fill,.07)' })
+    const bg = mk('g', { mask: `url(#${id}f)` }, { opacity: alias('var(--ns-mo-fill,.07)') })
     const top = mk('g', { mask: `url(#${id}l)` }), tr = mk('g', { class: 'ns-mo-tr' }), st = mk('g', { class: 'ns-mo-st' })
     const svg = mk('svg', { class: 'ns-mo-fx', 'aria-hidden': 'true', focusable: 'false' }, {},
       mk('defs', {}, {}, ml, mf, gg,
@@ -461,7 +468,7 @@ function light(el, parts, W, H, holes, reduce, pl, pt, grid) {
     // escaneo: una línea horizontal que baja por toda la figura
     if (has('scan') && !reduce) kids.push(mk('rect', { class: 'ns-mo-sc', x: -40, y: fx(-H * .5), width: fx(W + 80), height: fx(H * 2), fill: `url(#${L.id}s)` }))
     // ondas: anillos ya a su tamaño final que crecen desde el primer orbe (scale 0 → 1)
-    if (has('wave') && !reduce) for (const d of [0, .5]) kids.push(ringEl(L, C[0], C[1], S, { class: 'ns-mo-wv' }, { 'animation-delay': `calc(${d} * var(--ns-mo-time,4.5s))` }))
+    if (has('wave') && !reduce) for (const d of [0, .5]) kids.push(ringEl(L, C[0], C[1], S, { class: 'ns-mo-wv' }, { 'animation-delay': alias(`calc(${d} * var(--ns-mo-time,4.5s))`) }))
     // pulso: todos los bordes respiran juntos
     if (has('pulse') && !fill) kids.push(full({ class: 'ns-mo-pl', fill: LIGHT }))
     if (has('glow')) kids.push(full({ fill: `url(#${L.id}g)`, opacity: fill ? 1 : .8 }))
@@ -601,7 +608,7 @@ const schedule = () => { raf ||= requestAnimationFrame(layout) }
 function add(el) {
   if (M.has(el)) return
   // las fuentes web cambian lo que mide el texto: al cargar, se vuelve a elegir dónde cabe
-  if (!styled) { styled = 1; inject(CSS); document.fonts?.ready.then(schedule) }
+  if (!styled) { styled = 1; inject(alias(CSS)); document.fonts?.ready.then(schedule) }
   // dentro del callback del ResizeObserver: la forma nueva llega en el mismo frame que el tamaño nuevo
   ro ||= new ResizeObserver(() => { cancelAnimationFrame(raf); layout() })
   M.set(el, 1)

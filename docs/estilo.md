@@ -65,6 +65,21 @@ Si el navegador soporta `corner-shape` y la forma es **simple** (sólo esquinas,
 
 En los navegadores sin soporte, o con formas complejas, se usa `clip-path` automáticamente. Durante morphs y aperturas también, y al terminar vuelve al modo nativo. `squircle` se traduce a `corner-shape: squircle`.
 
+## Nombres de las variables
+
+Todos los módulos siguen la misma convención, así lo que aprendes en uno vale en los demás:
+
+| Qué | Nombre | Ejemplos |
+|---|---|---|
+| Duración | `--ns-<módulo>-time`: admite `320`, `320ms` o `.32s` | `--ns-morph-time`, `--ns-isle-time`, `--ns-drops-time`, `--ns-skel-time`, `--ns-mark-time` |
+| Curva | `--ns-<módulo>-ease` | `--ns-isle-ease` |
+| Radio | `--ns-<módulo>-radius` (y `-radius-in`, `-radius-out`) | `--ns-tabs-radius`, `--ns-isle-radius`, `--ns-mark-radius`, `--ns-mosaic-radius`, `--ns-orb-radius` |
+| Ancho | `--ns-<módulo>-width` (el de una pieza: `--ns-<módulo>-<pieza>-width`) | `--ns-isle-width`, `--ns-isle-sheet-width` |
+| Color de texto | `--ns-<módulo>-ink` (y `-ink-muted`, `-ink-hot`) | `--ns-glass-ink`, `--ns-tabs-ink`, `--ns-isle-ink`, `--ns-isle-action-ink` |
+| Relleno / fondo | `--ns-<módulo>-fill` o `-bg` | `--ns-liquid-fill`, `--ns-tabs-fill`, `--ns-isle-bg` |
+
+Los nombres anteriores siguen funcionando como alias: `--ns-mark-round`, `--ns-sk-time`, `--ns-round` (y `-in`, `-out`), `--ns-orb-round` y `--ns-mo-*` (hoy `--ns-mosaic-light`, `-width`, `-fill`, `-dot`, `-line`, `-a1`, `-a2`, `-speed` y `-fx-time`; `--ns-mosaic-time` es la duración de `arrange()`).
+
 ## Cascada predecible
 
 Los estilos del runtime van en `@layer ns`: **tu CSS siempre gana**, sin importar el orden de carga ni la especificidad.

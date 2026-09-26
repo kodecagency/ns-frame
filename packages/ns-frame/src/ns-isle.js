@@ -62,7 +62,7 @@ const CSS = `@layer ns{
 .ns-isle-m[data-ns-hidden] [data-ns-isle-toggle]{opacity:0}
 .ns-isle-m[data-ns-hidden]{background:none!important}
 .ns-isle-m[data-ns-hidden]>:is(.ns-liquid-src,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-fx,.ns-svg){visibility:hidden}
-[data-ns-isle-panel]{position:fixed;z-index:calc(var(--ns-isle-z,40) + 1);inset:auto 12px calc(12px + env(safe-area-inset-bottom)) 12px;max-width:var(--ns-isle-w,430px);margin-inline:auto;translate:0 calc(100% + 40px);visibility:hidden;overscroll-behavior:contain;transition:translate var(--ns-isle-time,.4s) var(--ns-isle-ease,cubic-bezier(.2,.8,.2,1)),visibility 0s var(--ns-isle-time,.4s)}
+[data-ns-isle-panel]{position:fixed;z-index:calc(var(--ns-isle-z,40) + 1);inset:auto 12px calc(12px + env(safe-area-inset-bottom)) 12px;max-width:var(--ns-isle-sheet-width,430px);margin-inline:auto;translate:0 calc(100% + 40px);visibility:hidden;overscroll-behavior:contain;transition:translate var(--ns-isle-time,.4s) var(--ns-isle-ease,cubic-bezier(.2,.8,.2,1)),visibility 0s var(--ns-isle-time,.4s)}
 [data-ns-isle-panel=top]{inset:calc(12px + env(safe-area-inset-top)) 12px auto 12px;translate:0 calc(-100% - 40px)}
 [data-ns-isle-panel].ns-warm{visibility:visible;will-change:translate;transition:translate var(--ns-isle-time,.4s) var(--ns-isle-ease,cubic-bezier(.2,.8,.2,1)),visibility 0s}
 [data-ns-isle-panel].ns-open{translate:0 0;visibility:visible;transition:translate var(--ns-isle-time,.4s) var(--ns-isle-ease,cubic-bezier(.2,.8,.2,1)),visibility 0s}
@@ -72,20 +72,20 @@ const CSS = `@layer ns{
 [data-ns-isle-panel].ns-morphing>:is(.ns-liquid-src,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-fx,.ns-svg){visibility:hidden}
 @media (prefers-reduced-motion:reduce){.ns-isle-scrim,[data-ns-isle],[data-ns-isle-panel]{transition:none!important}}
 html.ns-has-isle body{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
-[data-ns-isle][data-ns-isle]{--ns-isle-fg:#f4f4f5;--ns-isle-muted:rgba(244,244,245,.6);--ns-glass-tint:rgba(16,16,20,.42);position:fixed;z-index:var(--ns-isle-z,40);left:50%;bottom:calc(14px + env(safe-area-inset-bottom));width:var(--ns-isle-width,212px);height:54px;translate:-50% 0;border-radius:27px;color:var(--ns-glass-ink,var(--ns-isle-fg));contain:layout style}
+[data-ns-isle][data-ns-isle]{--ns-glass-tint:rgba(16,16,20,.42);position:fixed;z-index:var(--ns-isle-z,40);left:50%;bottom:calc(14px + env(safe-area-inset-bottom));width:var(--ns-isle-width,212px);height:54px;translate:-50% 0;border-radius:27px;color:var(--ns-isle-ink,var(--ns-glass-ink,#f4f4f5));contain:layout style}
 [data-ns-isle]:not(.ns-glass){background:rgba(18,18,20,.97);--ns-border:rgba(255,255,255,.14)}
 [data-ns-isle][data-ns-isle].ns-mini{width:54px}
 :root:not([data-ns-input=pointer]) [data-ns-isle-toggle]:focus-visible{outline:2px solid var(--ns-isle-ring,rgba(255,255,255,.72))!important;outline-offset:3px}
 :where([data-ns-isle-toggle]){border-radius:inherit;position:absolute;inset:0;display:flex;align-items:center;gap:11px;padding:0 8px 0 9px;border:0;background:none;color:inherit;font:inherit;cursor:pointer;text-align:left}
-:where([data-ns-isle-icon]){width:36px;height:36px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--ns-isle-fg);color:#0a0a0a}
+:where([data-ns-isle-icon]){width:36px;height:36px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--ns-isle-ink,#f4f4f5);color:var(--ns-isle-action-ink,#0a0a0a)}
 :where([data-ns-isle-icon]) svg{width:17px;height:17px}
 :where([data-ns-isle-text]){flex:1;min-width:0;overflow:hidden;display:grid;transition:opacity .2s,visibility .2s}
 :where([data-ns-isle-label]){font-weight:700;font-size:15px;line-height:1.15;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-:where([data-ns-isle-pos]){font-size:11px;line-height:1.3;color:var(--ns-isle-muted);white-space:nowrap}
+:where([data-ns-isle-pos]){font-size:11px;line-height:1.3;color:var(--ns-isle-ink-muted,rgba(244,244,245,.6));white-space:nowrap}
 :where([data-ns-isle-more]){width:32px;height:32px;border-radius:50%;display:grid;place-items:center;flex:none;background:rgba(255,255,255,.1);transition:opacity .2s,visibility .2s}
 :where([data-ns-isle-more],[data-ns-isle-close]) svg{width:14px;height:14px}
 :where([data-ns-isle].ns-mini) :is([data-ns-isle-text],[data-ns-isle-more]){opacity:0;visibility:hidden}
-:where([data-ns-isle-panel]){--ns-isle-fg:#f4f4f5;--ns-isle-muted:rgba(244,244,245,.6);display:flex;flex-direction:column;gap:14px;padding:18px 16px 16px;border-radius:32px;background:var(--ns-isle-bg,#161618);box-shadow:inset 0 0 0 1px rgba(255,255,255,.07),inset 0 1px 0 rgba(255,255,255,.1);color:var(--ns-isle-fg);contain:layout style}
+:where([data-ns-isle-panel]){display:flex;flex-direction:column;gap:14px;padding:18px 16px 16px;border-radius:32px;background:var(--ns-isle-bg,#161618);box-shadow:inset 0 0 0 1px rgba(255,255,255,.07),inset 0 1px 0 rgba(255,255,255,.1);color:var(--ns-isle-ink,#f4f4f5);contain:layout style}
 :where([data-ns-isle-handle]){position:relative;display:flex;align-items:center;justify-content:space-between;padding:14px 6px 0;cursor:grab}
 :where([data-ns-isle-handle])::before{content:"";position:absolute;top:0;left:50%;width:36px;height:4px;margin-left:-18px;border-radius:2px;background:rgba(255,255,255,.22)}
 :where([data-ns-isle-handle]) :where(b,h2,h3){font-size:24px;font-weight:700;line-height:1;letter-spacing:-.02em;margin:0}
@@ -93,12 +93,12 @@ html.ns-has-isle body{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
 :where([data-ns-isle-links]){display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0;padding:0;list-style:none}
 :where([data-ns-isle-links]) a:not([data-ns]){border-radius:16px}
 :where([data-ns-isle-links]) a{--ns-border:rgba(255,255,255,.07);display:flex;flex-direction:column;justify-content:space-between;gap:10px;padding:12px;min-height:78px;background:rgba(255,255,255,.06);color:inherit;text-decoration:none;font-size:14px;font-weight:500;line-height:1.2;transition:background-color .2s}
-:where([data-ns-isle-links]) a svg{width:22px;height:22px;color:var(--ns-isle-muted)}
+:where([data-ns-isle-links]) a svg{width:22px;height:22px;color:var(--ns-isle-ink-muted,rgba(244,244,245,.6))}
 :where([data-ns-isle-links]) a[aria-current]{background:rgba(255,255,255,.13)}
-:where([data-ns-isle-links]) a[aria-current] svg{color:var(--ns-isle-fg)}
+:where([data-ns-isle-links]) a[aria-current] svg{color:var(--ns-isle-ink,#f4f4f5)}
 :where([data-ns-isle-actions]){display:flex;gap:8px}
 :where([data-ns-isle-actions]) :is(a,button){flex:1;min-height:48px;border-radius:980px;display:grid;place-items:center;border:0;font:inherit;font-size:15px;font-weight:500;color:inherit;text-decoration:none;background:rgba(255,255,255,.1);cursor:pointer}
-:where([data-ns-isle-actions]) :is(a,button):first-child{background:var(--ns-isle-fg);color:var(--ns-isle-ink,#0a0a0a)!important}
+:where([data-ns-isle-actions]) :is(a,button):first-child{background:var(--ns-isle-ink,#f4f4f5);color:var(--ns-isle-action-ink,#0a0a0a)!important}
 }`
 const SVGNS = 'http://www.w3.org/2000/svg'
 // un icono de trazo (la flecha de la cápsula y el × de la hoja), si su hueco está vacío
