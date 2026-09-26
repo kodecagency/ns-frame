@@ -294,7 +294,9 @@ function mk(tag, a = {}, st = {}, ...kids) {
 const BASE = 'ns-frame{display:block}:where([data-ns],[data-ns-nest],ns-frame){position:relative}.ns-fast{overflow:hidden;overflow:clip}' +
   ':where([data-ns-pad],ns-frame[pad]){--p:var(--ns-pad,1.25rem);padding:calc(var(--ns-safe-t,0px) + var(--p)) calc(var(--ns-safe-r,0px) + var(--p)) calc(var(--ns-safe-b,0px) + var(--p)) calc(var(--ns-safe-l,0px) + var(--p))}' +
   // (tras un toque o un clic, sin anillo de foco; !important dentro de la capa gana al CSS del sitio)
-  '[data-ns-input=pointer] :focus-visible{outline:none!important}'
+  '[data-ns-input=pointer] :focus-visible{outline:none!important}' +
+  // (durante el primer salto de jump(), todo se maqueta un instante para medir su alto real)
+  'html.ns-cv-off *{content-visibility:visible!important}'
 const STYLE = `
 .ns-svg{position:absolute;left:0;top:0;pointer-events:none;overflow:visible;z-index:1;filter:var(--ns-glow,none)}
 @media (hover:none) and (pointer:coarse){.ns-svg{filter:var(--ns-glow-touch,none)}}
@@ -733,6 +735,87 @@ export function watch(attr, make) {
   }
   document.readyState == 'loading' ? addEventListener('DOMContentLoaded', boot) : boot()
   return live
+}
+
+/**
+ * Grupos de elección: data-ns-choice en un contenedor de botones. Uno elegido a la vez (aria-pressed,
+ * o aria-checked con role="radio"); data-ns-choice="many", cada uno se activa y desactiva solo. Flechas
+ * del teclado (al revés en RTL; en exclusivo, eligen al moverse) y evento change en el grupo con
+ * detail { index, button, value (value, data-value o el texto), pressed }. El volumen de
+ * ns-frame/relief y los estilos por [aria-pressed=true] siguen al estado solos.
+ */
+const PICK = 'button,[role=radio],[role=checkbox]'
+function choice(g) {
+  const many = g.getAttribute('data-ns-choice') == 'many'
+  const items = () => [...g.querySelectorAll(PICK)].filter(b => b.closest('[data-ns-choice]') == g)
+  const aria = b => /^(radio|checkbox)$/.test(b.getAttribute('role')) ? 'aria-checked' : 'aria-pressed'
+  const on = b => b.getAttribute(aria(b)) == 'true'
+  const pick = b => {
+    if (many) b.setAttribute(aria(b), String(!on(b)))
+    else { if (on(b)) return; for (const x of items()) x.setAttribute(aria(x), String(x == b)) }
+    g.dispatchEvent(new CustomEvent('change', { bubbles: true, detail: { index: items().indexOf(b), button: b, value: b.value || b.dataset.value || b.textContent.trim(), pressed: on(b) } }))
+  }
+  const click = e => { const b = e.target.closest?.(PICK); if (b && !b.disabled && items().includes(b)) pick(b) }
+  const key = e => {
+    const L = items(), i = L.indexOf(document.activeElement), d = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key]
+    if (i < 0 || !d) return
+    e.preventDefault()
+    const r = /Left|Right/.test(e.key) && getComputedStyle(g).direction == 'rtl' ? -1 : 1, n = L[(i + d * r + L.length) % L.length]
+    n.focus()
+    many || pick(n)
+  }
+  g.addEventListener('click', click); g.addEventListener('keydown', key)
+  g.hasAttribute('role') || g.setAttribute('role', 'group')
+  return { destroy() { g.removeEventListener('click', click); g.removeEventListener('keydown', key) } }
+}
+// (la versión lite, sólo recortes, no los lleva)
+if (typeof NS_LITE == 'undefined') watch('data-ns-choice', choice)
+
+/**
+ * Un <dialog> nativo con apertura y cierre que respetan la forma de su panel (open/close del núcleo):
+ * showModal, foco atrapado y Escape del navegador; Escape y el clic en el fondo cierran con la
+ * animación inversa. Devuelve { open(mode?), close(mode?), destroy() }.
+ */
+export function modal(dlg, { panel = dlg.firstElementChild, mode = 'open' } = {}) {
+  let busy = null
+  const show = m => { if (!dlg.open) dlg.showModal(); return open(panel, m || mode) }
+  const hide = m => busy ||= Promise.resolve(dlg.open && close(panel, m || mode)).finally(() => { busy = null; dlg.close() })
+  const cancel = e => { e.preventDefault(); hide() }
+  const back = e => { if (e.target == dlg) hide() }
+  dlg.addEventListener('cancel', cancel); dlg.addEventListener('click', back)
+  return { open: show, close: hide, destroy() { dlg.removeEventListener('cancel', cancel); dlg.removeEventListener('click', back) } }
+}
+
+/**
+ * Salto fiable a una sección, también con content-visibility: auto (las secciones sin pintar tienen
+ * un alto estimado; al acercarse cambian y un salto normal cae desplazado). La primera vez se maquetan
+ * un instante todas (el navegador recuerda su alto real con contain-intrinsic-size: auto); después el
+ * destino se calcula bien, el desplazamiento puede ser suave y al terminar se corrige lo que falte.
+ * Respeta scroll-padding-top y prefers-reduced-motion. focus: enfoca el destino al llegar.
+ */
+let measured = 0
+export function jump(el, { focus = false, smooth = false } = {}) {
+  const root = document.documentElement
+  if (!measured) { measured = 1; root.classList.add('ns-cv-off'); void root.offsetHeight; requestAnimationFrame(() => root.classList.remove('ns-cv-off')) }
+  const off = () => el.getBoundingClientRect().top - (parseFloat(getComputedStyle(root).scrollPaddingTop) || 0)
+  if (focus && !el.hasAttribute('tabindex') && !/^(A|BUTTON|INPUT|SELECT|TEXTAREA)$/.test(el.tagName)) el.setAttribute('tabindex', '-1')
+  // corrección final: hasta que dos frames seguidos dejan el destino en su sitio (máx. 12)
+  const settle = () => {
+    let n = 0, last = NaN
+    const go = () => {
+      const top = off()
+      if (Math.abs(top) > 1) scrollBy({ top, behavior: 'instant' })
+      if ((Math.abs(top) > 1 || top != last) && ++n < 12) { last = top; requestAnimationFrame(go) }
+      else if (focus) el.focus({ preventScroll: true })
+    }
+    go()
+  }
+  if (!smooth || reduced()) return settle()
+  scrollBy({ top: off(), behavior: 'smooth' })
+  // fin del desplazamiento suave: la posición deja de cambiar 4 frames (máx. ~3 s, por si el dedo interrumpe)
+  let y = NaN, still = 0, n = 0
+  const wait = () => { still = scrollY == y ? still + 1 : 0; y = scrollY; still < 4 && ++n < 180 ? requestAnimationFrame(wait) : settle() }
+  requestAnimationFrame(wait)
 }
 
 /** El path que se está pintando ahora (a mitad de un morph, la forma intermedia), o null. */

@@ -8,9 +8,15 @@
 // · --ns-sheet-p (1 = en su sitio, 0 = fuera) queda en el elemento para atenuar el fondo con CSS.
 // · Un arrastre no dispara el clic de lo que había debajo; un toque sigue siendo un clic.
 // · Con prefers-reduced-motion el cierre y el regreso son inmediatos.
-// Sin dependencias y CSP-safe (sólo CSSOM y Web Animations).
+// · Dentro de un <dialog> (o con la opción dialog), se encarga de él: open() lo abre (showModal) y la
+//   hoja entra desde abajo; Escape y el clic en el fondo la cierran deslizándola; al salir, el diálogo
+//   se cierra; y el fondo (::backdrop) se aclara a la vez que la hoja baja (--ns-sheet-p en el diálogo).
+// CSP-safe (sólo CSSOM y Web Animations).
+
+import { styles } from './ns-frame.js'
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v))
+let styled = 0
 
 /** Resistencia elástica al pasar del tope: crece cada vez menos y nunca supera `h / 4`. */
 export const rubber = (x, h) => (1 - 1 / (x / h * 2.2 + 1)) * h / 4
@@ -31,18 +37,24 @@ const EASE = 'cubic-bezier(.2,.8,.2,1)'
  * Con track(y, h) la hoja no se mueve: el gesto sólo informa (y px hacia abajo, h su altura) y al
  * soltar llama a settle(cerrar, velocidad); quien la usa anima lo que quiera con el dedo (la isla
  * recoge la hoja hacia la cápsula).
- * Devuelve { close(), reset(), destroy() }.
+ * dialog: el <dialog> que la contiene (por defecto, el más cercano; null = ninguno).
+ * Devuelve { open(), close(), reset(), destroy() }.
  */
-export function sheet(el, { handle = el, onClose, onProgress, track, settle, threshold = 6 } = {}) {
+export function sheet(el, { handle = el, onClose, onProgress, track, settle, threshold = 6, dialog = el.closest('dialog') } = {}) {
   let id = null, y0 = 0, y = 0, h = 1, drag = false, raf = 0, anim = null
   const samples = []
+  if (dialog) {
+    if (!styled) { styled = 1; styles('@layer ns{.ns-sheet-dialog::backdrop{opacity:var(--ns-sheet-p,1)}:where(.ns-sheet-dialog){margin:auto auto 0;padding:0;border:0;background:none;max-width:100%;overflow:visible}}') }
+    dialog.classList.add('ns-sheet-dialog')
+  }
   const put = v => {
     y = v
     if (track) return track(v, h)
     el.style.translate = `0 ${v.toFixed(1)}px`
-    const p = clamp(1 - v / h, 0, 1)
-    el.style.setProperty('--ns-sheet-p', p.toFixed(3))
-    onProgress?.(p)
+    const p = clamp(1 - v / h, 0, 1).toFixed(3)
+    el.style.setProperty('--ns-sheet-p', p)
+    dialog?.style.setProperty('--ns-sheet-p', p)
+    onProgress?.(+p)
   }
   let pending = 0
 
@@ -110,8 +122,22 @@ export function sheet(el, { handle = el, onClose, onProgress, track, settle, thr
     if (drag) track ? (y = 0, settle?.(false, 0)) : to(0)
   }
   const swallow = ev => { ev.stopPropagation(); ev.preventDefault() }
-  const close = () => to(h + 24, () => { onClose?.(); reset() })
-  const reset = () => { anim?.cancel(); anim = null; y = 0; el.style.translate = ''; el.style.removeProperty('--ns-sheet-p'); el.classList.remove('ns-glass-hold') }
+  // (la altura se mide aquí: cerrada con un botón, sin arrastre previo, antes salía 25 px y desaparecía)
+  const measure = () => { h = el.getBoundingClientRect().height || h }
+  const close = () => { measure(); to(h + 24, () => { onClose?.(); reset(); dialog?.open && dialog.close() }) }
+  const reset = () => { anim?.cancel(); anim = null; y = 0; el.style.translate = ''; el.style.removeProperty('--ns-sheet-p'); dialog?.style.removeProperty('--ns-sheet-p'); el.classList.remove('ns-glass-hold') }
+  // abre (con el diálogo, si lo hay) y la hoja entra desde abajo
+  const open = () => {
+    if (dialog && !dialog.open) dialog.showModal()
+    measure()
+    if (reduced()) return put(0)
+    put(h + 24)
+    to(0)
+  }
+  // con diálogo: Escape y el clic en el fondo la cierran deslizándola, no de golpe
+  const esc = e => { e.preventDefault(); close() }
+  const back = e => { if (e.target == dialog) close() }
+  if (dialog) { dialog.addEventListener('cancel', esc); dialog.addEventListener('click', back) }
 
   handle.addEventListener('pointerdown', down)
   handle.addEventListener('pointermove', move)
@@ -125,9 +151,10 @@ export function sheet(el, { handle = el, onClose, onProgress, track, settle, thr
   el.style.overscrollBehavior = 'contain'
 
   return {
-    close, reset,
+    open, close, reset,
     destroy() {
       reset()
+      if (dialog) { dialog.removeEventListener('cancel', esc); dialog.removeEventListener('click', back); dialog.classList.remove('ns-sheet-dialog') }
       handle.removeEventListener('pointerdown', down)
       handle.removeEventListener('pointermove', move)
       handle.removeEventListener('pointerup', up)

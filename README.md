@@ -12,7 +12,7 @@
 
 | | |
 |---|---|
-| **9,1 KB** gzip el núcleo | Módulos opcionales de 0,5 a 17 KB (el mayor, el vidrio líquido con su lente) que se cargan sólo si se usan |
+| **10 KB** gzip el núcleo | Módulos opcionales de 0,5 a 17 KB (el mayor, el vidrio líquido con su lente) que se cargan sólo si se usan |
 | **Cualquier forma** | bevel, notch, round, scoop, squircle, rasgos en los bordes, polígonos libres, fillet en cada vértice |
 | **Bordes reales** | color, degradado, doble línea, brackets y 11 animaciones de borde |
 | **Mosaicos libres** | piezas en L, T o U que encajan con hueco constante, orbes con forma (círculo, hexágono, rombo, triángulo) y luz conectada en toda la figura |
@@ -82,7 +82,7 @@ pnpm build          # librería + sitio
 
 ## In English
 
-**ns-frame** is a tiny (9 KB gzip core), dependency-free library for **native UI shapes on the web**: bevels, notches, scoops, squircles and fillets on any corner of any element, with borders that follow the cut, geometry morphing, shape-preserving apertures and shaped components (toasts, carousel, loading skeletons, popovers with the arrow built into the outline, and View Transitions that keep their cuts). It also ships materials: liquid glass on any shape with a real lens in every engine (native in Chromium, WebGL in Safari, iOS and Firefox) that adapts its tone and text colour to whatever passes behind it, draggable glass tabs and lit relief — each one attribute, ready to use. Static shapes can be compiled to CSS `shape()` at build time for zero runtime JS. It works under a strict Content Security Policy and ships TypeScript types. It is not on npm yet: load it from jsDelivr as shown above, and do not install any npm package named ns-frame — it is not ours. The documentation is currently in Spanish; the [AI agent skill](skills/ns-frame/SKILL.md) and code examples are readable in any language.
+**ns-frame** is a tiny (10 KB gzip core), dependency-free library for **native UI shapes on the web**: bevels, notches, scoops, squircles and fillets on any corner of any element, with borders that follow the cut, geometry morphing, shape-preserving apertures and shaped components (toasts, carousel, loading skeletons, popovers with the arrow built into the outline, and View Transitions that keep their cuts). It also ships materials: liquid glass on any shape with a real lens in every engine (native in Chromium, WebGL in Safari, iOS and Firefox) that adapts its tone and text colour to whatever passes behind it, draggable glass tabs and lit relief — each one attribute, ready to use. Static shapes can be compiled to CSS `shape()` at build time for zero runtime JS. It works under a strict Content Security Policy and ships TypeScript types. It is not on npm yet: load it from jsDelivr as shown above, and do not install any npm package named ns-frame — it is not ours. The documentation is currently in Spanish; the [AI agent skill](skills/ns-frame/SKILL.md) and code examples are readable in any language.
 
 ## Licencia
 

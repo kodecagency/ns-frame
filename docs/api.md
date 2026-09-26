@@ -11,7 +11,7 @@ Casi nunca hace falta: `data-ns` y los atributos cubren el uso normal. La API si
 ## Núcleo (`ns-frame`)
 
 ```js
-import { path, geometry, commands, lerp, safe, define, PRESETS, attach, detach, update, shapeOf, pathOf, watch, open, close, styles } from 'ns-frame'
+import { path, geometry, commands, lerp, safe, define, PRESETS, attach, detach, update, shapeOf, pathOf, watch, jump, modal, open, close, styles } from 'ns-frame'
 ```
 
 | Función | Qué hace |
@@ -25,6 +25,9 @@ import { path, geometry, commands, lerp, safe, define, PRESETS, attach, detach, 
 | `attach(el)` · `detach(el, clear?)` | Activa / desactiva manualmente (normalmente no hace falta) |
 | `update(el)` | Relee el elemento (tras cambiar variables CSS por JS) |
 | `shapeOf(el)` | Forma efectiva que se está usando (con hover, press, nest y `--ns-shape`) |
+| `jump(el, { smooth, focus })` | Salto fiable a una sección, también con `content-visibility: auto`: suave si se pide, corrige al llegar, respeta `scroll-padding-top` y el movimiento reducido, y enfoca el destino |
+| `modal(dialog, { panel, mode })` | Un `<dialog>` nativo con apertura y cierre que respetan la forma de su panel: `{ open(mode?), close(mode?), destroy() }`; Escape y el clic en el fondo cierran con la animación inversa |
+| `data-ns-choice` | Grupos de elección (atributo): uno elegido a la vez con `aria-pressed` (o `aria-checked` con `role="radio"`), o varios con `data-ns-choice="many"`; flechas del teclado y evento `change` con `detail { index, button, value, pressed }`. El relieve (`ghost`, `select`) y tus estilos por `[aria-pressed=true]` siguen solos |
 | `watch(attr, make)` | Arranque automático por atributo, el mismo que usan glass, liquid, relief y tabs: `make(el)` al aparecer el elemento o el atributo; el `destroy()` de lo que devuelva, al quitar el atributo o sacar el elemento del documento (moverlo de sitio no cuenta). Sirve para tus propios componentes |
 | `pathOf(el)` | El path que se está pintando ahora (a mitad de un morph, la forma intermedia). Los elementos con `data-ns-glass` emiten además el evento `ns-shape` cada vez que se repintan |
 | `open(el, mode?, ms?)` · `close(el, mode?, ms?)` | Apertura y cierre respetando la forma; devuelven una promesa |
@@ -47,9 +50,9 @@ await open(panel, 'iris', 500)
 | `ns-frame/toast` | `toast(msg, options)` → `{ el, close }` · `config(options)` |
 | `ns-frame/skel` | `refresh(el?)` |
 | `ns-frame/bento` · `ns-frame/link` | `refresh()` |
-| `ns-frame/mosaic` | `refresh()`, `parseAreas(areas)` |
-| `ns-frame/sheet` | `sheet(el, { handle, onClose, onProgress, threshold, track, settle })` → `{ close(), reset(), destroy() }` · `rubber(x, h)` · `release(y, v, h)`. Con `track(y, h)` el gesto no mueve el panel, sólo informa, y al soltar llama a `settle(cerrar, v)` |
-| `ns-frame/isle` | `isle(el, { panel, links, collapse, collapseOn, swipe, morph, tile, current, line, go, pos, onChange, onOpen, onClose })` → `{ open(), close(), toggle(), go(i), index, destroy() }` |
+| `ns-frame/mosaic` | `refresh()`, `parseAreas(areas)`, `arrange(el, update)` (otra plantilla con View Transitions: las piezas viajan a su sitio) |
+| `ns-frame/sheet` | `sheet(el, { handle, onClose, onProgress, threshold, track, settle, dialog })` → `{ open(), close(), reset(), destroy() }` (dentro de un `<dialog>`, se encarga de él: `open()` lo abre y la hoja entra; Escape y el fondo la cierran deslizándola; el fondo se aclara al bajarla) · `rubber(x, h)` · `release(y, v, h)`. Con `track(y, h)` el gesto no mueve el panel, sólo informa, y al soltar llama a `settle(cerrar, v)` |
+| `ns-frame/isle` | `isle(el, { panel, links, media, collapse, collapseOn, swipe, morph, tile, current, line, go, pos, onChange, onOpen, onClose })` → `{ open(), close(), toggle(), go(i), index, destroy() }` |
 | `ns-frame/concentric` | `concentric(shape, w, h, ins, min?)` → forma del hijo · `refresh()` |
 | `ns-frame/flow` | `flow({ k, d, w, h }, pad)` → `true` / `false` · `unflow(k)` · `profile(d, w, h, pad)` · `refresh()` |
 | `ns-frame/mark` | `outline(rects, px?, py?)` → polígonos · `refresh()` |

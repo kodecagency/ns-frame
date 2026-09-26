@@ -108,20 +108,19 @@ morph(detail, () => { detail.hidden = true; grid.hidden = false }, card).then(()
 
 ## Hoja arrastrable (`ns-frame/sheet`)
 
+```html
+<dialog><div class="hoja">…<button id="cerrar">Cerrar</button></div></dialog>
+```
+
 ```js
 import { sheet } from 'ns-frame/sheet'
 
-const panel = dialog.querySelector('.hoja')
-const s = sheet(panel, {
-  onProgress: p => dialog.style.setProperty('--p', p),   // 1 = en su sitio, 0 = fuera
-  onClose: () => dialog.close(),
-})
-closeButton.onclick = () => s.close()                    // sale por abajo, como al soltarla
+const s = sheet(document.querySelector('.hoja'))   // dentro de un <dialog>: se encarga de él
+abrir.onclick = () => s.open()                      // showModal y la hoja entra desde abajo
+cerrar.onclick = () => s.close()                    // sale por abajo, como al soltarla
 ```
 
-```css
-dialog::backdrop { opacity: var(--p, 1) }                 /* el fondo se aclara al bajarla */
-```
+- **Con un `<dialog>`, lista para usar:** `open()` lo abre y la hoja entra desde abajo; Escape y el clic en el fondo la cierran deslizándola (no de golpe); al salir, el diálogo se cierra; y el fondo (`::backdrop`) se aclara a la vez que la hoja baja. La opción `dialog` elige otro diálogo (o `null`, ninguno).
 
 - Como una hoja nativa: el panel **sigue al dedo o al ratón** hacia abajo, y hacia arriba con resistencia elástica.
 - Al soltarla decide **por distancia y velocidad**: si bajó más del 35 % de su alto o se lanzó hacia abajo, sale y llama a `onClose()`; si no, vuelve a su sitio. Se puede atrapar a medio camino.
@@ -130,8 +129,32 @@ dialog::backdrop { opacity: var(--p, 1) }                 /* el fondo se aclara 
 - Pone `touch-action: none` en el asa (`handle`, por defecto todo el panel) y `overscroll-behavior: contain` en el panel.
 - `track(y, h)` y `settle(cerrar, velocidad)`: el gesto no mueve el panel, sólo informa (y px hacia abajo) y al soltar decide; quien lo usa anima lo que quiera con el dedo (así lo hace la isla).
 - `--ns-sheet-p` queda en el panel durante el gesto; la clase `.ns-sheet-drag` mientras se arrastra y `.ns-glass-hold` mientras vuelve o sale sola (un vidrio de ns-frame no se repinta en esos fotogramas).
-- Con `prefers-reduced-motion`, el cierre y el regreso son inmediatos. Devuelve `{ close(), reset(), destroy() }`.
-- Escape y el clic en el fondo los decides tú (en un `<dialog>`: evento `cancel` → `s.close()`).
+- Con `prefers-reduced-motion`, la entrada, el cierre y el regreso son inmediatos. Devuelve `{ open(), close(), reset(), destroy() }`.
+- Sin diálogo, `onClose()` y `onProgress(p)` te dejan hacer lo tuyo (1 = en su sitio, 0 = fuera).
+
+## Diálogo con apertura (`modal`, en el núcleo)
+
+```js
+import { modal } from 'ns-frame'
+const m = modal(document.querySelector('dialog'), { mode: 'iris' })   // su panel: el primer hijo
+abrir.onclick = () => m.open()          // showModal + apertura con la forma
+cerrar.onclick = () => m.close()        // apertura inversa y luego close()
+```
+
+Un `<dialog>` nativo (foco atrapado, capa superior) con `open()` / `close()` del núcleo sobre su panel. Escape y el clic en el fondo cierran con la animación inversa, no de golpe. `open(modo)` y `close(modo)` aceptan otro modo en cada llamada.
+
+## Grupos de elección (`data-ns-choice`, en el núcleo)
+
+```html
+<div data-ns-choice aria-label="Periodo"><button aria-pressed="true">Día</button><button aria-pressed="false">Semana</button></div>
+<div data-ns-choice="many" aria-label="Filtros">…</div>
+```
+
+Un grupo de botones que se comporta solo: uno elegido a la vez (`aria-pressed`; con `role="radio"`, `aria-checked`) o varios con `"many"`, flechas del teclado (al revés en RTL; en exclusivo eligen al moverse) y el evento `change` en el grupo con `detail { index, button, value, pressed }`. Todo lo que mira el estado lo sigue sin más: tus estilos por `[aria-pressed=true]`, el relieve (`data-ns-relief="ghost"` en cada botón: el elegido sube en su carril y los demás quedan como texto) o el vidrio.
+
+## Salto a una sección (`jump`, en el núcleo)
+
+`jump(el, { smooth: true, focus: true })` lleva a una sección de forma fiable también con `content-visibility: auto` (la primera vez maqueta un instante todo para medir el alto real; al llegar corrige lo que falte), respeta `scroll-padding-top` y el movimiento reducido, y enfoca el destino (con `tabindex="-1"` si hace falta). Es el salto por defecto de la isla.
 
 ## Isla de navegación (`ns-frame/isle`)
 

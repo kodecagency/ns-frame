@@ -55,7 +55,7 @@ const ACTIONS = [
               <button type="button" class="cta" data-ns-concentric>Reservar</button>
             </div>
           </article>
-          <div class="seg" id="cc-gap" role="group" aria-label="Hueco">{GAPS.map(([v, n], i) => <button type="button" data-g={v} aria-pressed={String(i == 1)}>{n}</button>)}</div>
+          <div class="seg" id="cc-gap" role="group" data-ns-choice aria-label="Hueco">{GAPS.map(([v, n], i) => <button type="button" data-g={v} aria-pressed={String(i == 1)}>{n}</button>)}</div>
         </div>
         <div class="cap">
           <h3>Esquinas concéntricas</h3>
@@ -70,7 +70,7 @@ const ACTIONS = [
           <div class="quote" id="fq" data-ns={SHAPES[0][0]} data-ns-flow="22">
             <p><b>El texto llena la forma.</b> Cada línea mide lo que le deja el contorno, con el mismo margen en las diagonales, en las curvas y en los vértices. CSS lo especificó hace más de diez años con shape-inside y ningún navegador lo ha implementado.</p>
           </div>
-          <div class="seg" id="fq-shape" role="group" aria-label="Forma">{SHAPES.map(([s, n], i) => <button type="button" data-s={s} aria-pressed={String(!i)}>{n}</button>)}</div>
+          <div class="seg" id="fq-shape" role="group" data-ns-choice aria-label="Forma">{SHAPES.map(([s, n], i) => <button type="button" data-s={s} aria-pressed={String(!i)}>{n}</button>)}</div>
         </div>
         <div class="cap">
           <h3>Texto que llena la forma</h3>
@@ -84,7 +84,7 @@ const ACTIONS = [
         <div class="stage s3">
           <p class="hl" id="hl">Titulares con <mark data-ns-mark id="mk" class="go" contenteditable="plaintext-only" spellcheck="false">un resaltado que abraza cada línea y se adapta mientras escribes</mark></p>
           <div class="row">
-            <div class="seg" id="mk-style" role="group" aria-label="Estilo del resaltado">{MARKS.map(([c, n], i) => <button type="button" data-c={c} aria-pressed={String(!i)}>{n}</button>)}</div>
+            <div class="seg" id="mk-style" role="group" data-ns-choice aria-label="Estilo del resaltado">{MARKS.map(([c, n], i) => <button type="button" data-c={c} aria-pressed={String(!i)}>{n}</button>)}</div>
             <small class="hint">Escribe en el texto verde</small>
           </div>
         </div>
@@ -106,7 +106,7 @@ const ACTIONS = [
             {ACTIONS.map(([n, d], i) => <button type="button" class={`act a${i + 1}`} aria-label={n} inert><Icon d={d} /></button>)}
             <button type="button" class="main" aria-expanded="false" aria-label="Más acciones"><Icon d="M10 4.5v11 M4.5 10h11" /></button>
           </div>
-          <div class="seg" id="lq-mode" role="group" aria-label="Material">{[['glass', 'Vidrio'], ['', 'Sólido']].map(([v, n], i) => <button type="button" data-m={v} aria-pressed={String(!i)}>{n}</button>)}</div>
+          <div class="seg" id="lq-mode" role="group" data-ns-choice aria-label="Material">{[['glass', 'Vidrio'], ['', 'Sólido']].map(([v, n], i) => <button type="button" data-m={v} aria-pressed={String(!i)}>{n}</button>)}</div>
         </div>
         <div class="cap">
           <h3>Formas líquidas y vidrio</h3>
@@ -175,8 +175,8 @@ const ACTIONS = [
             </div>
             <div class="hrow">
               <span>Modo</span>
-              <div class="hseg" id="hm-mode" role="group" aria-label="Modo" data-ns-relief="inset">
-                {['Auto', 'Frío', 'Calor'].map((m, i) => <button type="button" data-ns-relief={i ? 'ghost' : 'select'} aria-pressed={String(!i)}>{m}</button>)}
+              <div class="hseg" id="hm-mode" role="group" aria-label="Modo" data-ns-relief="inset" data-ns-choice>
+                {['Auto', 'Frío', 'Calor'].map((m, i) => <button type="button" data-ns-relief="ghost" aria-pressed={String(!i)}>{m}</button>)}
               </div>
             </div>
             <div class="hrow">
@@ -209,11 +209,9 @@ const ACTIONS = [
     import('ns-frame/concentric'); import('ns-frame/flow'); import('ns-frame/mark')
     import('ns-frame/liquid'); import('ns-frame/tabs'); import('ns-frame/glass'); import('ns-frame/relief')
   })
-  const press = (g: HTMLElement, b: Element) => g.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x == b)))
-  const on = (id: string, attr: string, fn: (v: string) => void) => $(id).addEventListener('click', e => {
-    const b = (e.target as Element).closest<HTMLElement>(`button[${attr}]`)
-    if (b) { press($(id), b); fn(b.getAttribute(attr)!) }
-  })
+  // los grupos de botones son grupos de elección de ns-frame (data-ns-choice): aria-pressed, flechas y
+  // un evento change con el botón elegido
+  const on = (id: string, attr: string, fn: (v: string) => void) => $(id).addEventListener('change', e => fn((e as CustomEvent<{ button: HTMLElement }>).detail.button.getAttribute(attr)!))
 
   on('cc-gap', 'data-g', v => $('cc').style.setProperty('--g', v + 'px'))
   on('fq-shape', 'data-s', v => $('fq').setAttribute('data-ns', v))
@@ -252,13 +250,8 @@ const ACTIONS = [
   let temp = 21, mode = 'Auto'
   const info = () => { $('hm-info').textContent = `${temp} °C · ${mode}`; $('hm-t').textContent = temp + '°' }
   $('hm-light').addEventListener('click', e => { const s = e.currentTarget as HTMLElement; s.setAttribute('aria-checked', String(s.getAttribute('aria-checked') != 'true')) })
-  $('hm-mode').addEventListener('click', e => {
-    const b = (e.target as Element).closest('button')
-    if (!b) return
-    // el elegido sube en su carril; los demás quedan como texto
-    $('hm-mode').querySelectorAll('button').forEach(x => { x.setAttribute('aria-pressed', String(x == b)); x.setAttribute('data-ns-relief', x == b ? 'select' : 'ghost') })
-    mode = b.textContent!; info()
-  })
+  // (el elegido sube en su carril y los demás quedan como texto: el relieve lo deduce de aria-pressed)
+  $('hm-mode').addEventListener('change', e => { mode = (e as CustomEvent<{ value: string }>).detail.value; info() })
   $('hm-down').addEventListener('click', () => { temp = Math.max(16, temp - 1); info() })
   $('hm-up').addEventListener('click', () => { temp = Math.min(28, temp + 1); info() })
 

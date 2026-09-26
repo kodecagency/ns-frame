@@ -86,6 +86,22 @@ export function shapeOf(el: Element): Shape | undefined
 export function pathOf(el: Element): string | null
 
 /**
+ * Salto fiable a una sección, también con content-visibility: auto: suave si se pide, corrige al
+ * llegar, respeta scroll-padding-top y el movimiento reducido; focus enfoca el destino.
+ */
+export function jump(el: HTMLElement, options?: { smooth?: boolean; focus?: boolean }): void
+
+/**
+ * Un <dialog> nativo con apertura y cierre que respetan la forma de su panel. Escape y el clic en el
+ * fondo cierran con la animación inversa.
+ */
+export function modal(dialog: HTMLDialogElement, options?: { panel?: Element; mode?: 'open' | 'split' | 'iris' | 'wipe' | 'drop' }): {
+  open(mode?: string): Promise<void>
+  close(mode?: string): Promise<void>
+  destroy(): void
+}
+
+/**
  * Arranque automático por atributo: `make(el)` al aparecer el elemento o el atributo; el `destroy()` de
  * lo que devuelva, al quitar el atributo o sacar el elemento del documento (moverlo no cuenta).
  */

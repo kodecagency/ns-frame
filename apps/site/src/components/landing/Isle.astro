@@ -24,24 +24,17 @@ import { SECTIONS, LINKS } from '../../data/sections'
 
 <script>
   import { isle } from 'ns-frame/isle'
-  import { jump } from '../../scripts/jump'
-  // sólo en pantallas donde la isla se ve (en escritorio manda la barra superior)
-  const mq = matchMedia('(max-width: 900px)')
-  let nav: ReturnType<typeof isle> | null = null
-  const init = () => {
-    if (!mq.matches) { nav?.destroy(); nav = null; return }
-    // el vidrio de la cápsula llega en un momento libre (hasta entonces, su fondo opaco de serie)
-    ;(globalThis.requestIdleCallback || setTimeout)(() => import('ns-frame/glass'), { timeout: 1500 })
-    nav ||= isle(document.getElementById('isle')!, {
-      pos: (i, n) => `${i + 1} de ${n} · desliza`,
-      go: t => jump(t, { smooth: true, focus: true }),
-      // la sección actual, con la luz en U de ns-frame (su forma la pone la isla)
-      onChange: (i, a) => a.closest('ul')!.querySelectorAll('a').forEach((x, j) => x.classList.toggle('ns-u', j == i)),
-      onOpen: () => navigator.vibrate?.(6),
-    })
-  }
-  mq.addEventListener('change', init)
-  init()
+  // sólo en pantallas donde la isla se ve (en escritorio manda la barra superior): media la monta y
+  // la desmonta sola; el salto a cada sección es el de la librería (jump)
+  isle(document.getElementById('isle')!, {
+    media: '(max-width: 900px)',
+    pos: (i, n) => `${i + 1} de ${n} · desliza`,
+    // la sección actual, con la luz en U de ns-frame (su forma la pone la isla)
+    onChange: (i, a) => a.closest('ul')!.querySelectorAll('a').forEach((x, j) => x.classList.toggle('ns-u', j == i)),
+    onOpen: () => navigator.vibrate?.(6),
+  })
+  // el vidrio de la cápsula llega en un momento libre (hasta entonces, su fondo opaco de serie)
+  if (matchMedia('(max-width: 900px)').matches) (globalThis.requestIdleCallback || setTimeout)(() => import('ns-frame/glass'), { timeout: 1500 })
 </script>
 
 <style>

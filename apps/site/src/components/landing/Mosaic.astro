@@ -25,10 +25,10 @@ const on = FX.filter(f => f[2]).map(f => f[0]).join(' ')
     <!-- barra fija: mientras el mosaico está en pantalla, los controles siguen a mano (sin subir
          y bajar para probar otra opción). En el móvil es una sola fila que se desliza de lado. -->
     <div class="bar" role="group" aria-label="Opciones del mosaico">
-      <div class="seg" id="mo-modes" role="group" aria-label="Plantilla">{TEMPLATES.map(([t, n], i) => <button type="button" data-t={t} aria-pressed={String(!i)}>{n}</button>)}</div>
-      <div class="seg" id="mo-hole" role="group" aria-label="Forma del hueco">{HOLES.map(([h, n, d], i) => <button type="button" class="ico" data-h={h} aria-pressed={String(!i)} aria-label={n} title={n}><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d={d} /></svg></button>)}</div>
-      <div class="seg" id="mo-fill" role="group" aria-label="Contenido del orbe">{FILLS.map(([c, n]) => <button type="button" data-c={c} aria-pressed={String(c == 'is-photo')}>{n}</button>)}</div>
-      <div class="fx" id="mo-fx" role="group" aria-label="Luz en toda la figura">
+      <div class="seg" id="mo-modes" role="group" data-ns-choice aria-label="Plantilla">{TEMPLATES.map(([t, n], i) => <button type="button" data-t={t} aria-pressed={String(!i)}>{n}</button>)}</div>
+      <div class="seg" id="mo-hole" role="group" data-ns-choice aria-label="Forma del hueco">{HOLES.map(([h, n, d], i) => <button type="button" class="ico" data-h={h} aria-pressed={String(!i)} aria-label={n} title={n}><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d={d} /></svg></button>)}</div>
+      <div class="seg" id="mo-fill" role="group" data-ns-choice aria-label="Contenido del orbe">{FILLS.map(([c, n]) => <button type="button" data-c={c} aria-pressed={String(c == 'is-photo')}>{n}</button>)}</div>
+      <div class="fx" id="mo-fx" role="group" aria-label="Luz en toda la figura" data-ns-choice="many">
         {FX.map(([k, n, d]) => <button type="button" data-fx={k} aria-pressed={String(!!d)}>{n}</button>)}
       </div>
     </div>
@@ -51,59 +51,34 @@ const on = FX.filter(f => f[2]).map(f => f[0]).join(' ')
 </section>
 
 <script>
-  import { refresh } from 'ns-frame/mosaic'
+  import { refresh, arrange } from 'ns-frame/mosaic'
 
   const $ = (id: string) => document.getElementById(id)!
   const mo = $('mo'), modes = $('mo-modes'), hole = $('mo-hole'), fill = $('mo-fill'), fx = $('mo-fx'), orb = $('mo-orb')
-  const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches
-  const press = (g: HTMLElement, b: Element) => { for (const x of g.querySelectorAll('button')) x.setAttribute('aria-pressed', String(x == b)) }
-  const pick = (e: Event, attr: string) => (e.target as Element).closest<HTMLElement>(`button[${attr}]`)
+  // los grupos son grupos de elección de ns-frame (data-ns-choice): cambian aria-pressed solos y
+  // avisan con change; aquí sólo se decide qué hace cada opción
+  const picked = (e: Event) => (e as CustomEvent<{ button: HTMLElement }>).detail.button
 
-  // plantilla: con View Transitions las piezas viajan a su nuevo sitio
+  // plantilla: con View Transitions las piezas viajan a su nuevo sitio (arrange de ns-frame/mosaic)
   const TEMPLATES = ['t-orb', 't-duo', 't-lock', 't-step']
-  let vt: ViewTransition | undefined
-  modes.addEventListener('click', e => {
-    const b = pick(e, 'data-t')
-    if (!b || b.getAttribute('aria-pressed') == 'true') return
-    const go = () => { press(modes, b); mo.classList.remove(...TEMPLATES); mo.classList.add(b.dataset.t!) }
-    if (!document.startViewTransition || reduced()) return go()
-    const pieces = [...mo.querySelectorAll<HTMLElement>(':scope > [data-ns-area], :scope > [data-ns-orb]')]
-    pieces.forEach((p, i) => p.style.viewTransitionName = p.dataset.nsArea ? 'mo-' + p.dataset.nsArea : 'mo-orb' + i)
-    // actualización síncrona: durante ella no hay frames; el mosaico recalcula antes de la captura.
-    // La clase quita el fundido del resto de la página (no cambia): sólo se mueven las piezas.
-    const root = document.documentElement
-    root.classList.add('mo-vt')
-    // (con clics seguidos, la transición nueva salta la anterior: sólo la última limpia)
-    const t = vt = document.startViewTransition(go)
-    t.ready.catch(() => {}) // saltada por la siguiente: no es un error
-    t.finished.finally(() => { if (vt != t) return; root.classList.remove('mo-vt'); pieces.forEach(p => p.style.viewTransitionName = '') })
-  })
+  const template = (t: string) => arrange(mo, () => { mo.classList.remove(...TEMPLATES); mo.classList.add(t) })
+  modes.addEventListener('change', e => template(picked(e).dataset.t!))
 
-  hole.addEventListener('click', e => {
-    const b = pick(e, 'data-h')
-    if (!b) return
-    const [k, r, rm] = b.dataset.h!.split(' ')
-    press(hole, b)
+  hole.addEventListener('change', e => {
+    const [k, r, rm] = picked(e).dataset.h!.split(' ')
     Object.entries({ '--hole': k, '--hole-r': r, '--hole-rm': rm }).forEach(([p, v]) => mo.style.setProperty(p, v))
     mo.classList.contains('t-orb') ? refresh() : modes.querySelector<HTMLElement>('[data-t=t-orb]')!.click()
   })
 
   // contenido del orbe; si sólo es decoración, se oculta a los lectores de pantalla
-  fill.addEventListener('click', e => {
-    const b = pick(e, 'data-c')
-    if (!b) return
-    press(fill, b)
+  fill.addEventListener('change', e => {
+    const c = picked(e).dataset.c
     orb.classList.remove('is-photo', 'is-data')
-    if (b.dataset.c) { orb.classList.add(b.dataset.c); orb.removeAttribute('aria-hidden') } else orb.setAttribute('aria-hidden', 'true')
+    if (c) { orb.classList.add(c); orb.removeAttribute('aria-hidden') } else orb.setAttribute('aria-hidden', 'true')
   })
 
-  // luz en toda la figura: los efectos se combinan libremente
-  fx.addEventListener('click', e => {
-    const b = pick(e, 'data-fx')
-    if (!b) return
-    b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') != 'true'))
-    mo.setAttribute('data-ns-mosaic', [...fx.querySelectorAll<HTMLElement>('[aria-pressed=true]')].map(x => x.dataset.fx).join(' '))
-  })
+  // luz en toda la figura: los efectos se combinan libremente (data-ns-choice="many")
+  fx.addEventListener('change', () => mo.setAttribute('data-ns-mosaic', [...fx.querySelectorAll<HTMLElement>('[aria-pressed=true]')].map(x => x.dataset.fx).join(' ')))
 </script>
 
 <style>
@@ -117,7 +92,7 @@ const on = FX.filter(f => f[2]).map(f => f[0]).join(' ')
   .fx button[aria-pressed=true] { color: var(--text); border-color: rgba(0, 230, 118, .55); background: rgba(0, 230, 118, .08) }
 
   .mo { --ns-gap: 14px; --ns-row: 150px; --ns-round: 26px; --ns-pad: 24px; --ns-mo-light: #fff }
-  .mo > [data-ns-area] { background: #18181a; --ns-border: rgba(255, 255, 255, .08); min-width: 0; view-transition-class: mo-piece }
+  .mo > [data-ns-area] { background: #18181a; --ns-border: rgba(255, 255, 255, .08); min-width: 0 }
   /* rectángulos: columna; piezas con forma (.ns-flow): el texto recorre toda la figura */
   .mo > [data-ns-area]:not(:global(.ns-flow)) { display: flex; flex-direction: column; gap: 6px }
   .mo > :global(.ns-flow) > :not(:global(.ns-fl), :global(.ns-fr)) + * { margin-top: 8px }
@@ -169,9 +144,4 @@ const on = FX.filter(f => f[2]).map(f => f[0]).join(' ')
     .mo .hi h3 { font-size: var(--t-heading) }
     .big { font-size: var(--t-heading) }
   }
-  :global(::view-transition-group(*.mo-piece)) { animation-duration: .5s; animation-timing-function: var(--ease) }
-  :global(html.mo-vt::view-transition-old(root)), :global(html.mo-vt::view-transition-new(root)) { animation: none }
-  /* la pieza nueva llega pronto (su forma cambia con el tamaño; la vieja estirada se nota) */
-  :global(::view-transition-old(*.mo-piece)) { animation-duration: .18s }
-  :global(::view-transition-new(*.mo-piece)) { animation-duration: .26s }
 </style>

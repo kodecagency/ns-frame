@@ -10,16 +10,16 @@ order: 13
 
 | Archivo | gzip | brotli | |
 |---|---|---|---|
-| `ns-frame.js` | 9,1 KB | 8,2 KB | Núcleo |
-| `ns-mosaic.js` | 8,7 KB | 7,9 KB | Mosaicos de piezas libres, orbes y luz conectada (más `ns-flow.js`) |
-| `ns-frame.lite.js` | 6,9 KB | 6,2 KB | Sólo recortes |
+| `ns-frame.js` | 10,3 KB | 9,3 KB | Núcleo (con grupos de elección, `modal`, `jump` y `watch`) |
+| `ns-mosaic.js` | 9,1 KB | 8,2 KB | Mosaicos de piezas libres, orbes y luz conectada (más `ns-flow.js`) |
+| `ns-frame.lite.js` | 7,7 KB | 7,0 KB | Sólo recortes |
 | `ns-extra.js` | 3,8 KB | 3,6 KB | **Bajo demanda**: degradados, animaciones de borde, acentos, aperturas, formas con scroll |
 | `ns-liquid.js` | 17,5 KB | 15,8 KB | Formas líquidas y vidrio líquido (más `ns-light.js`) |
 | `ns-glass.js` | 1,3 KB | 1,1 KB | Vidrio en cualquier forma (más `ns-liquid.js`) |
 | `ns-tabs.js` | 3,4 KB | 3,0 KB | Pestañas de vidrio líquido (más `ns-liquid.js`) |
 | `ns-relief.js` | 2,0 KB | 1,8 KB | Relieve (más `ns-light.js`) |
 | `ns-light.js` | 1,5 KB | 1,3 KB | La luz de la página y sus materiales (lo comparten vidrio y relieve) |
-| `ns-isle.js` | 7,3 KB | 6,6 KB | Isla de navegación, con su aspecto de serie (más `ns-sheet.js`) |
+| `ns-isle.js` | 7,8 KB | 7,0 KB | Isla de navegación, con su aspecto de serie (más `ns-sheet.js`) |
 | `ns-concentric.js` | 2,5 KB | 2,3 KB | Esquinas concéntricas automáticas |
 | `ns-skel.js` | 2,4 KB | 2,2 KB | Skeletons |
 | `ns-mark.js` | 2,2 KB | 2,0 KB | Resaltado continuo en varias líneas |
@@ -30,7 +30,7 @@ order: 13
 | `ns-link.js` | 1,8 KB | 1,6 KB | Callouts HUD |
 | `ns-carousel.js` | 1,7 KB | 1,4 KB | Carrusel |
 | `ns-bento.js` | 1,5 KB | 1,3 KB | Bento |
-| `ns-sheet.js` | 1,4 KB | 1,2 KB | Hoja arrastrable |
+| `ns-sheet.js` | 1,7 KB | 1,5 KB | Hoja arrastrable |
 | `ns-audit.js` | 1,3 KB | 1,2 KB | Sólo desarrollo |
 | `ns-fx.js` · `ns-css.js` · `ns-vt.js` · `ns-astro.js` | 0,7–0,8 KB | 0,6–0,7 KB | decode · compilador · View Transitions · integración de Astro |
 | `ns-static.js` | 0,5 KB | 0,5 KB | Build (Node) |

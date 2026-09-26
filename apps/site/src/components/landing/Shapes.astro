@@ -31,7 +31,7 @@ const MEDIA = [
     <div class="play">
       <div class="stage" data-ns="all round 22">
         <div class="bar">
-          <div class="seg" id="shape-tabs" role="group" aria-label="Forma de la tarjeta">
+          <div class="seg" id="shape-tabs" role="group" aria-label="Forma de la tarjeta" data-ns-choice>
             {SHAPES.map((s, i) => <button type="button" data-full={s.full} data-code={s.code} aria-pressed={String(i == 0)}>{s.name}</button>)}
           </div>
         </div>
@@ -67,11 +67,9 @@ const MEDIA = [
   const card = document.getElementById('shape-card')!, code = document.getElementById('shape-code')!, tabs = document.getElementById('shape-tabs')!
   const btns = [...tabs.querySelectorAll('button')]
   const set = (shape: string, label: string) => { card.setAttribute('data-ns', shape); code.textContent = label }
-  // la forma sólo cambia cuando la persona la elige (nada avanza solo)
-  btns.forEach((b, k) => b.addEventListener('click', () => {
-    set(b.dataset.full!, b.dataset.code!)
-    btns.forEach((x, j) => x.setAttribute('aria-pressed', String(j == k)))
-  }))
+  // la forma sólo cambia cuando la persona la elige (nada avanza solo); el grupo es un grupo de
+  // elección de ns-frame (data-ns-choice): aria-pressed, flechas y el evento change
+  tabs.addEventListener('change', e => { const b = (e as CustomEvent<{ button: HTMLElement }>).detail.button; set(b.dataset.full!, b.dataset.code!) })
   document.getElementById('presets')!.addEventListener('click', e => {
     const b = (e.target as Element).closest<HTMLElement>('[data-p]')
     if (!b) return

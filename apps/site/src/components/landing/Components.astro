@@ -44,7 +44,7 @@ const MODES = ['open', 'split', 'iris', 'wipe', 'drop']
       <article class="c dlg-c" data-ns="tl bevel 26; br bevel 26; top cut center 30% 6; radius 3">
         <h3>Diálogos que se despliegan</h3>
         <p>Abren y cierran respetando los cortes: el borde acompaña y el contenido se revela recortado.</p>
-        <div class="seg" id="dlg-modes" role="group" aria-label="Apertura">{MODES.map((m, i) => <button type="button" data-mode={m} aria-pressed={String(!i)}>{m}</button>)}</div>
+        <div class="seg" id="dlg-modes" role="group" aria-label="Apertura" data-ns-choice>{MODES.map((m, i) => <button type="button" data-mode={m} aria-pressed={String(!i)}>{m}</button>)}</div>
         <div class="acts"><button type="button" class="btn" data-ns="button" id="dlg-open">Abrir diálogo</button></div>
       </article>
 
@@ -104,7 +104,7 @@ const MODES = ['open', 'split', 'iris', 'wipe', 'drop']
 </section>
 
 <script>
-  import { open, close } from 'ns-frame'
+  import { modal } from 'ns-frame'
   import { near } from '../../scripts/near'
 
   // los módulos de la sección, al acercarse (skel, carousel y pop se activan solos con sus atributos)
@@ -128,35 +128,20 @@ const MODES = ['open', 'split', 'iris', 'wipe', 'drop']
   const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { io.disconnect(); load() } }, { threshold: .5 })
   io.observe(sk)
 
-  // diálogo con apertura que respeta la forma
-  const dlg = document.getElementById('dlg') as HTMLDialogElement, panel = document.getElementById('dlg-panel')!, modes = document.getElementById('dlg-modes')!
+  // diálogo con apertura que respeta la forma (modal del núcleo: Escape y el fondo cierran con la
+  // animación inversa); el modo lo elige un grupo de elección (data-ns-choice)
+  const dm = modal(document.getElementById('dlg') as HTMLDialogElement)
   let mode = 'open'
-  modes.addEventListener('click', e => {
-    const b = (e.target as Element).closest<HTMLElement>('[data-mode]')
-    if (!b) return
-    mode = b.dataset.mode!
-    modes.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x == b)))
-  })
-  document.getElementById('dlg-open')!.addEventListener('click', () => { dlg.showModal(); open(panel, mode) })
-  const shut = () => Promise.resolve(close(panel, mode)).finally(() => dlg.close())
-  document.getElementById('dlg-close')!.addEventListener('click', shut)
-  dlg.addEventListener('cancel', e => { e.preventDefault(); shut() })
+  document.getElementById('dlg-modes')!.addEventListener('change', e => { mode = (e as CustomEvent).detail.button.dataset.mode })
+  document.getElementById('dlg-open')!.addEventListener('click', () => dm.open(mode))
+  document.getElementById('dlg-close')!.addEventListener('click', () => dm.close(mode))
 
-  // hoja arrastrable (ns-frame/sheet) dentro de un <dialog> nativo: el fondo se aclara con --ns-sheet-p
+  // hoja arrastrable (ns-frame/sheet) dentro de un <dialog> nativo: la hoja se encarga del diálogo
+  // (open() con entrada, Escape, clic en el fondo, fondo que se aclara al bajarla)
   const sd = document.getElementById('sht') as HTMLDialogElement, sp = document.getElementById('sht-panel')!
-  // (la hoja se monta al acercarse la sección; hasta entonces, cerrar es cerrar el diálogo)
-  let hs = { close: () => sd.close() }
-  near(sp.closest('section')!, async () => {
-    const { sheet } = await import('ns-frame/sheet')
-    hs = sheet(sp, { onProgress: p => sd.style.setProperty('--p', String(p)), onClose: () => { sd.close(); sd.style.removeProperty('--p') } })
-  })
-  document.getElementById('sht-open')!.addEventListener('click', () => {
-    sd.showModal()
-    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) sp.animate([{ translate: '0 100%' }, { translate: '0 0' }], { duration: 380, easing: 'cubic-bezier(.2,.8,.2,1)' })
-  })
-  document.getElementById('sht-close')!.addEventListener('click', () => hs.close())
-  sd.addEventListener('cancel', e => { e.preventDefault(); hs.close() })
-  sd.addEventListener('click', e => { if (e.target == sd) hs.close() }) // clic en el fondo
+  const hs = import('ns-frame/sheet').then(({ sheet }) => sheet(sp))
+  document.getElementById('sht-open')!.addEventListener('click', async () => (await hs).open())
+  document.getElementById('sht-close')!.addEventListener('click', async () => (await hs).close())
 </script>
 
 <style>
@@ -165,8 +150,7 @@ const MODES = ['open', 'split', 'iris', 'wipe', 'drop']
   .pop { grid-area: pop } .press { grid-area: press } .dlg-c { grid-area: dlg } .toast { grid-area: toast } .skel { grid-area: skel } .car-c { grid-area: car } .sht-c { grid-area: sht }
   .sht-c { background: radial-gradient(80% 70% at 50% 110%, rgba(0, 230, 118, .1), transparent 60%), var(--surface) }
   /* la hoja: pegada abajo, ancho de móvil también en escritorio; el fondo se aclara al bajarla */
-  dialog.sht { margin: auto auto 0; width: min(520px, 100%); max-width: 100%; max-height: 90dvh; overflow: visible }
-  dialog.sht::backdrop { opacity: var(--p, 1) }
+  dialog.sht { width: min(520px, 100%); max-height: 90dvh }
   .sh { position: relative; padding: 28px 22px calc(22px + env(safe-area-inset-bottom)); display: grid; gap: 10px; background: #18181b; --ns-border: rgba(255, 255, 255, .14); cursor: grab }
   .sh:global(.ns-sheet-drag) { cursor: grabbing }
   .sh .handle { position: absolute; top: 12px; left: 50%; width: 38px; height: 4px; margin-left: -19px; border-radius: var(--r-2xs); background: rgba(255, 255, 255, .25) }

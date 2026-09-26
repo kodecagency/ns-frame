@@ -31,7 +31,7 @@
 // · Se inicia con isle(el); el atributo solo no la arranca (necesita saber qué hacer con la página).
 // Sin dependencias externas (usa el núcleo y ns-frame/sheet) y CSP-safe: estilos adoptados en @layer ns.
 
-import { styles } from './ns-frame.js'
+import { styles, jump } from './ns-frame.js'
 import { sheet } from './ns-sheet.js'
 
 const CSS = `@layer ns{
@@ -42,19 +42,22 @@ const CSS = `@layer ns{
 [data-ns-isle]:not(.ns-isle-m)[data-ns-hidden]{opacity:0;scale:.92}
 .ns-isle-morph{position:fixed;left:0;top:0;width:0;height:0;display:none;pointer-events:none;contain:layout style}
 .ns-isle-morph>i{position:absolute;left:0;top:0;transform-origin:0 0;background:var(--ns-isle-morph,#1f1f23);will-change:transform}
-.ns-isle-morph>i:nth-child(-n+4){width:32px;height:32px}
-.ns-isle-morph>i:nth-child(5),.ns-isle-morph>i:nth-child(7){width:100px;height:32px}
-.ns-isle-morph>i:nth-child(6){width:100px;height:100px}
+.ns-isle-morph>i:nth-of-type(-n+4){width:32px;height:32px}
+.ns-isle-morph>i:nth-of-type(5),.ns-isle-morph>i:nth-of-type(7){width:100px;height:32px}
+.ns-isle-morph>i:nth-of-type(6){width:100px;height:100px}
+.ns-isle-soft>i{position:absolute;left:0;top:0;transform-origin:0 0;background:var(--ns-isle-morph,#1f1f23);will-change:transform;filter:blur(5px);opacity:.9}
+.ns-isle-soft>i:nth-child(-n+2){width:32px;height:32px}.ns-isle-soft>i:nth-child(3){width:100px;height:32px}
+.ns-isle-soft>i:nth-child(1){border-top-left-radius:100%}.ns-isle-soft>i:nth-child(2){border-top-right-radius:100%}
 .ns-isle-light{position:absolute;left:0;top:0;overflow:visible;opacity:0;--g:var(--ns-isle-glow,rgba(255,255,255,.62));--w:var(--ns-isle-rim,rgba(255,255,255,.08))}
 .ns-isle-light rect{fill:none;vector-effect:non-scaling-stroke}
 .ns-isle-light .b{stroke:var(--w);stroke-width:1}
-.ns-isle-light :is(.r,.h){stroke:var(--g);stroke-dasharray:14 36;stroke-linecap:round;animation:ns-isle-run 2.6s linear infinite}
-.ns-isle-light .r{stroke-width:1.1;opacity:.8}
-.ns-isle-light .h{stroke-width:22;opacity:.2}
+.ns-isle-light :is(.r,.h1,.h2){stroke:var(--g);stroke-dasharray:14 36;stroke-linecap:round;animation:ns-isle-run 2.6s linear infinite}
+.ns-isle-light .r{stroke-width:1.1;opacity:.75}
+.ns-isle-light .h1{stroke-width:7;opacity:.1}.ns-isle-light .h2{stroke-width:16;opacity:.05}
 @keyframes ns-isle-run{to{stroke-dashoffset:-100}}
-.ns-isle-morph:not([style*=block]) .ns-isle-light :is(.r,.h){animation-play-state:paused}
-.ns-isle-morph>i:nth-child(1){border-top-left-radius:100%}.ns-isle-morph>i:nth-child(2){border-top-right-radius:100%}
-.ns-isle-morph>i:nth-child(3){border-bottom-right-radius:100%}.ns-isle-morph>i:nth-child(4){border-bottom-left-radius:100%}
+.ns-isle-morph:not([style*=block]) .ns-isle-light :is(.r,.h1,.h2){animation-play-state:paused}
+.ns-isle-morph>i:nth-of-type(1){border-top-left-radius:100%}.ns-isle-morph>i:nth-of-type(2){border-top-right-radius:100%}
+.ns-isle-morph>i:nth-of-type(3){border-bottom-right-radius:100%}.ns-isle-morph>i:nth-of-type(4){border-bottom-left-radius:100%}
 .ns-isle-m [data-ns-isle-toggle]{transition:opacity .16s}
 .ns-isle-m[data-ns-hidden] [data-ns-isle-toggle]{opacity:0}
 .ns-isle-m[data-ns-hidden]{background:none!important}
@@ -65,6 +68,7 @@ const CSS = `@layer ns{
 [data-ns-isle-panel].ns-open{translate:0 0;visibility:visible;transition:translate var(--ns-isle-time,.4s) var(--ns-isle-ease,cubic-bezier(.2,.8,.2,1)),visibility 0s}
 [data-ns-isle-panel].ns-now,[data-ns-isle-panel].ns-sheet-drag{transition:none}
 [data-ns-isle-panel].ns-stage{translate:0 0;visibility:hidden;transition:none}
+[data-ns-isle-panel].ns-prewarm{translate:0 0;visibility:visible;opacity:.01;z-index:-1;pointer-events:none;transition:none}
 [data-ns-isle-panel].ns-morphing{translate:0 0;visibility:visible;transition:none;background:none!important;box-shadow:none!important;border-color:transparent!important}
 [data-ns-isle-panel].ns-morphing>:is(.ns-liquid-src,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-fx,.ns-svg){visibility:hidden}
 @media (prefers-reduced-motion:reduce){.ns-isle-scrim,[data-ns-isle],[data-ns-isle-panel]{transition:none!important}}
@@ -166,13 +170,30 @@ const sample = (R, ms, dur) => {
  *              Radio final de la silueta: --ns-isle-radius en la hoja (32px)
  *   line       altura de la línea de lectura, en fracción de la ventana (.45): la sección que la
  *              cruza es la actual
- *   go(target, link)  cómo ir a una sección (por defecto scrollIntoView suave; respeta
- *              scroll-padding / scroll-margin)
+ *   go(target, link)  cómo ir a una sección (por defecto jump() del núcleo: suave, fiable con
+ *              content-visibility, respeta scroll-padding, y enfoca la sección al llegar)
+ *   media      media query en la que la isla existe ('(max-width: 900px)'): se monta y se desmonta
+ *              sola al cambiar la pantalla (su marcado lo ocultas tú con la misma media query)
  *   pos(i, n)  texto de posición ("2 / 7")
  *   onChange(i, link) · onOpen() · onClose()
  * Devuelve { open(), close(), toggle(), go(i), get index(), destroy() }.
  */
 export function isle(el, o = {}) {
+  if (!o.media) return mount(el, o)
+  // sólo mientras se cumple la media query: fuera de ella, nada montado (ni escuchas ni velo)
+  const mq = matchMedia(o.media)
+  let h = null
+  const sync = () => { if (mq.matches) h ||= mount(el, o); else { h?.destroy(); h = null } }
+  mq.addEventListener('change', sync)
+  sync()
+  return {
+    open: () => h?.open(), close: () => h?.close(), toggle: () => h?.toggle(), go: i => h?.go(i),
+    get index() { return h ? h.index : -1 },
+    destroy() { mq.removeEventListener('change', sync); h?.destroy(); h = null },
+  }
+}
+
+function mount(el, o) {
   if (!styled) { styled = 1; styles(CSS) }
   const btn = q(el, '[data-ns-isle-toggle]') || q(el, 'button')
   const panel = o.panel || document.getElementById(btn?.getAttribute('aria-controls')) || q(document, '[data-ns-isle-panel]')
@@ -184,7 +205,7 @@ export function isle(el, o = {}) {
   const targets = links.map(a => document.getElementById(decodeURIComponent(a.hash.slice(1))))
   const icon = q(el, '[data-ns-isle-icon]'), label = q(el, '[data-ns-isle-label]'), posEl = q(el, '[data-ns-isle-pos]')
   const pos = o.pos || ((i, n) => `${i + 1} / ${n}`)
-  const go = o.go || (t => t.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' }))
+  const go = o.go || (t => jump(t, { smooth: true, focus: true }))
   const scrim = document.createElement('div')
   scrim.className = 'ns-isle-scrim'
   panel.before(scrim)
@@ -236,6 +257,25 @@ export function isle(el, o = {}) {
   const unfade = () => { fx.forEach(a => a.cancel()); fx = [] }
   // la silueta recorre las muestras R en dur ms (cada pieza con las mismas: encajan siempre)
   const morph = (R, dur, open, col) => {
+    build()
+    // (su color, el de la hoja; su luz y su canto: --ns-isle-glow y --ns-isle-rim de la hoja)
+    const s = getComputedStyle(panel)
+    col ? mo.style.setProperty('--ns-isle-morph', col) : mo.style.removeProperty('--ns-isle-morph')
+    for (const k of ['--ns-isle-glow', '--ns-isle-rim']) { const v = s.getPropertyValue(k).trim(); v ? mo.style.setProperty(k, v) : mo.style.removeProperty(k) }
+    Object.assign(mo.style, { display: 'block', zIndex: Z() + 1 })
+    mine().forEach(a => a.cancel())
+    const K = R.map(pieces), P = [...mo.querySelectorAll(':scope > i')], S = [...mo.firstChild.children]
+    // la luz se enciende al arrancar, acompaña el recorrido y se apaga al llegar
+    mo.lastChild.animate([{ opacity: 0 }, { opacity: 1, offset: open ? .22 : .12 }, { opacity: 1, offset: open ? .72 : .6 }, { opacity: 0 }], { duration: dur, fill: 'both' })
+    const g = P.map((p, i) => p.animate(K.map(k => ({ transform: k[i] })), { duration: dur, fill: 'both' }))[0]
+    // el borde difuminado: sigue a las esquinas y a la banda de arriba (piezas 1, 2 y 5), y se apaga
+    // al llegar (en reposo la hoja es nítida)
+    S.forEach((p, i) => p.animate(K.map((k, j) => ({ transform: k[[0, 1, 4][i]], opacity: j == N ? 0 : .9 })), { duration: dur, fill: 'both' }))
+    lit(g, R, dur)
+    return g
+  }
+  // la silueta (sus piezas y su luz), una vez
+  const build = () => {
     if (!mo) {
       mo = document.createElement('div')
       mo.className = 'ns-isle-morph'
@@ -243,47 +283,44 @@ export function isle(el, o = {}) {
       // (su animación no cambia la página que hay debajo: los vidrios no la rasterizan otra vez)
       mo.setAttribute('data-ns-quiet', '')
       scrim.setAttribute('data-ns-quiet', '')
+      // (el borde de arriba, difuminado: copias desenfocadas de las esquinas y la banda de arriba,
+      // detrás de las nítidas; también sólo con transform, cada una en su capa)
+      const soft = document.createElement('div')
+      soft.className = 'ns-isle-soft'
+      for (let i = 0; i < 3; i++) soft.append(document.createElement('i'))
+      mo.append(soft)
       for (let i = 0; i < 7; i++) mo.append(document.createElement('i'))
-      // La luz del borde: un destello que da la vuelta al contorno (y su halo, recortado a la forma,
-      // que ilumina hacia dentro) sobre un canto tenue. Es un SVG de tres rectángulos que siguen a la
-      // silueta en cada fotograma (sólo cambian cuatro atributos); el destello corre con una
-      // animación CSS del trazo
+      // La luz del borde: un destello que da la vuelta al contorno (con un halo, recortado a la forma,
+      // que ilumina hacia dentro) sobre un canto tenue. Es un SVG de rectángulos que siguen a la
+      // silueta en cada fotograma (sólo cambian cinco atributos); el destello corre con una animación
+      // CSS del trazo. Sin filtros de desenfoque: redibujados en cada fotograma frenaban la apertura
+      // en el iPhone; el halo son dos trazos anchos y tenues
       const id = 'nsil' + Math.random().toString(36).slice(2, 7), NS = SVGNS, mk = (t, a = {}) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); return e }
-      const svg = mk('svg', { class: 'ns-isle-light', width: 1, height: 1 }), defs = mk('defs'), cp = mk('clipPath', { id: id + 'c' }), f = mk('filter', { id: id + 'b', x: '-20%', y: '-20%', width: '140%', height: '140%' })
-      f.append(mk('feGaussianBlur', { stdDeviation: 8 }))
-      // (el destello, difuminado un poco: luz, no una línea)
-      const f2 = mk('filter', { id: id + 's', x: '-20%', y: '-20%', width: '140%', height: '140%' }); f2.append(mk('feGaussianBlur', { stdDeviation: .9 }))
-      lr = [mk('rect'), mk('rect', { class: 'b' }), mk('rect', { class: 'h', pathLength: 100, filter: `url(#${id}b)` }), mk('rect', { class: 'r', pathLength: 100, filter: `url(#${id}s)` })]
-      cp.append(lr[0]); defs.append(cp, f, f2)
-      const g = mk('g', { 'clip-path': `url(#${id}c)` }); g.append(lr[2])
-      svg.append(defs, lr[1], g, lr[3])
+      const svg = mk('svg', { class: 'ns-isle-light', width: 1, height: 1 }), defs = mk('defs'), cp = mk('clipPath', { id: id + 'c' })
+      lr = [mk('rect'), mk('rect', { class: 'b' }), mk('rect', { class: 'h2', pathLength: 100 }), mk('rect', { class: 'h1', pathLength: 100 }), mk('rect', { class: 'r', pathLength: 100 })]
+      cp.append(lr[0]); defs.append(cp)
+      const g = mk('g', { 'clip-path': `url(#${id}c)` }); g.append(lr[2], lr[3])
+      svg.append(defs, lr[1], g, lr[4])
       mo.append(svg)
       // (entre el velo y la hoja: el contenido de la hoja va encima de la silueta)
       panel.before(mo)
     }
-    // (su color, el de la hoja; su luz y su canto: --ns-isle-glow y --ns-isle-rim de la hoja)
-    const s = getComputedStyle(panel)
-    col ? mo.style.setProperty('--ns-isle-morph', col) : mo.style.removeProperty('--ns-isle-morph')
-    for (const k of ['--ns-isle-glow', '--ns-isle-rim']) { const v = s.getPropertyValue(k).trim(); v ? mo.style.setProperty(k, v) : mo.style.removeProperty(k) }
-    Object.assign(mo.style, { display: 'block', zIndex: Z() + 1 })
-    mine().forEach(a => a.cancel())
-    const K = R.map(pieces), P = [...mo.children].slice(0, 7)
-    // la luz se enciende al arrancar, acompaña el recorrido y se apaga al llegar
-    mo.lastChild.animate([{ opacity: 0 }, { opacity: 1, offset: open ? .22 : .12 }, { opacity: 1, offset: open ? .72 : .6 }, { opacity: 0 }], { duration: dur, fill: 'both' })
-    const g = P.map((p, i) => p.animate(K.map(k => ({ transform: k[i] })), { duration: dur, fill: 'both' }))[0]
-    lit(g, R, dur)
-    return g
   }
   // los rectángulos de la luz, donde está la silueta en cada fotograma (también mientras el dedo la
   // lleva: se lee el instante de la animación, pausada o no)
   let lr = null, lf = 0
   const lit = (g, R, dur) => {
     cancelAnimationFrame(lf)
+    let last = -1
     const f = () => {
       if (!mo || mo.style.display != 'block' || g.playState == 'idle') return
-      const s = sample(R, g.currentTime || 0, dur), r = Math.max(0, Math.min(s.r, s.width / 2, s.height / 2))
-      lr.forEach((e, i) => { const d = i == 0 ? 0 : .75; e.setAttribute('x', r2(s.left + d)); e.setAttribute('y', r2(s.top + d)); e.setAttribute('width', r2(Math.max(0, s.width - 2 * d))); e.setAttribute('height', r2(Math.max(0, s.height - 2 * d))); e.setAttribute('rx', r2(Math.max(0, r - d))) })
       lf = requestAnimationFrame(f)
+      // (sólo si la silueta se movió: parada, o con el dedo quieto, no se toca el SVG)
+      const t = g.currentTime || 0
+      if (t == last) return
+      last = t
+      const s = sample(R, t, dur), r = Math.max(0, Math.min(s.r, s.width / 2, s.height / 2))
+      lr.forEach((e, i) => { const d = i == 0 ? 0 : .75; e.setAttribute('x', r2(s.left + d)); e.setAttribute('y', r2(s.top + d)); e.setAttribute('width', r2(Math.max(0, s.width - 2 * d))); e.setAttribute('height', r2(Math.max(0, s.height - 2 * d))); e.setAttribute('rx', r2(Math.max(0, r - d))) })
     }
     f()
   }
@@ -569,6 +606,23 @@ export function isle(el, o = {}) {
   targets.forEach(t => t && io.observe(t))
   set(0)
 
+  // La primera apertura costaba más que las demás (se montaba la silueta y se calculaban y pintaban
+  // por primera vez las formas de la hoja). En un momento libre tras cargar, se adelanta: la silueta
+  // se monta y la hoja pasa un instante oculta en su sitio, donde sus formas se preparan
+  let idle = 0
+  // (pintada de verdad, pero invisible: opacidad 0,01 y detrás de la página, durante tres fotogramas;
+  // oculta con visibility el navegador no la pinta y la primera apertura pagaba ese pintado)
+  const prewarm = () => {
+    idle = 0
+    if (isOpen || !MORPH) return
+    build()
+    panel.classList.add('ns-prewarm')
+    let n = 3
+    const f = () => --n ? requestAnimationFrame(f) : panel.classList.remove('ns-prewarm')
+    requestAnimationFrame(f)
+  }
+  idle = (globalThis.requestIdleCallback || setTimeout)(prewarm, { timeout: 2500 })
+
   // pliegue al bajar y última sección al llegar al final (no siempre alcanza la línea)
   let y0 = scrollY, raf = 0
   const frame = () => {
@@ -587,7 +641,7 @@ export function isle(el, o = {}) {
     go: i => targets[i] && go(targets[i], links[i]),
     get index() { return cur },
     destroy() {
-      run++; unfade(); mo?.remove(); isOpen && lock(false); document.documentElement.classList.remove('ns-has-isle'); el.style.zIndex = ''; el.classList.remove('ns-isle-m')
+      run++; unfade(); mo?.remove(); mo = null; (globalThis.cancelIdleCallback || clearTimeout)(idle); isOpen && lock(false); document.documentElement.classList.remove('ns-has-isle'); el.style.zIndex = ''; el.classList.remove('ns-isle-m')
       io.disconnect(); sh.destroy(); scrim.remove(); clearTimeout(timer)
       removeEventListener('scroll', scroll); removeEventListener('keydown', key); document.removeEventListener('focusin', trap)
       btn.removeEventListener('pointerdown', down); btn.removeEventListener('pointerup', up)

@@ -42,6 +42,8 @@ export function refresh(el?: Element): void
 // ── ns-frame/mosaic ──
 /** Lee una plantilla `--ns-areas` ("'a a b' 'c d b'") como matriz de celdas ('.' = vacía). */
 export function parseAreas(areas: string): string[][]
+/** Aplica `update()` (otra plantilla) con View Transitions: cada pieza viaja a su nuevo sitio y el resto de la página no hace fundido. */
+export function arrange(el: HTMLElement, update: () => void): Promise<void>
 
 // ── ns-frame/sheet ──
 export interface SheetOptions {
@@ -57,8 +59,10 @@ export interface SheetOptions {
   track?: (y: number, h: number) => void
   /** Con track, al soltar: si debe cerrarse (distancia o velocidad) y la velocidad (px/ms). */
   settle?: (close: boolean, velocity: number) => void
+  /** El <dialog> que la contiene (por defecto el más cercano; null = ninguno): open() lo abre, Escape y el fondo la cierran deslizándola. */
+  dialog?: HTMLDialogElement | null
 }
-export interface Sheet { close(): void; reset(): void; destroy(): void }
+export interface Sheet { open(): void; close(): void; reset(): void; destroy(): void }
 /** Convierte el elemento en una hoja arrastrable como las de una app nativa. */
 export function sheet(el: HTMLElement, options?: SheetOptions): Sheet
 /** Resistencia elástica al pasar del tope (px). */
@@ -84,6 +88,8 @@ export interface IsleOptions {
   tile?: Shape | false
   /** Forma de la casilla de la sección actual ('tl+br bevel 14; tr+bl round 16; radius 2'). */
   current?: Shape
+  /** Media query en la que la isla existe: se monta y se desmonta sola. */
+  media?: string
   /** Línea de lectura en fracción de la ventana (.45): la sección que la cruza es la actual. */
   line?: number
   /** Cómo ir a una sección (por defecto, scrollIntoView suave). */

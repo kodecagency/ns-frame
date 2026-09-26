@@ -78,7 +78,8 @@ export function relief(el) {
     const w = el.offsetWidth, h = el.offsetHeight
     if (!w || !h) return
     const tok = (el.getAttribute('data-ns-relief') || '').split(/\s+/), cs = getComputedStyle(el)
-    const on = el.getAttribute('aria-pressed') == 'true' || el.getAttribute('aria-checked') == 'true', select = tok.includes('select')
+    // (ghost elegido = select: sube en su carril; así un grupo de elección sólo cambia aria-pressed)
+    const on = el.getAttribute('aria-pressed') == 'true' || el.getAttribute('aria-checked') == 'true', select = tok.includes('select') || tok.includes('ghost')
     // qué material toca según el estado
     const kind = down ? 'pressed' : tok.includes('inset') || (on && !select && !tok.includes('ghost')) ? 'inset'
       : tok.includes('knob') ? 'knob' : tok.includes('surface') ? 'surface' : tok.includes('raised') || select || h < 60 ? 'raised' : 'surface'

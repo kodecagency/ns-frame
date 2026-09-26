@@ -612,6 +612,34 @@ function add(el) {
 /** Recalcula (p. ej. tras cambiar --ns-areas o --ns-orb por JS). */
 export const refresh = schedule
 
+// Cambiar la plantilla con View Transitions: cada pieza viaja a su nuevo sitio (un nombre por pieza,
+// la misma clase para todas) y el resto de la página no hace fundido (sólo se mueven las piezas).
+// update() cambia la plantilla (una clase, --ns-areas…); el mosaico se recalcula dentro de la
+// transición, antes de la captura. Sin soporte o con movimiento reducido, el cambio es inmediato.
+const VT_CSS = `@layer ns{
+::view-transition-group(*.ns-mosaic-piece){animation-duration:var(--ns-mosaic-time,.5s);animation-timing-function:cubic-bezier(.3,.7,.2,1)}
+::view-transition-old(*.ns-mosaic-piece){animation-duration:.18s}::view-transition-new(*.ns-mosaic-piece){animation-duration:.26s}
+html.ns-mosaic-vt::view-transition-old(root),html.ns-mosaic-vt::view-transition-new(root){animation:none}}`
+let vtStyled = 0, vtRun = null, vtN = 0
+/** Aplica update() (otra plantilla) con las piezas viajando a su sitio. Devuelve una promesa. */
+export function arrange(el, update) {
+  const go = () => { update(); if (M.has(el)) layout() }
+  if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) return Promise.resolve(go())
+  if (!vtStyled) { vtStyled = 1; inject(VT_CSS) }
+  const root = document.documentElement, id = 'nsm' + ++vtN
+  const pieces = [...el.querySelectorAll(':scope > [data-ns-area], :scope > [data-ns-orb]')]
+  pieces.forEach((p, i) => { p.style.viewTransitionName = id + '-' + i; p.style.setProperty('view-transition-class', 'ns-mosaic-piece') })
+  root.classList.add('ns-mosaic-vt')
+  // (con cambios seguidos, la transición nueva salta la anterior: sólo la última limpia)
+  const t = vtRun = document.startViewTransition(go)
+  t.ready.catch(() => {})
+  return t.finished.catch(() => {}).finally(() => {
+    if (vtRun != t) return
+    root.classList.remove('ns-mosaic-vt')
+    pieces.forEach(p => { p.style.viewTransitionName = ''; p.style.removeProperty('view-transition-class') })
+  })
+}
+
 if (typeof document != 'undefined') {
   const scan = n => { if (n.nodeType != 1) return; n.matches('[data-ns-mosaic]') && add(n); n.querySelectorAll('[data-ns-mosaic]').forEach(add) }
   const boot = () => {

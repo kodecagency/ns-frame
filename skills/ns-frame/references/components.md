@@ -17,10 +17,11 @@ Every module is optional. Not on npm yet (do not install any npm package named `
 | `data-ns-native` | Use native `corner-shape` when supported (box-shadow/outline follow the shape) |
 | `data-ns-pad` / `data-ns-safe` | Shape-aware padding / expose `--ns-safe-t/r/b/l` only |
 | `data-ns-nest="round 2"` | Concentric with the shaped parent |
+| `data-ns-choice` / `="many"` | Button group: exclusive `aria-pressed` (or many), arrow keys, `change` event with `detail { index, button, value, pressed }`. Use it instead of writing your own pressed-state code |
 
 CSS variables: `--ns-border`, `--ns-border-width`, `--ns-inner`, `--ns-inner-color`, `--ns-inner-width`, `--ns-inner-opacity`, `--ns-accent`, `--ns-accent-width`, `--ns-motion`, `--ns-motion-time`, `--ns-progress`, `--ns-glow`, `--ns-morph-time`, `--ns-draw-time`, `--ns-focus`, `--ns-focus-width`, `--ns-pad`, `--ns-shape`.
 
-JS: `open(el, mode, ms)` / `close(el, mode, ms)` return promises; `update(el)` after changing CSS variables from JS; `shapeOf(el)`; `path(shape, w, h)` for SVG/canvas.
+JS: `open(el, mode, ms)` / `close(el, mode, ms)` return promises; `modal(dialog, { panel, mode })` wraps a native `<dialog>` with shape-aware open/close (Escape and backdrop close with the reverse animation); `jump(el, { smooth, focus })` reliable in-page jump (works with `content-visibility: auto`); `update(el)` after changing CSS variables from JS; `shapeOf(el)` / `pathOf(el)` (the path being painted, mid-morph too); `path(shape, w, h)` for SVG/canvas; `watch(attr, make)` to auto-mount/unmount your own attribute-driven components. After a tap or click no focus ring is drawn (`data-ns-input` on `<html>`); keyboard focus rings stay.
 
 ## Toasts — `ns-frame/toast`
 
@@ -96,10 +97,11 @@ A bento whose pieces can be L, T, U or staircase shapes. Children need `data-ns-
 
 ```js
 import { sheet } from 'ns-frame/sheet'
-const s = sheet(panel, { onClose: () => dialog.close(), onProgress: p => dialog.style.setProperty('--p', p) })
+const s = sheet(dialog.querySelector('.sheet'))   // inside a <dialog>: it manages it
+openBtn.onclick = () => s.open()
 ```
 
-Panel follows the finger/mouse down (rubber band up), closes on release past 35 % of its height or on a downward fling. Moves only `translate`. Options `handle`, `threshold` (6 px). Returns `{ close(), reset(), destroy() }`. Escape/backdrop are yours (`<dialog>` `cancel` → `s.close()`). Pure helpers: `rubber(x, h)`, `release(y, v, h)`.
+Panel follows the finger/mouse down (rubber band up), closes on release past 35 % of its height or on a downward fling. Moves only `translate`. Inside a `<dialog>` it is ready to use: `open()` calls `showModal` and slides in, Escape and backdrop clicks slide it out, the `::backdrop` fades with the drag. Options `handle`, `threshold` (6 px), `dialog`, `onClose`, `onProgress`, `track`/`settle` (drive your own animation with the finger). Returns `{ open(), close(), reset(), destroy() }`. Pure helpers: `rubber(x, h)`, `release(y, v, h)`.
 
 ## Navigation island — `ns-frame/isle`
 
