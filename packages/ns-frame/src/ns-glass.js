@@ -6,16 +6,22 @@
 // reflejos) sobre un elemento cualquiera y con su forma exacta: chaflanes, muescas, cortes, curvas y
 // squircles de ns-frame, o su border-radius. La lente sale del campo de distancias del propio path
 // (rasterizado y con transformada de distancia exacta), así que se curva igual en un chaflán que en
-// una esquina redonda. Lente en todos los motores (en Safari y Firefox, sobre una copia del fondo:
-// ver ns-frame/liquid, data-ns-liquid-src).
-// · data-ns-glass="clear": casi sin tinte (una lente); "tint": más cuerpo y más legibilidad.
-// · Variables: las de ns-frame/liquid (--ns-glass-tint, -blur, -sat, -lens, -depth, -edge, -shine).
+// una esquina redonda. Lente en todos los motores (en Safari y Firefox, en WebGL sobre una copia del
+// fondo; material grueso y vidrio fijo, con el desenfoque nativo: ver ns-frame/liquid).
+// · Palabras de data-ns-glass (se combinan): "clear" casi sin tinte (una lente); "tint" más cuerpo;
+//   "u" la luz en U dentro del cristal; "facet" canto tallado y lente plana por caras; "prism"
+//   dispersión cromática; "border" dibuja también el borde de ns-frame; "lens" fuerza la lente donde
+//   se usaría el desenfoque nativo.
+// · Variables: las de ns-frame/liquid (--ns-glass-*), todas opcionales.
+// · Sigue a la forma también a mitad de un morph (data-ns-hover, data-ns-press): el núcleo avisa con
+//   el evento ns-shape y el vidrio lee la forma intermedia (pathOf).
 // · Un marco con vidrio no se recorta con clip-path (haría de raíz del fondo y el vidrio no vería la
 //   página): el vidrio hace de silueta y el borde del marco se sigue dibujando. Lo que haya dentro
-//   no se recorta: las imágenes que lleguen a los cortes, recórtalas con su propio data-ns.
+//   no se recorta: las imágenes que lleguen a los cortes, recórtalas con su propio data-ns. Por lo
+//   mismo, las aperturas (open, data-ns-open) no lo recortan.
 // · Como cualquier vidrio: sin filter, opacity < 1, mask ni backdrop-filter en sus antepasados.
 
-import { styles, path, shapeOf, update } from './ns-frame.js'
+import { styles, path, shapeOf, pathOf, update } from './ns-frame.js'
 import { liquid } from './ns-liquid.js'
 
 const CSS = `@layer ns{
@@ -56,13 +62,15 @@ export function glass(el, o = {}) {
   const shape = () => {
     const w = el.offsetWidth, hh = el.offsetHeight, s = shapeOf(el)
     if (!w || !hh) return null
-    const d = s ? path(s, w, hh) : rounded(el, w, hh)
+    // (la forma que el núcleo está pintando: a mitad de un morph, la intermedia)
+    const d = s ? pathOf(el) || path(s, w, hh) : rounded(el, w, hh)
     return { d, w, h: hh }
   }
   const h = liquid(el, { glass: true, prism: () => tok().includes('prism'), hard: () => tok().includes('facet'), path: shape, ...o })
+  el.addEventListener('ns-shape', h.frame)
   // un marco de ns-frame deja de recortarse (lo lee el núcleo al pintar)
   if (el.hasAttribute('data-ns') || el.localName == 'ns-frame') update(el)
-  const api = { ...h, destroy() { h.destroy(); el.classList.remove('ns-glass-shape'); G.delete(el) } }
+  const api = { ...h, destroy() { h.destroy(); el.removeEventListener('ns-shape', h.frame); el.classList.remove('ns-glass-shape'); G.delete(el) } }
   G.set(el, api)
   return api
 }

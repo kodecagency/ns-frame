@@ -53,6 +53,10 @@ export interface SheetOptions {
   onProgress?: (p: number) => void
   /** Píxeles antes de considerar que es un arrastre y no un toque (6). */
   threshold?: number
+  /** Con track, el gesto no mueve el panel: informa del recorrido del dedo (y px hacia abajo, h su altura). */
+  track?: (y: number, h: number) => void
+  /** Con track, al soltar: si debe cerrarse (distancia o velocidad) y la velocidad (px/ms). */
+  settle?: (close: boolean, velocity: number) => void
 }
 export interface Sheet { close(): void; reset(): void; destroy(): void }
 /** Convierte el elemento en una hoja arrastrable como las de una app nativa. */
@@ -68,10 +72,18 @@ export interface IsleOptions {
   panel?: HTMLElement
   /** Enlaces a secciones (por defecto, los a[href^="#"] de la hoja). */
   links?: Iterable<HTMLAnchorElement>
-  /** px de scroll desde los que la cápsula se pliega al bajar (200); false = nunca. */
+  /** px de scroll desde los que la cápsula puede plegarse (200); false = nunca. */
   collapse?: number | false
+  /** 'up' (por defecto): se pliega al subir y va completa al bajar; 'down': al revés. */
+  collapseOn?: 'up' | 'down'
   /** Deslizar la cápsula cambia de sección (true). */
   swipe?: boolean
+  /** La cápsula se convierte en la hoja como la Dynamic Island (true); false: la hoja entra desde abajo. */
+  morph?: boolean
+  /** Forma de ns-frame de las casillas de [data-ns-isle-links] ('all squircle 16'); false = ninguna. */
+  tile?: Shape | false
+  /** Forma de la casilla de la sección actual ('tl+br bevel 14; tr+bl round 16; radius 2'). */
+  current?: Shape
   /** Línea de lectura en fracción de la ventana (.45): la sección que la cruza es la actual. */
   line?: number
   /** Cómo ir a una sección (por defecto, scrollIntoView suave). */
@@ -145,7 +157,10 @@ export function shift(d: string, dx: number, dy: number): string
 // ── ns-frame/glass ──
 /**
  * Vidrio líquido en cualquier elemento, con su forma de ns-frame (data-ns) o su border-radius.
- * Automático con `data-ns-glass` ("clear", "tint", "facet" = cristal tallado, "prism" = dispersión).
+ * Automático con `data-ns-glass`; palabras que se combinan: "clear", "tint", "u" (luz en U dentro),
+ * "facet" (cristal tallado), "prism" (dispersión), "border" (dibuja el borde de ns-frame), "lens"
+ * (fuerza la lente donde se usaría el desenfoque nativo: material grueso o vidrio fijo). Sigue a la
+ * forma también a mitad de un morph.
  */
 export function glass(el: HTMLElement, options?: LiquidOptions): { update(): void; frame(): void; destroy(): void }
 
@@ -165,7 +180,14 @@ export function relief(el: HTMLElement): { update(): void; destroy(): void }
 
 // ── ns-frame/tabs ──
 /** Pestañas de vidrio líquido: indicador que se arrastra, se estira y encaja con un muelle. Automático con `data-ns-tabs`. Emite "change" con detail { index, tab }. */
-export function tabs(el: HTMLElement, options?: { items?: string }): { select(index: number): void; readonly index: number; destroy(): void }
+export function tabs(el: HTMLElement, options?: {
+  /** Selector de las pestañas (por defecto, los button, [role=tab] y a hijos). */
+  items?: string
+  /** Deja una gota detrás que se funde con el indicador (si no, la palabra "drop" de data-ns-tabs). */
+  drop?: boolean
+  /** Se encoge al desplazar hacia abajo, como la barra de iOS 26 (si no, la palabra "shrink"). */
+  shrink?: boolean
+}): { select(index: number): void; readonly index: number; destroy(): void }
 
 // ── ns-frame/fx ──
 /** Efecto de texto que se "descifra". */

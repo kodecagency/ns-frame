@@ -26,7 +26,10 @@
 // · Deslizar la cápsula a los lados va a la sección anterior o siguiente.
 // · La sección actual se sigue con IntersectionObserver (sin medir en cada scroll).
 // · Accesible: aria-expanded, aria-current, inert fuera de la vista, el foco entra y vuelve.
-// Sin dependencias (salvo ns-frame/sheet) y CSP-safe: estilos adoptados en @layer ns.
+// · Con ns-frame/glass: data-ns-glass en la cápsula la hace de vidrio (fijo: desenfoque nativo
+//   fuera de Chromium). La luz del contorno durante la transformación: --ns-isle-glow, --ns-isle-rim.
+// · Se inicia con isle(el); el atributo solo no la arranca (necesita saber qué hacer con la página).
+// Sin dependencias externas (usa el núcleo y ns-frame/sheet) y CSP-safe: estilos adoptados en @layer ns.
 
 import { styles } from './ns-frame.js'
 import { sheet } from './ns-sheet.js'

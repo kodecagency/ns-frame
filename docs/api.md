@@ -11,7 +11,7 @@ Casi nunca hace falta: `data-ns` y los atributos cubren el uso normal. La API si
 ## Núcleo (`ns-frame`)
 
 ```js
-import { path, geometry, commands, lerp, safe, define, PRESETS, attach, detach, update, shapeOf, open, close, styles } from 'ns-frame'
+import { path, geometry, commands, lerp, safe, define, PRESETS, attach, detach, update, shapeOf, pathOf, open, close, styles } from 'ns-frame'
 ```
 
 | Función | Qué hace |
@@ -25,6 +25,7 @@ import { path, geometry, commands, lerp, safe, define, PRESETS, attach, detach, 
 | `attach(el)` · `detach(el, clear?)` | Activa / desactiva manualmente (normalmente no hace falta) |
 | `update(el)` | Relee el elemento (tras cambiar variables CSS por JS) |
 | `shapeOf(el)` | Forma efectiva que se está usando (con hover, press, nest y `--ns-shape`) |
+| `pathOf(el)` | El path que se está pintando ahora (a mitad de un morph, la forma intermedia). Los elementos con `data-ns-glass` emiten además el evento `ns-shape` cada vez que se repintan |
 | `open(el, mode?, ms?)` · `close(el, mode?, ms?)` | Apertura y cierre respetando la forma; devuelven una promesa |
 | `styles(css)` | Inyecta CSS con una constructable stylesheet (CSP estricta) |
 
@@ -46,16 +47,16 @@ await open(panel, 'iris', 500)
 | `ns-frame/skel` | `refresh(el?)` |
 | `ns-frame/bento` · `ns-frame/link` | `refresh()` |
 | `ns-frame/mosaic` | `refresh()`, `parseAreas(areas)` |
-| `ns-frame/sheet` | `sheet(el, { handle, onClose, onProgress, threshold })` → `{ close(), reset(), destroy() }` · `rubber(x, h)` · `release(y, v, h)` |
-| `ns-frame/isle` | `isle(el, options)` → `{ open(), close(), toggle(), go(i), index, destroy() }` |
+| `ns-frame/sheet` | `sheet(el, { handle, onClose, onProgress, threshold, track, settle })` → `{ close(), reset(), destroy() }` · `rubber(x, h)` · `release(y, v, h)`. Con `track(y, h)` el gesto no mueve el panel, sólo informa, y al soltar llama a `settle(cerrar, v)` |
+| `ns-frame/isle` | `isle(el, { panel, links, collapse, collapseOn, swipe, morph, tile, current, line, go, pos, onChange, onOpen, onClose })` → `{ open(), close(), toggle(), go(i), index, destroy() }` |
 | `ns-frame/concentric` | `concentric(shape, w, h, ins, min?)` → forma del hijo · `refresh()` |
 | `ns-frame/flow` | `flow({ k, d, w, h }, pad)` → `true` / `false` · `unflow(k)` · `profile(d, w, h, pad)` · `refresh()` |
 | `ns-frame/mark` | `outline(rects, px?, py?)` → polígonos · `refresh()` |
 | `ns-frame/liquid` | `liquid(el, { blobs, k, step, glass, source })` → `{ update(), frame(), destroy() }` · `field()`, `contour()`, `blend(boxes, k?, step?)` → `d` |
-| `ns-frame/glass` | `glass(el, opciones de liquid)` → `{ update(), frame(), destroy() }` · automático con `data-ns-glass` (`clear`, `tint`, `facet`, `prism`) · en `ns-frame/liquid`: `pathField(d, w, h, step?)`, `shift(d, dx, dy)` |
+| `ns-frame/glass` | `glass(el, opciones de liquid)` → `{ update(), frame(), destroy() }` · automático con `data-ns-glass` (`clear`, `tint`, `u`, `facet`, `prism`, `border`, `lens`) · en `ns-frame/liquid`: `pathField(d, w, h, step?)`, `shift(d, dx, dy)` |
 | `ns-frame/light` | `material(parámetros)` → id de un `<filter>` compartido, iluminado por la luz de la página |
 | `ns-frame/relief` | `relief(el)` → `{ update(), destroy() }` · automático con `data-ns-relief` (`surface`, `raised`, `knob`, `inset`, `select`, `ghost`; tonos `metal`, `paper`) |
-| `ns-frame/tabs` | `tabs(el, { items })` → `{ select(i), index, destroy() }` · evento `change` con `detail { index, tab }` |
+| `ns-frame/tabs` | `tabs(el, { items, drop, shrink })` → `{ select(i), index, destroy() }` · evento `change` con `detail { index, tab }` |
 | `ns-frame/fx` | `decode(el, ms?)` |
 | `ns-frame/audit` | `audit({ root, mark, margin, clearance })` → problemas encontrados |
 | `ns-frame/pop` · `ns-frame/carousel` | Sin exportaciones: se activan con sus atributos |

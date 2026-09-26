@@ -18,24 +18,27 @@
 //   2. lente: el fondo se curva en el borde como a través de un cristal grueso. El mapa de
 //      desplazamiento sale del mismo campo de distancias: cada punto cerca del borde toma el
 //      fondo un poco más allá, en la dirección de la normal. En Chromium, feDisplacementMap en
-//      backdrop-filter; en Safari y Firefox (que no admiten filtros SVG en backdrop-filter), sobre
-//      una copia alineada del fondo: la imagen, el vídeo o el fondo que haya detrás, lo que diga
-//      data-ns-liquid-src="selector", o si no hay nada limpio, la página entera (un clon sólo de
-//      la zona bajo el grupo);
-//   3. canto: un anillo junto al borde con más brillo, saturación y contraste (en todos los
-//      navegadores: es lo que da el grosor al vidrio donde no hay lente);
-//   4. luz: un reflejo especular fino arriba, uno tenue abajo y un brillo interior.
-//   Variables: --ns-glass-tint, --ns-glass-blur (4px), --ns-glass-sat (1.3), --ns-glass-lens
-//   (fuerza de la lente en px, 34; 0 = sin lente), --ns-glass-depth (hasta dónde llega la lente
-//   desde el borde, 24px), --ns-glass-edge (ancho del canto, 8px),
-//   --ns-glass-shine (0–1). Con prefers-reduced-transparency se vuelve opaco (--ns-glass-solid).
-//   Sobre un fondo claro liso, el vidrio se aclara solo (clase ns-glass-light, tinte
-//   --ns-glass-tint-light) y --ns-glass-ink da el color de texto que contrasta (#111 o #fff).
+//      backdrop-filter; en Safari y Firefox (que no admiten filtros SVG en backdrop-filter), en
+//      WebGL sobre una copia del fondo: la imagen, el vídeo o el canvas que haya detrás (con CORS),
+//      lo que diga data-ns-liquid-src="selector", o la página rasterizada bajo el grupo. Allí, un
+//      material grueso (blur ≥ 12px) o un vidrio fijo/pegajoso usan el desenfoque nativo (la copia
+//      se vería granulada o llegaría tarde al desplazar); data-ns-glass="lens" fuerza la lente;
+//   3. canto: lo de detrás, más luminoso y saturado, en una franja junto al borde (dentro del
+//      filtro de la lente; en WebGL, en el mismo paso);
+//   4. luz: el reflejo del canto con la luz de la página (ns-frame/light) y un brillo interior.
+//   Variables (todas opcionales: los valores por defecto dependen del tamaño y del fondo):
+//   --ns-glass-tint, --ns-glass-blur (3px; 7px en claro), --ns-glass-sat (1.3), --ns-glass-lens
+//   (fuerza en px; por defecto 55 % del lado corto, 10–44), --ns-glass-depth (42 %, 8–36),
+//   --ns-glass-edge (8px), --ns-glass-zoom (aumento, 0–1), --ns-glass-rim, --ns-glass-rim-back,
+//   --ns-glass-rim-color, --ns-glass-shine (0–1), --ns-glass-glow / -glow-size (halo),
+//   --ns-glass-shadow, --ns-glass-deep. Con prefers-reduced-transparency se vuelve opaco
+//   (--ns-glass-solid). El tono se adapta a lo de detrás (ns-glass-light / ns-glass-deep) y
+//   --ns-glass-ink da el color de texto que contrasta.
 //   La lente necesita img-src data: en la CSP (el mapa es una imagen generada en local).
 // · Los hijos no llevan fondo: el conjunto lo pinta. data-ns-blob marca cuáles cuentan (si no, todos).
 // · Mientras algún hijo se anima (transiciones, Web Animations, hover), se redibuja cada frame; en
 //   reposo no hace nada.
-// Sin dependencias (salvo el núcleo). Sólo CSSOM y atributos SVG (sin HTML en texto).
+// Sin dependencias externas (usa el núcleo y ns-frame/light). Sólo CSSOM y atributos SVG (sin HTML en texto).
 
 import { styles } from './ns-frame.js'
 import { material } from './ns-light.js'
@@ -734,8 +737,10 @@ const setA = (e, a) => { for (const k in a) e.setAttribute(k, a[k]) }
 /**
  * Convierte `el` en un grupo líquido. Opciones: blobs (selector o función → elementos; por defecto
  * [data-ns-blob] o los hijos), k y step (si no, --ns-liquid y 2), glass (si no, el atributo),
- * source (elemento o selector del fondo para la lente fuera de Chromium; si no, data-ns-liquid-src).
- * Devuelve { update(), destroy() }.
+ * source (elemento o selector del fondo para la lente fuera de Chromium; si no, data-ns-liquid-src),
+ * y las que usa ns-frame/glass: path (función → { d, w, h }: una forma exacta en vez de la unión de
+ * los hijos), prism y hard (funciones → booleano: dispersión y canto tallado).
+ * Devuelve { update() (relee estilos), frame() (sólo redibuja), destroy() }.
  */
 export function liquid(el, o = {}) {
   // (una sola instancia por elemento: el arranque automático y quien la cree a mano la comparten)

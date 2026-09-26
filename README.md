@@ -12,7 +12,7 @@
 
 | | |
 |---|---|
-| **8,9 KB** gzip el núcleo | Módulos opcionales de 0,5 a 17 KB (el mayor, el vidrio líquido con su lente) que se cargan sólo si se usan |
+| **9,1 KB** gzip el núcleo | Módulos opcionales de 0,5 a 17 KB (el mayor, el vidrio líquido con su lente) que se cargan sólo si se usan |
 | **Cualquier forma** | bevel, notch, round, scoop, squircle, rasgos en los bordes, polígonos libres, fillet en cada vértice |
 | **Bordes reales** | color, degradado, doble línea, brackets y 11 animaciones de borde |
 | **Mosaicos libres** | piezas en L, T o U que encajan con hueco constante, orbes con forma (círculo, hexágono, rombo, triángulo) y luz conectada en toda la figura |
@@ -34,6 +34,31 @@ Desde el CDN de jsDelivr, con la versión fijada en la URL:
 ```
 
 > El paquete de npm llegará más adelante; hasta entonces, no instales ningún paquete llamado ns-frame desde npm: no es nuestro.
+
+## Módulos
+
+Cada módulo es una ruta aparte y carga sólo lo que necesita. Casi todos arrancan solos con su atributo; los que tocan la página (una hoja, una isla, un aviso) se llaman desde JS.
+
+| Ruta | Para qué | Arranque |
+|---|---|---|
+| `ns-frame` (y `ns-frame/lite`) | Formas, bordes, morph, aperturas | `data-ns` |
+| `ns-frame/fx` + `ns-fx.css` | Luz en U, aura, patrones, texto animado | clases `ns-*` |
+| `ns-frame/glass` | Vidrio líquido en cualquier forma | `data-ns-glass` |
+| `ns-frame/liquid` | Formas que se funden; vidrio líquido de grupos | `data-ns-liquid` |
+| `ns-frame/tabs` | Pestañas de vidrio que se arrastran | `data-ns-tabs` |
+| `ns-frame/relief` | Relieve iluminado | `data-ns-relief` |
+| `ns-frame/light` | La luz de la página que comparten vidrio y relieve | (interna) |
+| `ns-frame/isle` | Isla de navegación que se convierte en hoja | `isle(el)` |
+| `ns-frame/sheet` | Hoja arrastrable | `sheet(el)` |
+| `ns-frame/toast` | Avisos con forma | `toast(msg)` |
+| `ns-frame/pop` · `carousel` · `skel` | Popovers y tooltips · carrusel · skeletons | sus atributos |
+| `ns-frame/mosaic` · `bento` | Mosaicos libres · bento unificado | `data-ns-mosaic` · `data-ns-bento` |
+| `ns-frame/concentric` · `flow` · `mark` · `link` | Esquinas concéntricas · texto que llena la forma · resaltado en varias líneas · callouts | sus atributos |
+| `ns-frame/vt` | View Transitions que conservan los cortes | `morph()` |
+| `ns-frame/css` · `static` · `astro` | Formas compiladas a CSS `shape()` en el build | build |
+| `ns-frame/audit` | Detecta texto recortado por la forma (desarrollo) | `audit()` |
+
+**Se combinan:** una misma pieza puede llevar forma, vidrio y efectos (`data-ns="card" data-ns-glass class="ns-u"`); el vidrio sigue a la forma también durante un morph; vidrio y relieve se iluminan con la misma luz; la isla usa la hoja y, con `data-ns-glass`, el vidrio. Los límites (qué no se puede anidar bajo un vidrio, por qué una apertura no lo recorta) están en [Componentes](docs/componentes.md).
 
 - [Documentación](docs/README.md) — instalación, sintaxis de formas, componentes, API, accesibilidad, seguridad y rendimiento.
 - [Skill para agentes de IA](skills/ns-frame/SKILL.md) y [`llms.txt`](llms.txt).

@@ -416,7 +416,10 @@ function paint(s, V, fin) {
   if (nat || s.nt) native(s, V, nat)
   // (con data-ns-glass no se recorta: clip-path haría de raíz del fondo y el vidrio de dentro no
   // vería la página; la silueta la pone el propio vidrio. Con data-ns-relief, igual: cortaría la sombra)
-  s.el.style.clipPath = nat || (d && (s.el.hasAttribute('data-ns-glass') || s.el.hasAttribute('data-ns-relief'))) ? '' : d ? `path('${d}')` : s.ap ? 'inset(50%)' : ''
+  const glass = s.el.hasAttribute('data-ns-glass')
+  s.el.style.clipPath = nat || (d && (glass || s.el.hasAttribute('data-ns-relief'))) ? '' : d ? `path('${d}')` : s.ap ? 'inset(50%)' : ''
+  // (el vidrio sigue a la forma que se pinta, también la intermedia de un morph: se le avisa)
+  if (glass) s.el.dispatchEvent(new Event('ns-shape'))
   if (typeof NS_LITE == 'undefined') decorate(s, V, d, T, at)
 }
 
@@ -701,6 +704,9 @@ export function detach(el, clear) {
 
 /** Forma efectiva que ns-frame está usando en un elemento (incluye data-ns-nest y --ns-shape). */
 export const shapeOf = el => ready(S.get(el))?.src
+
+/** El path que se está pintando ahora (a mitad de un morph, la forma intermedia), o null. */
+export const pathOf = el => { const s = S.get(el); return s?.cur?.length ? dOf(s.cur) : null }
 
 /** Fuerza una relectura (p. ej. tras cambiar variables CSS por JS). */
 export const update = el => { const s = S.get(el); s && refresh(s, 1) }

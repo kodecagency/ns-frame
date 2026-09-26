@@ -82,6 +82,9 @@ export function detach(el: Element, clear?: boolean): void
 /** Forma efectiva que ns-frame está usando en el elemento (incluye data-ns-nest, hover, press y --ns-shape). */
 export function shapeOf(el: Element): Shape | undefined
 
+/** Path SVG que se está pintando ahora en el elemento (a mitad de un morph, la forma intermedia), o null. */
+export function pathOf(el: Element): string | null
+
 /** Fuerza una relectura (p. ej. tras cambiar variables CSS por JS). */
 export function update(el: Element): void
 

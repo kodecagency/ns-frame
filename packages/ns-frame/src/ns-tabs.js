@@ -48,7 +48,13 @@ const GO = [520, 34], HOLD = [1600, 80], DROP = [300, 30], LIFT = [620, 38]
 const spring = (s, target, [k, c], dt) => { for (let n = Math.ceil(dt * 240), h = dt / n; n--;) { s.v += (k * (target - s.x) - c * s.v) * h; s.x += s.v * h } }
 const still = (s, t) => Math.abs(t - s.x) < .05 && Math.abs(s.v) < .05
 
-/** Convierte `el` en pestañas de vidrio líquido. Opciones: items (selector de las pestañas). */
+/**
+ * Convierte `el` en pestañas de vidrio líquido. Opciones: items (selector de las pestañas), drop y
+ * shrink (booleanos; si no, las palabras de data-ns-tabs). Devuelve { select(i), get index(), destroy() };
+ * al cambiar, evento change con detail { index, tab }. La pestaña elegida lleva ns-tabs-on y la que
+ * tiene el indicador encima, ns-tabs-hot. Variables: --ns-tabs-radius, -ind-radius, -fuse, -min, y
+ * las del levantado (-blur-lift, -lens-lift, -depth-lift, -zoom-lift, -tint-lift).
+ */
 export function tabs(el, o = {}) {
   if (T.has(el)) return T.get(el)
   if (!styled) { styled = 1; styles(CSS) }
