@@ -6,7 +6,10 @@
 // · Teclado: ← → (invertidas en RTL), Inicio y Fin con el foco en el carrusel.
 // · Accesible (patrón carrusel de WAI-ARIA): región con aria-roledescription, diapositivas
 //   "n de N", flechas que se desactivan en los extremos y aria-current en el indicador.
-import { styles } from './ns-frame.js'
+// · Evento change en el carrusel al cambiar de posición (detail { index, slide }); desde JS,
+//   carousel(el) → { go(i), get index(), destroy() }. Se desmonta solo al quitar el atributo o el
+//   elemento.
+import { styles, watch } from './ns-frame.js'
 
 const CSS_ = `@layer ns{
 [data-ns-carousel]{display:flex;gap:var(--ns-gap,16px);overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;overscroll-behavior-x:contain;scrollbar-width:none}
@@ -22,9 +25,10 @@ const CSS_ = `@layer ns{
 let styled
 const make = (tag, a = {}) => { const e = document.createElement(tag); for (const k in a) e.setAttribute(k, a[k]); return e }
 
-function init(sc) {
-  if (sc._nsC) return
-  sc._nsC = 1
+const C = new WeakMap()
+/** Carrusel en `sc` (automático con data-ns-carousel). Devuelve { go(i), get index(), destroy() }. */
+export function carousel(sc) {
+  if (C.has(sc)) return C.get(sc)
   if (!styled) {
     styled = 1
     styles(CSS_)
@@ -60,28 +64,35 @@ function init(sc) {
     // un indicador por posición alcanzable (con 3 visibles de 5, hay 3); si sobra recorrido
     // tras la última, el final cuenta como una posición más
     const P = slides.map(s => off(s) + x).filter(p => p <= max + 2)
-    if (P.at(-1) < max - 2) P.push(max)
+    // (sin .at(): Safari anterior a 15.4)
+    if (P[P.length - 1] < max - 2) P.push(max)
     const m = P.length, d = P.map(p => Math.abs(p - x)), i = d.indexOf(Math.min(...d))
     prev.setAttribute('aria-disabled', x < 2)
     next.setAttribute('aria-disabled', x > max - 2)
     marks.forEach((b, k) => { b.hidden = k >= m; b.setAttribute('aria-current', k == i) })
-    cur = i
+    if (i != cur) { cur = i; sc.dispatchEvent(new CustomEvent('change', { detail: { index: i, slide: slides[i] } })) }
   }
-  sc.addEventListener('scroll', () => { raf ||= requestAnimationFrame(sync) }, { passive: true })
-  new ResizeObserver(() => { raf ||= requestAnimationFrame(sync) }).observe(sc)
-  sc.addEventListener('keydown', e => {
+  const onScroll = () => { raf ||= requestAnimationFrame(sync) }
+  const key = e => {
     const k = { ArrowLeft: rtl() ? 1 : -1, ArrowRight: rtl() ? -1 : 1 }[e.key]
     if (k) go(cur + k)
     else if (e.key == 'Home') go(0)
     else if (e.key == 'End') go(n - 1)
     else return
     e.preventDefault()
-  })
+  }
+  sc.addEventListener('scroll', onScroll, { passive: true })
+  const ro = new ResizeObserver(onScroll)
+  ro.observe(sc)
+  sc.addEventListener('keydown', key)
   sync()
+  const api = {
+    go, get index() { return cur },
+    destroy() { C.delete(sc); cancelAnimationFrame(raf); ro.disconnect(); sc.removeEventListener('scroll', onScroll); sc.removeEventListener('keydown', key); bar.remove() },
+  }
+  C.set(sc, api)
+  return api
 }
 
-if (typeof document != 'undefined') {
-  const scan = n => { if (n.nodeType == 1) { n.matches('[data-ns-carousel]') && init(n); n.querySelectorAll('[data-ns-carousel]').forEach(init) } }
-  const boot = () => { scan(document.body); new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(scan))).observe(document.body, { childList: true, subtree: true }) }
-  document.readyState == 'loading' ? addEventListener('DOMContentLoaded', boot) : boot()
-}
+// automático con data-ns-carousel: se monta al aparecer y se desmonta (con sus controles) al quitarlo
+watch('data-ns-carousel', sc => carousel(sc))

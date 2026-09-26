@@ -68,7 +68,6 @@ const CSS = `@layer ns{
 [data-ns-isle-panel].ns-open{translate:0 0;visibility:visible;transition:translate var(--ns-isle-time,.4s) var(--ns-isle-ease,cubic-bezier(.2,.8,.2,1)),visibility 0s}
 [data-ns-isle-panel].ns-now,[data-ns-isle-panel].ns-sheet-drag{transition:none}
 [data-ns-isle-panel].ns-stage{translate:0 0;visibility:hidden;transition:none}
-[data-ns-isle-panel].ns-prewarm{translate:0 0;visibility:visible;opacity:.01;z-index:-1;pointer-events:none;transition:none}
 [data-ns-isle-panel].ns-morphing{translate:0 0;visibility:visible;transition:none;background:none!important;box-shadow:none!important;border-color:transparent!important}
 [data-ns-isle-panel].ns-morphing>:is(.ns-liquid-src,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-fx,.ns-svg){visibility:hidden}
 @media (prefers-reduced-motion:reduce){.ns-isle-scrim,[data-ns-isle],[data-ns-isle-panel]{transition:none!important}}
@@ -606,22 +605,6 @@ function mount(el, o) {
   targets.forEach(t => t && io.observe(t))
   set(0)
 
-  // La primera apertura costaba más que las demás (se montaba la silueta y se calculaban y pintaban
-  // por primera vez las formas de la hoja). En un momento libre tras cargar, se adelanta: la silueta
-  // se monta y la hoja pasa un instante oculta en su sitio, donde sus formas se preparan
-  let idle = 0
-  // (pintada de verdad, pero invisible: opacidad 0,01 y detrás de la página, durante tres fotogramas;
-  // oculta con visibility el navegador no la pinta y la primera apertura pagaba ese pintado)
-  const prewarm = () => {
-    idle = 0
-    if (isOpen || !MORPH) return
-    build()
-    panel.classList.add('ns-prewarm')
-    let n = 3
-    const f = () => --n ? requestAnimationFrame(f) : panel.classList.remove('ns-prewarm')
-    requestAnimationFrame(f)
-  }
-  idle = (globalThis.requestIdleCallback || setTimeout)(prewarm, { timeout: 2500 })
 
   // pliegue al bajar y última sección al llegar al final (no siempre alcanza la línea)
   let y0 = scrollY, raf = 0
@@ -641,7 +624,7 @@ function mount(el, o) {
     go: i => targets[i] && go(targets[i], links[i]),
     get index() { return cur },
     destroy() {
-      run++; unfade(); mo?.remove(); mo = null; (globalThis.cancelIdleCallback || clearTimeout)(idle); isOpen && lock(false); document.documentElement.classList.remove('ns-has-isle'); el.style.zIndex = ''; el.classList.remove('ns-isle-m')
+      run++; unfade(); mo?.remove(); mo = null; isOpen && lock(false); document.documentElement.classList.remove('ns-has-isle'); el.style.zIndex = ''; el.classList.remove('ns-isle-m')
       io.disconnect(); sh.destroy(); scrim.remove(); clearTimeout(timer)
       removeEventListener('scroll', scroll); removeEventListener('keydown', key); document.removeEventListener('focusin', trap)
       btn.removeEventListener('pointerdown', down); btn.removeEventListener('pointerup', up)

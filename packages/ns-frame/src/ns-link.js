@@ -1,9 +1,13 @@
 /*! ns-frame/link · líneas HUD que conectan un elemento con otro: data-ns-link="#destino" */
 // Las coordenadas son de página (no de ventana): el scroll no obliga a recalcular nada.
-// Se recalcula sólo cuando cambia el tamaño de algún extremo, la altura del documento o la ventana.
+// Se recalcula sólo cuando cambia el tamaño de algún extremo, la altura del documento o la ventana,
+// y sólo las líneas cerca de la pantalla (las de lejos se dibujan al acercarse).
 
 const NS = 'http://www.w3.org/2000/svg', L = new Map()
-let svg, ro, raf, raf2
+// near: los orígenes cerca de la pantalla (medio alto de margen). Sólo esas líneas se miden y se
+// dibujan: una sección de callouts al final de la página no cuesta nada al cargar
+let svg, ro, raf, raf2, io, check
+const near = new Set()
 
 const mk = (tag, a) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); return e }
 const schedule = () => { raf ||= requestAnimationFrame(draw) }
@@ -27,7 +31,8 @@ function add(el) {
     // ("ResizeObserver loop…"). Se compara la altura en eventos baratos y sólo se redibuja si cambió.
     // fotograma propio (no el de draw): si coincidiera con un cambio de tamaño, ése se perdería
     let H = 0
-    const check = () => { raf2 ||= requestAnimationFrame(() => { raf2 = 0; const h = document.documentElement.scrollHeight; if (h != H) { H = h; schedule() } }) }
+    check = () => { raf2 ||= requestAnimationFrame(() => { raf2 = 0; const h = document.documentElement.scrollHeight; if (h != H) { H = h; schedule() } }) }
+    io = new IntersectionObserver(es => { for (const e of es) e.isIntersecting ? near.add(e.target) : near.delete(e.target); schedule() }, { rootMargin: '50% 0px' })
     addEventListener('resize', schedule)
     addEventListener('scroll', e => {
       if (e.target == document) return check()
@@ -43,6 +48,7 @@ function add(el) {
   const o = { g, p, a, b, t: null, on: 0 }
   o.in = () => { o.on = 1; schedule() }; o.out = () => { o.on = 0; schedule() }
   L.set(el, o)
+  io.observe(el)
   hook(el, o, 1)
   bind(o, target(el))
   if (el.hasAttribute('data-ns-link-flow') && !matchMedia('(prefers-reduced-motion: reduce)').matches)
@@ -64,17 +70,20 @@ function bind(o, t) {
 }
 function drop(el) {
   const o = L.get(el)
-  hook(el, o, 0); bind(o, null); o.g.remove(); L.delete(el)
+  hook(el, o, 0); bind(o, null); o.g.remove(); L.delete(el); io.unobserve(el); near.delete(el)
 }
 
 function draw() {
   raf = 0
   const jobs = []
-  if (!svg) return
+  // (sin capa o con las líneas ocultas por CSS, p. ej. en el móvil, no se mide nada)
+  if (!svg || getComputedStyle(svg).display == 'none') return
   // 1) lecturas. El origen es el propio svg: vale aunque el <body> tenga margen o sea relative
   const S = svg.getBoundingClientRect(), sx = -S.left, sy = -S.top
   for (const [el, o] of L) {
     if (!el.isConnected || !el.hasAttribute('data-ns-link')) { drop(el); continue }
+    // (lejos de la pantalla no se mide: se dibuja al acercarse)
+    if (!near.has(el)) continue
     if (!o.t?.isConnected) bind(o, target(el))
     if (!o.t) { o.g.style.display = 'none'; continue }
     const cs = getComputedStyle(el)
@@ -114,9 +123,11 @@ if (typeof document != 'undefined') {
       for (const m of ms) {
         m.addedNodes.forEach(scan)
         // otro destino en data-ns-link (o se quita: la línea se va en el siguiente dibujo)
-        if (m.type == 'attributes') { const o = L.get(m.target); o ? m.target.hasAttribute('data-ns-link') && bind(o, target(m.target)) : scan(m.target) }
-        if (L.size) schedule()
+        if (m.type == 'attributes') { const o = L.get(m.target); if (o) { m.target.hasAttribute('data-ns-link') && bind(o, target(m.target)); schedule() } else scan(m.target) }
       }
+      // (un cambio en cualquier parte de la página sólo redibuja si movió algo: la altura del
+      // documento; antes redibujaba con cada mutación, y al cargar la página cambia sin parar)
+      if (L.size) check?.()
     }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-ns-link'] })
   }
   document.readyState == 'loading' ? addEventListener('DOMContentLoaded', boot) : boot()

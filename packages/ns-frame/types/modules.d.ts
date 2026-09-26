@@ -39,6 +39,10 @@ export function config(options: { x?: 'start' | 'center' | 'end'; y?: 'top' | 'b
 /** Vuelve a medir (skeletons: uno o todos; el resto: todos sus elementos). */
 export function refresh(el?: Element): void
 
+// ── ns-frame/carousel ──
+/** Carrusel con scroll-snap nativo (automático con data-ns-carousel). Emite "change" con detail { index, slide }. */
+export function carousel(el: HTMLElement): { go(index: number): void; readonly index: number; destroy(): void }
+
 // ── ns-frame/mosaic ──
 /** Lee una plantilla `--ns-areas` ("'a a b' 'c d b'") como matriz de celdas ('.' = vacía). */
 export function parseAreas(areas: string): string[][]

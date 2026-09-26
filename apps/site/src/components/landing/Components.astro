@@ -139,9 +139,11 @@ const MODES = ['open', 'split', 'iris', 'wipe', 'drop']
   // hoja arrastrable (ns-frame/sheet) dentro de un <dialog> nativo: la hoja se encarga del diálogo
   // (open() con entrada, Escape, clic en el fondo, fondo que se aclara al bajarla)
   const sd = document.getElementById('sht') as HTMLDialogElement, sp = document.getElementById('sht-panel')!
-  const hs = import('ns-frame/sheet').then(({ sheet }) => sheet(sp))
-  document.getElementById('sht-open')!.addEventListener('click', async () => (await hs).open())
-  document.getElementById('sht-close')!.addEventListener('click', async () => (await hs).close())
+  // (el módulo se pide al usarla por primera vez: no suma nada a la carga de la página)
+  let hs: Promise<{ open(): void; close(): void }> | undefined
+  const get = () => hs ||= import('ns-frame/sheet').then(({ sheet }) => sheet(sp))
+  document.getElementById('sht-open')!.addEventListener('click', async () => (await get()).open())
+  document.getElementById('sht-close')!.addEventListener('click', async () => (await get()).close())
 </script>
 
 <style>

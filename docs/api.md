@@ -63,7 +63,8 @@ await open(panel, 'iris', 500)
 | `ns-frame/tabs` | `tabs(el, { items, drop, shrink })` → `{ select(i), index, destroy() }` · evento `change` con `detail { index, tab }` |
 | `ns-frame/fx` | `decode(el, ms?)` |
 | `ns-frame/audit` | `audit({ root, mark, margin, clearance })` → problemas encontrados |
-| `ns-frame/pop` · `ns-frame/carousel` | Sin exportaciones: se activan con sus atributos |
+| `ns-frame/carousel` | `carousel(el)` → `{ go(i), index, destroy() }` · automático con `data-ns-carousel` · evento `change` con `detail { index, slide }` |
+| `ns-frame/pop` | Sin exportaciones: se activa con sus atributos |
 
 ## Geometría sin DOM (concentric, flow, mark, liquid)
 
