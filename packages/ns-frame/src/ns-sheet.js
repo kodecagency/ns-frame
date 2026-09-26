@@ -28,13 +28,17 @@ const EASE = 'cubic-bezier(.2,.8,.2,1)'
  * Convierte `el` en una hoja arrastrable.
  * Opciones: handle (dónde empieza el arrastre; por defecto todo el panel), onClose, onProgress(p),
  * threshold (px antes de considerar que es un arrastre y no un toque; 6 por defecto).
+ * Con track(y, h) la hoja no se mueve: el gesto sólo informa (y px hacia abajo, h su altura) y al
+ * soltar llama a settle(cerrar, velocidad); quien la usa anima lo que quiera con el dedo (la isla
+ * recoge la hoja hacia la cápsula).
  * Devuelve { close(), reset(), destroy() }.
  */
-export function sheet(el, { handle = el, onClose, onProgress, threshold = 6 } = {}) {
+export function sheet(el, { handle = el, onClose, onProgress, track, settle, threshold = 6 } = {}) {
   let id = null, y0 = 0, y = 0, h = 1, drag = false, raf = 0, anim = null
   const samples = []
   const put = v => {
     y = v
+    if (track) return track(v, h)
     el.style.translate = `0 ${v.toFixed(1)}px`
     const p = clamp(1 - v / h, 0, 1)
     el.style.setProperty('--ns-sheet-p', p.toFixed(3))
@@ -95,6 +99,7 @@ export function sheet(el, { handle = el, onClose, onProgress, threshold = 6 } = 
     setTimeout(() => removeEventListener('click', swallow, true), 0)
     const a = samples[0], b = samples[samples.length - 1]
     const v = a && b && b[0] > a[0] ? (b[1] - a[1]) / (b[0] - a[0]) : 0
+    if (track) { const c = release(y, v, h); y = 0; return settle?.(c, v) }
     release(y, v, h) ? close() : to(0)
   }
   // el navegador canceló el gesto (en iOS, al empezar un scroll): vuelve a su sitio, sin decidir
@@ -102,7 +107,7 @@ export function sheet(el, { handle = el, onClose, onProgress, threshold = 6 } = 
     if (e.pointerId != id) return
     id = null
     el.classList.remove('ns-sheet-drag')
-    if (drag) to(0)
+    if (drag) track ? (y = 0, settle?.(false, 0)) : to(0)
   }
   const swallow = ev => { ev.stopPropagation(); ev.preventDefault() }
   const close = () => to(h + 24, () => { onClose?.(); reset() })

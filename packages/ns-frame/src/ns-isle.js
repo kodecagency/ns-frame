@@ -2,25 +2,27 @@
 // import { isle } from 'ns-frame/isle'
 // const nav = isle(document.querySelector('[data-ns-isle]'), { panel: document.getElementById('menu') })
 //
-// Marcado (tuyo, con tus formas data-ns):
+// Marcado (el aspecto viene de serie: cápsula fija abajo, hoja gris-negro, rejilla de secciones;
+// todo con :where(), así cualquier estilo tuyo gana):
 //   <nav data-ns-isle aria-label="Secciones">
 //     <button data-ns-isle-toggle aria-controls="menu">
-//       <span data-ns-isle-icon></span> <b data-ns-isle-label></b> <small data-ns-isle-pos></small>
+//       <span data-ns-isle-icon></span>
+//       <span data-ns-isle-text><b data-ns-isle-label></b><small data-ns-isle-pos></small></span>
+//       <span data-ns-isle-more></span>                      ← flecha (se pone sola si está vacío)
 //     </button>
 //   </nav>
-//   <div id="menu" data-ns-isle-panel role="dialog" aria-label="Secciones">
-//     … <a href="#inicio">…</a> <a href="#precios">…</a> … <button data-ns-isle-close>×</button>
+//   <div id="menu" data-ns-isle-panel role="dialog" aria-modal="true" aria-label="Secciones">
+//     <header data-ns-isle-handle><b>Título</b><button data-ns-isle-close aria-label="Cerrar"></button></header>
+//     <ul data-ns-isle-links><li><a href="#inicio"><svg…/><span>Inicio</span></a></li> …</ul>
+//     <div data-ns-isle-actions><a href="…">Principal</a><a href="…">Otra</a></div>
 //   </div>
 //
 // · La cápsula muestra la sección en pantalla (icono, nombre y posición): completa mientras se baja
-//   leyendo, plegada a un icono al subir.
-// · Al tocarla, la cápsula se convierte en la hoja, como la Dynamic Island: una silueta crece de una
-//   a otra con un muelle y, al llegar, la hoja ya está ahí y su contenido entra escalonado. Al
-//   cerrarse, el camino inverso. La silueta es una sola capa con desenfoque nativo (GPU) que sólo
-//   cambia su recorte: durante la animación no se recalcula ninguna forma ni ningún vidrio.
-// · La hoja se prepara al apoyar el dedo (antes del clic), oculta en su sitio: su vidrio ya está
-//   pintado cuando aparece. (morph: false: la hoja entra desde abajo, moviendo sólo `translate`.)
-// · Se arrastra como una hoja nativa (ns-frame/sheet) y se cierra al soltarla, con Escape o el fondo.
+//   leyendo, plegada a un icono al subir. La página reserva su hueco abajo.
+// · Al tocarla, la cápsula se convierte en la hoja, como la Dynamic Island: se ensancha, crece hacia
+//   arriba y el contenido aparece a su paso (sólo transform y opacity: el compositor la mueve).
+//   Al cerrarse, el camino inverso; arrastrando la hoja hacia abajo, el mismo camino con el dedo.
+// · Se cierra al soltarla lejos o lanzarla, con Escape, con el fondo o con [data-ns-isle-close].
 // · Deslizar la cápsula a los lados va a la sección anterior o siguiente.
 // · La sección actual se sigue con IntersectionObserver (sin medir en cada scroll).
 // · Accesible: aria-expanded, aria-current, inert fuera de la vista, el foco entra y vuelve.
@@ -65,7 +67,41 @@ const CSS = `@layer ns{
 [data-ns-isle-panel].ns-morphing{translate:0 0;visibility:visible;transition:none;background:none!important;box-shadow:none!important;border-color:transparent!important}
 [data-ns-isle-panel].ns-morphing>:is(.ns-liquid-src,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-fx,.ns-svg){visibility:hidden}
 @media (prefers-reduced-motion:reduce){.ns-isle-scrim,[data-ns-isle],[data-ns-isle-panel]{transition:none!important}}
+html.ns-has-isle body{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+[data-ns-isle][data-ns-isle]{--ns-isle-fg:#f4f4f5;--ns-isle-muted:rgba(244,244,245,.6);--ns-glass-tint:rgba(16,16,20,.42);position:fixed;z-index:var(--ns-isle-z,40);left:50%;bottom:calc(14px + env(safe-area-inset-bottom));width:var(--ns-isle-width,212px);height:54px;translate:-50% 0;border-radius:27px;color:var(--ns-glass-ink,var(--ns-isle-fg));contain:layout style}
+[data-ns-isle]:not(.ns-glass){background:rgba(18,18,20,.97);--ns-border:rgba(255,255,255,.14)}
+[data-ns-isle][data-ns-isle].ns-mini{width:54px}
+:where([data-ns-isle-toggle]){position:absolute;inset:0;display:flex;align-items:center;gap:11px;padding:0 8px 0 9px;border:0;background:none;color:inherit;font:inherit;cursor:pointer;text-align:left}
+:where([data-ns-isle-icon]){width:36px;height:36px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--ns-isle-fg);color:#0a0a0a}
+:where([data-ns-isle-icon]) svg{width:17px;height:17px}
+:where([data-ns-isle-text]){flex:1;min-width:0;overflow:hidden;display:grid;transition:opacity .2s,visibility .2s}
+:where([data-ns-isle-label]){font-weight:700;font-size:15px;line-height:1.15;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+:where([data-ns-isle-pos]){font-size:11px;line-height:1.3;color:var(--ns-isle-muted);white-space:nowrap}
+:where([data-ns-isle-more]){width:32px;height:32px;border-radius:50%;display:grid;place-items:center;flex:none;background:rgba(255,255,255,.1);transition:opacity .2s,visibility .2s}
+:where([data-ns-isle-more],[data-ns-isle-close]) svg{width:14px;height:14px}
+:where([data-ns-isle].ns-mini) :is([data-ns-isle-text],[data-ns-isle-more]){opacity:0;visibility:hidden}
+:where([data-ns-isle-panel]){--ns-isle-fg:#f4f4f5;--ns-isle-muted:rgba(244,244,245,.6);display:flex;flex-direction:column;gap:14px;padding:18px 16px 16px;border-radius:32px;background:var(--ns-isle-bg,#161618);box-shadow:inset 0 0 0 1px rgba(255,255,255,.07),inset 0 1px 0 rgba(255,255,255,.1);color:var(--ns-isle-fg);contain:layout style}
+:where([data-ns-isle-handle]){position:relative;display:flex;align-items:center;justify-content:space-between;padding:14px 6px 0;cursor:grab}
+:where([data-ns-isle-handle])::before{content:"";position:absolute;top:0;left:50%;width:36px;height:4px;margin-left:-18px;border-radius:2px;background:rgba(255,255,255,.22)}
+:where([data-ns-isle-handle]) :where(b,h2,h3){font-size:24px;font-weight:700;line-height:1;letter-spacing:-.02em;margin:0}
+:where([data-ns-isle-close]){width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.1);color:inherit;display:grid;place-items:center;cursor:pointer}
+:where([data-ns-isle-links]){display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0;padding:0;list-style:none}
+:where([data-ns-isle-links]) a{display:flex;flex-direction:column;justify-content:space-between;gap:10px;padding:12px;min-height:78px;border-radius:16px;background:rgba(255,255,255,.06);color:inherit;text-decoration:none;font-size:14px;font-weight:500;line-height:1.2;transition:background-color .2s}
+:where([data-ns-isle-links]) a svg{width:22px;height:22px;color:var(--ns-isle-muted)}
+:where([data-ns-isle-links]) a[aria-current]{background:rgba(255,255,255,.13)}
+:where([data-ns-isle-links]) a[aria-current] svg{color:var(--ns-isle-fg)}
+:where([data-ns-isle-actions]){display:flex;gap:8px}
+:where([data-ns-isle-actions]) :is(a,button){flex:1;min-height:48px;border-radius:980px;display:grid;place-items:center;border:0;font:inherit;font-size:15px;font-weight:500;color:inherit;text-decoration:none;background:rgba(255,255,255,.1);cursor:pointer}
+:where([data-ns-isle-actions]) :is(a,button):first-child{background:var(--ns-isle-fg);color:var(--ns-isle-ink,#0a0a0a)!important}
 }`
+const SVGNS = 'http://www.w3.org/2000/svg'
+// un icono de trazo (la flecha de la cápsula y el × de la hoja), si su hueco está vacío
+const glyph = (host, d) => {
+  if (!host || host.firstElementChild) return
+  const s = document.createElementNS(SVGNS, 'svg'), p = document.createElementNS(SVGNS, 'path')
+  for (const [k, v] of Object.entries({ viewBox: '0 0 14 14', fill: 'none', stroke: 'currentColor', 'stroke-width': '1.8', 'stroke-linecap': 'round', 'aria-hidden': 'true' })) s.setAttribute(k, v)
+  p.setAttribute('d', d); s.append(p); host.textContent = ''; host.append(s)
+}
 let styled = 0
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 const q = (el, s) => el.querySelector(s)
@@ -142,6 +178,10 @@ export function isle(el, o = {}) {
   const scrim = document.createElement('div')
   scrim.className = 'ns-isle-scrim'
   panel.before(scrim)
+  // de serie: la flecha de la cápsula, el × de la hoja y el hueco de la cápsula al pie de la página
+  glyph(q(el, '[data-ns-isle-more]'), 'M3 9l4-4 4 4')
+  panel.querySelectorAll('[data-ns-isle-close]').forEach(b => { glyph(b, 'M3 3l8 8M11 3l-8 8'); b.hasAttribute('aria-label') || b.setAttribute('aria-label', 'Cerrar') })
+  document.documentElement.classList.add('ns-has-isle')
   btn.setAttribute('aria-expanded', 'false')
   panel.inert = true
 
@@ -265,7 +305,72 @@ export function isle(el, o = {}) {
     else { h.removeProperty('overflow'); h.removeProperty('scrollbar-gutter'); removeEventListener('touchmove', block) }
   }
 
-  const show = (on, now = false) => {
+  // El cierre como línea de tiempo: todo son animaciones con su retardo (nada de relevos por el
+  // camino), así se puede reproducir sola o llevarla con el dedo. La hoja pasa a ser la silueta (mismo
+  // color y forma), que baja hasta ser una barra y se estrecha hasta la cápsula; el contenido se va
+  // justo antes de que deje de cubrirlo; al llegar, la cápsula aparece encima y la silueta se va
+  const HOME = CLOSE * .84
+  const closer = () => {
+    const B = panel.getBoundingClientRect(), A = el.getBoundingClientRect(), R = route(B, A, rad(), cap(A), false), col = paint()
+    el.style.zIndex = Z() + 2
+    morph(R, CLOSE, false, col)
+    const L = leaves().map(k => [k, k.getBoundingClientRect()])
+    panel.classList.add('ns-morphing'); panel.classList.remove('ns-open', 'ns-warm', 'ns-stage')
+    // (la cápsula vuelve a estar, pero transparente hasta su fundido: sin saltos al llegar)
+    el.removeAttribute('data-ns-hidden')
+    const all = [...mo.getAnimations({ subtree: true }),
+      el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150, delay: HOME, easing: 'ease-out', fill: 'both' }),
+      mo.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, delay: HOME + 150, fill: 'both' }),
+      ...L.map(([k, r]) => k.animate([{ opacity: 1 }, { opacity: 0, scale: '.97' }], { duration: 80, delay: Math.max(0, when(R, r, false) / N * CLOSE - 90), easing: 'ease-in', fill: 'both' }))]
+    return { R, all }
+  }
+  // cerrada del todo / abierta otra vez (el dedo la devolvió a su sitio)
+  const shut = () => {
+    unfade(); unmorph()
+    panel.classList.add('ns-now'); panel.classList.remove('ns-morphing', 'ns-open', 'ns-warm', 'ns-stage')
+    el.style.zIndex = ''; scrim.style.transition = ''
+  }
+  const unshut = () => {
+    unfade(); unmorph()
+    panel.classList.remove('ns-morphing'); panel.classList.add('ns-warm', 'ns-open')
+    el.setAttribute('data-ns-hidden', '')
+    scrim.style.transition = scrim.style.opacity = ''
+  }
+  // Arrastrar la hoja hacia abajo lleva el cierre con el dedo: el borde de arriba de la forma sigue
+  // al dedo (1:1) y todo lo demás —contenido, luz, velo— va con él. Al soltar, termina de cerrarse o
+  // vuelve, según la distancia y la velocidad (lo decide ns-frame/sheet)
+  let sc = null
+  const timeFor = (R, dy) => {
+    const top = R[0].top
+    for (let i = 1; i <= N; i++) if (R[i].top - top >= dy) { const a = R[i - 1].top - top, b = R[i].top - top; return Math.min(HOME, (i - 1 + (b > a ? (dy - a) / (b - a) : 1)) / N * CLOSE) }
+    return HOME
+  }
+  const track = y => {
+    if (!isOpen) return
+    if (!sc) {
+      run++
+      sc = closer()
+      fx = sc.all
+      sc.all.forEach(a => a.pause())
+      scrim.style.transition = 'none'
+    }
+    const ms = timeFor(sc.R, Math.max(0, y))
+    sc.all.forEach(a => { a.currentTime = ms })
+    scrim.style.opacity = String(Math.max(0, 1 - ms / HOME))
+  }
+  const settle = c => {
+    const s = sc
+    sc = null
+    if (!s) return
+    if (c) return show(false, false, s)
+    // (vuelve a su sitio: la misma línea de tiempo, hacia atrás)
+    const t = run
+    scrim.style.transition = ''; scrim.style.opacity = ''
+    s.all.forEach(a => { a.playbackRate = -1.4; a.play() })
+    Promise.all(s.all.map(a => a.finished)).then(() => t == run && unshut(), () => {})
+  }
+
+  const show = (on, now = false, given = null) => {
     if (on == isOpen) return
     isOpen = on
     lock(on)
@@ -276,7 +381,8 @@ export function isle(el, o = {}) {
     el.inert = on
     scrim.classList.toggle('ns-open', on)
     scrim.style.opacity = ''
-    unfade()
+    // (la línea de tiempo que llevaba el dedo sigue: no se cancela)
+    if (!given) unfade()
     if (on) {
       o.onOpen?.()
       if (anim) {
@@ -309,28 +415,12 @@ export function isle(el, o = {}) {
     // (tras un arrastre que volvió a su sitio queda un translate en línea que taparía el de la clase)
     if (!now) sh.reset()
     if (anim) {
-      // El camino inverso: el material de la hoja se desvanece sobre la silueta, que baja hasta ser
-      // una barra y se estrecha hasta la cápsula; el contenido se va justo antes de que la silueta
-      // deje de cubrirlo. Al llegar, la cápsula aparece encima y la silueta se va debajo
-      const B = panel.getBoundingClientRect(), A = el.getBoundingClientRect(), R = route(B, A, rad(), cap(A), false)
-      el.style.zIndex = Z() + 2
-      const g = morph(R, CLOSE, false, paint())
-      // (una hoja opaca pasa a la silueta en el acto: mismo color y misma forma; un vidrio se funde)
-      const L = [...layers()].map(l => l.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, easing: 'ease-in', fill: 'forwards' }))
-      const off = () => { if (t == run) { panel.classList.add('ns-morphing'); panel.classList.remove('ns-open', 'ns-warm', 'ns-stage'); L.forEach(a => a.cancel()) } }
-      fx = [...L, ...leaves().map(k => k.animate([{ opacity: 1 }, { opacity: 0, scale: '.97' }],
-        { duration: 80, delay: Math.max(0, when(R, k.getBoundingClientRect(), false) / N * CLOSE - 90), easing: 'ease-in', fill: 'both' }))]
-      L[0] ? at(L[0], 1, off) : off()
-      at(g, .84, () => {
-        if (t != run) return
-        el.removeAttribute('data-ns-hidden')
-        at(el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150, easing: 'ease-out' }), 1, () => {
-          if (t != run) return
-          unfade()
-          panel.classList.add('ns-now'); panel.classList.remove('ns-morphing', 'ns-open', 'ns-warm', 'ns-stage')
-          at(fade(160), 1, () => { if (t == run) { unmorph(); el.style.zIndex = '' } })
-        })
-      })
+      // la línea de tiempo del cierre (la que ya llevaba el dedo, o una nueva), hasta el final
+      const tl = given || closer()
+      fx = tl.all
+      scrim.style.transition = ''
+      tl.all.forEach(a => { a.playbackRate = 1; a.play() })
+      Promise.all(tl.all.map(a => a.finished)).then(() => t == run && shut(), () => {})
       return
     }
     unmorph()
@@ -342,6 +432,8 @@ export function isle(el, o = {}) {
     handle: q(panel, '[data-ns-isle-handle]') || panel,
     onProgress: p => { scrim.style.opacity = String(p) },
     onClose: () => show(false, true),
+    // (con morph, el dedo lleva la transformación en vez de bajar la hoja entera)
+    ...(MORPH && !reduced() ? { track, settle } : {}),
   })
   // (con morph, la hoja vuelve a la cápsula; si no, baja como al soltarla)
   const close = () => isOpen && (reduced() || MORPH ? show(false) : sh.close())
@@ -431,7 +523,7 @@ export function isle(el, o = {}) {
     go: i => targets[i] && go(targets[i], links[i]),
     get index() { return cur },
     destroy() {
-      run++; unfade(); mo?.remove(); isOpen && lock(false); el.style.zIndex = ''; el.classList.remove('ns-isle-m')
+      run++; unfade(); mo?.remove(); isOpen && lock(false); document.documentElement.classList.remove('ns-has-isle'); el.style.zIndex = ''; el.classList.remove('ns-isle-m')
       io.disconnect(); sh.destroy(); scrim.remove(); clearTimeout(timer)
       removeEventListener('scroll', scroll); removeEventListener('keydown', key); document.removeEventListener('focusin', trap)
       btn.removeEventListener('pointerdown', down); btn.removeEventListener('pointerup', up)

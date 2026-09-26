@@ -876,7 +876,6 @@ export function liquid(el, o = {}) {
     cancelAnimationFrame(live); live = 0; smo?.disconnect(); smo = null; clearTimeout(redo); cancelAnimationFrame(redo); redo = 0; zone = null
     if (kind == 'gl' || kind == 'glr') { glc.remove(); glass.style.backdropFilter = ''; lensKey = '' }
     gTok++; gsrc = null; gU = ''; drawn = ''; G?.drop()
-    fast = false; clearTimeout(fastT); if (glc) glc.style.opacity = glc.style.transition = ''
     copy.replaceChildren(); copy.removeAttribute('style'); cc = null; kind = ''; placed = ''
   }
   const mirror = n => {
@@ -978,7 +977,7 @@ export function liquid(el, o = {}) {
     if ((kind != 'gl' && kind != 'glr') || !now || !G || !mirrored) return
     // quieto a propósito (una hoja que se arrastra): se queda lo último pintado, que va con el
     // elemento; bajo un desenfoque grande no se nota y no hay rasterizado ni copia por fotograma
-    if (el.matches(HOLD) || fast) return
+    if (el.matches(HOLD)) return
     // (con un desenfoque grande, a 1 px por px: el detalle de más densidad no se vería y la copia
     // de cada fotograma cuesta cuatro veces menos)
     const q = Math.min(2, devicePixelRatio || 1), qo = V.blur >= 10 ? 1 : q, W = Math.max(1, Math.round(now.bw * qo)), H = Math.max(1, Math.round(now.bh * qo))
@@ -1011,8 +1010,7 @@ export function liquid(el, o = {}) {
       k: now.lensPx, z: b * 2, l: Math.max(0, Math.log2(Math.max(1, b * gW / w)) - 2), sat: V.sat,
       rim: now.light ? [1.04, 1.05, 1.1] : [1.22, 1.06, 1.15] })
     // (el sistema reclamó el contexto: la lente se monta de nuevo con uno nuevo)
-    if (ok === false) { G = null; mirrored = null; drawn = ''; stale(); return }
-    unglide()
+    if (ok === false) { G = null; mirrored = null; drawn = ''; stale() }
   }
   // vídeo y canvas: cada fotograma, con su object-fit, sólo mientras el grupo está a la vista
   const frames = n => {
@@ -1130,35 +1128,13 @@ export function liquid(el, o = {}) {
   let scrolls = []
   const syncScroll = () => { for (const [c, m] of scrolls) { c.scrollTop = m.scrollTop; c.scrollLeft = m.scrollLeft } }
   // al desplazarse la página o un contenedor, la copia se recoloca (y el clon copia el desplazamiento)
-  const onScroll = e => {
-    if (V?.src && vis) {
-      // lo de detrás se mueve respecto al vidrio (una barra fija sobre la página que se desplaza, o
-      // un vidrio fuera de la lista que corre por debajo): en iPhone el desplazamiento lo mueve el
-      // compositor, por delante del hilo principal, y una copia pintada con JS siempre llegaría tarde
-      // (se notaba en un scroll rápido). Mientras dura, el desenfoque nativo; la lente vuelve al parar
-      const T = e.target, doc = T == document || T == document.documentElement
-      if ((kind == 'gl' || kind == 'glr') && (doc ? pin : T.nodeType == 1 && !T.contains(el) && hits(T))) glide()
-      scrT++; scrAt = performance.now(); fr ||= requestAnimationFrame(follow)
-    }
+  const onScroll = () => {
+    if (V?.src && vis) { scrT++; scrAt = performance.now(); fr ||= requestAnimationFrame(follow) }
     // (lo de detrás cambia al desplazarse: una barra fija pasa de una zona clara a una oscura)
     if (vis && near && performance.now() - toned > 250) tone()
   }
-  // pin: el grupo (o un antepasado) es fijo o pegajoso; fast: en modo nativo mientras lo de detrás corre
-  let pin = false, fast = false, fastT = 0
-  const hits = T => { const a = T.getBoundingClientRect(), b = el.getBoundingClientRect(); return a.right > b.left && a.left < b.right && a.bottom > b.top && a.top < b.bottom }
-  const glide = () => {
-    clearTimeout(fastT)
-    fastT = setTimeout(() => { fast = false; drawn = ''; mutT++; wake() }, 180)
-    if (fast || /(^|\s)lens(\s|$)/.test(el.getAttribute('data-ns-glass') || '')) return
-    fast = true
-    glc.style.transition = 'opacity .15s'; glc.style.opacity = '0'
-    glass.style.backdropFilter = ''
-  }
-  // la lente ya pintada en su sitio: vuelve con un fundido y después se quita el desenfoque nativo
-  const unglide = () => {
-    if (fast || glc?.style.opacity != '0') return
-    requestAnimationFrame(() => { if (fast) return; glc.style.opacity = '1'; setTimeout(() => { if (!fast && (kind == 'gl' || kind == 'glr')) glass.style.backdropFilter = 'none' }, 160) })
-  }
+  // pin: el grupo (o un antepasado) es fijo o pegajoso
+  let pin = false
   // vidrio claro sobre fondos claros (como el de Apple), salvo que se fije --ns-glass-tint
   let toned = 0
   // Con un tinte propio (un vidrio oscuro de diseño, como una barra de pestañas) no se invierte:
@@ -1224,7 +1200,11 @@ export function liquid(el, o = {}) {
       // del navegador, como los materiales de Apple. La lente sólo se notaría en el canto y la copia
       // de la página, tan agrandada bajo tanto desenfoque, dejaba grano y vetas; además cuesta cada
       // fotograma. La lente de copia queda para barras, botones y piezas pequeñas
-      if (!LENS && V.blur >= 12 && !/(^|\s)lens(\s|$)/.test(el.getAttribute('data-ns-glass') || '')) V.src = null
+      // Y lo mismo un vidrio fijo o pegajoso (una cápsula, una barra de navegación): la página corre
+      // por debajo y en iPhone el scroll lo mueve el compositor, por delante del hilo principal; una
+      // copia pintada con JS siempre llegaría tarde (y cambiar de lente a nativo al desplazar se veía:
+      // el vidrio parpadeaba). El desenfoque nativo va pegado al scroll y nunca cambia de aspecto
+      if (!LENS && (V.blur >= 12 || pin) && !/(^|\s)lens(\s|$)/.test(el.getAttribute('data-ns-glass') || '')) V.src = null
       // si cambió algo del mapa de la lente (al levantarse un indicador, por ejemplo), se regenera ya,
       // aunque la forma siga en marcha; si no, sólo al detenerse
       const vk = [V.lens, V.depth, V.zoom, V.hard, V.prism].join()

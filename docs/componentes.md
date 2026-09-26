@@ -128,28 +128,35 @@ dialog::backdrop { opacity: var(--p, 1) }                 /* el fondo se aclara 
 - Un arrastre no dispara el clic de lo que había debajo; un toque sigue siendo un clic (umbral: `threshold`, 6 px).
 - Sólo mueve la propiedad `translate` (se combina con cualquier `transform` que ya tenga el panel) y usa los eventos agrupados del puntero para medir bien la velocidad en pantallas de 120 Hz.
 - Pone `touch-action: none` en el asa (`handle`, por defecto todo el panel) y `overscroll-behavior: contain` en el panel.
+- `track(y, h)` y `settle(cerrar, velocidad)`: el gesto no mueve el panel, sólo informa (y px hacia abajo) y al soltar decide; quien lo usa anima lo que quiera con el dedo (así lo hace la isla).
 - `--ns-sheet-p` queda en el panel durante el gesto; la clase `.ns-sheet-drag` mientras se arrastra y `.ns-glass-hold` mientras vuelve o sale sola (un vidrio de ns-frame no se repinta en esos fotogramas).
 - Con `prefers-reduced-motion`, el cierre y el regreso son inmediatos. Devuelve `{ close(), reset(), destroy() }`.
 - Escape y el clic en el fondo los decides tú (en un `<dialog>`: evento `cancel` → `s.close()`).
 
 ## Isla de navegación (`ns-frame/isle`)
 
-Una cápsula flotante que dice en qué sección estás y, al tocarla, abre una hoja con todas. Pensada para el móvil (en escritorio suele bastar una barra), pero funciona en cualquier pantalla. El marcado y las formas son tuyos:
+Una cápsula flotante que dice en qué sección estás y, al tocarla, se convierte en una hoja con todas. Pensada para el móvil (en escritorio suele bastar una barra), pero funciona en cualquier pantalla. **Viene lista para usar**: con este marcado, el aspecto completo sale de la librería (cápsula fija abajo, hoja gris-negro, asa, botón de cerrar, rejilla de secciones, acciones, flecha y ×, y el hueco al pie de la página). Todo está en `@layer ns`: cualquier CSS tuyo gana.
 
 ```html
-<nav data-ns-isle data-ns="all round 27" aria-label="Secciones">
+<nav data-ns-isle data-ns-glass aria-label="Secciones">
   <button data-ns-isle-toggle aria-controls="menu">
     <span data-ns-isle-icon></span>
-    <b data-ns-isle-label>Inicio</b> <small data-ns-isle-pos>1 / 6</small>
+    <span data-ns-isle-text><b data-ns-isle-label>Inicio</b><small data-ns-isle-pos>1 / 6</small></span>
+    <span data-ns-isle-more></span>
   </button>
 </nav>
-<div id="menu" data-ns-isle-panel data-ns="all squircle 30" role="dialog" aria-modal="true" aria-label="Secciones">
-  <header data-ns-isle-handle>Secciones <button data-ns-isle-close aria-label="Cerrar">×</button></header>
-  <a href="#inicio"><svg>…</svg>Inicio</a>
-  <a href="#precios"><svg>…</svg>Precios</a>
-  …
+<div id="menu" data-ns-isle-panel role="dialog" aria-modal="true" aria-label="Secciones">
+  <header data-ns-isle-handle><b>Mi sitio</b><button data-ns-isle-close></button></header>
+  <ul data-ns-isle-links>
+    <li><a href="#inicio"><svg>…</svg><span>Inicio</span></a></li>
+    <li><a href="#precios"><svg>…</svg><span>Precios</span></a></li>
+    …
+  </ul>
+  <div data-ns-isle-actions><a href="/empezar">Empezar</a><a href="/github">GitHub</a></div>
 </div>
 ```
+
+Para ajustarla: `--ns-isle-bg` (fondo de la hoja, `#161618`), `--ns-isle-fg` y `--ns-isle-muted` (texto), `--ns-isle-ink` (texto del botón principal), `--ns-isle-width` (ancho de la cápsula, 212px), o tus propias reglas.
 
 ```js
 import { isle } from 'ns-frame/isle'
@@ -168,7 +175,7 @@ const nav = isle(document.querySelector('[data-ns-isle]'), {
 - **Sólo `transform` y `opacity`**, con el recorrido calculado de antemano: el compositor lo mueve en su propio hilo, a los fps de la pantalla, aunque el hilo principal esté ocupado. (En Safari, `clip-path`, `width` o `border-radius` se repintan en el hilo principal en cada fotograma: WebKit todavía no compone animaciones de `clip-path`, bug 185816.) Para que las esquinas no se deformen al escalar, la silueta va en siete piezas, como un 9-slice: cuatro esquinas que sólo se desplazan y tres bandas que se estiran. Si la hoja no tiene fondo ni radio propios (una de vidrio), `--ns-isle-morph` (`#1f1f23`) y `--ns-isle-radius` (32px).
 - **La hoja se prepara al apoyar el dedo** (o al pasar el ratón o enfocar el botón), oculta en su sitio final: cuando aparece ya está pintada. `morph: false` vuelve a la entrada desde abajo (sólo `translate`).
 - **Con la hoja abierta, la página de detrás no se desplaza**: `overflow: hidden` en `<html>` (con `scrollbar-gutter: stable`, sin salto) y, para el táctil de iOS, que lo ignora, se anula el gesto salvo dentro de algo de la hoja con scroll propio.
-- **Se arrastra como una hoja nativa** (usa `ns-frame/sheet`, con el asa en `[data-ns-isle-handle]` o todo el panel) y se cierra al soltarla o lanzarla, con Escape, con el fondo o con `[data-ns-isle-close]`.
+- **Arrastrarla hacia abajo lleva la transformación con el dedo** (usa `ns-frame/sheet` en modo `track`, con el asa en `[data-ns-isle-handle]` o todo el panel): la hoja no baja entera, se va recogiendo hacia la cápsula; el borde de arriba sigue al dedo 1:1 y el contenido, la luz y el velo van con él. Al soltar, termina de cerrarse o vuelve a abrirse, según la distancia y la velocidad. También se cierra con Escape, con el fondo o con `[data-ns-isle-close]`.
 - **Accesible**: `aria-expanded` en el botón; la hoja es `inert` mientras está cerrada; al abrir, el foco va a la sección actual y al cerrar vuelve al botón.
 - **Elegir una sección** cierra la hoja, actualiza la URL (`pushState`) y va hasta ella con `go(target, link)`; por defecto `scrollIntoView` suave, que respeta `scroll-padding-top` y `scroll-margin`.
 - `data-ns-isle-panel="top"`: la hoja baja desde arriba.
