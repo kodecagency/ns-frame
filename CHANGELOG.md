@@ -17,6 +17,8 @@
 - `sheet`: `.ns-glass-hold` mientras la hoja vuelve o sale sola; tras un arrastre que volvía a su sitio, cerrar la isla ya no deja la hoja atascada por un `translate` en línea.
 
 ### Módulos que se entienden entre sí
+- **El anillo de foco, sólo para el teclado:** el núcleo anota con qué se interactúa (`data-ns-input` en `<html>`) y, tras un toque o un clic, no se dibuja ningún anillo (tampoco el del sitio). Antes, al cerrar la isla con el dedo, el foco que vuelve a su botón encendía en Safari un rectángulo verde que no seguía la forma, y lo mismo al saltar a una sección. Con el teclado, el anillo de la cápsula sigue su forma redondeada (`--ns-isle-ring`).
+- Isla: la luz del borde corre también mientras se arrastra (una animación CSS cancelada junto a las de la silueta ya no volvía a arrancar) y es más luz que línea (trazo fino y difuminado, halo amplio).
 - **Un solo arranque para todos los materiales:** el núcleo exporta `watch(attr, make)`, y glass, liquid, relief y tabs lo usan. Ahora se desmontan solos al quitar su atributo o sacar el elemento del documento (antes se quedaban montados: la escucha de scroll global de liquid, sus observadores y su textura se acumulaban en una SPA o con las View Transitions de Astro). Mover un elemento de sitio no lo desmonta. Al quitar el vidrio o el relieve, el marco vuelve a recortarse con su forma. Sirve también para componentes propios.
 - **El relieve también sigue a la forma durante un morph** (mismo aviso `ns-shape`).
 - **El vidrio sigue a la forma durante un morph** (`data-ns-hover`, `data-ns-press`): antes saltaba a la forma final al empezar. El núcleo exporta `pathOf(el)` (el path que está pintando, también el intermedio) y avisa con el evento `ns-shape` a los elementos con `data-ns-glass`.

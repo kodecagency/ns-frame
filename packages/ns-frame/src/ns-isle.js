@@ -45,12 +45,12 @@ const CSS = `@layer ns{
 .ns-isle-morph>i:nth-child(-n+4){width:32px;height:32px}
 .ns-isle-morph>i:nth-child(5),.ns-isle-morph>i:nth-child(7){width:100px;height:32px}
 .ns-isle-morph>i:nth-child(6){width:100px;height:100px}
-.ns-isle-light{position:absolute;left:0;top:0;overflow:visible;opacity:0;--g:var(--ns-isle-glow,rgba(255,255,255,.75));--w:var(--ns-isle-rim,rgba(255,255,255,.13))}
+.ns-isle-light{position:absolute;left:0;top:0;overflow:visible;opacity:0;--g:var(--ns-isle-glow,rgba(255,255,255,.62));--w:var(--ns-isle-rim,rgba(255,255,255,.08))}
 .ns-isle-light rect{fill:none;vector-effect:non-scaling-stroke}
 .ns-isle-light .b{stroke:var(--w);stroke-width:1}
-.ns-isle-light :is(.r,.h){stroke:var(--g);stroke-dasharray:9 41;stroke-linecap:round;animation:ns-isle-run 2.2s linear infinite}
-.ns-isle-light .r{stroke-width:1.5}
-.ns-isle-light .h{stroke-width:14;opacity:.28}
+.ns-isle-light :is(.r,.h){stroke:var(--g);stroke-dasharray:14 36;stroke-linecap:round;animation:ns-isle-run 2.6s linear infinite}
+.ns-isle-light .r{stroke-width:1.1;opacity:.8}
+.ns-isle-light .h{stroke-width:22;opacity:.2}
 @keyframes ns-isle-run{to{stroke-dashoffset:-100}}
 .ns-isle-morph:not([style*=block]) .ns-isle-light :is(.r,.h){animation-play-state:paused}
 .ns-isle-morph>i:nth-child(1){border-top-left-radius:100%}.ns-isle-morph>i:nth-child(2){border-top-right-radius:100%}
@@ -72,7 +72,8 @@ html.ns-has-isle body{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
 [data-ns-isle][data-ns-isle]{--ns-isle-fg:#f4f4f5;--ns-isle-muted:rgba(244,244,245,.6);--ns-glass-tint:rgba(16,16,20,.42);position:fixed;z-index:var(--ns-isle-z,40);left:50%;bottom:calc(14px + env(safe-area-inset-bottom));width:var(--ns-isle-width,212px);height:54px;translate:-50% 0;border-radius:27px;color:var(--ns-glass-ink,var(--ns-isle-fg));contain:layout style}
 [data-ns-isle]:not(.ns-glass){background:rgba(18,18,20,.97);--ns-border:rgba(255,255,255,.14)}
 [data-ns-isle][data-ns-isle].ns-mini{width:54px}
-:where([data-ns-isle-toggle]){position:absolute;inset:0;display:flex;align-items:center;gap:11px;padding:0 8px 0 9px;border:0;background:none;color:inherit;font:inherit;cursor:pointer;text-align:left}
+:root:not([data-ns-input=pointer]) [data-ns-isle-toggle]:focus-visible{outline:2px solid var(--ns-isle-ring,rgba(255,255,255,.72))!important;outline-offset:3px}
+:where([data-ns-isle-toggle]){border-radius:inherit;position:absolute;inset:0;display:flex;align-items:center;gap:11px;padding:0 8px 0 9px;border:0;background:none;color:inherit;font:inherit;cursor:pointer;text-align:left}
 :where([data-ns-isle-icon]){width:36px;height:36px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--ns-isle-fg);color:#0a0a0a}
 :where([data-ns-isle-icon]) svg{width:17px;height:17px}
 :where([data-ns-isle-text]){flex:1;min-width:0;overflow:hidden;display:grid;transition:opacity .2s,visibility .2s}
@@ -249,9 +250,11 @@ export function isle(el, o = {}) {
       // animación CSS del trazo
       const id = 'nsil' + Math.random().toString(36).slice(2, 7), NS = SVGNS, mk = (t, a = {}) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); return e }
       const svg = mk('svg', { class: 'ns-isle-light', width: 1, height: 1 }), defs = mk('defs'), cp = mk('clipPath', { id: id + 'c' }), f = mk('filter', { id: id + 'b', x: '-20%', y: '-20%', width: '140%', height: '140%' })
-      f.append(mk('feGaussianBlur', { stdDeviation: 5 }))
-      lr = [mk('rect'), mk('rect', { class: 'b' }), mk('rect', { class: 'h', pathLength: 100, filter: `url(#${id}b)` }), mk('rect', { class: 'r', pathLength: 100 })]
-      cp.append(lr[0]); defs.append(cp, f)
+      f.append(mk('feGaussianBlur', { stdDeviation: 8 }))
+      // (el destello, difuminado un poco: luz, no una línea)
+      const f2 = mk('filter', { id: id + 's', x: '-20%', y: '-20%', width: '140%', height: '140%' }); f2.append(mk('feGaussianBlur', { stdDeviation: .9 }))
+      lr = [mk('rect'), mk('rect', { class: 'b' }), mk('rect', { class: 'h', pathLength: 100, filter: `url(#${id}b)` }), mk('rect', { class: 'r', pathLength: 100, filter: `url(#${id}s)` })]
+      cp.append(lr[0]); defs.append(cp, f, f2)
       const g = mk('g', { 'clip-path': `url(#${id}c)` }); g.append(lr[2])
       svg.append(defs, lr[1], g, lr[3])
       mo.append(svg)
@@ -263,7 +266,7 @@ export function isle(el, o = {}) {
     col ? mo.style.setProperty('--ns-isle-morph', col) : mo.style.removeProperty('--ns-isle-morph')
     for (const k of ['--ns-isle-glow', '--ns-isle-rim']) { const v = s.getPropertyValue(k).trim(); v ? mo.style.setProperty(k, v) : mo.style.removeProperty(k) }
     Object.assign(mo.style, { display: 'block', zIndex: Z() + 1 })
-    mo.getAnimations({ subtree: true }).forEach(a => a.cancel())
+    mine().forEach(a => a.cancel())
     const K = R.map(pieces), P = [...mo.children].slice(0, 7)
     // la luz se enciende al arrancar, acompaña el recorrido y se apaga al llegar
     mo.lastChild.animate([{ opacity: 0 }, { opacity: 1, offset: open ? .22 : .12 }, { opacity: 1, offset: open ? .72 : .6 }, { opacity: 0 }], { duration: dur, fill: 'both' })
@@ -293,7 +296,10 @@ export function isle(el, o = {}) {
     const f = () => a.playState == 'idle' ? 0 : a.playState == 'finished' || a.currentTime >= d ? fn() : requestAnimationFrame(f)
     f()
   }
-  const unmorph = () => { if (mo) { mo.getAnimations({ subtree: true }).forEach(a => a.cancel()); mo.style.display = 'none' } }
+  const unmorph = () => { if (mo) { mine().forEach(a => a.cancel()); mo.style.display = 'none' } }
+  // las animaciones de la silueta que son nuestras (Web Animations): no la del destello de la luz, que
+  // es CSS y corre sola; cancelada, no volvería a arrancar, y pausada con el resto, no se movería al arrastrar
+  const mine = () => mo.getAnimations({ subtree: true }).filter(a => !('animationName' in a))
   // la muestra en la que la silueta cubre (open) o deja de cubrir el rectángulo e
   const when = (R, e, open) => {
     const i = R.findIndex(s => open
@@ -352,7 +358,7 @@ export function isle(el, o = {}) {
     panel.classList.add('ns-morphing'); panel.classList.remove('ns-open', 'ns-warm', 'ns-stage')
     // (la cápsula vuelve a estar, pero transparente hasta su fundido: sin saltos al llegar)
     el.removeAttribute('data-ns-hidden')
-    const all = [...mo.getAnimations({ subtree: true }),
+    const all = [...mine(),
       el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150, delay: HOME, easing: 'ease-out', fill: 'both' }),
       mo.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, delay: HOME + 150, fill: 'both' }),
       // (cada pieza se va entre que el borde está 30 px por encima y pasa su mitad: en espacio, no en

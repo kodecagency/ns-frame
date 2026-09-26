@@ -292,7 +292,9 @@ function mk(tag, a = {}, st = {}, ...kids) {
 // ───────────────────────────── runtime DOM ─────────────────────────────
 
 const BASE = 'ns-frame{display:block}:where([data-ns],[data-ns-nest],ns-frame){position:relative}.ns-fast{overflow:hidden;overflow:clip}' +
-  ':where([data-ns-pad],ns-frame[pad]){--p:var(--ns-pad,1.25rem);padding:calc(var(--ns-safe-t,0px) + var(--p)) calc(var(--ns-safe-r,0px) + var(--p)) calc(var(--ns-safe-b,0px) + var(--p)) calc(var(--ns-safe-l,0px) + var(--p))}'
+  ':where([data-ns-pad],ns-frame[pad]){--p:var(--ns-pad,1.25rem);padding:calc(var(--ns-safe-t,0px) + var(--p)) calc(var(--ns-safe-r,0px) + var(--p)) calc(var(--ns-safe-b,0px) + var(--p)) calc(var(--ns-safe-l,0px) + var(--p))}' +
+  // (tras un toque o un clic, sin anillo de foco; !important dentro de la capa gana al CSS del sitio)
+  '[data-ns-input=pointer] :focus-visible{outline:none!important}'
 const STYLE = `
 .ns-svg{position:absolute;left:0;top:0;pointer-events:none;overflow:visible;z-index:1;filter:var(--ns-glow,none)}
 @media (hover:none) and (pointer:coarse){.ns-svg{filter:var(--ns-glow-touch,none)}}
@@ -304,6 +306,7 @@ const STYLE = `
 .ns-a{stroke:var(--ns-accent,var(--ns-border));stroke-width:calc(2*var(--ns-accent-width,2px))}
 .ns-f{display:none;stroke:var(--ns-focus,currentColor);stroke-width:calc(2*var(--ns-focus-width,2px))}
 :focus-visible>.ns-svg>.ns-f{display:inline}
+[data-ns-input=pointer] :focus-visible>.ns-svg>.ns-f{display:none}
 .ns-pre .ns-b,.ns-pre .ns-a{stroke-dasharray:100 100;stroke-dashoffset:100}
 .ns-draw .ns-b{stroke-dasharray:100 100;animation:ns-d var(--ns-draw-time,1.2s) cubic-bezier(.65,0,.35,1) both}
 .ns-draw .ns-a{animation:ns-o .4s var(--ns-draw-time,1.2s) both}
@@ -752,6 +755,13 @@ export function open(el, mode, dur) {
 export const close = (el, mode, dur) => typeof NS_LITE == 'undefined' ? need().then(E => E.play(ready(S.get(attach(el))), mode, -1, dur)) : Promise.resolve()
 
 if (DOM) {
+  // Con qué se interactúa (data-ns-input en <html>: pointer | keyboard). Tras un toque o un clic no se
+  // dibuja el anillo de foco: un foco movido por código (la isla que devuelve el foco a su botón al
+  // cerrarse, un salto que enfoca la sección) lo encendía en Safari con un rectángulo que no sigue la
+  // forma. Con el teclado sigue ahí, que es para quien existe
+  const root = document.documentElement, input = v => root.getAttribute('data-ns-input') != v && root.setAttribute('data-ns-input', v)
+  addEventListener('pointerdown', () => input('pointer'), { capture: true, passive: true })
+  addEventListener('keydown', e => { if (!e.metaKey && !e.ctrlKey && !e.altKey) input('keyboard') }, { capture: true, passive: true })
   const sel = '[data-ns],[data-ns-nest],ns-frame'
   const scan = n => { if (n.nodeType != 1) return; n.matches(sel) && attach(n); n.querySelectorAll(sel).forEach(attach) }
   const gone = n => { if (n.nodeType != 1 || n.isConnected) return; detach(n); n.querySelectorAll(sel).forEach(x => detach(x)) }
