@@ -40,7 +40,6 @@ export function sheet(el, { handle = el, onClose, onProgress, threshold = 6 } = 
     el.style.setProperty('--ns-sheet-p', p.toFixed(3))
     onProgress?.(p)
   }
-  const frame = () => { raf = 0; put(pending) }
   let pending = 0
 
   const down = e => {
@@ -62,8 +61,9 @@ export function sheet(el, { handle = el, onClose, onProgress, threshold = 6 } = 
       try { handle.setPointerCapture(id) } catch {}
       el.classList.add('ns-sheet-drag')
     }
+    // (en el mismo evento, no en el siguiente fotograma: un fotograma menos de retraso bajo el dedo)
     pending = dy >= 0 ? dy : -rubber(-dy, h)
-    raf ||= requestAnimationFrame(frame)
+    put(pending)
   }
   const to = (target, done) => {
     cancelAnimationFrame(raf); raf = 0

@@ -38,7 +38,9 @@ const CSS = `@layer ns{
 .ns-isle-morph{position:fixed;left:0;top:0;width:0;height:0;display:none;pointer-events:none;contain:layout style}
 .ns-isle-morph>i{position:absolute;left:0;top:0;transform-origin:0 0;background:var(--ns-isle-morph,#1f1f23);will-change:transform}
 .ns-isle-morph>i:nth-child(-n+4){width:32px;height:32px}
-.ns-isle-morph>i:nth-child(n+5){width:100px;height:100px}
+.ns-isle-morph>i:nth-child(5),.ns-isle-morph>i:nth-child(7){width:100px;height:32px}
+.ns-isle-morph>i:nth-child(6){width:100px;height:100px}
+.ns-isle-morph>i:is(:nth-child(1),:nth-child(2),:nth-child(5)){box-shadow:inset 0 1px 0 var(--ns-isle-rim,rgba(255,255,255,.16))}
 .ns-isle-morph>i:nth-child(1){border-top-left-radius:100%}.ns-isle-morph>i:nth-child(2){border-top-right-radius:100%}
 .ns-isle-morph>i:nth-child(3){border-bottom-right-radius:100%}.ns-isle-morph>i:nth-child(4){border-bottom-left-radius:100%}
 .ns-isle-m [data-ns-isle-toggle]{transition:opacity .16s}
@@ -51,6 +53,8 @@ const CSS = `@layer ns{
 [data-ns-isle-panel].ns-open{translate:0 0;visibility:visible;transition:translate var(--ns-isle-time,.4s) var(--ns-isle-ease,cubic-bezier(.2,.8,.2,1)),visibility 0s}
 [data-ns-isle-panel].ns-now,[data-ns-isle-panel].ns-sheet-drag{transition:none}
 [data-ns-isle-panel].ns-stage{translate:0 0;visibility:hidden;transition:none}
+[data-ns-isle-panel].ns-morphing{translate:0 0;visibility:visible;transition:none;background:none!important}
+[data-ns-isle-panel].ns-morphing>:is(.ns-liquid-src,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-fx,.ns-svg){visibility:hidden}
 @media (prefers-reduced-motion:reduce){.ns-isle-scrim,[data-ns-isle],[data-ns-isle-panel]{transition:none!important}}
 }`
 let styled = 0
@@ -59,25 +63,36 @@ const q = (el, s) => el.querySelector(s)
 const r2 = n => Math.round(n * 100) / 100
 // muelle con un rebote leve (≈2,5 %), como las animaciones de sistema de Apple; donde no hay
 // linear(), una curva con el mismo exceso
-const SPRING = (() => {
+// muelle con un rebote leve (≈2,5 %), como las animaciones de sistema de Apple
+const spring = t => {
+  if (t <= 0) return 0
+  if (t >= 1) return 1
   const z = .76, w = 8.4, wd = w * Math.sqrt(1 - z * z)
-  const f = t => 1 - Math.exp(-z * w * t) * (Math.cos(wd * t) + z * w / wd * Math.sin(wd * t))
-  const v = Array.from({ length: 41 }, (_, i) => i == 40 ? 1 : +f(i / 40).toFixed(4))
-  // (globalThis: en este módulo, CSS es la hoja de estilos)
-  return globalThis.CSS?.supports?.('transition-timing-function', 'linear(0, 1)') ? `linear(${v.join(',')})` : 'cubic-bezier(.3,1.14,.42,1)'
-})()
-const OPEN = 520, CLOSE = 440, FADE = 110
+  return 1 - Math.exp(-z * w * t) * (Math.cos(wd * t) + z * w / wd * Math.sin(wd * t))
+}
+const lerp = (a, b, p) => a + (b - a) * p
+const OPEN = 600, CLOSE = 480, N = 40
+// El recorrido de la silueta, como la Dynamic Island: al abrir, primero se ensancha a los lados (y
+// baja hasta el borde de la hoja) y después crece hacia arriba, cada eje con su muelle; al cerrar,
+// al revés: baja hasta ser una barra y luego se estrecha hasta la cápsula. N+1 muestras del
+// rectángulo y su radio
+const route = (A, B, ra, rb, open) => Array.from({ length: N + 1 }, (_, i) => {
+  const t = i / N, x = open ? spring(t / .5) : spring((t - .22) / .78), y = open ? spring((t - .12) / .88) : spring(t / .62)
+  const L = lerp(A.left, B.left, x), R = lerp(A.right, B.right, x), Bo = lerp(A.bottom, B.bottom, x), T = Math.min(lerp(A.top, B.top, y), Bo - 1)
+  // (el radio sigue a la altura; en una barra baja lo limita su media altura)
+  return { left: L, top: T, width: R - L, height: Bo - T, r: lerp(ra, rb, y) }
+})
 // La silueta, sólo con transform (el compositor la mueve en su propio hilo, a los fps de la
 // pantalla, aunque el hilo principal esté ocupado; clip-path, width o border-radius no: en Safari se
 // repintan en el hilo principal cada fotograma). Para que las esquinas no se deformen al escalar, va
 // en siete piezas opacas, como un 9-slice: cuatro esquinas de 32px que sólo se desplazan (y escalan
-// igual en los dos ejes con el radio) y tres bandas que se estiran: arriba, en medio y abajo.
-// Todas interpolan con la misma curva, así que encajan en cada fotograma (se solapan medio píxel)
-const pieces = ({ left: x, top: y, width: w, height: h }, r) => {
-  r = Math.min(r, w / 2, h / 2)
+// igual en los dos ejes con el radio) y tres bandas que se estiran: arriba, en medio y abajo. Cada
+// pieza lleva las mismas muestras, así que encajan en cada fotograma (se solapan medio píxel)
+const pieces = ({ left: x, top: y, width: w, height: h, r }) => {
+  r = Math.max(0, Math.min(r, w / 2, h / 2))
   const k = r2(r / 32), iw = Math.max(0, w - 2 * r) + 1, ih = Math.max(0, h - 2 * r) + 1, T = (a, b, s) => `translate(${r2(a)}px,${r2(b)}px) scale(${s})`
   return [T(x, y, k), T(x + w - r, y, k), T(x + w - r, y + h - r, k), T(x, y + h - r, k),
-    T(x + r - .5, y, `${r2(iw / 100)},${r2(r / 100)}`), T(x, y + r - .5, `${r2(w / 100)},${r2(ih / 100)}`), T(x + r - .5, y + h - r, `${r2(iw / 100)},${r2(r / 100)}`)]
+    T(x + r - .5, y, `${r2(iw / 100)},${k}`), T(x, y + r - .5, `${r2(w / 100)},${r2(ih / 100)}`), T(x + r - .5, y + h - r, `${r2(iw / 100)},${k}`)]
 }
 
 /**
@@ -138,11 +153,19 @@ export function isle(el, o = {}) {
   const Z = () => parseInt(getComputedStyle(scrim).zIndex) || 40
   const rad = () => parseFloat(getComputedStyle(panel).getPropertyValue('--ns-isle-radius')) || 32
   const cap = r => Math.min(r.width, r.height) / 2
-  // lo que se ve de la hoja (sin las capas del vidrio ni del borde): entra escalonado
-  const kids = () => [...panel.children].filter(k => !k.matches('.ns-liquid-src,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-fx,.ns-svg'))
+  // las capas del material de la hoja (vidrio, canto, borde) y lo que se ve de ella: lo que entra
+  // mientras la silueta crece. Un bloque alto (la rejilla de secciones) entra pieza a pieza
+  const LAYERS = '.ns-liquid-src,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-fx,.ns-svg'
+  const layers = () => panel.querySelectorAll(`:scope > :is(${LAYERS})`)
+  const leaves = () => {
+    const out = [], H = panel.offsetHeight
+    const walk = n => { for (const k of n.children) if (!k.matches(LAYERS)) k.offsetHeight > H * .3 && k.children.length ? walk(k) : out.push(k) }
+    walk(panel)
+    return out
+  }
   const unfade = () => { fx.forEach(a => a.cancel()); fx = [] }
-  // la silueta va de la forma A (radio ra) a la B (radio rb), tras `delay` ms quieta en A
-  const morph = (A, B, ra, rb, dur, delay = 0) => {
+  // la silueta recorre las muestras R en dur ms (cada pieza con las mismas: encajan siempre)
+  const morph = (R, dur) => {
     if (!mo) {
       mo = document.createElement('div')
       mo.className = 'ns-isle-morph'
@@ -151,18 +174,19 @@ export function isle(el, o = {}) {
       mo.setAttribute('data-ns-quiet', '')
       scrim.setAttribute('data-ns-quiet', '')
       for (let i = 0; i < 7; i++) mo.append(document.createElement('i'))
-      panel.after(mo)
+      // (entre el velo y la hoja: el contenido de la hoja va encima de la silueta)
+      panel.before(mo)
     }
     // (su color, el de la hoja: --ns-isle-morph)
     const c = getComputedStyle(panel).getPropertyValue('--ns-isle-morph').trim()
     c ? mo.style.setProperty('--ns-isle-morph', c) : mo.style.removeProperty('--ns-isle-morph')
-    Object.assign(mo.style, { display: 'block', zIndex: Z() + 2 })
+    Object.assign(mo.style, { display: 'block', zIndex: Z() + 1 })
     mo.getAnimations({ subtree: true }).forEach(a => a.cancel())
-    const a = pieces(A, ra), b = pieces(B, rb)
-    return [...mo.children].map((p, i) => p.animate([{ transform: a[i] }, { transform: b[i] }], { duration: dur, delay, easing: SPRING, fill: 'both' }))[0]
+    const K = R.map(pieces)
+    return [...mo.children].map((p, i) => p.animate(K.map(k => ({ transform: k[i] })), { duration: dur, fill: 'both' }))[0]
   }
-  // la silueta aparece (v = 1) o se va (v = 0): opacidad del grupo, también en el compositor
-  const fade = (v, d) => mo.animate([{ opacity: 1 - v }, { opacity: v }], { duration: d, easing: 'ease-out', fill: 'forwards' })
+  // la silueta se va (opacidad del grupo, también en el compositor)
+  const fade = d => mo.animate([{ opacity: 1 }, { opacity: 0 }], { duration: d, easing: 'ease-out', fill: 'forwards' })
   // fn cuando la animación a llega a la fracción k de su duración (con su propio reloj: si el
   // navegador la frena o la acelera, el relevo sigue en su sitio); nada si se cancela antes
   const at = (a, k, fn) => {
@@ -171,20 +195,29 @@ export function isle(el, o = {}) {
     f()
   }
   const unmorph = () => { if (mo) { mo.getAnimations({ subtree: true }).forEach(a => a.cancel()); mo.style.display = 'none' } }
+  // la muestra en la que la silueta cubre (open) o deja de cubrir el rectángulo e
+  const when = (R, e, open) => {
+    const i = R.findIndex(s => open
+      ? s.top <= e.top + e.height * .35 && s.left <= e.left + 6 && s.left + s.width >= e.right - 6
+      : s.top > e.top + e.height * .45 || s.left > e.left + 6 || s.left + s.width < e.right - 6)
+    return i < 0 ? N : i
+  }
 
   // prepara la hoja antes del clic: al apoyar el dedo o pasar el ratón ya se pinta (sin parón al
-  // abrir). Con morph, oculta en su sitio final (su vidrio se rasteriza allí); si no, fuera de pantalla
+  // abrir). Con morph, oculta en su sitio final; si no, fuera de pantalla
   const warm = () => { if (!isOpen) { panel.classList.add(MORPH ? 'ns-stage' : 'ns-warm'); clearTimeout(timer); timer = setTimeout(cool, 1500) } }
   const cool = () => isOpen || panel.classList.remove('ns-warm', 'ns-stage')
 
-  // la hoja, visible y con el foco dentro
+  // la hoja, entera y con el foco dentro
   const reveal = t => {
-    unfade()
-    panel.classList.remove('ns-stage', 'ns-now')
+    const m = panel.classList.contains('ns-morphing')
+    panel.classList.remove('ns-stage', 'ns-now', 'ns-morphing')
     panel.classList.add('ns-warm', 'ns-open')
-    // (la silueta, encima, se desvanece y deja ver la hoja: un fundido, no un salto)
-    if (mo?.style.display == 'block') at(fade(0, 200), 1, () => t == run && unmorph())
-    if (MORPH && !reduced()) fx = kids().map((k, i) => k.animate([{ opacity: 0, translate: '0 10px' }, { opacity: 1, translate: '0 0' }], { duration: 300, delay: i * 35, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }))
+    // (al final de la silueta, el material de la hoja aparece sobre ella y la silueta se va debajo)
+    if (m) {
+      const f = [...layers()].map(l => l.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 140, easing: 'ease-out' }))
+      f[0] ? at(f[0], 1, () => t == run && at(fade(180), 1, () => t == run && unmorph())) : unmorph()
+    }
     // el foco entra en la hoja (se reintenta unos fotogramas: si aún no cuenta como visible, el
     // navegador ignora focus() sin avisar y el foco se quedaría fuera)
     let n = 0
@@ -218,20 +251,23 @@ export function isle(el, o = {}) {
     el.inert = on
     scrim.classList.toggle('ns-open', on)
     scrim.style.opacity = ''
+    unfade()
     if (on) {
       o.onOpen?.()
       if (anim) {
-        // la silueta nace sobre la cápsula (la cubre en 90 ms y la cápsula se oculta debajo) y crece
-        // hasta la hoja, que espera oculta en su sitio; la hoja aparece bajo ella cuando ya casi se
-        // ha asentado y la silueta se desvanece
+        // La silueta nace bajo la cápsula (que se desvanece encima) y recorre el camino hasta la
+        // hoja: primero a los lados, luego hacia arriba. La hoja ya está en su sitio, sin su
+        // material: su contenido entra pieza a pieza justo cuando la silueta lo alcanza. Al llegar,
+        // el material aparece encima y la silueta se va debajo
         const A = el.getBoundingClientRect()
-        panel.classList.remove('ns-warm'); panel.classList.add('ns-stage')
-        const B = panel.getBoundingClientRect()
-        // (la cápsula, sobre el velo y bajo la silueta)
-        el.style.zIndex = Z() + 1
-        const g = morph(A, B, cap(A), rad(), OPEN)
-        at(fade(1, 90), 1, () => t == run && el.classList.add('ns-hide'))
-        at(g, .8, () => t == run && reveal(t))
+        panel.classList.remove('ns-warm', 'ns-stage'); panel.classList.add('ns-morphing')
+        const B = panel.getBoundingClientRect(), R = route(A, B, cap(A), rad(), true)
+        el.style.zIndex = Z() + 2
+        const g = morph(R, OPEN), p = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 130, easing: 'ease-out', fill: 'forwards' })
+        fx = [p, ...leaves().map(k => k.animate([{ opacity: 0, translate: '0 10px', scale: '.97' }, { opacity: 1, translate: '0 0', scale: '1' }],
+          { duration: 320, delay: Math.max(90, when(R, k.getBoundingClientRect(), true) / N * OPEN), easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }))]
+        at(p, 1, () => { if (t == run) { el.classList.add('ns-hide'); p.cancel() } })
+        at(g, 1, () => t == run && reveal(t))
         return
       }
       el.classList.add('ns-hide')
@@ -246,28 +282,31 @@ export function isle(el, o = {}) {
     // (tras un arrastre que volvió a su sitio queda un translate en línea que taparía el de la clase)
     if (!now) sh.reset()
     if (anim) {
-      // el contenido se desvanece mientras la silueta aparece encima de la hoja; luego la hoja se
-      // oculta y la silueta vuelve a la cápsula, que reaparece debajo cuando ya casi ha llegado
-      const B = panel.getBoundingClientRect(), A = el.getBoundingClientRect()
-      unfade()
-      fx = kids().map(k => k.animate([{ opacity: 1 }, { opacity: 0 }], { duration: FADE, easing: 'ease-in', fill: 'forwards' }))
-      el.style.zIndex = Z() + 1
-      const g = morph(B, A, rad(), cap(A), CLOSE, FADE)
-      at(fade(1, FADE), 1, () => {
-        if (t != run) return
-        panel.classList.add('ns-now'); panel.classList.remove('ns-open', 'ns-warm', 'ns-stage')
-        unfade()
-      })
-      at(g, .78, () => {
+      // El camino inverso: el material de la hoja se desvanece sobre la silueta, que baja hasta ser
+      // una barra y se estrecha hasta la cápsula; el contenido se va justo antes de que la silueta
+      // deje de cubrirlo. Al llegar, la cápsula aparece encima y la silueta se va debajo
+      const B = panel.getBoundingClientRect(), A = el.getBoundingClientRect(), R = route(B, A, rad(), cap(A), false)
+      el.style.zIndex = Z() + 2
+      const g = morph(R, CLOSE)
+      const L = [...layers()].map(l => l.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, easing: 'ease-in', fill: 'forwards' }))
+      fx = [...L, ...leaves().map(k => k.animate([{ opacity: 1 }, { opacity: 0, scale: '.97' }],
+        { duration: 110, delay: Math.max(0, when(R, k.getBoundingClientRect(), false) / N * CLOSE - 110), easing: 'ease-in', fill: 'both' }))]
+      L[0] && at(L[0], 1, () => { if (t == run) { panel.classList.add('ns-morphing'); panel.classList.remove('ns-open', 'ns-warm', 'ns-stage'); L.forEach(a => a.cancel()) } })
+      at(g, .84, () => {
         if (t != run) return
         el.classList.remove('ns-hide')
-        at(fade(0, 160), 1, () => { if (t == run) { unmorph(); el.style.zIndex = '' } })
+        at(el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150, easing: 'ease-out' }), 1, () => {
+          if (t != run) return
+          unfade()
+          panel.classList.add('ns-now'); panel.classList.remove('ns-morphing', 'ns-open', 'ns-warm', 'ns-stage')
+          at(fade(160), 1, () => { if (t == run) { unmorph(); el.style.zIndex = '' } })
+        })
       })
       return
     }
-    unmorph(); unfade()
+    unmorph()
     panel.classList.toggle('ns-now', now)
-    panel.classList.remove('ns-open', 'ns-stage'); cool()
+    panel.classList.remove('ns-open', 'ns-stage', 'ns-morphing'); cool()
     el.classList.remove('ns-hide'); el.style.zIndex = ''
   }
   const sh = sheet(panel, {
@@ -369,7 +408,7 @@ export function isle(el, o = {}) {
       btn.removeEventListener('pointerdown', down); btn.removeEventListener('pointerup', up)
       btn.removeEventListener('pointerenter', warm); btn.removeEventListener('focus', warm); btn.removeEventListener('click', click)
       panel.removeEventListener('click', pick); panel.removeEventListener('click', onClose)
-      panel.classList.remove('ns-open', 'ns-warm', 'ns-now', 'ns-stage'); el.classList.remove('ns-hide', 'ns-mini')
+      panel.classList.remove('ns-open', 'ns-warm', 'ns-now', 'ns-stage', 'ns-morphing'); el.classList.remove('ns-hide', 'ns-mini')
       panel.inert = false; el.inert = false; btn.style.touchAction = ''
     },
   }

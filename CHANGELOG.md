@@ -3,13 +3,15 @@
 ## Sin publicar
 
 ### Isla que se convierte en la hoja (`ns-frame/isle`)
-- Al tocar la cápsula, se convierte en la hoja como la Dynamic Island: una silueta opaca crece con un muelle desde la cápsula hasta la hoja, que aparece debajo ya pintada; la silueta se desvanece y el contenido entra escalonado. Al cerrar, el camino inverso. `morph: false` mantiene la entrada desde abajo; `--ns-isle-radius` y `--ns-isle-morph` fijan el radio final y el color.
+- Al tocar la cápsula, se convierte en la hoja como la Dynamic Island: primero se ensancha a los lados, después crece hacia arriba (un muelle por eje), y el contenido de la hoja aparece pieza a pieza justo cuando la forma lo alcanza; al llegar, el material de vidrio aparece encima. Al cerrar, el camino inverso: baja hasta ser una barra y se estrecha hasta la cápsula. Canto de luz arriba (`--ns-isle-rim`).
+- Arrastrar la hoja: sigue al dedo en el mismo evento (un fotograma menos de retraso) y su vidrio ya no se relee entero en cada fotograma (el `translate` del arrastre contaba como un cambio de estilo). `morph: false` mantiene la entrada desde abajo; `--ns-isle-radius` y `--ns-isle-morph` fijan el radio final y el color.
 - **Fluida en iPhone:** la silueta sólo anima `transform` y `opacity` (el compositor la mueve en su propio hilo); siete piezas, como un 9-slice, para que las esquinas no se deformen al escalar. Una primera versión animaba `clip-path`, que Safari repinta en el hilo principal en cada fotograma (WebKit, bug 185816) y no iba fluida. Antes, además, la hoja de vidrio se rasterizaba, se subía a la GPU y se copiaba en cada fotograma de la subida.
 - **Con la hoja abierta, la página de detrás ya no se desplaza** (también con el táctil de iOS).
 - La cápsula va completa mientras se baja leyendo (dice en qué sección estás) y se pliega a un icono al subir; `collapseOn: 'down'` lo invierte.
 - `sheet`: `.ns-glass-hold` mientras la hoja vuelve o sale sola; tras un arrastre que volvía a su sitio, cerrar la isla ya no deja la hoja atascada por un `translate` en línea.
 
 ### Vidrio más ligero (WebGL)
+- **Sin retraso al desplazar:** en iPhone el scroll lo mueve el compositor, por delante del hilo principal, y la copia de la página que pinta la lente llegaba tarde en un scroll rápido. Mientras lo de detrás se mueve respecto al vidrio (una barra fija sobre la página, un vidrio fuera de la lista que corre), el vidrio usa el desenfoque nativo; al parar, la lente vuelve con un fundido. Un vidrio que se desplaza junto a su fondo no cambia. `data-ns-glass="lens"` mantiene siempre la lente.
 - **Material grueso con desenfoque nativo:** fuera de Chromium, un vidrio con desenfoque ≥ 12px (una hoja, un menú) usa el desenfoque del navegador, como los materiales de Apple, en vez de la lente sobre una copia de la página: tan agrandada bajo tanto desenfoque, la copia dejaba grano y vetas de color (visto en iPhone), y costaba cada fotograma. `data-ns-glass="lens"` fuerza la lente.
 - Un vidrio no vuelve a dibujar ni a copiar su canvas si nada cambió (antes, cualquier transición cercana lo repintaba en cada fotograma).
 - Con desenfoque grande (≥ 10px) el canvas va a 1 px por px y la página se rasteriza a ½: el detalle de más no se ve bajo el desenfoque y cada dibujo cuesta cuatro veces menos.
