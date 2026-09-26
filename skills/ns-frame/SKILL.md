@@ -1,6 +1,6 @@
 ---
 name: ns-frame
-description: Build shaped web UI with the ns-frame library — bevels, notches, scoops, squircles and fillets on any corner of any element, borders that follow the cut, morph, apertures, and shaped components (toasts, carousel, skeletons, popovers, View Transitions, draggable sheet, navigation island), free-form mosaics (L/T/U pieces that interlock with a constant gap, shaped orbs, connected light effects), concentric corners, text that fills a shape, multi-line highlights and liquid (gooey) groups. Use when the project imports ns-frame, uses data-ns attributes or <ns-frame>, or the user asks for cut/chamfered/HUD/sci-fi/futuristic corners, squircle corners, shaped cards, buttons, panels or tickets without images.
+description: Build shaped web UI with the ns-frame library — bevels, notches, scoops, squircles and fillets on any corner of any element, borders that follow the cut, morph, apertures, and shaped components (toasts, carousel, skeletons, popovers, View Transitions, draggable sheet, navigation island), free-form mosaics (L/T/U pieces that interlock with a constant gap, shaped orbs, connected light effects), concentric corners, text that fills a shape, multi-line highlights, liquid (gooey) groups and materials (liquid glass with a real lens in every engine, draggable glass tabs, lit relief). Use when the project imports ns-frame, uses data-ns attributes or <ns-frame>, or the user asks for cut/chamfered/HUD/sci-fi/futuristic corners, squircle corners, shaped cards, buttons, panels or tickets without images.
 ---
 
 # ns-frame
@@ -40,6 +40,15 @@ ns-frame draws shapes with a small shape language written in HTML attributes. Th
 | iOS-style tab bar whose glass indicator can be dragged between tabs | `data-ns-tabs` + `ns-frame/tabs` |
 
 Read `references/shapes.md` before writing any non-trivial shape and `references/components.md` before using a module.
+
+## Liquid glass: ready to use
+
+- One attribute is enough: `data-ns-glass` (any element, any ns-frame shape) or `data-ns-liquid="glass"` (groups that melt). Do **not** set `--ns-glass-lens`, `--ns-glass-depth` or `--ns-glass-blur` unless asked: the defaults scale with the element's size and look right.
+- Text colour: use `color: var(--ns-glass-ink)` inside glass. The glass measures what passes behind it and flips/deepens its tone; the ink follows. Hard-coded white or black text breaks this.
+- Put glass content inside elements (`<button><span>+</span></button>`), never as a bare text node: it would sit under the glass layers.
+- The lens is real everywhere: native `backdrop-filter` in Chromium; WebGL in Safari, every iOS browser and Firefox (over images, videos, canvases or the page itself). Images behind glass must be same-origin or served with CORS (`Access-Control-Allow-Origin`) for the WebGL lens and the tone detection; otherwise the glass falls back to SVG filters.
+- A dark designed bar: set only `--ns-glass-tint` (e.g. `rgba(22,22,26,.28)`); it stays dark over light content and deepens instead of flipping.
+- Strict CSP: the lens needs `img-src data:`.
 
 ## Shape language in one screen
 

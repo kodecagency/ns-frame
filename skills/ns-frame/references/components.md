@@ -117,6 +117,18 @@ All four activate by attribute (also on elements added later) and export `refres
 
 **`ns-frame/liquid`** — `<nav data-ns-liquid>` with children: nearby children melt into one blob with a crisp SVG edge (no gooey filter). Children must have no background; the group paints `--ns-liquid-fill` (+ `--ns-liquid-border`, `--ns-liquid-width`). `--ns-liquid`: max gap that melts (14px; 0 = plain union). `data-ns-blob` limits which children count. Children are treated as rounded rectangles (their `border-radius`), not ns shapes. Redraws only while something moves. JS: `liquid(el, { blobs, k, step })` → `{ update(), destroy() }`; pure `blend(boxes, k, step)`.
 
+## Materials — `glass`, `tabs`, `relief`, `light`
+
+**`ns-frame/glass`** — `data-ns-glass` on any element (with or without `data-ns`): liquid glass with the element's exact shape. Tokens: `clear` (almost no tint), `tint` (more legible), `u` (U light), `facet` (cut glass), `prism` (chromatic edge). Layers: blurred body, **lens** (the background bends at the edge), rim light from `ns-frame/light`, shadow. **Ready to use: set no variables.** Lens strength and depth scale with the element (42 % / 55 % of the short side); blur 3px (7px in light tone). Engines: Chromium bends the real backdrop (`backdrop-filter` + `feDisplacementMap`); Safari, iOS browsers and Firefox render the lens in WebGL over a readable image/video/canvas behind it or over the page rasterised under the glass (repainted on scroll), with an SVG-filter fallback. One shared WebGL context; glasses over the same photo share one texture. Tone: the glass reads what passes behind (flat colour or the exact photo region, CORS required) — without its own tint it flips to light (`ns-glass-light`); with `--ns-glass-tint` set it deepens instead (`ns-glass-deep`). **Use `color: var(--ns-glass-ink)` for its content.** Content goes inside elements, never as a bare text node. `data-ns-liquid-src="selector|page|none"` forces the background. CSP needs `img-src data:`. JS: `glass(el, opts)` → `{ update(), frame(), destroy() }`.
+
+**`ns-frame/liquid` glass** — `data-ns-liquid="glass"`: the same material on a group of melting blobs (a tab bar, drops that come out of a button).
+
+**`ns-frame/tabs`** — `<div data-ns-tabs data-ns-liquid="glass" role="group">` + buttons: a glass indicator you tap or drag between tabs; while dragged it lifts as a magnifying lens (vars `-lift`). `data-ns-tabs="shrink"` shrinks the bar while a scroll container (`data-ns-tabs-scroll`) scrolls down, like iOS/Instagram. Event `change` with `detail { index, tab }`. JS: `tabs(el, { items })` → `{ select(i), index, destroy() }`. Keyboard: arrows move, `aria-pressed` kept in sync.
+
+**`ns-frame/relief`** — `data-ns-relief` (`surface`, `raised`, `knob`, `inset`, `select`, `ghost`; tones `metal`, `paper`): opaque materials with real bevel lit per pixel by the page light; controls sink on press / `aria-pressed` / `aria-checked`. No CSS `border`.
+
+**`ns-frame/light`** — one directional light for the whole page (follows pointer/scroll); `material(params)` → id of a shared SVG lighting `<filter>`. Used by relief and the glass rim; rarely needed directly.
+
 ## Callouts — `ns-frame/link`
 
 `<div data-ns-link="#target">Label</div>` draws a straight + 45° line to `#target`.

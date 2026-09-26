@@ -267,12 +267,15 @@ h2 mark { background: none; color: inherit; --ns-mark: #ffe066 }
 
 El material del Liquid Glass de Apple, en capas, con la forma exacta del grupo (también mientras se funde y se estira):
 
-1. **Cuerpo:** el fondo desenfocado, saturado y tintado (`--ns-glass-blur` 4px, `--ns-glass-sat` 1.3, `--ns-glass-tint`).
-2. **Lente:** el fondo se curva junto al borde como a través de un cristal grueso. El mapa de desplazamiento sale del mismo campo de distancias: cada punto a menos de `--ns-glass-depth` (24px) del borde toma el fondo un poco más allá, en la dirección de la normal, con una caída suave; `--ns-glass-lens` (34px) es la fuerza. En Chromium va en `backdrop-filter` con un `feDisplacementMap`. Safari (y todos los navegadores de iPhone) y Firefox no admiten filtros SVG en `backdrop-filter`, pero sí en `filter`. Allí el vidrio pinta debajo una copia alineada del fondo, le aplica la lente y la desenfoca y tiñe encima, igual que al fondo real. Qué se copia:
+**Listo para usar:** no hace falta ninguna variable. Los valores por defecto se ajustan al tamaño y al fondo; las variables sólo sirven para afinar.
+
+1. **Cuerpo:** el fondo desenfocado, saturado y tintado (`--ns-glass-blur` 3px, 7px en el tono claro; `--ns-glass-sat` 1.3; `--ns-glass-tint`).
+2. **Lente:** el fondo se curva junto al borde como a través de un cristal grueso. El mapa de desplazamiento sale del mismo campo de distancias: cada punto a menos de `--ns-glass-depth` del borde toma el fondo un poco más allá, en la dirección de la normal, con una caída suave; `--ns-glass-lens` es la fuerza. **Por defecto dependen del tamaño**, como el cristal de Apple: la profundidad es el 42 % del lado corto (entre 8 y 36px) y la fuerza el 55 % (entre 10 y 44px), así que una barra o un botón refractan enteros y un panel grande sólo su borde. En Chromium va en `backdrop-filter` con un `feDisplacementMap`. Safari (y todos los navegadores de iPhone) y Firefox no admiten filtros SVG en `backdrop-filter`, pero sí en `filter`. Allí el vidrio pinta debajo una copia alineada del fondo, le aplica la lente y la desenfoca y tiñe encima, igual que al fondo real. Qué se copia:
 
    | Fondo | Copia |
    |---|---|
-   | `<img>`, `<video>`, `<canvas>` legibles (mismo origen, o CORS) | **lente en WebGL**: refracción, desenfoque, saturación y canto en un solo paso en la GPU, recalculados con la forma de cada fotograma. Es el camino preferido |
+   | `<img>`, `<video>`, `<canvas>` legibles (mismo origen, o CORS) | **lente en WebGL**: refracción, desenfoque, saturación y canto en un solo paso en la GPU, recalculados con la forma de cada fotograma. Es el camino preferido. Los vidrios que tienen detrás la misma foto comparten su textura |
+   | contenido HTML o la página, con WebGL | **lente en WebGL sobre la página rasterizada**: la zona bajo el vidrio se pinta en un canvas (fondos, esquinas, bordes, degradados lineales, imágenes con CORS y texto) y se repinta al desplazarse o al cambiar la página. Una barra fija sobre un feed refracta lo que pasa por detrás, a 60 fps |
    | `<img>` | la misma imagen, con su `object-fit`, `object-position` y `filter` |
    | `<video>`, `<canvas>` | un canvas que se redibuja con cada fotograma mientras el grupo está a la vista |
    | elemento con `background-image` | sus propiedades de fondo |
@@ -289,7 +292,11 @@ El material del Liquid Glass de Apple, en capas, con la forma exacta del grupo (
 
    `data-ns-liquid-src` (o la opción `source`) es un selector —se busca el más cercano subiendo por los antepasados—, un elemento, `page` para la escena o `none` para desactivarlo. La copia sigue al original al desplazarse, sin recalcular la forma, y se recorta a la forma antes de la lente (como hace Chromium con el fondo): lo que queda fuera no entra doblado por el canto.
 
-   **Tono:** sobre un fondo claro liso el vidrio se aclara solo, como el de Apple (clase `ns-glass-light`, tinte `--ns-glass-tint-light`), y vuelve a oscurecerse sobre uno oscuro al desplazarse. Sobre una foto o un degradado no cambia. `--ns-glass-ink` da el color de texto que contrasta con el tono actual (`color: var(--ns-glass-ink)`); un `--ns-glass-tint` propio manda sobre todo esto.
+   **Tono:** el vidrio mira lo que pasa por detrás (un color liso, o la zona exacta de una foto legible con CORS) y se adapta al desplazarse:
+   - **sin tinte propio**, sobre lo claro se aclara (clase `ns-glass-light`, tinte `--ns-glass-tint-light`) y vuelve a oscurecerse sobre lo oscuro;
+   - **con un `--ns-glass-tint` propio** (un vidrio oscuro de diseño, como una barra de pestañas) no se invierte: sobre lo claro se oscurece un poco más (clase `ns-glass-deep`, `--ns-glass-deep`) y el texto sigue blanco, como la barra de Instagram.
+
+   `--ns-glass-ink` da siempre el color de texto que contrasta (`color: var(--ns-glass-ink)`). Úsalo en el contenido del vidrio y el contraste queda resuelto solo.
 3. **Canto:** un brillo junto al borde que se desvanece hacia dentro, sin línea interior (`--ns-glass-edge`, 8px). Va dentro del filtro de la lente (Chromium no recorta un `backdrop-filter` con la máscara del propio elemento); sin lente, una capa aparte de respaldo. En todos los navegadores.
 
 > El contenido de un vidrio va dentro de elementos (`<button><span>+</span></button>`): un texto suelto quedaría bajo las capas del vidrio.
