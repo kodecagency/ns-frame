@@ -572,10 +572,14 @@ function raster(root, skip, R, cv, W, H, again) {
     for (const c of m.childNodes) {
       if (c.nodeType == 3) { if (c.data.trim()) text(c, s); continue }
       if (c.nodeType != 1 || c == skip || SKIP.test(c.tagName) || c.matches('.ns-liquid-src,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-fx')) continue
+      // (la caja primero, que es barata: un elemento lejos de la zona se salta con todo lo que tiene
+      // dentro, sin leer su estilo; recorrer la página entera en cada fotograma lo frenaba. Sólo se
+      // entra en los que no tienen caja, como display: contents)
+      const b = c.getBoundingClientRect()
+      if (!hit(b) && (b.width || b.height)) continue
       const cs = getComputedStyle(c)
       if (cs.display == 'none' || cs.visibility == 'hidden' || cs.position == 'fixed' || +cs.opacity == 0) continue
-      const b = c.getBoundingClientRect(), clip = cs.overflowX != 'visible' || cs.overflowY != 'visible'
-      if (clip && !hit(b)) continue
+      const clip = cs.overflowX != 'visible' || cs.overflowY != 'visible'
       x.save()
       x.globalAlpha *= +cs.opacity
       if (hit(b)) {
@@ -863,7 +867,7 @@ export function liquid(el, o = {}) {
   let G = null, glc = null, gsrc = null, gsz = null, gW = 1, gU = '', shaped = '', gTok = 0
   // rasterizado de la página (glr): su canvas, la clave de lo último pintado y los contadores de
   // cambios (mutaciones y desplazamientos: una lista que se mueve por detrás de una barra fija)
-  let rcv = null, rKey = '', mutT = 0, scrT = 0
+  let rcv = null, rKey = '', mutT = 0, scrT = 0, scrAt = 0, settle = 0
   const glUp = () => { try { glc ||= Object.assign(document.createElement('canvas'), { className: 'ns-liquid-gl' }); G ||= glLens(glc) } catch { } return !!G }
   const unmirror = () => {
     cancelAnimationFrame(live); live = 0; smo?.disconnect(); smo = null; clearTimeout(redo); cancelAnimationFrame(redo); redo = 0; zone = null
@@ -976,11 +980,15 @@ export function liquid(el, o = {}) {
     let ix, iy, iw, ih
     if (kind == 'glr') {
       // la zona de la capa en pantalla, rasterizada si algo cambió (posición, página o desplazamiento)
-      const R = { left: OX + LX * SC, top: OY + LY * SC, width: now.bw * SC, height: now.bh * SC }, k = [R.left, R.top, R.width, R.height].map(r2).join() + '|' + mutT + '|' + scrT
+      // (en movimiento —desplazamiento o transición— la página se pinta a 1×: bajo el desenfoque no se
+      // nota y el fotograma cabe; al detenerse se repinta una vez a la densidad de la pantalla)
+      const moving = performance.now() - scrAt < 160 || active.size > 0, qr = moving ? (V.blur >= 8 ? .5 : 1) : q
+      if (moving) { clearTimeout(settle); settle = setTimeout(() => { mutT++; wake() }, 200) }
+      const R = { left: OX + LX * SC, top: OY + LY * SC, width: now.bw * SC, height: now.bh * SC }, k = [R.left, R.top, R.width, R.height].map(r2).join() + '|' + mutT + '|' + scrT + '|' + qr
       if (k != rKey) {
         rKey = k
         const P = n => 2 ** Math.max(1, Math.min(11, Math.ceil(Math.log2(Math.max(2, n)))))
-        raster(mirrored, el, R, rcv ||= document.createElement('canvas'), P(R.width * q), P(R.height * q), () => { mutT++; wake() })
+        raster(mirrored, el, R, rcv ||= document.createElement('canvas'), P(R.width * qr), P(R.height * qr), () => { mutT++; wake() })
         try { gW = G.bg(rcv, rcv.width, rcv.height) } catch { return }
       }
       ix = R.left; iy = R.top; iw = R.width; ih = R.height
@@ -1108,7 +1116,7 @@ export function liquid(el, o = {}) {
   const syncScroll = () => { for (const [c, m] of scrolls) { c.scrollTop = m.scrollTop; c.scrollLeft = m.scrollLeft } }
   // al desplazarse la página o un contenedor, la copia se recoloca (y el clon copia el desplazamiento)
   const onScroll = () => {
-    if (V?.src && vis) { scrT++; fr ||= requestAnimationFrame(follow) }
+    if (V?.src && vis) { scrT++; scrAt = performance.now(); fr ||= requestAnimationFrame(follow) }
     // (lo de detrás cambia al desplazarse: una barra fija pasa de una zona clara a una oscura)
     if (vis && near && performance.now() - toned > 250) tone()
   }

@@ -169,6 +169,8 @@ const nav = isle(document.querySelector('[data-ns-isle]'), {
 - **Elegir una sección** cierra la hoja, actualiza la URL (`pushState`) y va hasta ella con `go(target, link)`; por defecto `scrollIntoView` suave, que respeta `scroll-padding-top` y `scroll-margin`.
 - `data-ns-isle-panel="top"`: la hoja baja desde arriba.
 - Variables: `--ns-isle-time` (.4s), `--ns-isle-ease`, `--ns-isle-scrim` (color del fondo), `--ns-isle-w` (ancho máximo de la hoja, 430px), `--ns-isle-z` (40). Clases: `.ns-hide` en la cápsula mientras la hoja está abierta, `.ns-open` en la hoja y el fondo.
+- **De vidrio líquido:** añade `data-ns-glass` a la cápsula y a la hoja (con `ns-frame/glass`) y un `--ns-glass-tint` oscuro propio, así el texto blanco se lee sobre cualquier sección. La hoja tiene la página detrás: dale más desenfoque (`--ns-glass-blur: 16px`). No les pongas `background` (ganaría al vidrio) ni `contain: paint` (recortaría el canto); para antes de que cargue el vidrio, usa `:not(.ns-glass)` para un fondo opaco.
+- Accesible: el foco entra en la hoja al abrirla y no sale con Tab mientras está abierta (modal); Escape y el fondo la cierran y el foco vuelve a la cápsula.
 - Devuelve `{ open(), close(), toggle(), go(i), index, destroy() }`. Con `prefers-reduced-motion`, todo es instantáneo.
 
 ## Callouts HUD (`ns-frame/link`)

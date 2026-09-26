@@ -11,14 +11,14 @@ import Icon from '../Icon.astro'
 import { SECTIONS, LINKS } from '../../data/sections'
 const CUR = 'tl+br bevel 14; tr+bl round 16; radius 2'
 ---
-<nav class="isle" id="isle" aria-label="Secciones" data-ns="all round 27" data-ns-isle>
+<nav class="isle" id="isle" aria-label="Secciones" data-ns="all round 27" data-ns-isle data-ns-glass>
   <button type="button" class="pill" data-ns-isle-toggle aria-controls="isle-panel">
     <span class="ico" data-ns-isle-icon aria-hidden="true"><Icon d={SECTIONS[0].icon} size={17} /></span>
     <span class="txt"><b data-ns-isle-label>{SECTIONS[0].name}</b><small data-ns-isle-pos>1 de {SECTIONS.length} · desliza</small></span>
     <span class="chev" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 9l4-4 4 4" /></svg></span>
   </button>
 </nav>
-<div class="panel" id="isle-panel" role="dialog" aria-modal="true" aria-label="Secciones" data-ns-isle-panel data-ns="all squircle 30; top cut center 22% 7 r3">
+<div class="panel" id="isle-panel" role="dialog" aria-modal="true" aria-label="Secciones" data-ns-isle-panel data-ns="all squircle 30; top cut center 22% 7 r3" data-ns-glass>
   <header data-ns-isle-handle><i class="handle" aria-hidden="true"></i><b>ns-frame</b><button type="button" data-ns-isle-close aria-label="Cerrar"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 3l8 8M11 3l-8 8" /></svg></button></header>
   <ul>
     {SECTIONS.map((s, i) => (
@@ -37,6 +37,8 @@ const CUR = 'tl+br bevel 14; tr+bl round 16; radius 2'
   let nav: ReturnType<typeof isle> | null = null
   const init = () => {
     if (!mq.matches) { nav?.destroy(); nav = null; return }
+    // el vidrio llega en un momento libre (hasta entonces, la cápsula y la hoja tienen su fondo opaco)
+    ;(globalThis.requestIdleCallback || setTimeout)(() => import('ns-frame/glass'), { timeout: 1500 })
     nav ||= isle(document.getElementById('isle')!, {
       pos: (i, n) => `${i + 1} de ${n} · desliza`,
       go: t => jump(t, { smooth: true, focus: true }),
@@ -59,8 +61,12 @@ const CUR = 'tl+br bevel 14; tr+bl round 16; radius 2'
     :global(.ns-isle-scrim) { --ns-isle-scrim: var(--veil-2) }
 
     /* cápsula: redondeo simple (vía rápida nativa); plegarla sólo cambia su ancho */
+    /* de vidrio líquido (ns-frame/glass): tinte oscuro propio, así el texto blanco se lee sobre
+       cualquier sección y el vidrio se oscurece un poco más sobre lo claro en vez de invertirse */
     .isle { display: block; position: fixed; z-index: 40; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); width: 212px; height: 54px; translate: -50% 0;
-      background: rgba(18, 18, 20, .97); --ns-border: rgba(255, 255, 255, .14); color: var(--text); contain: layout paint style; view-transition-name: ns-isle }
+      --ns-glass-tint: rgba(16, 16, 20, .42); color: var(--ns-glass-ink, var(--text)); contain: layout style; view-transition-name: ns-isle }
+    /* mientras el vidrio no está activo (antes de cargar, o sin JS), un fondo opaco */
+    .isle:not(:global(.ns-glass)), .panel:not(:global(.ns-glass)) { background: rgba(18, 18, 20, .97); --ns-border: rgba(255, 255, 255, .14) }
     .isle:global(.ns-mini) { width: 54px }
     .pill { position: absolute; inset: 0; display: flex; align-items: center; gap: 11px; padding: 0 8px 0 9px; border: 0; background: none; cursor: pointer; text-align: left }
     .ico { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; flex: none; background: var(--text); color: #0a0a0a }
@@ -73,7 +79,8 @@ const CUR = 'tl+br bevel 14; tr+bl round 16; radius 2'
     .isle:global(.ns-mini) .txt, .isle:global(.ns-mini) .chev { opacity: 0; visibility: hidden }
 
     /* hoja: posición y animación las pone ns-frame/isle; aquí sólo el aspecto */
-    .panel { display: flex; flex-direction: column; gap: 14px; padding: 18px 16px 16px; background: rgba(18, 18, 20, .98); --ns-border: rgba(255, 255, 255, .16); color: var(--text); contain: layout paint style }
+    /* la hoja, también de vidrio: más desenfoque y más tinte (tiene la página entera detrás) */
+    .panel { display: flex; flex-direction: column; gap: 14px; padding: 18px 16px 16px; --ns-glass-tint: rgba(16, 16, 20, .58); --ns-glass-blur: 16px; color: var(--ns-glass-ink, var(--text)); contain: layout style }
     header { position: relative; display: flex; align-items: center; justify-content: space-between; padding: 14px 6px 0; cursor: grab }
     .handle { position: absolute; top: 0; left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: var(--r-2xs); background: rgba(255, 255, 255, .22) }
     header b { font: 700 var(--t-title-lg)/1 var(--display); font-stretch: 108%; letter-spacing: -.02em }
