@@ -523,11 +523,11 @@ function imgLum(n, r, again) {
 // (degradados, sombras, formas recortadas) queda fuera: bajo el desenfoque apenas se nota.
 // Se salta `skip` (el propio grupo), lo fijo y las capas de otros vidrios
 const TRANSP = /^(transparent|rgba\(.*,\s*0\))$/
-function raster(root, skip, R, cv, q, again) {
-  const W = Math.max(1, Math.round(R.width * q)), H = Math.max(1, Math.round(R.height * q))
+// (W, H: el tamaño del canvas; potencia de dos para que la lente lo suba sin copia intermedia)
+function raster(root, skip, R, cv, W, H, again) {
   if (cv.width != W || cv.height != H) { cv.width = W; cv.height = H }
-  const x = cv.getContext('2d')
-  x.setTransform(q, 0, 0, q, -R.left * q, -R.top * q)
+  const x = cv.getContext('2d'), sx = W / R.width, sy = H / R.height
+  x.setTransform(sx, 0, 0, sy, -R.left * sx, -R.top * sy)
   // el lienzo: el primer color de fondo subiendo desde la raíz (o el de la página)
   let base = ''
   for (let a = root; a && !base; a = a.parentElement) { const c = getComputedStyle(a).backgroundColor; if (!TRANSP.test(c)) base = c }
@@ -555,12 +555,17 @@ function raster(root, skip, R, cv, q, again) {
   const text = (t, s) => {
     x.font = `${s.fontStyle} ${s.fontWeight} ${s.fontSize} ${s.fontFamily}`
     x.fillStyle = s.color; x.textBaseline = 'alphabetic'
-    for (const m of t.data.matchAll(/\S+/g)) {
-      rg.setStart(t, m.index); rg.setEnd(t, m.index + m[0].length)
-      const r = rg.getBoundingClientRect()
+    // (un párrafo largo: la primera palabra visible se busca por bisección, porque el texto baja
+    // línea a línea, y se para al salir de la zona; medir todas en cada fotograma bloqueaba el hilo)
+    const ws = [...t.data.matchAll(/\S+/g)], box = i => { rg.setStart(t, ws[i].index); rg.setEnd(t, ws[i].index + ws[i][0].length); return rg.getBoundingClientRect() }
+    let lo = 0, hi = ws.length
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (box(mid).bottom < R.top) lo = mid + 1; else hi = mid }
+    for (let i = lo; i < ws.length; i++) {
+      const r = box(i)
+      if (r.top > RB) break
       if (!hit(r)) continue
-      const k = x.measureText(m[0])
-      x.fillText(m[0], r.left, r.top + (k.fontBoundingBoxAscent ?? r.height * .8), r.width + 1)
+      const k = x.measureText(ws[i][0])
+      x.fillText(ws[i][0], r.left, r.top + (k.fontBoundingBoxAscent ?? r.height * .8), r.width + 1)
     }
   }
   const walk = (m, s) => {
@@ -598,12 +603,21 @@ function raster(root, skip, R, cv, q, again) {
 // mueve. Aquí, un solo paso en la GPU por fotograma: refracción con el mapa de la forma actual,
 // desenfoque (leyendo de un nivel más pequeño de la imagen), saturación y el canto
 const GLVS = 'attribute vec2 a;varying vec2 p;uniform vec2 S;void main(){p=a*S;gl_Position=vec4(a.x*2.-1.,1.-a.y*2.,0.,1.);}'
-const GLFS = `precision mediump float;varying vec2 p;uniform sampler2D B,M;uniform vec4 T,U;uniform float K,Z,L,A,E,C,Q;
+// (highp donde se pueda: en las GPU de móvil mediump es media precisión de verdad y, con coordenadas
+// de cientos de píxeles, pierde medio píxel: bordes con escalones y bandas en el desenfoque)
+// Desenfoque: 24 muestras en espiral, leyendo de un nivel de la imagen algo más fino que el radio
+// (un nivel grueso se ve a bloques; girar la espiral por píxel deja grano)
+const GLFS = `#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+varying vec2 p;uniform sampler2D B,M;uniform vec4 T,U;uniform float K,Z,L,A,E,C,Q;
 vec3 bg(vec2 q){return texture2D(B,q*T.xy+T.zw,L).rgb;}
 float lu(vec3 c){return dot(c,vec3(.2126,.7152,.0722));}
 void main(){vec2 u=(p-U.xy)/U.zw;vec3 m=(u.x<0.||u.y<0.||u.x>1.||u.y>1.)?vec3(.5,.5,0.):texture2D(M,u).rgb;
 vec2 q=p+K*(m.rg-.5);vec3 c=vec3(0.);float w=0.;
-for(int i=0;i<16;i++){float f=float(i),r=sqrt((f+.5)/16.)*Z,a=f*2.39996,g=exp(-2.*r*r/max(Z*Z,.01));c+=bg(q+vec2(cos(a),sin(a))*r)*g;w+=g;}
+for(int i=0;i<24;i++){float f=float(i),r=sqrt((f+.5)/24.)*Z,a=f*2.39996,g=exp(-2.*r*r/max(Z*Z,.01));c+=bg(q+vec2(cos(a),sin(a))*r)*g;w+=g;}
 c/=w;c=mix(vec3(lu(c)),c,A);vec3 e=mix(vec3(lu(c)),c,Q);e=(e*C+(.5-.5*C))*E;c=mix(c,clamp(e,0.,1.),m.b);
 gl_FragColor=vec4(c,1.);}`
 const GLOK = !LENS && typeof document != 'undefined' && (() => { try { return !!document.createElement('canvas').getContext('webgl') } catch { return false } })()
@@ -630,12 +644,6 @@ function glShared() {
   gl.uniform1i(U.B, 0); gl.uniform1i(U.M, 1)
   // (si el sistema reclama el contexto, se rehace en el siguiente uso)
   cv.addEventListener('webglcontextlost', e => { e.preventDefault(); GLS = null })
-  return GLS = { cv, gl, U }
-}
-function glLens(out) {
-  const S = glShared()
-  if (!S) return null
-  const { gl, U } = S, o2 = out.getContext('2d')
   const tex = () => {
     const t = gl.createTexture()
     gl.bindTexture(gl.TEXTURE_2D, t)
@@ -643,21 +651,46 @@ function glLens(out) {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
     return t
   }
-  gl.activeTexture(gl.TEXTURE0)
-  const tB = tex(), tM = tex()
+  // el fondo en la textura t: copiado a un lienzo de lado potencia de dos con mipmaps (el desenfoque
+  // lee de un nivel más pequeño y sólo afina con 16 muestras). Un solo lienzo intermedio para todos.
+  // Lanza SecurityError si la imagen no es legible
   const pot = document.createElement('canvas')
-  return {
-    // el fondo, copiado a un lienzo de lado potencia de dos con mipmaps: el desenfoque lee de un
-    // nivel más pequeño y sólo afina con 16 muestras. Lanza SecurityError si la imagen no es legible
-    bg(src, w, h) {
-      const P = n => 2 ** Math.max(1, Math.min(11, Math.ceil(Math.log2(Math.max(2, n)))))
-      const W = P(w), H = P(h)
+  const up = (t, src, w, h) => {
+    const P = n => 2 ** Math.max(1, Math.min(11, Math.ceil(Math.log2(Math.max(2, n)))))
+    const W = P(w), H = P(h)
+    // (un canvas que ya mide potencia de dos, como la página rasterizada, se sube tal cual)
+    let s = src
+    if (!(src.getContext && src.width == W && src.height == H)) {
       if (pot.width != W || pot.height != H) { pot.width = W; pot.height = H }
-      pot.getContext('2d').drawImage(src, 0, 0, W, H)
-      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tB)
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, pot)
-      gl.generateMipmap(gl.TEXTURE_2D); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR)
-      return W
+      pot.getContext('2d').drawImage(src, 0, 0, W, H); s = pot
+    }
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, t)
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, s)
+    gl.generateMipmap(gl.TEXTURE_2D); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR)
+    return W
+  }
+  // texturas de imágenes compartidas: una por url para todos los vidrios que la tienen detrás (unas
+  // pestañas, su indicador y un botón sobre la misma foto suben una sola copia), con recuento de uso
+  return GLS = { cv, gl, U, tex, up, shared: new Map() }
+}
+function glLens(out) {
+  const S = glShared()
+  if (!S) return null
+  const { gl, U, tex, up } = S, o2 = out.getContext('2d')
+  gl.activeTexture(gl.TEXTURE0)
+  const own = tex(), tM = tex()
+  let tB = own, used = null
+  const drop = () => { if (used && !--used.n) { gl.deleteTexture(used.t); S.shared.delete(used.k) } used = null }
+  return {
+    // key: la url de una imagen (textura compartida); sin key (un vídeo, un canvas, la página
+    // rasterizada), la propia del vidrio
+    bg(src, w, h, key) {
+      if (!key) { drop(); tB = own; return up(own, src, w, h) }
+      let e = S.shared.get(key)
+      if (!e) { const t = tex(); e = { k: key, t, W: up(t, src, w, h), n: 0 }; S.shared.set(key, e) }
+      if (used != e) { drop(); e.n++; used = e }
+      tB = e.t
+      return e.W
     },
     map(c) { gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, tM); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, c) },
     // o: { w, h (capa, px), q (densidad), T: [sx, sy, ox, oy] de px de la capa a uv de la imagen,
@@ -677,7 +710,8 @@ function glLens(out) {
       o2.clearRect(0, 0, w, h)
       o2.drawImage(cv, 0, cv.height - h, w, h, 0, 0, w, h)
     },
-    free() { gl.deleteTexture(tB); gl.deleteTexture(tM) },
+    drop,
+    free() { drop(); gl.deleteTexture(own); gl.deleteTexture(tM) },
   }
 }
 
@@ -834,7 +868,7 @@ export function liquid(el, o = {}) {
   const unmirror = () => {
     cancelAnimationFrame(live); live = 0; smo?.disconnect(); smo = null; clearTimeout(redo); cancelAnimationFrame(redo); redo = 0; zone = null
     if (kind == 'gl' || kind == 'glr') { glc.remove(); glass.style.backdropFilter = ''; lensKey = '' }
-    gTok++; gsrc = null; gU = ''
+    gTok++; gsrc = null; gU = ''; G?.drop()
     copy.replaceChildren(); copy.removeAttribute('style'); cc = null; kind = ''; placed = ''
   }
   const mirror = n => {
@@ -901,7 +935,7 @@ export function liquid(el, o = {}) {
         glc ||= Object.assign(document.createElement('canvas'), { className: 'ns-liquid-gl' })
         G ||= glLens(glc)
         if (!G) return
-        gW = G.bg(src, w, h)
+        gW = G.bg(src, w, h, t == 'IMG' ? gU : '')
       } catch { return }
       cancelAnimationFrame(live); live = 0
       kind = 'gl'; gsrc = src; gsz = [w, h]; shaped = ''
@@ -916,7 +950,8 @@ export function liquid(el, o = {}) {
       if (!u) return
       const im = new Image()
       im.crossOrigin = 'anonymous'
-      im.onload = () => go(im)
+      // (decodificada fuera del hilo principal antes de subirla: si no, la primera subida bloquea)
+      im.onload = () => (im.decode ? im.decode().catch(() => { }) : Promise.resolve()).then(() => go(im))
       im.src = u
     } else go(n)
   }
@@ -944,14 +979,15 @@ export function liquid(el, o = {}) {
       const R = { left: OX + LX * SC, top: OY + LY * SC, width: now.bw * SC, height: now.bh * SC }, k = [R.left, R.top, R.width, R.height].map(r2).join() + '|' + mutT + '|' + scrT
       if (k != rKey) {
         rKey = k
-        raster(mirrored, el, R, rcv ||= document.createElement('canvas'), q, () => { mutT++; wake() })
+        const P = n => 2 ** Math.max(1, Math.min(11, Math.ceil(Math.log2(Math.max(2, n)))))
+        raster(mirrored, el, R, rcv ||= document.createElement('canvas'), P(R.width * q), P(R.height * q), () => { mutT++; wake() })
         try { gW = G.bg(rcv, rcv.width, rcv.height) } catch { return }
       }
       ix = R.left; iy = R.top; iw = R.width; ih = R.height
     } else [ix, iy, iw, ih] = fitRect(mirrored, mirrored.getBoundingClientRect(), gsz[0], gsz[1])
     const x0 = (ix - OX) / SC - LX, y0 = (iy - OY) / SC - LY, w = iw / SC, h = ih / SC, b = V.blur
     const ok = G.draw({ w: now.bw, h: now.bh, T: [1 / w, 1 / h, -x0 / w, -y0 / h], M: [f.X0, f.Y0, f.nx * f.step, f.ny * f.step],
-      k: now.lensPx, z: b * 2, l: Math.max(0, Math.log2(Math.max(1, b * gW / w)) - 1), sat: V.sat,
+      k: now.lensPx, z: b * 2, l: Math.max(0, Math.log2(Math.max(1, b * gW / w)) - 2), sat: V.sat,
       rim: now.light ? [1.04, 1.05, 1.1] : [1.22, 1.06, 1.15] })
     // (el sistema reclamó el contexto: la lente se monta de nuevo con uno nuevo)
     if (ok === false) { G = null; mirrored = null; stale() }
@@ -1074,7 +1110,7 @@ export function liquid(el, o = {}) {
   const onScroll = () => {
     if (V?.src && vis) { scrT++; fr ||= requestAnimationFrame(follow) }
     // (lo de detrás cambia al desplazarse: una barra fija pasa de una zona clara a una oscura)
-    if (vis && performance.now() - toned > 150) tone()
+    if (vis && near && performance.now() - toned > 250) tone()
   }
   // vidrio claro sobre fondos claros (como el de Apple), salvo que se fije --ns-glass-tint
   let toned = 0
@@ -1129,7 +1165,10 @@ export function liquid(el, o = {}) {
       // (el tono va antes: el vidrio claro desenfoca y satura más por defecto)
       tone()
       const cs = getComputedStyle(el), num = (k, d) => { const v = parseFloat(cs.getPropertyValue(k)); return v >= 0 ? v : d }, lt = el.classList.contains('ns-glass-light')
-      V = { k: num('--ns-liquid', 14), lens: num('--ns-glass-lens', 34), edge: num('--ns-glass-edge', 8), depth: num('--ns-glass-depth', 24), blur: num('--ns-glass-blur', lt ? 7 : 4), sat: num('--ns-glass-sat', lt ? 1.2 : 1.3), src: LENS || !glassy() ? null : source(), prism: !!o.prism?.(), hard: !!o.hard?.(), shadow: cs.getPropertyValue('--ns-glass-shadow').trim(), glow: cs.getPropertyValue('--ns-glass-glow').trim(), glowSize: num('--ns-glass-glow-size', 16), zoom: Math.min(1, num('--ns-glass-zoom', 0)),
+      // (lente por defecto según el tamaño, como el cristal de Apple: el canto dobla el fondo en casi
+      // la mitad del lado corto; una barra o un botón refractan enteros, un panel grande sólo su borde)
+      const ms = Math.min(el.offsetWidth, el.offsetHeight) || 48, cl = (v, a, b) => Math.max(a, Math.min(b, v))
+      V = { k: num('--ns-liquid', 14), lens: num('--ns-glass-lens', cl(ms * .55, 10, 44)), edge: num('--ns-glass-edge', 8), depth: num('--ns-glass-depth', cl(ms * .42, 8, 36)), blur: num('--ns-glass-blur', lt ? 7 : 3), sat: num('--ns-glass-sat', lt ? 1.2 : 1.3), src: LENS || !glassy() ? null : source(), prism: !!o.prism?.(), hard: !!o.hard?.(), shadow: cs.getPropertyValue('--ns-glass-shadow').trim(), glow: cs.getPropertyValue('--ns-glass-glow').trim(), glowSize: num('--ns-glass-glow-size', 16), zoom: Math.min(1, num('--ns-glass-zoom', 0)),
         // canto: intensidad y reflejo opuesto (su fuerza y su color: la luz en U lo tiñe)
         light: lt, rim: num('--ns-glass-rim', 1), back: num('--ns-glass-rim-back', .5), backColor: cs.getPropertyValue('--ns-glass-rim-color').trim() || '#fff' }
       // si cambió algo del mapa de la lente (al levantarse un indicador, por ejemplo), se regenera ya,
@@ -1370,7 +1409,7 @@ export function liquid(el, o = {}) {
     // por JS en cada frame, sin cambiar variables ni radios)
     update: stale,
     frame: wake,
-    destroy() { REG.delete(el); cancelAnimationFrame(raf); cancelAnimationFrame(fr); token++; unmirror(); ro.disconnect(); mo.disconnect(); nio.disconnect(); io?.disconnect(); removeEventListener('scroll', onScroll, { capture: true }); EV.forEach(([e, f]) => el.removeEventListener(e, f, true)); svg.remove(); glass.remove(); edge.remove(); back.remove(); el.classList.remove('ns-liquid', 'ns-glass') },
+    destroy() { REG.delete(el); cancelAnimationFrame(raf); cancelAnimationFrame(fr); token++; unmirror(); G?.free(); G = null; ro.disconnect(); mo.disconnect(); nio.disconnect(); io?.disconnect(); removeEventListener('scroll', onScroll, { capture: true }); EV.forEach(([e, f]) => el.removeEventListener(e, f, true)); svg.remove(); glass.remove(); edge.remove(); back.remove(); el.classList.remove('ns-liquid', 'ns-glass') },
   }
   REG.set(el, handle)
   return handle
