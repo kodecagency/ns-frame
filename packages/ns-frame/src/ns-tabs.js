@@ -21,6 +21,10 @@
 // el indicador; "shrink", la barra se encoge (--ns-tabs-min, .84) al desplazar hacia abajo y vuelve
 // al subir o al tocarla (data-ns-tabs-scroll="selector" si el desplazamiento es de un contenedor).
 // La pestaña elegida lleva la clase ns-tabs-on.
+// Sobre vidrio, el texto ya contrasta solo: --ns-glass-ink atenuado (--ns-tabs-dim, 72%) con una
+// sombra suave (--ns-tabs-shadow, nada si el vidrio es claro), y pleno en la pestaña bajo el
+// indicador. Va fuera de la capa para ganar a resets como button{color:inherit}; se cambia con
+// --ns-tabs-ink y --ns-tabs-ink-hot.
 // Con prefers-reduced-motion: sin muelle, sin estiramiento y sin levantar.
 
 import { styles, watch } from './ns-frame.js'
@@ -34,8 +38,12 @@ const CSS = `@layer ns{
 .ns-tabs .ns-tabs-lens>.ns-tabs-ind.ns-tabs-ind,.ns-tabs .ns-tabs-lens>.ns-tabs-drop.ns-tabs-drop{position:absolute;left:0;top:0;border-radius:var(--ns-tabs-ind-radius,var(--ns-tabs-radius,999px));transform-origin:50% 50%}
 .ns-tabs[data-ns-tabs~=shrink]{transform-origin:var(--ns-tabs-origin,50% 100%);transition:scale .5s cubic-bezier(.3,1.25,.4,1)}
 .ns-tabs.ns-tabs-min{scale:var(--ns-tabs-min,.84)}
+.ns-tabs.ns-glass-light{--ns-tabs-shadow:0 0 0 transparent}
 @media (prefers-reduced-motion:reduce){.ns-tabs[data-ns-tabs~=shrink]{transition:none}}
-}`
+}
+.ns-tabs[data-ns-liquid~=glass]>:is(button,a,[role=tab]){color:var(--ns-tabs-ink,color-mix(in srgb,var(--ns-glass-ink,#fff) var(--ns-tabs-dim,72%),transparent));text-shadow:var(--ns-tabs-shadow,0 1px 2px rgba(0,0,0,.35));transition:color .25s}
+.ns-tabs[data-ns-liquid~=glass]>:is(button,a,[role=tab]) svg{filter:drop-shadow(var(--ns-tabs-shadow,0 1px 2px rgba(0,0,0,.35)))}
+.ns-tabs[data-ns-liquid~=glass]>.ns-tabs-hot.ns-tabs-hot{color:var(--ns-tabs-ink-hot,var(--ns-glass-ink,#fff))}`
 let styled = 0
 const T = new WeakMap()
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches

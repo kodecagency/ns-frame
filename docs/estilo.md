@@ -20,7 +20,7 @@ Todo se ajusta con **variables CSS**. No uses `border` de CSS en un elemento con
   --ns-accent: #3de0ff;         /* brackets y cometa */
   --ns-accent-width: 2px;
   --ns-glow: drop-shadow(0 0 6px #3de0ff);   /* glow del borde */
-  --ns-morph-time: 320;         /* ms */
+  --ns-morph-time: 320ms;       /* 320, 320ms o .32s */
   --ns-shape: card;             /* la forma, desde CSS */
 }
 ```

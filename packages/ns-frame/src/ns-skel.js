@@ -10,7 +10,7 @@
 // · Un solo barrido de luz para toda la página: los brillos van sincronizados y en
 //   coordenadas de la ventana, así la luz cruza de un skeleton al siguiente.
 // · aria-busy mientras carga; el contenido oculto no se lee ni recibe foco.
-// · Variables: --ns-sk (color de los huesos), --ns-sk-glint (brillo), --ns-sk-time, --ns-sk-band.
+// · Variables: --ns-sk (color de los huesos), --ns-sk-glint (brillo), --ns-skel-time (o --ns-sk-time), --ns-sk-band.
 import { geometry, commands, shapeOf, styles } from './ns-frame.js'
 
 const CSS_ = `@layer ns{
@@ -19,7 +19,7 @@ const CSS_ = `@layer ns{
 [data-ns-skeleton] *{visibility:hidden!important}
 [data-ns-skeleton]>.ns-svg,[data-ns-skeleton]>.ns-svg *,[data-ns-skeleton]>.ns-sk,[data-ns-skeleton]>.ns-sk>i{visibility:visible!important}
 .ns-sk{position:absolute;z-index:2;pointer-events:none;overflow:hidden;background:var(--ns-sk,rgba(150,185,215,.13));transition:opacity .4s}
-.ns-sk>i{position:absolute;top:0;bottom:0;left:0;width:var(--ns-sk-band,280px);background:linear-gradient(100deg,transparent 15%,var(--ns-sk-glint,rgba(255,255,255,.13)),transparent 85%);animation:ns-sk var(--ns-sk-time,1.8s) linear var(--ns-sk-d,0s) infinite;will-change:transform}
+.ns-sk>i{position:absolute;top:0;bottom:0;left:0;width:var(--ns-sk-band,280px);background:linear-gradient(100deg,transparent 15%,var(--ns-sk-glint,rgba(255,255,255,.13)),transparent 85%);animation:ns-sk var(--ns-skel-time,var(--ns-sk-time,1.8s)) linear var(--ns-sk-d,0s) infinite;will-change:transform}
 .ns-sk-off>i{animation-play-state:paused}
 @keyframes ns-sk{from{transform:translateX(var(--ns-sk-a,-100%))}to{transform:translateX(var(--ns-sk-b,100vw))}}
 @media (prefers-reduced-motion:reduce){.ns-sk>i{display:none}}}`
@@ -109,7 +109,7 @@ function on(el) {
     addEventListener('resize', () => ON.forEach((_, e) => later(e)))
     document.fonts?.ready.then(() => ON.forEach((_, e) => later(e)))
   }
-  const sk = document.createElement('div'), T = getComputedStyle(el).getPropertyValue('--ns-sk-time').trim()
+  const cs = getComputedStyle(el), T = (cs.getPropertyValue('--ns-skel-time') || cs.getPropertyValue('--ns-sk-time')).trim(), sk = document.createElement('div')
   sk.className = 'ns-sk'
   sk.setAttribute('aria-hidden', 'true')
   sk.append(document.createElement('i'))

@@ -1466,3 +1466,88 @@ export function liquid(el, o = {}) {
 // automático con data-ns-liquid: se monta al aparecer y se desmonta (con su escucha de scroll global,
 // sus observadores y su textura) al quitar el atributo o el elemento
 watch('data-ns-liquid', el => liquid(el))
+
+// Botón de gotas: un botón que suelta sus acciones como gotas que se separan de él y vuelven a
+// fundirse al cerrar. <div data-ns-drops> <button>…</button> × n  <button aria-label="Más">+</button> </div>
+// El último botón (o el que lleve data-ns-drops-main) abre y cierra; los demás son las acciones.
+// Palabras de data-ns-drops: "x" (a ambos lados, por defecto), "left", "right", "up", "down".
+// Variables: --ns-drops-size (botón, 56px), --ns-drops-act (acciones, 44px), --ns-drops-step
+// (distancia entre gotas, 72px; mayor que 2,4 × --ns-liquid para que abiertas queden separadas),
+// --ns-drops-time (500ms), --ns-drops-turn (giro del icono al abrir, 45deg).
+const DROPS_CSS = `@layer ns{
+.ns-drops{position:relative;width:var(--ns-drops-size,56px);height:var(--ns-drops-size,56px);--ns-liquid:8px}
+.ns-drops>button{position:absolute;padding:0;border:0;background:none;color:inherit;font:inherit;border-radius:50%;display:grid;place-items:center;cursor:pointer}
+.ns-drops>.ns-drops-main{inset:0;width:100%;height:100%}
+.ns-drops>.ns-drops-main>svg{transition:rotate .4s cubic-bezier(.3,1.3,.4,1)}
+.ns-drops.ns-drops-open>.ns-drops-main>svg{rotate:var(--ns-drops-turn,45deg)}
+.ns-drops>.ns-drops-act{left:50%;top:50%;width:var(--ns-drops-act,44px);height:var(--ns-drops-act,44px);margin:calc(var(--ns-drops-act,44px) / -2);transition:translate var(--ns-drops-time,500ms) cubic-bezier(.3,.9,.3,1) var(--ns-drops-wait,0ms)}
+.ns-drops>.ns-drops-act>*{opacity:0;transition:opacity .2s}
+.ns-drops.ns-drops-open>.ns-drops-act{translate:calc(var(--ns-drops-x) * var(--ns-drops-step,72px)) calc(var(--ns-drops-y) * var(--ns-drops-step,72px));--ns-drops-wait:calc(var(--ns-drops-n) * 60ms)}
+.ns-drops.ns-drops-open>.ns-drops-act>*{opacity:1;transition-delay:.16s}
+@media (prefers-reduced-motion:reduce){.ns-drops>button,.ns-drops>button>*{transition:none!important}}
+}`
+let dropsStyled = 0
+const DROPS = new WeakMap()
+
+/**
+ * Botón de gotas sobre `el`: { open(), close(), toggle(), get isOpen, destroy() }. Opciones: dir
+ * ("x", "left", "right", "up", "down"; si no, data-ns-drops) y stay (no cerrar al elegir una acción).
+ * Abre con el botón principal (aria-expanded), cierra con Escape, al pulsar fuera o al elegir una
+ * acción; las acciones cerradas quedan inert. Evento toggle con detail { open }.
+ */
+export function drops(el, o = {}) {
+  if (DROPS.has(el)) return DROPS.get(el)
+  if (!dropsStyled) { dropsStyled = 1; styles(DROPS_CSS) }
+  const all = [...el.querySelectorAll(':scope > button')]
+  const main = el.querySelector(':scope > [data-ns-drops-main]') || all[all.length - 1]
+  if (!main) return null
+  const acts = all.filter(b => b != main)
+  el.classList.add('ns-drops'); main.classList.add('ns-drops-main')
+  const dir = o.dir || (el.getAttribute('data-ns-drops') || '').split(/\s+/).find(w => /^(x|left|right|up|down)$/.test(w)) || 'x'
+  const half = Math.ceil(acts.length / 2)
+  acts.forEach((b, k) => {
+    // a ambos lados: la mitad a la izquierda (la primera, la más lejana) y la otra mitad a la derecha
+    const i = dir == 'x' ? (k < half ? k - half : k - half + 1) : dir == 'left' || dir == 'up' ? -(acts.length - k) : k + 1
+    const vertical = dir == 'up' || dir == 'down'
+    b.classList.add('ns-drops-act')
+    b.style.setProperty('--ns-drops-x', vertical ? 0 : i)
+    b.style.setProperty('--ns-drops-y', vertical ? i : 0)
+    b.style.setProperty('--ns-drops-n', Math.abs(i) - 1)
+  })
+  if (!el.hasAttribute('data-ns-liquid')) el.setAttribute('data-ns-liquid', 'glass')
+  let on = false
+  const set = v => {
+    if (v == on) return
+    on = v
+    el.classList.toggle('ns-drops-open', on)
+    main.setAttribute('aria-expanded', String(on))
+    acts.forEach(b => { b.inert = !on })
+    el.dispatchEvent(new CustomEvent('toggle', { detail: { open: on } }))
+  }
+  const onMain = () => set(!on)
+  const onAct = () => { if (!o.stay) set(false) }
+  const onKey = e => { if (e.key == 'Escape' && on) { set(false); main.focus() } }
+  const onOut = e => { if (on && !el.contains(e.target)) set(false) }
+  main.setAttribute('aria-expanded', 'false')
+  acts.forEach(b => { b.inert = true; b.addEventListener('click', onAct) })
+  main.addEventListener('click', onMain)
+  el.addEventListener('keydown', onKey)
+  document.addEventListener('pointerdown', onOut, true)
+  const handle = {
+    open: () => set(true), close: () => set(false), toggle: () => set(!on),
+    get isOpen() { return on },
+    destroy() {
+      if (DROPS.get(el) != handle) return
+      DROPS.delete(el)
+      main.removeEventListener('click', onMain); el.removeEventListener('keydown', onKey)
+      document.removeEventListener('pointerdown', onOut, true)
+      acts.forEach(b => { b.removeEventListener('click', onAct); b.inert = false; b.classList.remove('ns-drops-act'); ['x', 'y', 'n'].forEach(p => b.style.removeProperty('--ns-drops-' + p)) })
+      main.classList.remove('ns-drops-main'); main.removeAttribute('aria-expanded')
+      el.classList.remove('ns-drops', 'ns-drops-open')
+    },
+  }
+  DROPS.set(el, handle)
+  return handle
+}
+
+watch('data-ns-drops', el => drops(el))

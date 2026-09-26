@@ -102,9 +102,9 @@ const ACTIONS = [
           <div class="lt" id="lt" data-ns-tabs data-ns-liquid="glass" role="group" aria-label="Periodo">
             {PERIODS.map((p, i) => <button type="button" aria-pressed={String(i == 1)}>{p}</button>)}
           </div>
-          <div class="fab" id="fab" data-ns-liquid="glass">
-            {ACTIONS.map(([n, d], i) => <button type="button" class={`act a${i + 1}`} aria-label={n} inert><Icon d={d} /></button>)}
-            <button type="button" class="main" aria-expanded="false" aria-label="Más acciones"><Icon d="M10 4.5v11 M4.5 10h11" /></button>
+          <div class="fab" id="fab" data-ns-drops data-ns-liquid="glass">
+            {ACTIONS.map(([n, d]) => <button type="button" aria-label={n} inert><Icon d={d} /></button>)}
+            <button type="button" aria-expanded="false" aria-label="Más acciones"><Icon d="M10 4.5v11 M4.5 10h11" /></button>
           </div>
           <div class="seg" id="lq-mode" role="group" data-ns-choice aria-label="Material">{[['glass', 'Vidrio'], ['', 'Sólido']].map(([v, n], i) => <button type="button" data-m={v} aria-pressed={String(!i)}>{n}</button>)}</div>
         </div>
@@ -254,14 +254,6 @@ const ACTIONS = [
   $('hm-mode').addEventListener('change', e => { mode = (e as CustomEvent<{ value: string }>).detail.value; info() })
   $('hm-down').addEventListener('click', () => { temp = Math.max(16, temp - 1); info() })
   $('hm-up').addEventListener('click', () => { temp = Math.min(28, temp + 1); info() })
-
-  // acciones: salen del botón como gotas que se separan
-  const fab = $('fab'), main = fab.querySelector<HTMLElement>('.main')!
-  main.addEventListener('click', () => {
-    const open = fab.classList.toggle('open')
-    main.setAttribute('aria-expanded', String(open))
-    fab.querySelectorAll<HTMLElement>('.act').forEach(a => { a.inert = !open })
-  })
 </script>
 
 <style>
@@ -292,7 +284,7 @@ const ACTIONS = [
   /* 3 · titular con resaltado editable */
   .s3 { align-items: flex-start; justify-content: center; background: radial-gradient(60% 70% at 20% 30%, rgba(0, 230, 118, .08), transparent 70%) }
   .hl { margin: 0; max-width: 560px; font: 700 clamp(28px, 3.2vw, 42px)/1.22 var(--display); font-stretch: 106%; letter-spacing: -.03em; color: var(--text) }
-  .hl mark { background: none; color: var(--ink-go); outline: none; --ns-mark: var(--signal); --ns-mark-pad: 3px 10px; --ns-mark-round: 12px; caret-color: currentColor }
+  .hl mark { background: none; color: var(--ink-go); outline: none; --ns-mark: var(--signal); --ns-mark-pad: 3px 10px; --ns-mark-radius: 12px; caret-color: currentColor }
   .hl mark.amber { color: #1d1303; --ns-mark: #ffb547 }
   .hl mark.line { color: var(--text); --ns-mark: rgba(0, 230, 118, .08); --ns-mark-border: var(--signal); --ns-mark-width: 1.5px }
   .row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap }
@@ -306,26 +298,16 @@ const ACTIONS = [
   .s4 > :not(.bg) { position: relative }
   /* ns-frame/tabs: la barra es un cristal oscuro y el indicador, una lente clara que se arrastra */
   .lt { padding: 5px; --ns-liquid: 0px; --ns-liquid-fill: var(--surface-3); --ns-glass-tint: rgba(16, 16, 20, .3); --ns-tabs-radius: 26px; --ns-tabs-ind-radius: 21px; --ns-tabs-fill: var(--text) }
-  .lt button { width: 92px; height: 42px; border: 0; background: none; color: var(--text-2); font: 600 var(--t-small)/1 var(--body); cursor: pointer; transition: color .25s }
-  .lt button.ns-tabs-hot { color: #0a0a0a }
+  .lt button { width: 92px; height: 42px; border: 0; background: none; font: 600 var(--t-small)/1 var(--body); cursor: pointer }
+  /* sólido: el texto lo pone la página; sobre vidrio, ns-frame/tabs ya lo hace contrastar */
+  .lt:not([data-ns-liquid~=glass]) button { color: var(--text-2); transition: color .25s }
+  .lt:not([data-ns-liquid~=glass]) button.ns-tabs-hot { color: #0a0a0a }
   /* (sin filter ni opacity en los contenedores: harían de raíz del fondo y el vidrio no vería la foto) */
-  .lt[data-ns-liquid~=glass] button { color: color-mix(in srgb, var(--ns-glass-ink, #fff) 72%, transparent); text-shadow: 0 1px 2px rgba(0, 0, 0, .35) }
-  .lt[data-ns-liquid~=glass] button.ns-tabs-hot { color: var(--ns-glass-ink, #fff) }
   .fab[data-ns-liquid~=glass] { color: var(--ns-glass-ink, #fff); transition: color .35s; --ns-glass-tint: rgba(18, 18, 22, .22); }
   .fab[data-ns-liquid~=glass] button :global(svg) { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .35)) }
-  /* --ns-liquid 8: al salir se funden y se separan; abiertas quedan más lejos que el alcance del
-     fundido (8 × 2,4 < 23 px de hueco) y cada gota es un círculo perfecto, sin abombarse */
-  .fab { position: relative; width: 60px; height: 60px; --ns-liquid: 8px; --ns-liquid-fill: var(--signal); color: var(--ink-go) }
-  .fab button { position: absolute; left: 0; top: 0; border: 0; background: none; color: inherit; border-radius: 50%; display: grid; place-items: center; cursor: pointer }
-  .main { width: 60px; height: 60px }
-  .main :global(svg) { width: 24px; height: 24px; transition: rotate .4s var(--ease) }
-  .fab.open .main :global(svg) { rotate: 45deg }
-  .a1 { --i: -2 } .a2 { --i: -1 } .a3 { --i: 1 } .a4 { --i: 2 }
-  .act { width: 46px; height: 46px; margin: 7px; transition: translate .5s cubic-bezier(.3, .9, .3, 1) }
-  .act :global(svg) { opacity: 0; transition: opacity .2s }
-  .fab.open .act { translate: calc(var(--i) * 76px) 0 }
-  .fab.open .a1, .fab.open .a4 { transition-delay: 60ms }
-  .fab.open .act :global(svg) { opacity: 1; transition-delay: .16s }
+  /* ns-frame/liquid (data-ns-drops): las acciones salen del botón como gotas que se separan */
+  .fab { --ns-drops-size: 60px; --ns-drops-act: 46px; --ns-drops-step: 76px; --ns-liquid-fill: var(--signal); color: var(--ink-go) }
+  .fab > :last-child :global(svg) { width: 24px; height: 24px }
 
   /* 5 · móvil con feed y barra de pestañas de vidrio (el feed se desplaza por detrás de la barra) */
   .x5 { grid-column: 1 / -1; flex-direction: row }
@@ -343,10 +325,9 @@ const ACTIONS = [
   .post small { margin: 0 6px; color: var(--text-3); font-size: var(--t-caption) }
   .tb { position: absolute; left: 10px; right: 10px; bottom: 12px; display: flex; padding: 4px; --ns-liquid: 0px; --ns-glass-tint: rgba(22, 22, 26, .28); --ns-tabs-radius: 30px; --ns-tabs-ind-radius: 26px }
   /* etiquetas cortas, con aire: nada de palabras pegadas a la pestaña vecina */
-  .tb button { flex: 1; min-width: 0; height: 52px; padding: 0 2px; border: 0; background: none; display: grid; place-items: center; align-content: center; gap: 4px; color: color-mix(in srgb, var(--ns-glass-ink, #fff) 70%, transparent); font: 600 10px/1 var(--body); letter-spacing: .01em; cursor: pointer; transition: color .25s; text-shadow: 0 1px 2px rgba(0, 0, 0, .4) }
-  .tb button :global(svg) { width: 20px; height: 20px; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .35)) }
+  .tb button { flex: 1; min-width: 0; height: 52px; padding: 0 2px; border: 0; background: none; display: grid; place-items: center; align-content: center; gap: 4px; font: 600 10px/1 var(--body); letter-spacing: .01em; cursor: pointer }
+  .tb button :global(svg) { width: 20px; height: 20px }
   .tb button span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
-  .tb button.ns-tabs-hot { color: var(--ns-glass-ink, #fff) }
 
   /* 6 · editor de fotos: controles de vidrio sobre la imagen (la foto va primero y se filtra de
      verdad; los controles, posicionados, encima) */
@@ -359,8 +340,7 @@ const ACTIONS = [
   .ed-panel input { grid-column: 1 / -1; width: 100%; margin: 0; accent-color: #fff }
   .ed-panel output { font: 600 var(--t-small)/1 var(--mono); opacity: .8 }
   .ed-tools { position: relative; margin: 0 auto 22px; padding: 5px; --ns-liquid: 0px; --ns-glass-tint: rgba(14, 14, 18, .22); --ns-tabs-radius: 26px; --ns-tabs-ind-radius: 21px }
-  .ed-tools button { width: 88px; height: 42px; border: 0; background: none; color: color-mix(in srgb, var(--ns-glass-ink, #fff) 74%, transparent); font: 600 var(--t-small)/1 var(--body); cursor: pointer; transition: color .25s }
-  .ed-tools button.ns-tabs-hot { color: var(--ns-glass-ink, #fff) }
+  .ed-tools button { width: 88px; height: 42px; border: 0; background: none; font: 600 var(--t-small)/1 var(--body); cursor: pointer }
 
   /* 7 · relieve: panel claro sobre su propio fondo (la cerámica se lee por el volumen, no por un borde) */
   .x7 { grid-column: 1 / -1; flex-direction: row }
@@ -409,10 +389,7 @@ const ACTIONS = [
     .lt button { width: 80px }
     /* acciones: caben en 320 px; gotas algo más pequeñas para que queden separadas (hueco de
        11 px con el botón y 18 entre ellas; el fundido llega a 4 × 2,4 = 9,6) */
-    .fab { width: 56px; height: 56px; --ns-liquid: 4px }
-    .main { width: 56px; height: 56px }
-    .act { width: 42px; height: 42px }
-    .fab.open .act { translate: calc(var(--i) * 60px) 0 }
+    .fab { --ns-drops-size: 56px; --ns-drops-act: 42px; --ns-drops-step: 60px; --ns-liquid: 4px }
   }
-  @media (prefers-reduced-motion: reduce) { .prod, .act, .act :global(svg), .main :global(svg) { transition: none } }
+  @media (prefers-reduced-motion: reduce) { .prod { transition: none } }
 </style>

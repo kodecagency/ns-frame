@@ -16,6 +16,11 @@
 - La cápsula va completa mientras se baja leyendo (dice en qué sección estás) y se pliega a un icono al subir; `collapseOn: 'down'` lo invierte.
 - `sheet`: `.ns-glass-hold` mientras la hoja vuelve o sale sola; tras un arrastre que volvía a su sitio, cerrar la isla ya no deja la hoja atascada por un `translate` en línea.
 
+### Botón de gotas y pestañas legibles de serie
+- **`data-ns-drops`** (en `ns-frame/liquid`): un botón que suelta sus acciones como gotas que se separan y vuelven a fundirse. Hacia los lados, arriba o abajo; `aria-expanded`, acciones `inert` mientras está cerrado, Escape, clic fuera y cierre al elegir; evento `toggle`; `drops(el)` para controlarlo. La landing lo hacía a mano (clases, `translate` por posición, retardos, giro del icono); ahora sólo pone tamaños.
+- **Pestañas sobre vidrio:** el texto contrasta sin CSS propio (`--ns-glass-ink` atenuado, pleno bajo el indicador, sombra suave salvo en vidrio claro) y gana a resets como `button { color: inherit }`. Se cambia con `--ns-tabs-ink`, `--ns-tabs-ink-hot`, `--ns-tabs-dim` y `--ns-tabs-shadow`.
+- **Nombres coherentes:** `--ns-morph-time` admite `320`, `320ms` o `.32s` (antes `.32s` se leía como 0,32 ms); `--ns-mark-radius` y `--ns-skel-time` son los nombres nuevos de `--ns-mark-round` y `--ns-sk-time`, que siguen funcionando.
+
 ### Módulos que se entienden entre sí
 - **Carga más ligera:** `ns-frame/link` sólo mide y dibuja las líneas cerca de la pantalla (antes, al cargar, dibujaba las de secciones lejanas y redibujaba con cada cambio del DOM de toda la página: 131 ms de bloqueo en la landing con la CPU ×4), y nada si están ocultas por CSS. La landing pide la hoja y monta la isla cuando hace falta. Bloqueo total de la carga de la landing (móvil, CPU ×4): de ~365 a ~300 ms.
 - **Carrusel:** evento `change` al cambiar de posición (`detail { index, slide }`), `carousel(el)` → `{ go(i), index, destroy() }`, y se desmonta solo (con sus controles) al quitar el atributo o el elemento. Sin `Array.prototype.at` (Safari anterior a 15.4).

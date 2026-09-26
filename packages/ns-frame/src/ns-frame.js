@@ -469,10 +469,13 @@ function decorate(s, V, d, T, at) {
   if (pa) { const A = extras(s); A ? A.accent(pa, s.accent, V, T, at) : (pa.style.display = 'none') }
 }
 
+// una duración de una variable CSS en ms: "320" y "320ms" son 320, ".32s" también; vacía, def
+const ms = (raw, def) => { raw = raw.trim(); const v = parseFloat(raw); return isNaN(v) ? def : /[^m]s$/.test(raw) ? v * 1000 : v }
+
 function morph(s) {
-  const from = s.cur, t0 = performance.now(), v = parseFloat(getComputedStyle(s.el).getPropertyValue('--ns-morph-time')), dur = isNaN(v) ? 320 : v
+  const from = s.cur, t0 = performance.now(), dur = ms(getComputedStyle(s.el).getPropertyValue('--ns-morph-time'), 320)
   cancelAnimationFrame(s.anim)
-  // --ns-morph-time: 0 = cambio instantáneo
+  // --ns-morph-time: 0 = cambio instantáneo; admite 320, 320ms o .32s
   if (!(dur > 0)) return (s.anim = 0, paint(s, geo(s.src, s.w, s.h), 1))
   const tick = now => {
     const p = Math.min(1, (now - t0) / dur)

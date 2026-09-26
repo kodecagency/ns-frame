@@ -56,7 +56,7 @@ await open(panel, 'iris', 500)
 | `ns-frame/concentric` | `concentric(shape, w, h, ins, min?)` → forma del hijo · `refresh()` |
 | `ns-frame/flow` | `flow({ k, d, w, h }, pad)` → `true` / `false` · `unflow(k)` · `profile(d, w, h, pad)` · `refresh()` |
 | `ns-frame/mark` | `outline(rects, px?, py?)` → polígonos · `refresh()` |
-| `ns-frame/liquid` | `liquid(el, { blobs, k, step, glass, source })` → `{ update(), frame(), destroy() }` · `field()`, `contour()`, `blend(boxes, k?, step?)` → `d` |
+| `ns-frame/liquid` | `liquid(el, { blobs, k, step, glass, source })` → `{ update(), frame(), destroy() }` · `field()`, `contour()`, `blend(boxes, k?, step?)` → `d` · `drops(el, { dir, stay })` → `{ open(), close(), toggle(), isOpen, destroy() }` (botón de gotas; automático con `data-ns-drops`, evento `toggle` con `detail { open }`) |
 | `ns-frame/glass` | `glass(el, opciones de liquid)` → `{ update(), frame(), destroy() }` · automático con `data-ns-glass` (`clear`, `tint`, `u`, `facet`, `prism`, `border`, `lens`) · en `ns-frame/liquid`: `pathField(d, w, h, step?)`, `shift(d, dx, dy)` |
 | `ns-frame/light` | `material(parámetros)` → id de un `<filter>` compartido, iluminado por la luz de la página |
 | `ns-frame/relief` | `relief(el)` → `{ update(), destroy() }` · automático con `data-ns-relief` (`surface`, `raised`, `knob`, `inset`, `select`, `ghost`; tonos `metal`, `paper`) |

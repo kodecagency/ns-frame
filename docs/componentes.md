@@ -87,7 +87,7 @@ card.removeAttribute('data-ns-skeleton')   // llegaron los datos
 | `data-ns-skeleton` | Activa el skeleton. Con valor, forma de las barras: `"all round 4"` |
 | `data-ns-bone` | Dibuja ese elemento como un bloque (gráficos, grupos de iconos); con valor, su forma |
 | `--ns-sk` · `--ns-sk-glint` | Color de los huesos · del brillo |
-| `--ns-sk-time` · `--ns-sk-band` | Duración del barrido (1,8 s) · ancho de la banda (280px) |
+| `--ns-skel-time` (antes `--ns-sk-time`) · `--ns-sk-band` | Duración del barrido (1,8 s) · ancho de la banda (280px) |
 
 `refresh(el?)` vuelve a medir si cambias el relleno por JS sin cambiar el tamaño.
 
@@ -270,7 +270,7 @@ h2 mark { background: none; color: inherit; --ns-mark: #ffe066 }
 - **Qué resuelve:** un fondo por línea es fácil (`box-decoration-break`), pero uno solo que abrace todas las líneas, con curvas hacia fuera y hacia dentro donde una línea es más corta que otra (el resaltado de las stories de Instagram), sólo se imitaba con un filtro de desenfoque + contraste: bordes borrosos, caro de repintar y sin trazo posible.
 - **Cómo:** la unión de los rectángulos de cada línea, con un fillet en cada vértice (convexo o cóncavo) calculado por el motor de ns-frame. Un solo `<path>` SVG detrás del texto, que se redibuja al cambiar el ajuste de línea, el tamaño o el texto.
 - **Color:** `--ns-mark`. Por defecto, el color de sistema `Mark`, legible en alto contraste. Quita el fondo nativo de `<mark>` (`background: none`) para que no se sume al resaltado.
-- `--ns-mark-pad`: margen alrededor del texto, "vertical horizontal" (`2px 6px`). `--ns-mark-round`: radio de las curvas (`8px`); las que no caben se ajustan solas.
+- `--ns-mark-pad`: margen alrededor del texto, "vertical horizontal" (`2px 6px`). `--ns-mark-radius` (antes `--ns-mark-round`, que sigue valiendo): radio de las curvas (`8px`); las que no caben se ajustan solas.
 - `--ns-mark-border` y `--ns-mark-width`: trazo opcional del contorno.
 - `data-ns-mark="draw"`: se dibuja de izquierda a derecha al entrar en pantalla (`--ns-mark-time`, `.9s`). Con `prefers-reduced-motion` aparece sin transición.
 - Las líneas que no se tocan en horizontal quedan como piezas separadas.
@@ -350,6 +350,24 @@ El material del Liquid Glass de Apple, en capas, con la forma exacta del grupo (
 - El contorno pasa por puntos exactos del campo y se traza con cúbicas (Catmull-Rom), con los lados rectos en línea: un círculo sale redondo con menos de 0,05 px de error. La rejilla se adapta al tamaño (entre 1,25 y 3 px). Para que dos gotas separadas no se abomben una hacia la otra, déjalas a más de `--ns-liquid × 2,4` de hueco.
 - Si mueves piezas por JS en cada frame, `liquid(el).frame()` redibuja sin releer estilos (los estilos en línea de las piezas ya sólo despiertan el bucle).
 
+#### Botón de gotas (`data-ns-drops`, en `ns-frame/liquid`)
+
+```html
+<div data-ns-drops role="group" aria-label="Acciones">
+  <button aria-label="Compartir">…</button> <button aria-label="Guardar">…</button>
+  <button aria-label="Editar">…</button> <button aria-label="Descargar">…</button>
+  <button aria-label="Más acciones"><svg>…</svg></button>   <!-- el último abre y cierra -->
+</div>
+```
+
+Un botón que suelta sus acciones como gotas: salen fundidas con él, se separan al alejarse y vuelven a fundirse al cerrar (es un grupo de `ns-frame/liquid`, vidrio por defecto; `data-ns-liquid=""` para sólido).
+
+- El último botón (o el que lleve `data-ns-drops-main`) abre y cierra, con `aria-expanded` y su icono girado (`--ns-drops-turn`, 45deg). Las acciones cerradas quedan `inert`: ni foco ni lector de pantalla.
+- Hacia dónde: `data-ns-drops="x"` (a ambos lados, por defecto), `"left"`, `"right"`, `"up"`, `"down"`. Las lejanas salen un poco después.
+- Se cierra con Escape (el foco vuelve al botón), al pulsar fuera o al elegir una acción (`drops(el, { stay: true })` para que siga abierto). Evento `toggle` con `detail { open }`.
+- Variables: `--ns-drops-size` (56px), `--ns-drops-act` (44px), `--ns-drops-step` (72px entre gotas), `--ns-drops-time` (500ms), y las del grupo (`--ns-liquid`, 8px; `--ns-liquid-fill`, `--ns-glass-tint`…). Deja `--ns-drops-step` por encima de `--ns-drops-act + --ns-liquid × 2,4` para que, abiertas, sean círculos separados.
+- `drops(el, { dir, stay })` → `{ open(), close(), toggle(), isOpen, destroy() }`. Con `prefers-reduced-motion`, sin transiciones.
+
 #### Vidrio en cualquier elemento y cualquier forma (`ns-frame/glass`)
 
 ```html
@@ -419,5 +437,6 @@ La barra de pestañas de iOS 26, hecha con dos grupos de `ns-frame/liquid` (la b
 - **Teclado:** flechas (dan la vuelta en los extremos; al revés en RTL), Inicio y Fin. Con `role="tablist"` y `role="tab"` usa `aria-selected` y foco itinerante; si no, `aria-pressed`.
 - La pestaña elegida lleva la clase `ns-tabs-on`. La pestaña bajo el indicador lleva la clase `ns-tabs-hot` mientras la lente pasa por encima (para cambiar el color del texto a la vez). Evento `change` con `detail { index, tab }`; `tabs(el).select(i)` la cambia por código.
 - Vidrio o sólido como cualquier grupo líquido (`data-ns-liquid="glass"` por defecto; `""` para sólido, con `--ns-tabs-fill`). El indicador sigue al material de la barra.
+- **Texto legible sobre vidrio sin CSS tuyo:** las pestañas toman `--ns-glass-ink` (blanco sobre fondo oscuro, casi negro sobre claro) atenuado al 72 % (`--ns-tabs-dim`) con una sombra suave (`--ns-tabs-shadow`; ninguna sobre vidrio claro), y la que tiene el indicador encima, el color pleno. Gana a resets como `button { color: inherit }`; para otro color, `--ns-tabs-ink` y `--ns-tabs-ink-hot`. En sólido, el color es tuyo.
 - Variables: `--ns-tabs-radius` (999px), `--ns-tabs-ind-radius`, `--ns-tabs-fuse` (16px, cuánto se funde la gota), `--ns-tabs-tint`, `--ns-tabs-blur`, `--ns-tabs-lens`, `--ns-tabs-depth`, `--ns-tabs-edge` y sus versiones `-lift`.
 - Con `prefers-reduced-motion`: sin muelle, sin estiramiento y sin levantarse. Los muelles se integran en subpasos: con pocos frames (un móvil con carga) siguen estables y llegan a tiempo.

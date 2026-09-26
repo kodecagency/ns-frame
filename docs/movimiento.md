@@ -16,7 +16,7 @@ Todo el movimiento de ns-frame respeta `prefers-reduced-motion` y se pausa fuera
    data-ns-press="all bevel 5; radius 2">Presióname</a>
 ```
 
-El morph interpola **vértices**, no el texto del path, así que funciona igual en todos los navegadores. La duración se ajusta con `--ns-morph-time` (ms). Cualquier cambio de `data-ns` o de `--ns-shape` también se anima.
+El morph interpola **vértices**, no el texto del path, así que funciona igual en todos los navegadores. La duración se ajusta con `--ns-morph-time` (`320`, `320ms` o `.32s`; `0` = al instante). Cualquier cambio de `data-ns` o de `--ns-shape` también se anima.
 
 ## Bordes en movimiento (`data-ns-motion`)
 

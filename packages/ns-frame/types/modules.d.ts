@@ -163,6 +163,16 @@ export function pathField(d: string, w: number, h: number, step?: number): Liqui
 export function polyline(d: string, seg?: number): [number, number][]
 /** Desplaza un path `d` absoluto (M, L, C, Q, A, Z) en (dx, dy). */
 export function shift(d: string, dx: number, dy: number): string
+/**
+ * Botón de gotas: el último botón (o [data-ns-drops-main]) suelta los demás como gotas que se separan.
+ * Automático con data-ns-drops ("x", "left", "right", "up", "down"). Evento toggle con detail { open }.
+ */
+export function drops(el: HTMLElement, options?: {
+  /** Hacia dónde salen las acciones (por defecto, la palabra de data-ns-drops o "x"). */
+  dir?: 'x' | 'left' | 'right' | 'up' | 'down'
+  /** No cerrar al elegir una acción. */
+  stay?: boolean
+}): { open(): void; close(): void; toggle(): void; readonly isOpen: boolean; destroy(): void } | null
 
 // ── ns-frame/glass ──
 /**

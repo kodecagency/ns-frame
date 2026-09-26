@@ -44,7 +44,7 @@ Cada módulo es una ruta aparte y carga sólo lo que necesita. Casi todos arranc
 | `ns-frame` (y `ns-frame/lite`) | Formas, bordes, morph, aperturas | `data-ns` |
 | `ns-frame/fx` + `ns-fx.css` | Luz en U, aura, patrones, texto animado | clases `ns-*` |
 | `ns-frame/glass` | Vidrio líquido en cualquier forma | `data-ns-glass` |
-| `ns-frame/liquid` | Formas que se funden; vidrio líquido de grupos | `data-ns-liquid` |
+| `ns-frame/liquid` | Formas que se funden; vidrio líquido de grupos; botón de gotas | `data-ns-liquid`, `data-ns-drops` |
 | `ns-frame/tabs` | Pestañas de vidrio que se arrastran | `data-ns-tabs` |
 | `ns-frame/relief` | Relieve iluminado | `data-ns-relief` |
 | `ns-frame/light` | La luz de la página que comparten vidrio y relieve | (interna) |

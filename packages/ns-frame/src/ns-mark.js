@@ -9,7 +9,7 @@
 // motor de ns-frame. Un solo <path> SVG, detrás del texto, que se redibuja al cambiar el ajuste.
 // · --ns-mark: color (Mark por defecto: el del sistema, legible en alto contraste).
 // · --ns-mark-pad: margen alrededor del texto, "vertical horizontal" (2px 6px).
-// · --ns-mark-round: radio de las curvas (8px). Las que no caben se ajustan solas.
+// · --ns-mark-radius (o --ns-mark-round, el nombre antiguo): radio de las curvas (8px). Las que no caben se ajustan solas.
 // · --ns-mark-border / --ns-mark-width: trazo opcional del contorno.
 // · data-ns-mark="draw": se dibuja de izquierda a derecha al entrar en pantalla.
 // · Líneas que no se tocan en horizontal quedan como piezas separadas.
@@ -74,7 +74,7 @@ function run() {
     if (!host) continue
     const H = host.getBoundingClientRect(), cs = getComputedStyle(el)
     const [py, px = py] = (cs.getPropertyValue('--ns-mark-pad').trim() || '2px 6px').split(/\s+/).map(parseFloat)
-    const R = parseFloat(cs.getPropertyValue('--ns-mark-round')) || 8
+    const R = parseFloat(cs.getPropertyValue('--ns-mark-radius') || cs.getPropertyValue('--ns-mark-round')) || 8
     // origen: la esquina del padding del anfitrión (donde se coloca un hijo absoluto); las medidas se
     // pasan a px sin transformar, para que un anfitrión escalado (hover, entrada) no deforme el dibujo
     const k = host.offsetWidth ? H.width / host.offsetWidth || 1 : 1
