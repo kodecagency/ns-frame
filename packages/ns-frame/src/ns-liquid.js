@@ -40,7 +40,7 @@
 //   reposo no hace nada.
 // Sin dependencias externas (usa el núcleo y ns-frame/light). Sólo CSSOM y atributos SVG (sin HTML en texto).
 
-import { styles } from './ns-frame.js'
+import { styles, watch } from './ns-frame.js'
 import { material } from './ns-light.js'
 
 const CSS = `@layer ns{
@@ -1456,19 +1456,13 @@ export function liquid(el, o = {}) {
     // por JS en cada frame, sin cambiar variables ni radios)
     update: stale,
     frame: wake,
-    destroy() { REG.delete(el); cancelAnimationFrame(raf); cancelAnimationFrame(fr); token++; unmirror(); G?.free(); G = null; ro.disconnect(); mo.disconnect(); nio.disconnect(); io?.disconnect(); removeEventListener('scroll', onScroll, { capture: true }); EV.forEach(([e, f]) => el.removeEventListener(e, f, true)); svg.remove(); glass.remove(); edge.remove(); back.remove(); el.classList.remove('ns-liquid', 'ns-glass') },
+    // (una sola vez: el vidrio, las pestañas y el arranque automático pueden pedirlo a la vez)
+    destroy() { if (REG.get(el) != handle) return; REG.delete(el); clearTimeout(settle); cancelAnimationFrame(raf); cancelAnimationFrame(fr); token++; unmirror(); G?.free(); G = null; ro.disconnect(); mo.disconnect(); nio.disconnect(); io?.disconnect(); removeEventListener('scroll', onScroll, { capture: true }); EV.forEach(([e, f]) => el.removeEventListener(e, f, true)); svg.remove(); glass.remove(); edge.remove(); back.remove(); el.classList.remove('ns-liquid', 'ns-glass') },
   }
   REG.set(el, handle)
   return handle
 }
 
-if (typeof document != 'undefined') {
-  const done = new WeakSet()
-  const add = el => { if (!done.has(el)) { done.add(el); liquid(el) } }
-  const scan = n => { if (n.nodeType != 1) return; n.matches('[data-ns-liquid]') && add(n); n.querySelectorAll('[data-ns-liquid]').forEach(add) }
-  const boot = () => {
-    scan(document.body)
-    new MutationObserver(ms => { for (const m of ms) m.addedNodes.forEach(scan) }).observe(document.body, { childList: true, subtree: true })
-  }
-  document.readyState == 'loading' ? addEventListener('DOMContentLoaded', boot) : boot()
-}
+// automático con data-ns-liquid: se monta al aparecer y se desmonta (con su escucha de scroll global,
+// sus observadores y su textura) al quitar el atributo o el elemento
+watch('data-ns-liquid', el => liquid(el))

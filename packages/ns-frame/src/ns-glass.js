@@ -21,7 +21,7 @@
 //   mismo, las aperturas (open, data-ns-open) no lo recortan.
 // · Como cualquier vidrio: sin filter, opacity < 1, mask ni backdrop-filter en sus antepasados.
 
-import { styles, path, shapeOf, pathOf, update } from './ns-frame.js'
+import { styles, path, shapeOf, pathOf, update, watch } from './ns-frame.js'
 import { liquid } from './ns-liquid.js'
 
 const CSS = `@layer ns{
@@ -70,17 +70,17 @@ export function glass(el, o = {}) {
   el.addEventListener('ns-shape', h.frame)
   // un marco de ns-frame deja de recortarse (lo lee el núcleo al pintar)
   if (el.hasAttribute('data-ns') || el.localName == 'ns-frame') update(el)
-  const api = { ...h, destroy() { h.destroy(); el.removeEventListener('ns-shape', h.frame); el.classList.remove('ns-glass-shape'); G.delete(el) } }
+  const api = {
+    ...h,
+    destroy() {
+      h.destroy(); el.removeEventListener('ns-shape', h.frame); el.classList.remove('ns-glass-shape'); G.delete(el)
+      // (sin vidrio, el marco vuelve a recortarse con su forma)
+      if (el.isConnected && (el.hasAttribute('data-ns') || el.localName == 'ns-frame')) update(el)
+    },
+  }
   G.set(el, api)
   return api
 }
 
-if (typeof document != 'undefined') {
-  const scan = n => { if (n.nodeType != 1) return; n.matches('[data-ns-glass]') && glass(n); n.querySelectorAll('[data-ns-glass]').forEach(glass) }
-  const boot = () => {
-    scan(document.body)
-    new MutationObserver(ms => { for (const m of ms) m.type == 'childList' ? m.addedNodes.forEach(scan) : m.target.hasAttribute('data-ns-glass') && glass(m.target) })
-      .observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-ns-glass'] })
-  }
-  document.readyState == 'loading' ? addEventListener('DOMContentLoaded', boot) : boot()
-}
+// automático con data-ns-glass: se monta al aparecer y se desmonta al quitar el atributo o el elemento
+watch('data-ns-glass', el => glass(el))

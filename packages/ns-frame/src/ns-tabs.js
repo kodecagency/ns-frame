@@ -23,7 +23,7 @@
 // La pestaña elegida lleva la clase ns-tabs-on.
 // Con prefers-reduced-motion: sin muelle, sin estiramiento y sin levantar.
 
-import { styles } from './ns-frame.js'
+import { styles, watch } from './ns-frame.js'
 import { liquid } from './ns-liquid.js'
 
 const CSS = `@layer ns{
@@ -238,17 +238,12 @@ export function tabs(el, o = {}) {
   const api = {
     select: i => select(i),
     get index() { return cur },
-    destroy() { T.delete(el); cancelAnimationFrame(raf); cancelAnimationFrame(sraf); (scroller || window).removeEventListener('scroll', scrollEv); ro.disconnect(); mo.disconnect(); EV.forEach(([t, f, c]) => el.removeEventListener(t, f, c)); glass.destroy(); lens.remove(); track.remove(); el.classList.remove('ns-tabs', 'ns-tabs-lift') },
+    destroy() { if (T.get(el) != api) return; T.delete(el); cancelAnimationFrame(raf); cancelAnimationFrame(sraf); (scroller || window).removeEventListener('scroll', scrollEv); ro.disconnect(); mo.disconnect(); EV.forEach(([t, f, c]) => el.removeEventListener(t, f, c)); glass.destroy(); lens.remove(); track.remove(); el.classList.remove('ns-tabs', 'ns-tabs-lift') },
   }
   T.set(el, api)
   return api
 }
 
-if (typeof document != 'undefined') {
-  const scan = n => { if (n.nodeType != 1) return; n.matches('[data-ns-tabs]') && tabs(n); n.querySelectorAll('[data-ns-tabs]').forEach(tabs) }
-  const boot = () => {
-    scan(document.body)
-    new MutationObserver(ms => { for (const m of ms) m.addedNodes.forEach(scan) }).observe(document.body, { childList: true, subtree: true })
-  }
-  document.readyState == 'loading' ? addEventListener('DOMContentLoaded', boot) : boot()
-}
+// automático con data-ns-tabs: se monta al aparecer y se desmonta (con su escucha de scroll) al
+// quitar el atributo o el elemento
+watch('data-ns-tabs', el => tabs(el))

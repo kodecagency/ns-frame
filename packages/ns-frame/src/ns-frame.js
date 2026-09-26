@@ -416,10 +416,10 @@ function paint(s, V, fin) {
   if (nat || s.nt) native(s, V, nat)
   // (con data-ns-glass no se recorta: clip-path haría de raíz del fondo y el vidrio de dentro no
   // vería la página; la silueta la pone el propio vidrio. Con data-ns-relief, igual: cortaría la sombra)
-  const glass = s.el.hasAttribute('data-ns-glass')
-  s.el.style.clipPath = nat || (d && (glass || s.el.hasAttribute('data-ns-relief'))) ? '' : d ? `path('${d}')` : s.ap ? 'inset(50%)' : ''
-  // (el vidrio sigue a la forma que se pinta, también la intermedia de un morph: se le avisa)
-  if (glass) s.el.dispatchEvent(new Event('ns-shape'))
+  const mat = s.el.hasAttribute('data-ns-glass') || s.el.hasAttribute('data-ns-relief')
+  s.el.style.clipPath = nat || (d && mat) ? '' : d ? `path('${d}')` : s.ap ? 'inset(50%)' : ''
+  // (el vidrio y el relieve siguen a la forma que se pinta, también la intermedia de un morph: se les avisa)
+  if (mat) s.el.dispatchEvent(new Event('ns-shape'))
   if (typeof NS_LITE == 'undefined') decorate(s, V, d, T, at)
 }
 
@@ -704,6 +704,33 @@ export function detach(el, clear) {
 
 /** Forma efectiva que ns-frame está usando en un elemento (incluye data-ns-nest y --ns-shape). */
 export const shapeOf = el => ready(S.get(el))?.src
+
+/**
+ * Arranque automático de un módulo por su atributo (lo usan glass, liquid, relief y tabs, y sirve para
+ * los tuyos): make(el) se llama cuando aparece el elemento o el atributo, y el destroy() de lo que
+ * devuelva, cuando se quita el atributo o el elemento sale del documento (un elemento que sólo se
+ * mueve de sitio no se toca: se comprueba en la tarea siguiente). Devuelve el mapa elemento → instancia.
+ */
+export function watch(attr, make) {
+  const live = new Map(), sel = `[${attr}]`
+  if (typeof document == 'undefined') return live
+  const add = el => { if (!live.has(el)) { const h = make(el); if (h) live.set(el, h) } }
+  const drop = el => { const h = live.get(el); if (h) { live.delete(el); h.destroy?.() } }
+  const scan = n => { if (n.nodeType != 1) return; n.matches(sel) && add(n); n.querySelectorAll(sel).forEach(add) }
+  let pend = 0
+  const sweep = () => { pend = 0; for (const el of [...live.keys()]) if (!el.isConnected) drop(el) }
+  const boot = () => {
+    scan(document.body)
+    new MutationObserver(ms => {
+      for (const m of ms) {
+        if (m.type == 'attributes') m.target.hasAttribute(attr) ? add(m.target) : drop(m.target)
+        else { m.addedNodes.forEach(scan); if (m.removedNodes.length && live.size) pend ||= setTimeout(sweep) }
+      }
+    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: [attr] })
+  }
+  document.readyState == 'loading' ? addEventListener('DOMContentLoaded', boot) : boot()
+  return live
+}
 
 /** El path que se está pintando ahora (a mitad de un morph, la forma intermedia), o null. */
 export const pathOf = el => { const s = S.get(el); return s?.cur?.length ? dOf(s.cur) : null }

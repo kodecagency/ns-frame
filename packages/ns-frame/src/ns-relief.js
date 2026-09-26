@@ -25,7 +25,7 @@
 //   --ns-relief-bevel (px), --ns-relief-height, --ns-relief-gloss (0–1), --ns-relief-shadow (0–1, 0 = sin sombras).
 // · La capa va detrás del contenido; un marco de ns-frame con relieve no se recorta con clip-path.
 
-import { styles, path, shapeOf, update } from './ns-frame.js'
+import { styles, path, shapeOf, pathOf, update, watch } from './ns-frame.js'
 import { material, mk } from './ns-light.js'
 
 const CSS = `@layer ns{
@@ -89,7 +89,8 @@ export function relief(el) {
     M.b = num('--ns-relief-bevel', M.b); M.s = num('--ns-relief-height', M.s); M.ks *= num('--ns-relief-gloss', 1)
     const shK = num('--ns-relief-shadow', 1)
     if (M.sh) M.sh = shK ? M.sh.map(([a, b, o]) => [a, b, +(o * shK).toFixed(3)]) : null
-    const s = shapeOf(el), d = s ? path(s, w, h) : rounded(el, w, h), fill = face(el)
+    // (la forma que el núcleo está pintando: a mitad de un morph, la intermedia)
+    const s = shapeOf(el), d = s ? pathOf(el) || path(s, w, h) : rounded(el, w, h), fill = face(el)
     const k = [d, w, h, fill, hide, JSON.stringify(M)].join('|')
     if (k == key) return
     key = k
@@ -103,6 +104,8 @@ export function relief(el) {
   const press = v => () => { if (down != v) { down = v; draw() } }
   const EV = [['pointerdown', press(true)], ['pointerup', press(false)], ['pointerleave', press(false)], ['pointercancel', press(false)],
     ['keydown', e => (e.key == ' ' || e.key == 'Enter') && press(true)()], ['keyup', press(false)], ['blur', press(false)]]
+  // el núcleo avisa en cada fotograma de un morph (ns-shape): el volumen sigue a la forma
+  EV.push(['ns-shape', draw])
   EV.forEach(([t, f]) => el.addEventListener(t, f))
   const ro = new ResizeObserver(draw)
   ro.observe(el)
@@ -111,17 +114,19 @@ export function relief(el) {
   draw()
   // un marco de ns-frame deja de recortarse (el recorte cortaría la sombra)
   if (el.hasAttribute('data-ns') || el.localName == 'ns-frame') update(el)
-  const api = { update: () => { key = ''; draw() }, destroy() { EV.forEach(([t, f]) => el.removeEventListener(t, f)); ro.disconnect(); mo.disconnect(); ALL.delete(api); R.delete(el); svg.remove() } }
+  const api = {
+    update: () => { key = ''; draw() },
+    destroy() {
+      if (R.get(el) != api) return
+      EV.forEach(([t, f]) => el.removeEventListener(t, f)); ro.disconnect(); mo.disconnect(); ALL.delete(api); R.delete(el); svg.remove()
+      // (sin relieve, el marco vuelve a recortarse con su forma)
+      if (el.isConnected && (el.hasAttribute('data-ns') || el.localName == 'ns-frame')) update(el)
+    },
+  }
   ALL.add(api)
   R.set(el, api)
   return api
 }
 
-if (typeof document != 'undefined') {
-  const scan = n => { if (n.nodeType != 1) return; n.matches('[data-ns-relief]') && relief(n); n.querySelectorAll('[data-ns-relief]').forEach(relief) }
-  const boot = () => {
-    scan(document.body)
-    new MutationObserver(ms => { for (const m of ms) m.addedNodes.forEach(scan) }).observe(document.body, { childList: true, subtree: true })
-  }
-  document.readyState == 'loading' ? addEventListener('DOMContentLoaded', boot) : boot()
-}
+// automático con data-ns-relief: se monta al aparecer y se desmonta al quitar el atributo o el elemento
+watch('data-ns-relief', el => relief(el))

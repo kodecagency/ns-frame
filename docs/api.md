@@ -11,7 +11,7 @@ Casi nunca hace falta: `data-ns` y los atributos cubren el uso normal. La API si
 ## Núcleo (`ns-frame`)
 
 ```js
-import { path, geometry, commands, lerp, safe, define, PRESETS, attach, detach, update, shapeOf, pathOf, open, close, styles } from 'ns-frame'
+import { path, geometry, commands, lerp, safe, define, PRESETS, attach, detach, update, shapeOf, pathOf, watch, open, close, styles } from 'ns-frame'
 ```
 
 | Función | Qué hace |
@@ -25,6 +25,7 @@ import { path, geometry, commands, lerp, safe, define, PRESETS, attach, detach, 
 | `attach(el)` · `detach(el, clear?)` | Activa / desactiva manualmente (normalmente no hace falta) |
 | `update(el)` | Relee el elemento (tras cambiar variables CSS por JS) |
 | `shapeOf(el)` | Forma efectiva que se está usando (con hover, press, nest y `--ns-shape`) |
+| `watch(attr, make)` | Arranque automático por atributo, el mismo que usan glass, liquid, relief y tabs: `make(el)` al aparecer el elemento o el atributo; el `destroy()` de lo que devuelva, al quitar el atributo o sacar el elemento del documento (moverlo de sitio no cuenta). Sirve para tus propios componentes |
 | `pathOf(el)` | El path que se está pintando ahora (a mitad de un morph, la forma intermedia). Los elementos con `data-ns-glass` emiten además el evento `ns-shape` cada vez que se repintan |
 | `open(el, mode?, ms?)` · `close(el, mode?, ms?)` | Apertura y cierre respetando la forma; devuelven una promesa |
 | `styles(css)` | Inyecta CSS con una constructable stylesheet (CSP estricta) |

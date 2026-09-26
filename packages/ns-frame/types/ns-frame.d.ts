@@ -85,6 +85,12 @@ export function shapeOf(el: Element): Shape | undefined
 /** Path SVG que se está pintando ahora en el elemento (a mitad de un morph, la forma intermedia), o null. */
 export function pathOf(el: Element): string | null
 
+/**
+ * Arranque automático por atributo: `make(el)` al aparecer el elemento o el atributo; el `destroy()` de
+ * lo que devuelva, al quitar el atributo o sacar el elemento del documento (moverlo no cuenta).
+ */
+export function watch<T extends { destroy?(): void }>(attr: string, make: (el: Element) => T | null | undefined): Map<Element, T>
+
 /** Fuerza una relectura (p. ej. tras cambiar variables CSS por JS). */
 export function update(el: Element): void
 
