@@ -32,7 +32,7 @@ const CSS = `@layer ns{
 [data-ns-isle].ns-hide{opacity:0;scale:.92;pointer-events:none}
 [data-ns-isle-panel]{position:fixed;z-index:calc(var(--ns-isle-z,40) + 1);inset:auto 12px calc(12px + env(safe-area-inset-bottom)) 12px;max-width:var(--ns-isle-w,430px);margin-inline:auto;translate:0 calc(100% + 40px);visibility:hidden;overscroll-behavior:contain;transition:translate var(--ns-isle-time,.4s) var(--ns-isle-ease,cubic-bezier(.2,.8,.2,1)),visibility 0s var(--ns-isle-time,.4s)}
 [data-ns-isle-panel=top]{inset:calc(12px + env(safe-area-inset-top)) 12px auto 12px;translate:0 calc(-100% - 40px)}
-[data-ns-isle-panel].ns-warm{visibility:visible;will-change:translate}
+[data-ns-isle-panel].ns-warm{visibility:visible;will-change:translate;transition:translate var(--ns-isle-time,.4s) var(--ns-isle-ease,cubic-bezier(.2,.8,.2,1)),visibility 0s}
 [data-ns-isle-panel].ns-open{translate:0 0;visibility:visible;transition:translate var(--ns-isle-time,.4s) var(--ns-isle-ease,cubic-bezier(.2,.8,.2,1)),visibility 0s}
 [data-ns-isle-panel].ns-now,[data-ns-isle-panel].ns-sheet-drag{transition:none}
 @media (prefers-reduced-motion:reduce){.ns-isle-scrim,[data-ns-isle],[data-ns-isle-panel]{transition:none!important}}
@@ -96,6 +96,8 @@ export function isle(el, o = {}) {
     isOpen = on
     btn.setAttribute('aria-expanded', String(on))
     panel.inert = !on
+    // (con la hoja abierta, la cápsula está oculta: fuera del orden del foco y del lector de pantalla)
+    el.inert = on
     panel.classList.toggle('ns-now', now)
     el.classList.toggle('ns-hide', on)
     scrim.classList.toggle('ns-open', on)
@@ -106,7 +108,15 @@ export function isle(el, o = {}) {
       requestAnimationFrame(() => requestAnimationFrame(() => {
         if (!isOpen) return
         panel.classList.add('ns-open')
-        ;(links[cur] || panel).focus?.({ preventScroll: true })
+        // el foco entra en la hoja (se reintenta unos fotogramas: si aún no cuenta como visible, el
+        // navegador ignora focus() sin avisar y el foco se quedaría fuera)
+        let n = 0
+        const enter = () => {
+          if (!isOpen || panel.contains(document.activeElement)) return
+          ;(links[cur] || focusables()[0] || panel).focus?.({ preventScroll: true })
+          if (++n < 8) requestAnimationFrame(enter)
+        }
+        enter()
       }))
       o.onOpen?.()
     } else {
@@ -156,7 +166,26 @@ export function isle(el, o = {}) {
   const onClose = e => { if (e.target.closest?.('[data-ns-isle-close]')) close() }
   panel.addEventListener('click', onClose)
   scrim.addEventListener('click', close)
-  const key = e => { if (e.key == 'Escape' && isOpen) close() }
+  // la hoja es modal: con Tab el foco da la vuelta dentro de ella y nunca sale a la página de detrás
+  const focusables = () => [...panel.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')].filter(n => n.getClientRects().length)
+  const key = e => {
+    if (!isOpen) return
+    if (e.key == 'Escape') return close()
+    if (e.key != 'Tab') return
+    const F = focusables()
+    if (!F.length) return
+    const i = F.indexOf(document.activeElement)
+    if (i < 0 || (e.shiftKey && i == 0) || (!e.shiftKey && i == F.length - 1)) { e.preventDefault(); F[e.shiftKey ? F.length - 1 : 0].focus({ preventScroll: true }) }
+    back = e.shiftKey
+  }
+  // (y si aun así el foco llega fuera, como en Safari, que con Tab se salta los enlaces: vuelve dentro)
+  let back = false
+  const trap = e => {
+    if (!isOpen || panel.contains(e.target)) return
+    const F = focusables()
+    ;(F[back ? F.length - 1 : 0] || panel).focus?.({ preventScroll: true })
+  }
+  document.addEventListener('focusin', trap)
   addEventListener('keydown', key)
 
   // sección actual: la que cruza la línea de lectura
@@ -187,12 +216,12 @@ export function isle(el, o = {}) {
     get index() { return cur },
     destroy() {
       io.disconnect(); sh.destroy(); scrim.remove(); clearTimeout(timer)
-      removeEventListener('scroll', scroll); removeEventListener('keydown', key)
+      removeEventListener('scroll', scroll); removeEventListener('keydown', key); document.removeEventListener('focusin', trap)
       btn.removeEventListener('pointerdown', down); btn.removeEventListener('pointerup', up)
       btn.removeEventListener('pointerenter', warm); btn.removeEventListener('focus', warm); btn.removeEventListener('click', click)
       panel.removeEventListener('click', pick); panel.removeEventListener('click', onClose)
       panel.classList.remove('ns-open', 'ns-warm', 'ns-now'); el.classList.remove('ns-hide', 'ns-mini')
-      panel.inert = false; btn.style.touchAction = ''
+      panel.inert = false; el.inert = false; btn.style.touchAction = ''
     },
   }
 }
