@@ -17,7 +17,7 @@ order: 13
 | `ns-liquid.js` | 17,3 KB | 15,6 KB | Formas líquidas que se funden |
 | `ns-concentric.js` | 2,4 KB | 2,2 KB | Esquinas concéntricas automáticas |
 | `ns-skel.js` | 2,4 KB | 2,2 KB | Skeletons |
-| `ns-isle.js` | 3,9 KB | 3,5 KB | Isla de navegación (usa `ns-sheet.js`) |
+| `ns-isle.js` | 4,2 KB | 3,8 KB | Isla de navegación (usa `ns-sheet.js`) |
 | `ns-mark.js` | 2,1 KB | 1,9 KB | Resaltado continuo en varias líneas |
 | `ns-toast.js` | 2,1 KB | 1,8 KB | Toasts |
 | `ns-fx.css` | 2,1 KB | 1,9 KB | Efectos CSS |

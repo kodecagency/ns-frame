@@ -47,6 +47,7 @@ Read `references/shapes.md` before writing any non-trivial shape and `references
 - Text colour: use `color: var(--ns-glass-ink)` inside glass. The glass measures what passes behind it and flips/deepens its tone; the ink follows. Hard-coded white or black text breaks this.
 - Put glass content inside elements (`<button><span>+</span></button>`), never as a bare text node: it would sit under the glass layers.
 - The lens is real everywhere: native `backdrop-filter` in Chromium; WebGL in Safari, every iOS browser and Firefox (over images, videos, canvases or the page itself). Images behind glass must be same-origin or served with CORS (`Access-Control-Allow-Origin`) for the WebGL lens and the tone detection; otherwise the glass falls back to SVG filters.
+- Thick material (a sheet or a menu, `--ns-glass-blur` ≥ 12px): outside Chromium it uses the browser's native blur (like Apple's materials) instead of the WebGL lens, which would add grain and cost frames on a large surface. `data-ns-glass="lens"` forces the lens.
 - A dark designed bar: set only `--ns-glass-tint` (e.g. `rgba(22,22,26,.28)`); it stays dark over light content and deepens instead of flipping.
 - Strict CSP: the lens needs `img-src data:`.
 

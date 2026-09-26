@@ -12,7 +12,8 @@
 //     … <a href="#inicio">…</a> <a href="#precios">…</a> … <button data-ns-isle-close>×</button>
 //   </div>
 //
-// · La cápsula muestra la sección en pantalla (icono, nombre y posición) y se pliega al bajar.
+// · La cápsula muestra la sección en pantalla (icono, nombre y posición): completa mientras se baja
+//   leyendo, plegada a un icono al subir.
 // · Al tocarla, la cápsula se convierte en la hoja, como la Dynamic Island: una silueta crece de una
 //   a otra con un muelle y, al llegar, la hoja ya está ahí y su contenido entra escalonado. Al
 //   cerrarse, el camino inverso. La silueta es una sola capa con desenfoque nativo (GPU) que sólo
@@ -34,7 +35,12 @@ const CSS = `@layer ns{
 [data-ns-isle]{transition:opacity .2s,scale .25s var(--ns-isle-ease,cubic-bezier(.2,.8,.2,1)),width .45s var(--ns-isle-ease,cubic-bezier(.2,.8,.2,1))}
 [data-ns-isle].ns-hide{pointer-events:none}
 [data-ns-isle]:not(.ns-isle-m).ns-hide{opacity:0;scale:.92}
-.ns-isle-morph{position:fixed;display:none;pointer-events:none;will-change:clip-path}
+.ns-isle-morph{position:fixed;left:0;top:0;width:0;height:0;display:none;pointer-events:none;contain:layout style}
+.ns-isle-morph>i{position:absolute;left:0;top:0;transform-origin:0 0;background:var(--ns-isle-morph,#1f1f23);will-change:transform}
+.ns-isle-morph>i:nth-child(-n+4){width:32px;height:32px}
+.ns-isle-morph>i:nth-child(n+5){width:100px;height:100px}
+.ns-isle-morph>i:nth-child(1){border-top-left-radius:100%}.ns-isle-morph>i:nth-child(2){border-top-right-radius:100%}
+.ns-isle-morph>i:nth-child(3){border-bottom-right-radius:100%}.ns-isle-morph>i:nth-child(4){border-bottom-left-radius:100%}
 .ns-isle-m [data-ns-isle-toggle]{transition:opacity .16s}
 .ns-isle-m.ns-hide [data-ns-isle-toggle]{opacity:0}
 .ns-isle-m.ns-hide{background:none!important}
@@ -60,16 +66,18 @@ const SPRING = (() => {
   // (globalThis: en este módulo, CSS es la hoja de estilos)
   return globalThis.CSS?.supports?.('transition-timing-function', 'linear(0, 1)') ? `linear(${v.join(',')})` : 'cubic-bezier(.3,1.14,.42,1)'
 })()
-const OPEN = 520, CLOSE = 440
-// recorte de la silueta: el rectángulo r dentro de su capa u
-const inset = (r, u, rad) => `inset(${r2(r.top - u.top)}px ${r2(u.right - r.right)}px ${r2(u.bottom - r.bottom)}px ${r2(r.left - u.left)}px round ${r2(rad)}px)`
-// (el desenfoque de fondo sin prefijo en Safari llega en la 18)
-const BF = globalThis.CSS?.supports?.('backdrop-filter', 'blur(1px)') ? 'backdropFilter' : 'webkitBackdropFilter'
-// el aspecto de la cápsula o de la hoja: su tinte y su desenfoque (o su fondo, si no es de vidrio)
-const look = (n, blur) => {
-  const s = getComputedStyle(n), g = n.hasAttribute('data-ns-glass')
-  const bg = g ? s.getPropertyValue('--ns-glass-tint').trim() || 'rgba(22,22,26,.45)' : s.backgroundColor
-  return { bg, f: `blur(${parseFloat(s.getPropertyValue('--ns-glass-blur')) || blur}px) saturate(${g ? 1.4 : 1})` }
+const OPEN = 520, CLOSE = 440, FADE = 110
+// La silueta, sólo con transform (el compositor la mueve en su propio hilo, a los fps de la
+// pantalla, aunque el hilo principal esté ocupado; clip-path, width o border-radius no: en Safari se
+// repintan en el hilo principal cada fotograma). Para que las esquinas no se deformen al escalar, va
+// en siete piezas opacas, como un 9-slice: cuatro esquinas de 32px que sólo se desplazan (y escalan
+// igual en los dos ejes con el radio) y tres bandas que se estiran: arriba, en medio y abajo.
+// Todas interpolan con la misma curva, así que encajan en cada fotograma (se solapan medio píxel)
+const pieces = ({ left: x, top: y, width: w, height: h }, r) => {
+  r = Math.min(r, w / 2, h / 2)
+  const k = r2(r / 32), iw = Math.max(0, w - 2 * r) + 1, ih = Math.max(0, h - 2 * r) + 1, T = (a, b, s) => `translate(${r2(a)}px,${r2(b)}px) scale(${s})`
+  return [T(x, y, k), T(x + w - r, y, k), T(x + w - r, y + h - r, k), T(x, y + h - r, k),
+    T(x + r - .5, y, `${r2(iw / 100)},${r2(r / 100)}`), T(x, y + r - .5, `${r2(w / 100)},${r2(ih / 100)}`), T(x + r - .5, y + h - r, `${r2(iw / 100)},${r2(r / 100)}`)]
 }
 
 /**
@@ -77,7 +85,8 @@ const look = (n, blur) => {
  * Opciones:
  *   panel      la hoja (por defecto, el elemento de aria-controls del botón o [data-ns-isle-panel])
  *   links      enlaces a secciones (por defecto, los a[href^="#"] de la hoja)
- *   collapse   px de scroll a partir de los que la cápsula se pliega al bajar (200; false = nunca)
+ *   collapse   px de scroll a partir de los que la cápsula puede plegarse (200; false = nunca)
+ *   collapseOn 'up' (por defecto): se pliega al subir y se despliega al bajar; 'down': al revés
  *   swipe      deslizar la cápsula cambia de sección (true)
  *   morph      la cápsula se convierte en la hoja (true); false: la hoja entra desde abajo.
  *              Radio final de la silueta: --ns-isle-radius en la hoja (32px)
@@ -132,7 +141,8 @@ export function isle(el, o = {}) {
   // lo que se ve de la hoja (sin las capas del vidrio ni del borde): entra escalonado
   const kids = () => [...panel.children].filter(k => !k.matches('.ns-liquid-src,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-fx,.ns-svg'))
   const unfade = () => { fx.forEach(a => a.cancel()); fx = [] }
-  const morph = (A, B, ra, rb, la, lb, dur) => {
+  // la silueta va de la forma A (radio ra) a la B (radio rb), tras `delay` ms quieta en A
+  const morph = (A, B, ra, rb, dur, delay = 0) => {
     if (!mo) {
       mo = document.createElement('div')
       mo.className = 'ns-isle-morph'
@@ -140,22 +150,27 @@ export function isle(el, o = {}) {
       // (su animación no cambia la página que hay debajo: los vidrios no la rasterizan otra vez)
       mo.setAttribute('data-ns-quiet', '')
       scrim.setAttribute('data-ns-quiet', '')
-      panel.before(mo)
+      for (let i = 0; i < 7; i++) mo.append(document.createElement('i'))
+      panel.after(mo)
     }
-    // la capa cubre las dos formas con margen para el rebote; sólo cambia su recorte
-    const u = { left: Math.min(A.left, B.left) - 24, top: Math.min(A.top, B.top) - 24, right: Math.max(A.right, B.right) + 24, bottom: Math.max(A.bottom, B.bottom) + 24 }
-    Object.assign(mo.style, { display: 'block', zIndex: Z() + 1, left: r2(u.left) + 'px', top: r2(u.top) + 'px', width: r2(u.right - u.left) + 'px', height: r2(u.bottom - u.top) + 'px', background: lb.bg, [BF]: lb.f })
-    mo.getAnimations().forEach(a => a.cancel())
-    return mo.animate([{ clipPath: inset(A, u, ra), background: la.bg, [BF]: la.f }, { clipPath: inset(B, u, rb), background: lb.bg, [BF]: lb.f }], { duration: dur, easing: SPRING, fill: 'forwards' })
+    // (su color, el de la hoja: --ns-isle-morph)
+    const c = getComputedStyle(panel).getPropertyValue('--ns-isle-morph').trim()
+    c ? mo.style.setProperty('--ns-isle-morph', c) : mo.style.removeProperty('--ns-isle-morph')
+    Object.assign(mo.style, { display: 'block', zIndex: Z() + 2 })
+    mo.getAnimations({ subtree: true }).forEach(a => a.cancel())
+    const a = pieces(A, ra), b = pieces(B, rb)
+    return [...mo.children].map((p, i) => p.animate([{ transform: a[i] }, { transform: b[i] }], { duration: dur, delay, easing: SPRING, fill: 'both' }))[0]
   }
+  // la silueta aparece (v = 1) o se va (v = 0): opacidad del grupo, también en el compositor
+  const fade = (v, d) => mo.animate([{ opacity: 1 - v }, { opacity: v }], { duration: d, easing: 'ease-out', fill: 'forwards' })
   // fn cuando la animación a llega a la fracción k de su duración (con su propio reloj: si el
   // navegador la frena o la acelera, el relevo sigue en su sitio); nada si se cancela antes
   const at = (a, k, fn) => {
-    const d = a.effect.getTiming().duration * k
+    const T = a.effect.getTiming(), d = (T.delay || 0) + T.duration * k
     const f = () => a.playState == 'idle' ? 0 : a.playState == 'finished' || a.currentTime >= d ? fn() : requestAnimationFrame(f)
     f()
   }
-  const unmorph = () => { if (mo) { mo.getAnimations().forEach(a => a.cancel()); mo.style.display = 'none' } }
+  const unmorph = () => { if (mo) { mo.getAnimations({ subtree: true }).forEach(a => a.cancel()); mo.style.display = 'none' } }
 
   // prepara la hoja antes del clic: al apoyar el dedo o pasar el ratón ya se pinta (sin parón al
   // abrir). Con morph, oculta en su sitio final (su vidrio se rasteriza allí); si no, fuera de pantalla
@@ -163,10 +178,12 @@ export function isle(el, o = {}) {
   const cool = () => isOpen || panel.classList.remove('ns-warm', 'ns-stage')
 
   // la hoja, visible y con el foco dentro
-  const reveal = () => {
-    unmorph(); unfade()
+  const reveal = t => {
+    unfade()
     panel.classList.remove('ns-stage', 'ns-now')
     panel.classList.add('ns-warm', 'ns-open')
+    // (la silueta, encima, se desvanece y deja ver la hoja: un fundido, no un salto)
+    if (mo?.style.display == 'block') at(fade(0, 200), 1, () => t == run && unmorph())
     if (MORPH && !reduced()) fx = kids().map((k, i) => k.animate([{ opacity: 0, translate: '0 10px' }, { opacity: 1, translate: '0 0' }], { duration: 300, delay: i * 35, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }))
     // el foco entra en la hoja (se reintenta unos fotogramas: si aún no cuenta como visible, el
     // navegador ignora focus() sin avisar y el foco se quedaría fuera)
@@ -179,9 +196,21 @@ export function isle(el, o = {}) {
     enter()
   }
 
+  // con la hoja abierta, la página de detrás no se desplaza: overflow en <html> (rueda, teclado y
+  // la mayoría de navegadores) y, para el táctil de iOS, que lo ignora, el gesto se anula salvo
+  // dentro de algo de la hoja que tenga su propio scroll
+  const scrolls = n => { for (; n && n != panel.parentNode; n = n.parentElement) if (n.scrollHeight > n.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(n).overflowY)) return true; return false }
+  const block = e => { if (e.cancelable && !(panel.contains(e.target) && scrolls(e.target))) e.preventDefault() }
+  const lock = on => {
+    const h = document.documentElement.style
+    if (on) { h.setProperty('overflow', 'hidden'); h.setProperty('scrollbar-gutter', 'stable'); addEventListener('touchmove', block, { passive: false }) }
+    else { h.removeProperty('overflow'); h.removeProperty('scrollbar-gutter'); removeEventListener('touchmove', block) }
+  }
+
   const show = (on, now = false) => {
     if (on == isOpen) return
     isOpen = on
+    lock(on)
     const t = ++run, anim = MORPH && !now && !reduced()
     btn.setAttribute('aria-expanded', String(on))
     panel.inert = !on
@@ -191,22 +220,25 @@ export function isle(el, o = {}) {
     scrim.style.opacity = ''
     if (on) {
       o.onOpen?.()
-      el.classList.add('ns-hide')
       if (anim) {
-        // la silueta nace con la forma y el aspecto de la cápsula y crece hasta los de la hoja, que
-        // espera oculta en su sitio; aparece cuando la silueta ya casi se ha asentado
-        const A = el.getBoundingClientRect(), la = look(el, 4)
+        // la silueta nace sobre la cápsula (la cubre en 90 ms y la cápsula se oculta debajo) y crece
+        // hasta la hoja, que espera oculta en su sitio; la hoja aparece bajo ella cuando ya casi se
+        // ha asentado y la silueta se desvanece
+        const A = el.getBoundingClientRect()
         panel.classList.remove('ns-warm'); panel.classList.add('ns-stage')
         const B = panel.getBoundingClientRect()
-        // (la cápsula, encima de la silueta: su contenido se desvanece sobre ella)
-        el.style.zIndex = Z() + 2
-        at(morph(A, B, cap(A), rad(), la, look(panel, 16), OPEN), .86, () => t == run && reveal())
+        // (la cápsula, sobre el velo y bajo la silueta)
+        el.style.zIndex = Z() + 1
+        const g = morph(A, B, cap(A), rad(), OPEN)
+        at(fade(1, 90), 1, () => t == run && el.classList.add('ns-hide'))
+        at(g, .8, () => t == run && reveal(t))
         return
       }
+      el.classList.add('ns-hide')
       panel.classList.toggle('ns-now', now)
       panel.classList.add('ns-warm')
       // un frame con la hoja ya visible fuera de pantalla y luego la transición: nunca arranca en frío
-      requestAnimationFrame(() => requestAnimationFrame(() => t == run && reveal()))
+      requestAnimationFrame(() => requestAnimationFrame(() => t == run && reveal(t)))
       return
     }
     o.onClose?.()
@@ -214,20 +246,23 @@ export function isle(el, o = {}) {
     // (tras un arrastre que volvió a su sitio queda un translate en línea que taparía el de la clase)
     if (!now) sh.reset()
     if (anim) {
-      // el contenido se desvanece, la hoja pasa a ser la silueta y ésta vuelve a la cápsula
+      // el contenido se desvanece mientras la silueta aparece encima de la hoja; luego la hoja se
+      // oculta y la silueta vuelve a la cápsula, que reaparece debajo cuando ya casi ha llegado
       const B = panel.getBoundingClientRect(), A = el.getBoundingClientRect()
       unfade()
-      fx = kids().map(k => k.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 110, easing: 'ease-in', fill: 'forwards' }))
-      const go = () => {
+      fx = kids().map(k => k.animate([{ opacity: 1 }, { opacity: 0 }], { duration: FADE, easing: 'ease-in', fill: 'forwards' }))
+      el.style.zIndex = Z() + 1
+      const g = morph(B, A, rad(), cap(A), CLOSE, FADE)
+      at(fade(1, FADE), 1, () => {
         if (t != run) return
-        const lb = look(panel, 16)
         panel.classList.add('ns-now'); panel.classList.remove('ns-open', 'ns-warm', 'ns-stage')
         unfade()
-        el.style.zIndex = Z() + 2
-        // al llegar, la cápsula ocupa su sitio en el mismo fotograma en que se va la silueta
-        at(morph(B, A, rad(), cap(A), lb, look(el, 4), CLOSE), .9, () => { if (t == run) { unmorph(); el.classList.remove('ns-hide'); el.style.zIndex = '' } })
-      }
-      fx.length ? at(fx[0], 1, go) : go()
+      })
+      at(g, .78, () => {
+        if (t != run) return
+        el.classList.remove('ns-hide')
+        at(fade(0, 160), 1, () => { if (t == run) { unmorph(); el.style.zIndex = '' } })
+      })
       return
     }
     unmorph(); unfade()
@@ -316,7 +351,9 @@ export function isle(el, o = {}) {
     raf = 0
     const y = scrollY
     if (y + innerHeight >= document.documentElement.scrollHeight - 2) set(links.length - 1)
-    if (o.collapse !== false && !isOpen && Math.abs(y - y0) > 6) { el.classList.toggle('ns-mini', y > y0 && y > (o.collapse ?? 200)); y0 = y }
+    // (al bajar leyendo, completa: dice en qué sección estás; al subir, un icono. collapseOn: 'down',
+    // al revés, como la barra de Safari en iPhone)
+    if (o.collapse !== false && !isOpen && Math.abs(y - y0) > 6) { el.classList.toggle('ns-mini', (o.collapseOn == 'down' ? y > y0 : y < y0) && y > (o.collapse ?? 200)); y0 = y }
   }
   const scroll = () => { raf ||= requestAnimationFrame(frame) }
   addEventListener('scroll', scroll, { passive: true })
@@ -326,7 +363,7 @@ export function isle(el, o = {}) {
     go: i => targets[i] && go(targets[i], links[i]),
     get index() { return cur },
     destroy() {
-      run++; unfade(); mo?.remove(); el.style.zIndex = ''; el.classList.remove('ns-isle-m')
+      run++; unfade(); mo?.remove(); isOpen && lock(false); el.style.zIndex = ''; el.classList.remove('ns-isle-m')
       io.disconnect(); sh.destroy(); scrim.remove(); clearTimeout(timer)
       removeEventListener('scroll', scroll); removeEventListener('keydown', key); document.removeEventListener('focusin', trap)
       btn.removeEventListener('pointerdown', down); btn.removeEventListener('pointerup', up)

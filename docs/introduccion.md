@@ -34,7 +34,7 @@ order: 1
 | `ns-frame/lite` | 6,7 KB | Sólo recortes, sin capa SVG |
 | `ns-frame/mosaic` | 7,4 KB + 2,0 KB | Mosaicos de piezas libres, orbes y luz conectada (usa `ns-flow.js`) |
 | `ns-frame/concentric` · `flow` · `mark` · `liquid` | 2,4 · 2,0 · 2,1 · 2,5 KB | Esquinas concéntricas automáticas · texto que llena la forma · resaltado en varias líneas · formas líquidas |
-| `ns-frame/skel` · `isle` · `toast` | 2,4 · 3,9 · 2,2 KB | Skeletons · isla de navegación · toasts |
+| `ns-frame/skel` · `isle` · `toast` | 2,4 · 4,2 · 2,2 KB | Skeletons · isla de navegación · toasts |
 | `ns-frame/carousel` · `link` · `bento` · `pop` · `sheet` | 1,3–1,6 KB c/u | Carrusel · callouts · bento · popovers · hoja arrastrable |
 | `ns-frame/audit` | 1,3 KB | Auditoría de texto recortado (sólo desarrollo) |
 | `ns-frame/css` · `vt` · `fx` · `static` | 0,5–0,7 KB c/u | Compilador a `shape()` · View Transitions · decode · build sin JS |

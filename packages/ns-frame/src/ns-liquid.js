@@ -1192,6 +1192,11 @@ export function liquid(el, o = {}) {
       V = { k: num('--ns-liquid', 14), lens: num('--ns-glass-lens', cl(ms * .55, 10, 44)), edge: num('--ns-glass-edge', 8), depth: num('--ns-glass-depth', cl(ms * .42, 8, 36)), blur: num('--ns-glass-blur', lt ? 7 : 3), sat: num('--ns-glass-sat', lt ? 1.2 : 1.3), src: LENS || !glassy() ? null : source(), prism: !!o.prism?.(), hard: !!o.hard?.(), shadow: cs.getPropertyValue('--ns-glass-shadow').trim(), glow: cs.getPropertyValue('--ns-glass-glow').trim(), glowSize: num('--ns-glass-glow-size', 16), zoom: Math.min(1, num('--ns-glass-zoom', 0)),
         // canto: intensidad y reflejo opuesto (su fuerza y su color: la luz en U lo tiñe)
         light: lt, rim: num('--ns-glass-rim', 1), back: num('--ns-glass-rim-back', .5), backColor: cs.getPropertyValue('--ns-glass-rim-color').trim() || '#fff' }
+      // Material grueso (desenfoque ≥ 12px: una hoja, un menú) fuera de Chromium: el desenfoque nativo
+      // del navegador, como los materiales de Apple. La lente sólo se notaría en el canto y la copia
+      // de la página, tan agrandada bajo tanto desenfoque, dejaba grano y vetas; además cuesta cada
+      // fotograma. La lente de copia queda para barras, botones y piezas pequeñas
+      if (!LENS && V.blur >= 12 && !/(^|\s)lens(\s|$)/.test(el.getAttribute('data-ns-glass') || '')) V.src = null
       // si cambió algo del mapa de la lente (al levantarse un indicador, por ejemplo), se regenera ya,
       // aunque la forma siga en marcha; si no, sólo al detenerse
       const vk = [V.lens, V.depth, V.zoom, V.hard, V.prism].join()
