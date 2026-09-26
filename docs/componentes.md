@@ -128,7 +128,7 @@ dialog::backdrop { opacity: var(--p, 1) }                 /* el fondo se aclara 
 - Un arrastre no dispara el clic de lo que había debajo; un toque sigue siendo un clic (umbral: `threshold`, 6 px).
 - Sólo mueve la propiedad `translate` (se combina con cualquier `transform` que ya tenga el panel) y usa los eventos agrupados del puntero para medir bien la velocidad en pantallas de 120 Hz.
 - Pone `touch-action: none` en el asa (`handle`, por defecto todo el panel) y `overscroll-behavior: contain` en el panel.
-- `--ns-sheet-p` queda en el panel durante el gesto; la clase `.ns-sheet-drag` mientras se arrastra.
+- `--ns-sheet-p` queda en el panel durante el gesto; la clase `.ns-sheet-drag` mientras se arrastra y `.ns-glass-hold` mientras vuelve o sale sola (un vidrio de ns-frame no se repinta en esos fotogramas).
 - Con `prefers-reduced-motion`, el cierre y el regreso son inmediatos. Devuelve `{ close(), reset(), destroy() }`.
 - Escape y el clic en el fondo los decides tú (en un `<dialog>`: evento `cancel` → `s.close()`).
 
@@ -163,7 +163,8 @@ const nav = isle(document.querySelector('[data-ns-isle]'), {
 - **Sigue la sección en pantalla** con `IntersectionObserver` (la que cruza la línea de lectura, `line: .45` de la ventana): nada se mide en cada scroll. Actualiza el nombre, la posición, el icono (clona el `svg`/`img` del enlace) y `aria-current`.
 - **La cápsula se pliega al bajar** (clase `.ns-mini`, a partir de `collapse: 200` px; `false` = nunca) y vuelve al subir. Plegada, anima sólo su ancho: con una forma de redondeo simple va por la vía rápida nativa y no recalcula nada.
 - **Deslizar la cápsula** a los lados va a la sección anterior o siguiente (`swipe: false` lo desactiva). Un toque la abre.
-- **La hoja entra moviendo sólo `translate`**, en el compositor: ni su tamaño ni su forma cambian durante la animación. Se prepara al apoyar el dedo (o al pasar el ratón o enfocar el botón), así que al abrirse ya está pintada: sin parón en el primer frame.
+- **La cápsula se convierte en la hoja**, como la Dynamic Island de Apple: una silueta nace con la forma y el tinte de la cápsula y crece con un muelle (rebote leve) hasta los de la hoja; al asentarse, la hoja ya está ahí y su contenido entra escalonado. Al cerrar, el camino inverso: el contenido se desvanece y la silueta vuelve a la cápsula. La silueta es una sola capa con desenfoque nativo que sólo cambia su recorte: durante la animación no se recalcula ninguna forma ni ningún vidrio (en Safari, antes, la hoja de vidrio se rasterizaba en cada fotograma de la subida).
+- **La hoja se prepara al apoyar el dedo** (o al pasar el ratón o enfocar el botón), oculta en su sitio final: su vidrio ya está pintado cuando aparece. Radio final de la silueta: `--ns-isle-radius` en la hoja (32px). `morph: false` vuelve a la entrada desde abajo (sólo `translate`).
 - **Se arrastra como una hoja nativa** (usa `ns-frame/sheet`, con el asa en `[data-ns-isle-handle]` o todo el panel) y se cierra al soltarla o lanzarla, con Escape, con el fondo o con `[data-ns-isle-close]`.
 - **Accesible**: `aria-expanded` en el botón; la hoja es `inert` mientras está cerrada; al abrir, el foco va a la sección actual y al cerrar vuelve al botón.
 - **Elegir una sección** cierra la hoja, actualiza la URL (`pushState`) y va hasta ella con `go(target, link)`; por defecto `scrollIntoView` suave, que respeta `scroll-padding-top` y `scroll-margin`.

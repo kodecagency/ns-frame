@@ -2,6 +2,16 @@
 
 ## Sin publicar
 
+### Isla que se convierte en la hoja (`ns-frame/isle`)
+- Al tocar la cápsula, se convierte en la hoja como la Dynamic Island: una silueta con el tinte y el desenfoque de la cápsula crece con un muelle hasta la hoja, que aparece ya pintada al asentarse, y su contenido entra escalonado. Al cerrar, el camino inverso. `morph: false` mantiene la entrada desde abajo; `--ns-isle-radius` fija el radio final.
+- **Rendimiento:** la silueta es una sola capa con desenfoque nativo que sólo cambia su recorte. Antes, en Safari y en iPhone, la hoja de vidrio se rasterizaba, se subía a la GPU y se copiaba en cada fotograma de la subida (lentísimo en un teléfono); en Chromium, el filtro de la lente recalculaba el panel entero en cada fotograma. Ahora la hoja se prepara oculta en su sitio al apoyar el dedo y durante la animación no se recalcula ningún vidrio.
+- `sheet`: `.ns-glass-hold` mientras la hoja vuelve o sale sola; tras un arrastre que volvía a su sitio, cerrar la isla ya no deja la hoja atascada por un `translate` en línea.
+
+### Vidrio más ligero (WebGL)
+- Un vidrio no vuelve a dibujar ni a copiar su canvas si nada cambió (antes, cualquier transición cercana lo repintaba en cada fotograma).
+- Con desenfoque grande (≥ 10px) el canvas va a 1 px por px y la página se rasteriza a ½: el detalle de más no se ve bajo el desenfoque y cada dibujo cuesta cuatro veces menos.
+- `.ns-glass-hold` (y `.ns-sheet-drag`) congelan el vidrio de un elemento mientras se mueve; `data-ns-quiet` marca capas fijas que se animan encima de la página (un velo, una silueta) para que los vidrios no rasterizen la página otra vez por ellas.
+
 ### Compatibilidad
 - Sin el error global «ResizeObserver loop completed with undelivered notifications» (WebKit lo lanzaba como excepción): el margen seguro de `data-ns-pad` se aplica en el frame siguiente cuando viene de un ResizeObserver, y `ns-link` ya no observa el `<body>` (compara la altura del documento en eventos baratos).
 - Todas las páginas del sitio revisadas en WebKit (motor de Safari) y Firefox sin errores.
@@ -88,6 +98,11 @@
 - Núcleo: fuera de pantalla sólo se pausa con `animation-play-state` (sin `pauseAnimations()` del SVG, que ya no hacía falta).
 - `carousel`: al llegar al final, la flecha enfocada queda con `aria-disabled` en lugar de `disabled` (antes el foco se perdía al principio de la página); los puntos tienen 14px de separación para un objetivo de 24px (WCAG 2.5.8).
 - `toast`: al cerrar un aviso con el foco dentro (botón ×, acción o Esc), el foco vuelve al elemento de donde venía (o a `back`, si se pasa en las opciones) en lugar de caer al principio de la página.
+- `concentric`: los huecos se miden sin transformaciones (un padre escalado al pasar el puntero o al abrirse ya no cambia la forma del hijo); quitar `data-ns-concentric` deja de seguirlo; los cambios de clase de la página ya no recorren la lista de hijos.
+- `mark`: con el anfitrión escalado, el resaltado no se deforma; quitar `data-ns-mark` retira el dibujo y volver a ponerlo lo recupera.
+- `link`: las líneas quedan en su sitio aunque el `<body>` tenga margen o `position: relative`; siguen al scroll de un contenedor; un destino que aparece después, o un selector nuevo en `data-ns-link`, se enlaza; un redibujo ya no se pierde si coincide con un scroll.
+- `bento`: las esquinas del contorno se deciden con la caja de layout: una celda que entra con una animación (sube o escala) ya no se queda con la esquina equivocada.
+- `vt`: dos `morph()` seguidos no se quitan la clase de la página el uno al otro; un error dentro de `update()` llega a quien llamó.
 
 ### Sitio
 - Demo de vidrio líquido sobre una foto: barra con lente clara que se estira y acciones que se separan en gotas de vidrio; «Vidrio / Sólido».

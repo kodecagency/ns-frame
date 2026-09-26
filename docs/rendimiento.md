@@ -14,10 +14,10 @@ order: 13
 | `ns-mosaic.js` | 7,4 KB | 6,7 KB | Mosaicos de piezas libres, orbes y luz conectada (más `ns-flow.js`) |
 | `ns-frame.lite.js` | 6,7 KB | 6,1 KB | Sólo recortes |
 | `ns-extra.js` | 3,8 KB | 3,6 KB | **Bajo demanda**: degradados, animaciones de borde, acentos, aperturas, formas con scroll |
-| `ns-liquid.js` | 2,5 KB | 2,2 KB | Formas líquidas que se funden |
+| `ns-liquid.js` | 17,3 KB | 15,6 KB | Formas líquidas que se funden |
 | `ns-concentric.js` | 2,4 KB | 2,2 KB | Esquinas concéntricas automáticas |
 | `ns-skel.js` | 2,4 KB | 2,2 KB | Skeletons |
-| `ns-isle.js` | 2,3 KB | 2,0 KB | Isla de navegación (usa `ns-sheet.js`) |
+| `ns-isle.js` | 3,9 KB | 3,5 KB | Isla de navegación (usa `ns-sheet.js`) |
 | `ns-mark.js` | 2,1 KB | 1,9 KB | Resaltado continuo en varias líneas |
 | `ns-toast.js` | 2,1 KB | 1,8 KB | Toasts |
 | `ns-fx.css` | 2,1 KB | 1,9 KB | Efectos CSS |
@@ -25,7 +25,7 @@ order: 13
 | `ns-carousel.js` | 1,6 KB | 1,4 KB | Carrusel |
 | `ns-link.js` · `ns-bento.js` | 1,5 KB | 1,3 KB | Callouts HUD · bento |
 | `ns-pop.js` | 1,4 KB | 1,2 KB | Popovers |
-| `ns-sheet.js` | 1,3 KB | 1,1 KB | Hoja arrastrable |
+| `ns-sheet.js` | 1,3 KB | 1,2 KB | Hoja arrastrable |
 | `ns-audit.js` | 1,3 KB | 1,2 KB | Sólo desarrollo |
 | `ns-css.js` · `ns-vt.js` · `ns-fx.js` | 0,7 KB | 0,6 KB | Compilador · View Transitions · decode |
 | `ns-static.js` | 0,5 KB | 0,5 KB | Build (Node) |

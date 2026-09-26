@@ -103,7 +103,7 @@ Panel follows the finger/mouse down (rubber band up), closes on release past 35 
 
 ## Navigation island — `ns-frame/isle`
 
-`<nav data-ns-isle>` with `[data-ns-isle-toggle]` (+ `-icon`, `-label`, `-pos`) and a `[data-ns-isle-panel]` sheet of section links (`[data-ns-isle-close]`, `[data-ns-isle-handle]`); `isle(el, { pos, onChange })` → `{ open(), close(), toggle(), go(i), index, destroy() }`. Tracks the current section with IntersectionObserver, collapses on scroll down, swipe = previous/next section. Uses `ns-frame/sheet`. Full options in `docs/componentes.md`.
+`<nav data-ns-isle>` with `[data-ns-isle-toggle]` (+ `-icon`, `-label`, `-pos`) and a `[data-ns-isle-panel]` sheet of section links (`[data-ns-isle-close]`, `[data-ns-isle-handle]`); `isle(el, { pos, onChange })` → `{ open(), close(), toggle(), go(i), index, destroy() }`. Tracks the current section with IntersectionObserver, collapses on scroll down, swipe = previous/next section. Tapping morphs the capsule into the sheet like Apple's Dynamic Island (one native-blur silhouette springs from one shape to the other; no glass or shape is recomputed during the animation; `morph: false` = slide up). Final silhouette radius: `--ns-isle-radius` (32px). Uses `ns-frame/sheet`. Full options in `docs/componentes.md`.
 
 ## What CSS can't do yet — `concentric`, `flow`, `mark`, `liquid`
 

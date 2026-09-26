@@ -149,7 +149,7 @@ function cssShape(el, w) {
   }
   return out.join('; ')
 }
-const E = new Map()
+const E = new Map(), HOSTS = new Set()
 let ro, raf = 0
 const host = el => { const sel = el.getAttribute('data-ns-concentric'); return (sel ? el.parentElement?.closest(sel) : el.parentElement?.closest('[data-ns],[data-ns-nest],ns-frame')) || el.parentElement }
 function run() {
@@ -157,20 +157,30 @@ function run() {
   // primero todas las lecturas, luego todas las escrituras (un solo recálculo de estilos)
   const jobs = []
   for (const [el] of E) {
-    if (!el.isConnected) { E.delete(el); continue }
+    if (!el.isConnected) { drop(el); continue }
     const p = host(el)
     if (!p) continue
     const P = p.getBoundingClientRect(), C = el.getBoundingClientRect()
     if (!P.width || !C.width) continue
-    const src = shapeOf(p) ?? p.getAttribute('data-ns') ?? cssShape(p, P.width)
+    // medidas sin transformaciones: un padre que se escala (hover, apertura) no cambia la forma;
+    // offsetWidth no existe en SVG, allí vale la medida en pantalla
+    const k = p.offsetWidth ? P.width / p.offsetWidth : 1, w = P.width / k, h = P.height / k
+    const src = shapeOf(p) ?? p.getAttribute('data-ns') ?? cssShape(p, w)
     // el hueco hasta el borde exterior del padre (su propio borde CSS cuenta como hueco)
     const min = parseFloat(getComputedStyle(el).getPropertyValue('--ns-concentric-min')) || 0
-    jobs.push([el, p, src ? concentric(src, P.width, P.height, [C.top - P.top, P.right - C.right, P.bottom - C.bottom, C.left - P.left], min) : ''])
+    const ins = [C.top - P.top, P.right - C.right, P.bottom - C.bottom, C.left - P.left].map(v => v / k)
+    jobs.push([el, p, src ? concentric(src, w, h, ins, min) : ''])
   }
   for (const [el, p, v] of jobs) {
-    if (E.get(el) != p) { E.set(el, p); ro.observe(p) }
+    if (E.get(el) != p) { E.set(el, p); HOSTS.add(p); ro.observe(p) }
     if (el.getAttribute('data-ns') != v) v ? el.setAttribute('data-ns', v) : el.removeAttribute('data-ns')
   }
+}
+// deja de seguir un hijo (desconectado o sin el atributo); el padre sigue observado si otro lo usa
+function drop(el) {
+  const p = E.get(el)
+  E.delete(el); ro?.unobserve(el)
+  if (p && ![...E.values()].includes(p)) { HOSTS.delete(p); ro.unobserve(p) }
 }
 const schedule = () => { raf ||= requestAnimationFrame(run) }
 /** Recalcula todas las formas concéntricas (p. ej. tras cambiar la forma del padre por JS). */
@@ -185,8 +195,11 @@ if (typeof document != 'undefined') {
     new MutationObserver(ms => {
       for (const m of ms) {
         m.addedNodes.forEach(scan)
-        if (m.type == 'attributes' && m.target.getAttribute?.('data-ns-concentric') == null && [...E.values()].includes(m.target)) schedule()
-        if (m.type == 'attributes' && m.attributeName == 'data-ns-concentric') add(m.target)
+        if (m.type != 'attributes') continue
+        const t = m.target
+        if (m.attributeName == 'data-ns-concentric') t.hasAttribute('data-ns-concentric') ? add(t) : drop(t)
+        // el padre cambia de forma o de radio; el hijo cambia de clase (--ns-concentric-min)
+        else if (HOSTS.has(t) || (m.attributeName == 'class' && E.has(t))) schedule()
       }
     }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-ns', 'data-ns-concentric', 'class'] })
     addEventListener('resize', schedule, { passive: true })

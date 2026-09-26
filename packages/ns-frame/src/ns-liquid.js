@@ -722,6 +722,8 @@ function glLens(out) {
 const px = (v, L) => { v = String(v || '0').split(' ')[0]; return v.endsWith('%') ? parseFloat(v) * L / 100 : parseFloat(v) || 0 }
 let uid = 0
 const REG = new WeakMap(), BUDGET = { t: -1, used: 0 }
+// vidrio congelado (WebGL): mientras el elemento tenga una de estas clases, no se repinta
+const HOLD = '.ns-glass-hold,.ns-sheet-drag'
 // firma de lo que pinta una imagen o un fondo: si no cambia, la copia no se rehace
 const sig = n => { const s = getComputedStyle(n); return n.tagName == 'IMG' ? [n.currentSrc || n.src, s.objectFit, s.objectPosition, s.filter].join('|') : [s.backgroundImage, s.backgroundSize, s.backgroundPosition, s.backgroundColor, s.filter].join('|') }
 const mk = (tag, a = {}) => { const e = document.createElementNS(SVG, tag); for (const k in a) e.setAttribute(k, a[k]); return e }
@@ -867,12 +869,13 @@ export function liquid(el, o = {}) {
   let G = null, glc = null, gsrc = null, gsz = null, gW = 1, gU = '', shaped = '', gTok = 0
   // rasterizado de la página (glr): su canvas, la clave de lo último pintado y los contadores de
   // cambios (mutaciones y desplazamientos: una lista que se mueve por detrás de una barra fija)
-  let rcv = null, rKey = '', mutT = 0, scrT = 0, scrAt = 0, settle = 0
+  // (drawn: la clave del último dibujo; se vacía cuando cambia la textura)
+  let rcv = null, rKey = '', mutT = 0, scrT = 0, scrAt = 0, settle = 0, drawn = ''
   const glUp = () => { try { glc ||= Object.assign(document.createElement('canvas'), { className: 'ns-liquid-gl' }); G ||= glLens(glc) } catch { } return !!G }
   const unmirror = () => {
     cancelAnimationFrame(live); live = 0; smo?.disconnect(); smo = null; clearTimeout(redo); cancelAnimationFrame(redo); redo = 0; zone = null
     if (kind == 'gl' || kind == 'glr') { glc.remove(); glass.style.backdropFilter = ''; lensKey = '' }
-    gTok++; gsrc = null; gU = ''; G?.drop()
+    gTok++; gsrc = null; gU = ''; drawn = ''; G?.drop()
     copy.replaceChildren(); copy.removeAttribute('style'); cc = null; kind = ''; placed = ''
   }
   const mirror = n => {
@@ -942,7 +945,7 @@ export function liquid(el, o = {}) {
         gW = G.bg(src, w, h, t == 'IMG' ? gU : '')
       } catch { return }
       cancelAnimationFrame(live); live = 0
-      kind = 'gl'; gsrc = src; gsz = [w, h]; shaped = ''
+      kind = 'gl'; gsrc = src; gsz = [w, h]; shaped = ''; drawn = ''
       copy.replaceChildren(); copy.style.display = 'none'; hold.append(glc)
       back.style.filter = ''; glass.style.backdropFilter = 'none'
       glc.style.filter = getComputedStyle(n).filter.replace('none', '')
@@ -965,14 +968,19 @@ export function liquid(el, o = {}) {
       live = 0
       if (kind != 'gl' || !vis || back.hidden) return
       try { G.bg(gsrc, gsz[0], gsz[1]) } catch { }
-      glFrame(); glLive()
+      drawn = ''; glFrame(); glLive()
     })
   }
   // un fotograma de la lente: el mapa de la forma actual (sólo si cambió) y la imagen colocada donde
   // está el original respecto a la capa (con su object-fit)
   const glFrame = () => {
     if ((kind != 'gl' && kind != 'glr') || !now || !G || !mirrored) return
-    const q = Math.min(2, devicePixelRatio || 1), W = Math.max(1, Math.round(now.bw * q)), H = Math.max(1, Math.round(now.bh * q))
+    // quieto a propósito (una hoja que se arrastra): se queda lo último pintado, que va con el
+    // elemento; bajo un desenfoque grande no se nota y no hay rasterizado ni copia por fotograma
+    if (el.matches(HOLD)) return
+    // (con un desenfoque grande, a 1 px por px: el detalle de más densidad no se vería y la copia
+    // de cada fotograma cuesta cuatro veces menos)
+    const q = Math.min(2, devicePixelRatio || 1), qo = V.blur >= 10 ? 1 : q, W = Math.max(1, Math.round(now.bw * qo)), H = Math.max(1, Math.round(now.bh * qo))
     if (glc.width != W || glc.height != H) { glc.width = W; glc.height = H; shaped = '' }
     Object.assign(glc.style, { width: r2(now.bw) + 'px', height: r2(now.bh) + 'px' })
     const f = now.f, sk = [now.d, now.bw, now.bh, now.depth, now.hard, now.zoom, now.edge].join('|')
@@ -982,7 +990,7 @@ export function liquid(el, o = {}) {
       // la zona de la capa en pantalla, rasterizada si algo cambió (posición, página o desplazamiento)
       // (en movimiento —desplazamiento o transición— la página se pinta a 1×: bajo el desenfoque no se
       // nota y el fotograma cabe; al detenerse se repinta una vez a la densidad de la pantalla)
-      const moving = performance.now() - scrAt < 160 || active.size > 0, qr = moving ? (V.blur >= 8 ? .5 : 1) : q
+      const moving = performance.now() - scrAt < 160 || active.size > 0, qr = V.blur >= 12 ? .5 : moving ? (V.blur >= 8 ? .5 : 1) : q
       if (moving) { clearTimeout(settle); settle = setTimeout(() => { mutT++; wake() }, 200) }
       const R = { left: OX + LX * SC, top: OY + LY * SC, width: now.bw * SC, height: now.bh * SC }, k = [R.left, R.top, R.width, R.height].map(r2).join() + '|' + mutT + '|' + scrT + '|' + qr
       if (k != rKey) {
@@ -994,11 +1002,15 @@ export function liquid(el, o = {}) {
       ix = R.left; iy = R.top; iw = R.width; ih = R.height
     } else [ix, iy, iw, ih] = fitRect(mirrored, mirrored.getBoundingClientRect(), gsz[0], gsz[1])
     const x0 = (ix - OX) / SC - LX, y0 = (iy - OY) / SC - LY, w = iw / SC, h = ih / SC, b = V.blur
+    // si nada cambió (otro vidrio se mueve cerca, una transición que no lo toca), ni dibujo ni copia
+    const dk = [W, H, r2(x0), r2(y0), r2(w), r2(h), shaped, rKey, gW, b, V.sat, now.lensPx, now.light].join()
+    if (dk == drawn) return
+    drawn = dk
     const ok = G.draw({ w: now.bw, h: now.bh, T: [1 / w, 1 / h, -x0 / w, -y0 / h], M: [f.X0, f.Y0, f.nx * f.step, f.ny * f.step],
       k: now.lensPx, z: b * 2, l: Math.max(0, Math.log2(Math.max(1, b * gW / w)) - 2), sat: V.sat,
       rim: now.light ? [1.04, 1.05, 1.1] : [1.22, 1.06, 1.15] })
     // (el sistema reclamó el contexto: la lente se monta de nuevo con uno nuevo)
-    if (ok === false) { G = null; mirrored = null; stale() }
+    if (ok === false) { G = null; mirrored = null; drawn = ''; stale() }
   }
   // vídeo y canvas: cada fotograma, con su object-fit, sólo mientras el grupo está a la vista
   const frames = n => {
@@ -1106,9 +1118,10 @@ export function liquid(el, o = {}) {
     copy.replaceChildren(root)
     syncScroll()
   }
-  // cambios que no se ven en la escena: los del propio grupo y los de otros grupos líquidos (sus
-  // capas y sus piezas se mueven en cada fotograma)
-  const quiet = t => { const e = t.nodeType == 1 ? t : t.parentElement; return !e || el.contains(e) || !!e.closest('.ns-liquid') }
+  // cambios que no se ven en la escena: los del propio grupo, los de otros grupos líquidos (sus
+  // capas y sus piezas se mueven en cada fotograma) y las capas marcadas con data-ns-quiet (un velo
+  // o una silueta fijos que se animan encima: la página de debajo no cambia)
+  const quiet = t => { const e = t.nodeType == 1 ? t : t.parentElement; return !e || el.contains(e) || !!e.closest('.ns-liquid,[data-ns-quiet]') }
   // rehacer la escena, como mucho cuatro veces por segundo y en un momento libre
   const later = () => { redo ||= setTimeout(() => { const f = () => { redo = 0; if (kind == 'scene' && mirrored) scene(mirrored) }; globalThis.requestIdleCallback ? requestIdleCallback(f, { timeout: 300 }) : f() }, 250) }
   // lo que el original tiene desplazado por dentro, también (y al desplazarse, sin rehacer el clon)

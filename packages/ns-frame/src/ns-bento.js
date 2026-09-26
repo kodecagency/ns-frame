@@ -50,7 +50,10 @@ function layout() {
     const gap = parseFloat(cs.columnGap) || 0, w = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
     // un bento sigue siendo bento en móvil: al menos --ns-cols-min columnas (2) mientras cada una mida ≥ 130 px
     const lo = Math.min(max, parseInt(cs.getPropertyValue('--ns-cols-min')) || 2), fit = Math.floor((w + gap) / (min + gap))
-    jobs.push({ el, kids, cols: Math.max(w + gap >= lo * (130 + gap) ? lo : 1, Math.min(max, fit)), rects: kids.map(k => k.getBoundingClientRect()) })
+    // la caja de layout, no la de pantalla: una celda que entra con una animación (sube, escala) no
+    // debe cambiar qué esquinas tocan el contorno, y al terminar no habría otra medida que lo arreglara
+    const box = k => { const x = k.offsetLeft, y = k.offsetTop; return { left: x, top: y, right: x + k.offsetWidth, bottom: y + k.offsetHeight } }
+    jobs.push({ el, kids, cols: Math.max(w + gap >= lo * (130 + gap) ? lo : 1, Math.min(max, fit)), rects: kids.map(box) })
   }
   // 2) columnas (puede cambiar el layout: se vuelve a medir en el siguiente frame)
   let again = 0

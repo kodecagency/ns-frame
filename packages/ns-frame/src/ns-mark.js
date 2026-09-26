@@ -68,15 +68,18 @@ function run() {
   raf = 0
   const jobs = []
   for (const [el, st] of M) {
-    if (!el.isConnected) { st.svg?.remove(); M.delete(el); continue }
+    // desconectado o sin el atributo: el dibujo se va con él
+    if (!el.isConnected || !el.hasAttribute('data-ns-mark')) { st.svg?.remove(); M.delete(el); io?.unobserve(el); continue }
     const host = st.host ||= hostOf(el)
     if (!host) continue
     const H = host.getBoundingClientRect(), cs = getComputedStyle(el)
     const [py, px = py] = (cs.getPropertyValue('--ns-mark-pad').trim() || '2px 6px').split(/\s+/).map(parseFloat)
     const R = parseFloat(cs.getPropertyValue('--ns-mark-round')) || 8
-    // origen: la esquina del padding del anfitrión (donde se coloca un hijo absoluto)
-    const ox = H.left + host.clientLeft - host.scrollLeft, oy = H.top + host.clientTop - host.scrollTop
-    const rects = [...el.getClientRects()].map(q => ({ left: q.left - ox, right: q.right - ox, top: q.top - oy, bottom: q.bottom - oy, width: q.width, height: q.height }))
+    // origen: la esquina del padding del anfitrión (donde se coloca un hijo absoluto); las medidas se
+    // pasan a px sin transformar, para que un anfitrión escalado (hover, entrada) no deforme el dibujo
+    const k = host.offsetWidth ? H.width / host.offsetWidth || 1 : 1
+    const ox = H.left + (host.clientLeft - host.scrollLeft) * k, oy = H.top + (host.clientTop - host.scrollTop) * k
+    const rects = [...el.getClientRects()].map(q => ({ left: (q.left - ox) / k, right: (q.right - ox) / k, top: (q.top - oy) / k, bottom: (q.bottom - oy) / k, width: q.width / k, height: q.height / k }))
     // el svg es hermano del resaltado: sus variables (color, trazo, tiempo) se copian
     const vars = ['--ns-mark', '--ns-mark-border', '--ns-mark-width', '--ns-mark-time'].map(k => [k, cs.getPropertyValue(k).trim()])
     jobs.push({ el, st, host, polys: outline(rects, px, py), R, vars })
@@ -127,6 +130,7 @@ if (typeof document != 'undefined') {
     new MutationObserver(ms => {
       for (const m of ms) {
         m.addedNodes.forEach(scan)
+        if (m.attributeName == 'data-ns-mark' && m.target.hasAttribute('data-ns-mark')) add(m.target)
         for (const el of M.keys()) if (m.type == 'attributes' ? m.target.contains(el) : el.contains(m.target)) { schedule(); break }
       }
     }).observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['class', 'data-ns-mark'] })

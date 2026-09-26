@@ -14,7 +14,7 @@ import { css } from './ns-css.js'
 // distinta altura deja el contenido "fantasma" duplicado
 // y las dos capturas cubren el grupo (origen y destino suelen tener proporciones distintas)
 const CSS_ = '@layer ns{html.ns-vt-run::view-transition-old(*),html.ns-vt-run::view-transition-new(*){height:100%;object-fit:cover;object-position:top}html.ns-vt-run::view-transition-old(root){animation:none;opacity:0}html.ns-vt-run::view-transition-new(root){animation:none}}'
-let n = 0, styled
+let n = 0, styled, live = 0
 const shapeCss = el => el && css(shapeOf(el) || el.getAttribute('data-ns') || el.getAttribute('shape') || '')
 
 /**
@@ -27,6 +27,8 @@ export async function morph(from, update, to, { duration = 480, easing = 'cubic-
   if (!styled) { styled = 1; styles(CSS_) }
   const name = 'ns-vt-' + ++n, a = shapeCss(from), root = document.documentElement.classList
   let dest
+  // la clase se queda mientras haya alguna transición: una segunda que interrumpe a la primera no la pierde
+  live++
   root.add('ns-vt-run')
   from.style.viewTransitionName = name
   const vt = document.startViewTransition(async () => {
@@ -43,6 +45,8 @@ export async function morph(from, update, to, { duration = 480, easing = 'cubic-
     if (clip.length) document.documentElement.animate({ clipPath: clip.length > 1 ? clip : [clip[0], clip[0]] }, { duration, easing, pseudoElement: `::view-transition-group(${name})` })
   } catch {}
   await vt.finished.catch(() => {})
-  root.remove('ns-vt-run')
+  --live || root.remove('ns-vt-run')
   if (dest) dest.style.viewTransitionName = ''
+  // un error dentro de update() llega a quien llamó (la transición ya se ha limpiado)
+  return vt.updateCallbackDone
 }

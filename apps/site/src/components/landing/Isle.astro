@@ -2,8 +2,9 @@
 // Isla (móvil), hecha con ns-frame/isle: una cápsula y una hoja.
 // · La cápsula muestra la sección actual y su posición; al bajar se encoge a un icono. Es un
 //   redondeo simple (vía rápida nativa de ns-frame): plegarla no recalcula ninguna forma.
-// · Al tocarla, la hoja sube desde abajo (sólo `translate`) y la cápsula se desvanece. La hoja ya
-//   tiene su tamaño final y se prepara al apoyar el dedo: al abrirse ya está pintada.
+// · Al tocarla, la cápsula se convierte en la hoja como la Dynamic Island (ns-frame/isle): una
+//   silueta de vidrio crece de una a otra con un muelle y el contenido entra escalonado. La hoja
+//   se prepara al apoyar el dedo, oculta en su sitio: al aparecer, su vidrio ya está pintado.
 // · La hoja se arrastra como en una app nativa y se cierra al soltarla o lanzarla.
 // · En la hoja, la sección actual es la única pieza con chaflán y luz en U.
 // · Deslizar la cápsula a los lados salta a la sección anterior o siguiente.

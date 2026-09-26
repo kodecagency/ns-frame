@@ -3,7 +3,7 @@
 // Se recalcula sólo cuando cambia el tamaño de algún extremo, la altura del documento o la ventana.
 
 const NS = 'http://www.w3.org/2000/svg', L = new Map()
-let svg, ro, raf
+let svg, ro, raf, raf2
 
 const mk = (tag, a) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); return e }
 const schedule = () => { raf ||= requestAnimationFrame(draw) }
@@ -25,32 +25,57 @@ function add(el) {
     // observa el <body> con ResizeObserver: al ser tan poco profundo, cualquier cambio de altura
     // durante otro ResizeObserver quedaba sin entregar y el navegador lo lanzaba como error global
     // ("ResizeObserver loop…"). Se compara la altura en eventos baratos y sólo se redibuja si cambió.
+    // fotograma propio (no el de draw): si coincidiera con un cambio de tamaño, ése se perdería
     let H = 0
-    const check = () => { raf ||= requestAnimationFrame(() => { raf = 0; const h = document.documentElement.scrollHeight; if (h != H) { H = h; draw() } }) }
+    const check = () => { raf2 ||= requestAnimationFrame(() => { raf2 = 0; const h = document.documentElement.scrollHeight; if (h != H) { H = h; schedule() } }) }
     addEventListener('resize', schedule)
-    addEventListener('scroll', check, { passive: true })
+    addEventListener('scroll', e => {
+      if (e.target == document) return check()
+      // el scroll de un contenedor mueve los extremos que lleva dentro
+      for (const [el, o] of L) if (e.target.contains?.(el) != e.target.contains?.(o.t)) return schedule()
+    }, { passive: true, capture: true })
     addEventListener('load', check, true)
     document.fonts?.ready.then(schedule)
   }
   const g = mk('g'), p = mk('path', { fill: 'none', 'stroke-linejoin': 'round' }), a = mk('circle', { r: 2.5 }), b = mk('circle', { r: 4, fill: 'none' })
   g.append(p, a, b)
   svg.append(g)
-  const o = { g, p, a, b, t: target(el), on: 0 }
+  const o = { g, p, a, b, t: null, on: 0 }
+  o.in = () => { o.on = 1; schedule() }; o.out = () => { o.on = 0; schedule() }
   L.set(el, o)
-  const hi = v => () => { o.on = v; schedule() }
-  for (const n of [el, o.t]) if (n) { n.addEventListener('pointerenter', hi(1)); n.addEventListener('pointerleave', hi(0)); ro.observe(n) }
+  hook(el, o, 1)
+  bind(o, target(el))
   if (el.hasAttribute('data-ns-link-flow') && !matchMedia('(prefers-reduced-motion: reduce)').matches)
     p.animate([{ strokeDashoffset: 0 }, { strokeDashoffset: -18 }], { duration: 900, iterations: Infinity })
   schedule()
 }
+// un extremo: resaltado al pasar el puntero y redibujo al cambiar de tamaño
+function hook(n, o, on) {
+  n[on ? 'addEventListener' : 'removeEventListener']('pointerenter', o.in)
+  n[on ? 'addEventListener' : 'removeEventListener']('pointerleave', o.out)
+  on ? ro.observe(n) : ro.unobserve(n)
+}
+// el destino puede aparecer después, desaparecer o cambiar (otro selector en data-ns-link)
+function bind(o, t) {
+  if (t == o.t) return
+  o.t && hook(o.t, o, 0)
+  o.t = t
+  t && hook(t, o, 1)
+}
+function drop(el) {
+  const o = L.get(el)
+  hook(el, o, 0); bind(o, null); o.g.remove(); L.delete(el)
+}
 
 function draw() {
   raf = 0
-  const sx = scrollX, sy = scrollY, jobs = []
-  // 1) lecturas
+  const jobs = []
+  if (!svg) return
+  // 1) lecturas. El origen es el propio svg: vale aunque el <body> tenga margen o sea relative
+  const S = svg.getBoundingClientRect(), sx = -S.left, sy = -S.top
   for (const [el, o] of L) {
-    if (!el.isConnected) { o.g.remove(); L.delete(el); continue }
-    if (!o.t?.isConnected) o.t = target(el)
+    if (!el.isConnected || !el.hasAttribute('data-ns-link')) { drop(el); continue }
+    if (!o.t?.isConnected) bind(o, target(el))
     if (!o.t) { o.g.style.display = 'none'; continue }
     const cs = getComputedStyle(el)
     jobs.push([o, el.getBoundingClientRect(), o.t.getBoundingClientRect(), cs.getPropertyValue('--ns-link').trim() || '#3de0ff',
@@ -85,8 +110,14 @@ if (typeof document != 'undefined') {
   const scan = n => { if (n.nodeType != 1) return; n.matches('[data-ns-link]') && add(n); n.querySelectorAll('[data-ns-link]').forEach(add) }
   const boot = () => {
     scan(document.body)
-    new MutationObserver(ms => { for (const m of ms) { m.addedNodes.forEach(scan); if (L.size && (m.removedNodes.length || m.addedNodes.length)) schedule() } })
-      .observe(document.body, { childList: true, subtree: true })
+    new MutationObserver(ms => {
+      for (const m of ms) {
+        m.addedNodes.forEach(scan)
+        // otro destino en data-ns-link (o se quita: la línea se va en el siguiente dibujo)
+        if (m.type == 'attributes') { const o = L.get(m.target); o ? m.target.hasAttribute('data-ns-link') && bind(o, target(m.target)) : scan(m.target) }
+        if (L.size) schedule()
+      }
+    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-ns-link'] })
   }
   document.readyState == 'loading' ? addEventListener('DOMContentLoaded', boot) : boot()
 }

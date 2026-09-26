@@ -46,7 +46,7 @@ export function sheet(el, { handle = el, onClose, onProgress, threshold = 6 } = 
   const down = e => {
     if (e.button > 0 || id != null) return
     // atrapar el panel a medio camino: se sigue desde donde está, sin saltos
-    if (anim) { const v = anim.from + (anim.to - anim.from) * (anim.effect?.getComputedTiming().progress ?? 1); anim.cancel(); anim = null; put(v) }
+    if (anim) { const v = anim.from + (anim.to - anim.from) * (anim.effect?.getComputedTiming().progress ?? 1); anim.cancel(); anim = null; el.classList.remove('ns-glass-hold'); put(v) }
     id = e.pointerId; y0 = e.clientY - y; drag = false; samples.length = 0
     h = el.getBoundingClientRect().height || 1
   }
@@ -72,7 +72,9 @@ export function sheet(el, { handle = el, onClose, onProgress, threshold = 6 } = 
     const dur = clamp(Math.abs(target - from) * 1.1, 180, 420)
     const a = anim = el.animate([{ translate: `0 ${from}px` }, { translate: `0 ${target}px` }], { duration: dur, easing: EASE, fill: 'forwards' })
     a.from = from; a.to = target
-    a.onfinish = () => { if (anim != a) return; anim = null; put(target); a.cancel(); done?.() }
+    // (ns-glass-hold: un vidrio de ns-frame no se repinta mientras la hoja se desliza)
+    el.classList.add('ns-glass-hold')
+    a.onfinish = () => { if (anim != a) return; anim = null; put(target); a.cancel(); el.classList.remove('ns-glass-hold'); done?.() }
     // el progreso (para atenuar el fondo) sale de la temporización de la animación, ya con su curva:
     // leer getComputedStyle en cada frame forzaría un recálculo de estilos (micro-parones)
     const tick = () => {
@@ -104,7 +106,7 @@ export function sheet(el, { handle = el, onClose, onProgress, threshold = 6 } = 
   }
   const swallow = ev => { ev.stopPropagation(); ev.preventDefault() }
   const close = () => to(h + 24, () => { onClose?.(); reset() })
-  const reset = () => { anim?.cancel(); anim = null; y = 0; el.style.translate = ''; el.style.removeProperty('--ns-sheet-p') }
+  const reset = () => { anim?.cancel(); anim = null; y = 0; el.style.translate = ''; el.style.removeProperty('--ns-sheet-p'); el.classList.remove('ns-glass-hold') }
 
   handle.addEventListener('pointerdown', down)
   handle.addEventListener('pointermove', move)
