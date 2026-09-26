@@ -31,7 +31,7 @@ toast('Upload failed', { type: 'error', title: 'Network', time: 0, action: { lab
 config({ x: 'end', y: 'bottom', max: 4, time: 5000, shape: 'tl+br bevel 12; radius 2', enter: 'open' })
 ```
 
-Top-layer `popover="manual"` stack, timer drawn on the border (pauses on hover/focus/hidden tab), persistent toasts (`time: 0`) are never evicted, errors use `role="alert"`. Messages are text only.
+Top-layer `popover="manual"` stack, timer drawn on the border (pauses on hover/focus/hidden tab), persistent toasts (`time: 0`) are never evicted, errors use `role="alert"`, closing a toast that holds focus returns focus to where it came from (or to the `back` element option). Messages are text only.
 
 ## Skeletons — `ns-frame/skel`
 

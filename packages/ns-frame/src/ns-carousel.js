@@ -1,6 +1,7 @@
 /*! ns-frame/carousel · carrusel con scroll-snap nativo, flechas e indicadores con forma */
 // <div data-ns-carousel aria-label="Proyectos" style="--ns-slide: 80%"> <article>…</article> … </div>
 // El desplazamiento, el snap y el gesto táctil son del navegador; esto sólo añade los controles.
+// (los puntos, a 24 px entre centros: el tamaño mínimo de objetivo de WCAG 2.2 por separación)
 // · Flechas e indicadores con forma (data-ns); el indicador activo se alarga con morph.
 // · Teclado: ← → (invertidas en RTL), Inicio y Fin con el foco en el carrusel.
 // · Accesible (patrón carrusel de WAI-ARIA): región con aria-roledescription, diapositivas
@@ -13,8 +14,8 @@ const CSS_ = `@layer ns{
 [data-ns-carousel]>*{flex:0 0 var(--ns-slide,100%);scroll-snap-align:start;min-width:0}
 .ns-car{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:16px}
 .ns-car>button{font:inherit;font-size:18px;line-height:1;width:40px;height:34px;border:0;cursor:pointer;color:inherit;background:var(--ns-car-bg,rgba(61,224,255,.1));--ns-border:var(--ns-car,#3de0ff)}
-.ns-car>button:disabled{opacity:.35;cursor:default}
-.ns-car>span{display:flex;gap:8px;align-items:center}
+.ns-car>button[aria-disabled=true]{opacity:.35;cursor:default}
+.ns-car>span{display:flex;gap:14px;align-items:center}
 .ns-car>span>button{width:10px;height:10px;padding:0;border:0;cursor:pointer;background:var(--ns-car-dot,rgba(255,255,255,.25));transition:width .35s cubic-bezier(.3,.7,.3,1)}.ns-car>span>button[aria-current=true]{width:28px;background:var(--ns-car,#3de0ff)}
 @media (prefers-reduced-motion:reduce){[data-ns-carousel]{scroll-behavior:auto}.ns-car>span>button{transition:none}}}`
 
@@ -36,7 +37,9 @@ function init(sc) {
   slides.forEach((s, i) => { s.setAttribute('role', 'group'); s.setAttribute('aria-roledescription', 'diapositiva'); s.setAttribute('aria-label', `${i + 1} de ${n}`) })
 
   const bar = make('div', { class: 'ns-car' }), dots = make('span')
-  const arrow = (d, label, txt) => { const b = make('button', { type: 'button', 'aria-label': label, 'data-ns': shape }); b.textContent = txt; b.onclick = () => go(cur + d); return b }
+  // (en los extremos, aria-disabled y no disabled: una flecha enfocada que se desactiva perdería el
+  // foco, que saltaría al principio de la página)
+  const arrow = (d, label, txt) => { const b = make('button', { type: 'button', 'aria-label': label, 'data-ns': shape }); b.textContent = txt; b.onclick = () => b.getAttribute('aria-disabled') != 'true' && go(cur + d); return b }
   const prev = arrow(-1, 'Anterior', '‹'), next = arrow(1, 'Siguiente', '›')
   const marks = slides.map((_, i) => { const b = make('button', { type: 'button', 'aria-label': `Ir a la diapositiva ${i + 1}`, 'data-ns': 'all bevel 3' }); b.onclick = () => go(i); return b })
   dots.append(...marks)
@@ -59,8 +62,8 @@ function init(sc) {
     const P = slides.map(s => off(s) + x).filter(p => p <= max + 2)
     if (P.at(-1) < max - 2) P.push(max)
     const m = P.length, d = P.map(p => Math.abs(p - x)), i = d.indexOf(Math.min(...d))
-    prev.disabled = x < 2
-    next.disabled = x > max - 2
+    prev.setAttribute('aria-disabled', x < 2)
+    next.setAttribute('aria-disabled', x > max - 2)
     marks.forEach((b, k) => { b.hidden = k >= m; b.setAttribute('aria-current', k == i) })
     cur = i
   }

@@ -86,6 +86,8 @@
 - `concentric`: con huecos distintos en cada lado, la esquina usa el menor (una foto con 6 px al lado y 70 abajo ya no hereda un chaflán en la esquina lejana).
 - `mark`: el resaltado se redibuja al cambiar una clase (color, margen, radio), no sólo al cambiar el texto.
 - Núcleo: fuera de pantalla sólo se pausa con `animation-play-state` (sin `pauseAnimations()` del SVG, que ya no hacía falta).
+- `carousel`: al llegar al final, la flecha enfocada queda con `aria-disabled` en lugar de `disabled` (antes el foco se perdía al principio de la página); los puntos tienen 14px de separación para un objetivo de 24px (WCAG 2.5.8).
+- `toast`: al cerrar un aviso con el foco dentro (botón ×, acción o Esc), el foco vuelve al elemento de donde venía (o a `back`, si se pasa en las opciones) en lugar de caer al principio de la página.
 
 ### Sitio
 - Demo de vidrio líquido sobre una foto: barra con lente clara que se estira y acciones que se separan en gotas de vidrio; «Vidrio / Sólido».

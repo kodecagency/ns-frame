@@ -98,10 +98,14 @@ export function toast(msg, o = {}) {
   const hold = v => () => { held = v; v ? t._p() : t._r() }
   t.addEventListener('pointerenter', hold(1)); t.addEventListener('pointerleave', hold(0))
   t.addEventListener('focusin', hold(1)); t.addEventListener('focusout', hold(0))
+  // de dónde venía el foco al entrar en el aviso: al cerrarse con el foco dentro, vuelve allí (si
+  // no, caería al principio de la página)
+  t.addEventListener('focusin', e => { if (e.relatedTarget && !t.contains(e.relatedTarget)) t._back = e.relatedTarget })
   t._x = () => {
     if (t._gone) return
     t._gone = 1
     t._p()
+    if (t.contains(document.activeElement)) (t._back?.isConnected ? t._back : o.back)?.focus?.({ preventScroll: true })
     close(t, C.enter, 260).then(() => flip(() => t.remove())).then(() => b.children.length || hide(b))
   }
   if (time) { t.setAttribute('data-ns-motion', 'progress'); t.style.setProperty('--ns-progress', '100') }
