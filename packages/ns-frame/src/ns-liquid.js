@@ -1283,7 +1283,9 @@ export function liquid(el, o = {}) {
     if (gOn) { setA(glow, { stroke: V.glow, 'stroke-width': r2(gs) }); gBlur.setAttribute('stdDeviation', r2(gs / 2.4)) }
     if (sOn) shadow.setAttribute('fill', V.shadow)
     // segundo reflejo: un contorno 1,6 px hacia dentro (sólo en vidrio)
-    if (g && d) rim.setAttribute('filter', `url(#${material({ rim: true, b: V.hard ? .8 : 1.3, s: 1.3, ks: +(.95 * V.rim).toFixed(2), n: 110, back: V.back, backColor: V.backColor })})`)
+    // (en Chromium la lente ya ilumina el canto dentro de su filtro: un segundo contorno entero, con su
+    // reflejo opuesto, se leía como una burbuja dentro de otra; allí queda sólo el brillo, tenue)
+    if (g && d) rim.setAttribute('filter', `url(#${material({ rim: true, b: V.hard ? .8 : 1.3, s: 1.3, ks: +(.95 * V.rim * (LENS && lensPx ? .5 : 1)).toFixed(2), n: 110, back: LENS && lensPx ? .05 : V.back, backColor: V.backColor })})`)
     el.classList.toggle('ns-glass', g)
     // (estilo en línea: el relleno de la capa en CSS ganaría a un atributo fill)
     path.style.fill = g ? `url(#${id}s)` : ''

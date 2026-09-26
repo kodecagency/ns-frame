@@ -1,10 +1,9 @@
 ---
 // Isla (móvil): el componente ns-frame/isle tal cual. Todo el aspecto y el comportamiento vienen de
 // la librería (cápsula, hoja, transformación, arrastre, hueco al pie de la página); aquí sólo el
-// marcado, las fuentes de la marca y el acento de la sección actual (chaflán y luz en U).
+// marcado, las fuentes de la marca y la luz en U de la sección actual.
 import Icon from '../Icon.astro'
 import { SECTIONS, LINKS } from '../../data/sections'
-const CUR = 'tl+br bevel 14; tr+bl round 16; radius 2'
 ---
 <nav class="isle" id="isle" aria-label="Secciones" data-ns-isle data-ns-glass>
   <button type="button" data-ns-isle-toggle aria-controls="isle-panel">
@@ -17,7 +16,7 @@ const CUR = 'tl+br bevel 14; tr+bl round 16; radius 2'
   <header data-ns-isle-handle><b>ns-frame</b><button type="button" data-ns-isle-close aria-label="Cerrar"></button></header>
   <ul data-ns-isle-links>
     {SECTIONS.map((s, i) => (
-      <li><a href={`#${s.id}`} data-ns={i == 0 ? CUR : 'all squircle 16'} class:list={[{ 'ns-u': i == 0 }]}><Icon d={s.icon} /><span>{s.name}</span></a></li>
+      <li><a href={`#${s.id}`} class:list={[{ 'ns-u': i == 0 }]}><Icon d={s.icon} /><span>{s.name}</span></a></li>
     ))}
   </ul>
   <div data-ns-isle-actions><a href={LINKS.install}>Empezar</a><a href={LINKS.github}>GitHub</a></div>
@@ -26,7 +25,6 @@ const CUR = 'tl+br bevel 14; tr+bl round 16; radius 2'
 <script>
   import { isle } from 'ns-frame/isle'
   import { jump } from '../../scripts/jump'
-  const CUR = 'tl+br bevel 14; tr+bl round 16; radius 2', TILE = 'all squircle 16'
   // sólo en pantallas donde la isla se ve (en escritorio manda la barra superior)
   const mq = matchMedia('(max-width: 900px)')
   let nav: ReturnType<typeof isle> | null = null
@@ -37,11 +35,8 @@ const CUR = 'tl+br bevel 14; tr+bl round 16; radius 2'
     nav ||= isle(document.getElementById('isle')!, {
       pos: (i, n) => `${i + 1} de ${n} · desliza`,
       go: t => jump(t, { smooth: true, focus: true }),
-      // la sección actual cambia de forma en la hoja
-      onChange: (i, a) => a.closest('ul')!.querySelectorAll('a').forEach((x, j) => {
-        x.classList.toggle('ns-u', j == i)
-        x.setAttribute('data-ns', j == i ? CUR : TILE)
-      }),
+      // la sección actual, con la luz en U de ns-frame (su forma la pone la isla)
+      onChange: (i, a) => a.closest('ul')!.querySelectorAll('a').forEach((x, j) => x.classList.toggle('ns-u', j == i)),
       onOpen: () => navigator.vibrate?.(6),
     })
   }

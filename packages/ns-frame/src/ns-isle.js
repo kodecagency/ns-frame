@@ -42,16 +42,14 @@ const CSS = `@layer ns{
 .ns-isle-morph>i:nth-child(-n+4){width:32px;height:32px}
 .ns-isle-morph>i:nth-child(5),.ns-isle-morph>i:nth-child(7){width:100px;height:32px}
 .ns-isle-morph>i:nth-child(6){width:100px;height:100px}
-.ns-isle-edge{position:absolute;left:0;top:0;opacity:0;--g:var(--ns-isle-glow,rgba(255,255,255,.5));--w:var(--ns-isle-rim,rgba(255,255,255,.22))}
-.ns-isle-edge>i{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform;box-sizing:border-box}
-.ns-isle-edge>i:nth-child(-n+4){width:32px;height:32px;border:0 solid var(--w)}
-.ns-isle-edge>i:nth-child(1){border-width:1.5px 0 0 1.5px;border-top-left-radius:100%}
-.ns-isle-edge>i:nth-child(2){border-width:1.5px 1.5px 0 0;border-top-right-radius:100%}
-.ns-isle-edge>i:nth-child(3){border-width:0 1.5px 1.5px 0;border-bottom-right-radius:100%;border-color:var(--g)}
-.ns-isle-edge>i:nth-child(4){border-width:0 0 1.5px 1.5px;border-bottom-left-radius:100%;border-color:var(--g)}
-.ns-isle-edge>i:nth-child(5){width:100px;height:1.5px;background:var(--w)}
-.ns-isle-edge>i:nth-child(6){width:100px;height:1.5px;background:var(--g);box-shadow:0 0 10px color-mix(in srgb,var(--g) 60%,transparent)}
-.ns-isle-edge>i:nth-child(n+7){width:1.5px;height:100px;background:linear-gradient(to top,var(--g),color-mix(in srgb,var(--g) 40%,transparent) 45%,var(--w))}
+.ns-isle-light{position:absolute;left:0;top:0;overflow:visible;opacity:0;--g:var(--ns-isle-glow,rgba(255,255,255,.75));--w:var(--ns-isle-rim,rgba(255,255,255,.13))}
+.ns-isle-light rect{fill:none;vector-effect:non-scaling-stroke}
+.ns-isle-light .b{stroke:var(--w);stroke-width:1}
+.ns-isle-light :is(.r,.h){stroke:var(--g);stroke-dasharray:9 41;stroke-linecap:round;animation:ns-isle-run 2.2s linear infinite}
+.ns-isle-light .r{stroke-width:1.5}
+.ns-isle-light .h{stroke-width:14;opacity:.28}
+@keyframes ns-isle-run{to{stroke-dashoffset:-100}}
+.ns-isle-morph:not([style*=block]) .ns-isle-light :is(.r,.h){animation-play-state:paused}
 .ns-isle-morph>i:nth-child(1){border-top-left-radius:100%}.ns-isle-morph>i:nth-child(2){border-top-right-radius:100%}
 .ns-isle-morph>i:nth-child(3){border-bottom-right-radius:100%}.ns-isle-morph>i:nth-child(4){border-bottom-left-radius:100%}
 .ns-isle-m [data-ns-isle-toggle]{transition:opacity .16s}
@@ -86,7 +84,8 @@ html.ns-has-isle body{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
 :where([data-ns-isle-handle]) :where(b,h2,h3){font-size:24px;font-weight:700;line-height:1;letter-spacing:-.02em;margin:0}
 :where([data-ns-isle-close]){width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.1);color:inherit;display:grid;place-items:center;cursor:pointer}
 :where([data-ns-isle-links]){display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0;padding:0;list-style:none}
-:where([data-ns-isle-links]) a{display:flex;flex-direction:column;justify-content:space-between;gap:10px;padding:12px;min-height:78px;border-radius:16px;background:rgba(255,255,255,.06);color:inherit;text-decoration:none;font-size:14px;font-weight:500;line-height:1.2;transition:background-color .2s}
+:where([data-ns-isle-links]) a:not([data-ns]){border-radius:16px}
+:where([data-ns-isle-links]) a{--ns-border:rgba(255,255,255,.07);display:flex;flex-direction:column;justify-content:space-between;gap:10px;padding:12px;min-height:78px;background:rgba(255,255,255,.06);color:inherit;text-decoration:none;font-size:14px;font-weight:500;line-height:1.2;transition:background-color .2s}
 :where([data-ns-isle-links]) a svg{width:22px;height:22px;color:var(--ns-isle-muted)}
 :where([data-ns-isle-links]) a[aria-current]{background:rgba(255,255,255,.13)}
 :where([data-ns-isle-links]) a[aria-current] svg{color:var(--ns-isle-fg)}
@@ -106,17 +105,19 @@ let styled = 0
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 const q = (el, s) => el.querySelector(s)
 const r2 = n => Math.round(n * 100) / 100
-// muelle con un rebote leve (≈2,5 %), como las animaciones de sistema de Apple; donde no hay
-// linear(), una curva con el mismo exceso
-// muelle con un rebote leve (≈2,5 %), como las animaciones de sistema de Apple
+// muelle con un rebote leve (≈2,5 %), como las animaciones de sistema de Apple, para abrir
 const spring = t => {
   if (t <= 0) return 0
   if (t >= 1) return 1
   const z = .76, w = 8.4, wd = w * Math.sqrt(1 - z * z)
   return 1 - Math.exp(-z * w * t) * (Math.cos(wd * t) + z * w / wd * Math.sin(wd * t))
 }
+// y sin rebote (amortiguado crítico) para cerrar: la hoja se recoge suave, sin pasarse
+const calm = t => t <= 0 ? 0 : t >= 1 ? 1 : 1 - Math.exp(-7 * t) * (1 + 7 * t)
 const lerp = (a, b, p) => a + (b - a) * p
 const OPEN = 600, CLOSE = 480, N = 32
+// formas de serie de las casillas de secciones: squircle, y la actual con chaflán y redondeo
+const TILE = 'all squircle 16', CUR = 'tl+br bevel 14; tr+bl round 16; radius 2'
 // El recorrido de la silueta, como la Dynamic Island: al abrir, primero se ensancha a los lados (y
 // baja hasta el borde de la hoja) y después crece hacia arriba, cada eje con su muelle; al cerrar,
 // al revés: baja hasta ser una barra y luego se estrecha hasta la cápsula. N+1 muestras del
@@ -124,7 +125,7 @@ const OPEN = 600, CLOSE = 480, N = 32
 const route = (A, B, ra, rb, open) => Array.from({ length: N + 1 }, (_, i) => {
   // (al cerrar, la forma espera un instante a que el contenido se vaya: si no, lo de arriba quedaba
   // un momento fuera de ella)
-  const t = i / N, x = open ? spring(t / .5) : spring((t - .34) / .66), y = open ? spring((t - .12) / .88) : spring((t - .14) / .58)
+  const t = i / N, x = open ? spring(t / .5) : calm((t - .3) / .7), y = open ? spring((t - .12) / .88) : calm((t - .06) / .64)
   const L = lerp(A.left, B.left, x), R = lerp(A.right, B.right, x), Bo = lerp(A.bottom, B.bottom, x), T = Math.min(lerp(A.top, B.top, y), Bo - 1)
   // (el radio sigue a la altura; en una barra baja lo limita su media altura)
   return { left: L, top: T, width: R - L, height: Bo - T, r: lerp(ra, rb, y) }
@@ -139,11 +140,12 @@ const pieces = ({ left: x, top: y, width: w, height: h, r }) => {
   r = Math.max(0, Math.min(r, w / 2, h / 2))
   const k = r2(r / 32), iw = Math.max(0, w - 2 * r) + 1, ih = Math.max(0, h - 2 * r) + 1, T = (a, b, s) => `translate(${r2(a)}px,${r2(b)}px) scale(${s})`
   return [T(x, y, k), T(x + w - r, y, k), T(x + w - r, y + h - r, k), T(x, y + h - r, k),
-    T(x + r - .5, y, `${r2(iw / 100)},${k}`), T(x, y + r - .5, `${r2(w / 100)},${r2(ih / 100)}`), T(x + r - .5, y + h - r, `${r2(iw / 100)},${k}`),
-    // el contorno (luz en U): las cuatro esquinas, las líneas de arriba y abajo y los dos lados
-    T(x, y, k), T(x + w - r, y, k), T(x + w - r, y + h - r, k), T(x, y + h - r, k),
-    T(x + r, y, `${r2((iw - 1) / 100)},1`), T(x + r, y + h - 1.5, `${r2((iw - 1) / 100)},1`),
-    T(x, y + r, `1,${r2((ih - 1) / 100)}`), T(x + w - 1.5, y + r, `1,${r2((ih - 1) / 100)}`)]
+    T(x + r - .5, y, `${r2(iw / 100)},${k}`), T(x, y + r - .5, `${r2(w / 100)},${r2(ih / 100)}`), T(x + r - .5, y + h - r, `${r2(iw / 100)},${k}`)]
+}
+// la muestra del recorrido en el instante ms (interpolada entre las dos más cercanas)
+const sample = (R, ms, dur) => {
+  const f = Math.max(0, Math.min(N, ms / dur * N)), i = Math.min(N - 1, Math.floor(f)), k = f - i, a = R[i], b = R[i + 1]
+  return { left: lerp(a.left, b.left, k), top: lerp(a.top, b.top, k), width: lerp(a.width, b.width, k), height: lerp(a.height, b.height, k), r: lerp(a.r, b.r, k) }
 }
 
 /**
@@ -154,6 +156,8 @@ const pieces = ({ left: x, top: y, width: w, height: h, r }) => {
  *   collapse   px de scroll a partir de los que la cápsula puede plegarse (200; false = nunca)
  *   collapseOn 'up' (por defecto): se pliega al subir y se despliega al bajar; 'down': al revés
  *   swipe      deslizar la cápsula cambia de sección (true)
+ *   tile, current  formas de ns-frame de las casillas de [data-ns-isle-links] y de la actual
+ *              ('all squircle 16' y 'tl+br bevel 14; tr+bl round 16; radius 2'; tile: false = ninguna)
  *   morph      la cápsula se convierte en la hoja (true); false: la hoja entra desde abajo.
  *              Radio final de la silueta: --ns-isle-radius en la hoja (32px)
  *   line       altura de la línea de lectura, en fracción de la ventana (.45): la sección que la
@@ -171,6 +175,8 @@ export function isle(el, o = {}) {
   if (!btn || !panel) throw new Error('ns-isle: falta el botón o la hoja')
   panel.hasAttribute('data-ns-isle-panel') || panel.setAttribute('data-ns-isle-panel', '')
   const links = [...(o.links || panel.querySelectorAll('a[href^="#"]'))]
+  // (formas de serie sólo en la rejilla de la librería, [data-ns-isle-links], y si no se desactivan)
+  const tiles = o.tile !== false && !!q(panel, '[data-ns-isle-links]')
   const targets = links.map(a => document.getElementById(decodeURIComponent(a.hash.slice(1))))
   const icon = q(el, '[data-ns-isle-icon]'), label = q(el, '[data-ns-isle-label]'), posEl = q(el, '[data-ns-isle-pos]')
   const pos = o.pos || ((i, n) => `${i + 1} / ${n}`)
@@ -190,6 +196,8 @@ export function isle(el, o = {}) {
     if (i == cur || !links[i]) return
     cur = i
     links.forEach((a, j) => j == i ? a.setAttribute('aria-current', 'true') : a.removeAttribute('aria-current'))
+    // las casillas de la hoja, con formas de ns-frame: la actual, otra forma (con morph entre ambas)
+    if (tiles) links.forEach((a, j) => a.setAttribute('data-ns', j == i ? o.current || CUR : o.tile || TILE))
     const a = links[i]
     if (label) label.textContent = a.dataset.nsIsleName || a.textContent.trim()
     if (posEl) posEl.textContent = pos(i, links.length)
@@ -232,10 +240,18 @@ export function isle(el, o = {}) {
       mo.setAttribute('data-ns-quiet', '')
       scrim.setAttribute('data-ns-quiet', '')
       for (let i = 0; i < 7; i++) mo.append(document.createElement('i'))
-      const e = document.createElement('div')
-      e.className = 'ns-isle-edge'
-      for (let i = 0; i < 8; i++) e.append(document.createElement('i'))
-      mo.append(e)
+      // La luz del borde: un destello que da la vuelta al contorno (y su halo, recortado a la forma,
+      // que ilumina hacia dentro) sobre un canto tenue. Es un SVG de tres rectángulos que siguen a la
+      // silueta en cada fotograma (sólo cambian cuatro atributos); el destello corre con una
+      // animación CSS del trazo
+      const id = 'nsil' + Math.random().toString(36).slice(2, 7), NS = SVGNS, mk = (t, a = {}) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); return e }
+      const svg = mk('svg', { class: 'ns-isle-light', width: 1, height: 1 }), defs = mk('defs'), cp = mk('clipPath', { id: id + 'c' }), f = mk('filter', { id: id + 'b', x: '-20%', y: '-20%', width: '140%', height: '140%' })
+      f.append(mk('feGaussianBlur', { stdDeviation: 5 }))
+      lr = [mk('rect'), mk('rect', { class: 'b' }), mk('rect', { class: 'h', pathLength: 100, filter: `url(#${id}b)` }), mk('rect', { class: 'r', pathLength: 100 })]
+      cp.append(lr[0]); defs.append(cp, f)
+      const g = mk('g', { 'clip-path': `url(#${id}c)` }); g.append(lr[2])
+      svg.append(defs, lr[1], g, lr[3])
+      mo.append(svg)
       // (entre el velo y la hoja: el contenido de la hoja va encima de la silueta)
       panel.before(mo)
     }
@@ -245,10 +261,25 @@ export function isle(el, o = {}) {
     for (const k of ['--ns-isle-glow', '--ns-isle-rim']) { const v = s.getPropertyValue(k).trim(); v ? mo.style.setProperty(k, v) : mo.style.removeProperty(k) }
     Object.assign(mo.style, { display: 'block', zIndex: Z() + 1 })
     mo.getAnimations({ subtree: true }).forEach(a => a.cancel())
-    const K = R.map(pieces), E = mo.lastChild, P = [...mo.children].slice(0, 7).concat(...E.children)
-    // la luz del contorno se enciende al arrancar, acompaña el recorrido y se apaga al llegar
-    E.animate([{ opacity: 0 }, { opacity: 1, offset: open ? .22 : .15 }, { opacity: 1, offset: open ? .7 : .55 }, { opacity: 0 }], { duration: dur, fill: 'both' })
-    return P.map((p, i) => p.animate(K.map(k => ({ transform: k[i] })), { duration: dur, fill: 'both' }))[0]
+    const K = R.map(pieces), P = [...mo.children].slice(0, 7)
+    // la luz se enciende al arrancar, acompaña el recorrido y se apaga al llegar
+    mo.lastChild.animate([{ opacity: 0 }, { opacity: 1, offset: open ? .22 : .12 }, { opacity: 1, offset: open ? .72 : .6 }, { opacity: 0 }], { duration: dur, fill: 'both' })
+    const g = P.map((p, i) => p.animate(K.map(k => ({ transform: k[i] })), { duration: dur, fill: 'both' }))[0]
+    lit(g, R, dur)
+    return g
+  }
+  // los rectángulos de la luz, donde está la silueta en cada fotograma (también mientras el dedo la
+  // lleva: se lee el instante de la animación, pausada o no)
+  let lr = null, lf = 0
+  const lit = (g, R, dur) => {
+    cancelAnimationFrame(lf)
+    const f = () => {
+      if (!mo || mo.style.display != 'block' || g.playState == 'idle') return
+      const s = sample(R, g.currentTime || 0, dur), r = Math.max(0, Math.min(s.r, s.width / 2, s.height / 2))
+      lr.forEach((e, i) => { const d = i == 0 ? 0 : .75; e.setAttribute('x', r2(s.left + d)); e.setAttribute('y', r2(s.top + d)); e.setAttribute('width', r2(Math.max(0, s.width - 2 * d))); e.setAttribute('height', r2(Math.max(0, s.height - 2 * d))); e.setAttribute('rx', r2(Math.max(0, r - d))) })
+      lf = requestAnimationFrame(f)
+    }
+    f()
   }
   // la silueta se va (opacidad del grupo, también en el compositor)
   const fade = d => mo.animate([{ opacity: 1 }, { opacity: 0 }], { duration: d, easing: 'ease-out', fill: 'forwards' })
@@ -321,7 +352,13 @@ export function isle(el, o = {}) {
     const all = [...mo.getAnimations({ subtree: true }),
       el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150, delay: HOME, easing: 'ease-out', fill: 'both' }),
       mo.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, delay: HOME + 150, fill: 'both' }),
-      ...L.map(([k, r]) => k.animate([{ opacity: 1 }, { opacity: 0, scale: '.97' }], { duration: 80, delay: Math.max(0, when(R, r, false) / N * CLOSE - 90), easing: 'ease-in', fill: 'both' }))]
+      // (cada pieza se va entre que el borde está 30 px por encima y pasa su mitad: en espacio, no en
+      // tiempo, porque a mitad de camino la forma recorre mucho en pocos milisegundos)
+      // (o cuando los lados, al estrecharse, llegan a ella: los botones de abajo)
+      ...L.map(([k, r]) => {
+        const si = R.findIndex(s => s.left > r.left + 4 || s.left + s.width < r.right - 4), side = si < 0 ? Infinity : si / N * CLOSE
+        const a = Math.min(timeFor(R, r.top - 30 - R[0].top), Math.max(0, side - 60)), b = Math.max(a + 16, Math.min(timeFor(R, r.top + r.height * .5 - R[0].top), side))
+        return k.animate([{ opacity: 1 }, { opacity: 0, scale: '.97' }], { duration: b - a, delay: a, easing: 'ease-in', fill: 'both' }) })]
     return { R, all }
   }
   // cerrada del todo / abierta otra vez (el dedo la devolvió a su sitio)
@@ -341,6 +378,8 @@ export function isle(el, o = {}) {
   // vuelve, según la distancia y la velocidad (lo decide ns-frame/sheet)
   let sc = null
   const timeFor = (R, dy) => {
+    // (en su sitio, el instante 0: todo el contenido a la vista, aunque el dedo siga apoyado)
+    if (dy <= .5) return 0
     const top = R[0].top
     for (let i = 1; i <= N; i++) if (R[i].top - top >= dy) { const a = R[i - 1].top - top, b = R[i].top - top; return Math.min(HOME, (i - 1 + (b > a ? (dy - a) / (b - a) : 1)) / N * CLOSE) }
     return HOME
@@ -354,20 +393,30 @@ export function isle(el, o = {}) {
       sc.all.forEach(a => a.pause())
       scrim.style.transition = 'none'
     }
-    const ms = timeFor(sc.R, Math.max(0, y))
+    const ms = sc.ms = timeFor(sc.R, Math.max(0, y))
     sc.all.forEach(a => { a.currentTime = ms })
     scrim.style.opacity = String(Math.max(0, 1 - ms / HOME))
+  }
+  // al soltar, lo que falta hasta cerrarse (to = HOME) o hasta volver (to = 0), con una curva suave
+  // que arranca a la velocidad del dedo y frena al llegar: ni el muelle ni la línea de tiempo al revés
+  // (que se veían bruscos a mitad de camino)
+  const glide = (s, to, done) => {
+    const from = s.ms || 0, d = Math.max(170, Math.abs(to - from) * .95), t0 = performance.now()
+    const f = now => {
+      const k = Math.min(1, (now - t0) / d), ms = from + (to - from) * (1 - (1 - k) ** 3)
+      s.all.forEach(a => { a.currentTime = ms })
+      scrim.style.opacity = String(Math.max(0, 1 - ms / HOME))
+      k < 1 ? requestAnimationFrame(f) : done()
+    }
+    requestAnimationFrame(f)
   }
   const settle = c => {
     const s = sc
     sc = null
     if (!s) return
     if (c) return show(false, false, s)
-    // (vuelve a su sitio: la misma línea de tiempo, hacia atrás)
     const t = run
-    scrim.style.transition = ''; scrim.style.opacity = ''
-    s.all.forEach(a => { a.playbackRate = -1.4; a.play() })
-    Promise.all(s.all.map(a => a.finished)).then(() => t == run && unshut(), () => {})
+    glide(s, 0, () => t == run && unshut())
   }
 
   const show = (on, now = false, given = null) => {
@@ -380,9 +429,8 @@ export function isle(el, o = {}) {
     // (con la hoja abierta, la cápsula está oculta: fuera del orden del foco y del lector de pantalla)
     el.inert = on
     scrim.classList.toggle('ns-open', on)
-    scrim.style.opacity = ''
-    // (la línea de tiempo que llevaba el dedo sigue: no se cancela)
-    if (!given) unfade()
+    // (la línea de tiempo que llevaba el dedo sigue, con su velo: no se cancela)
+    if (!given) { unfade(); scrim.style.opacity = '' }
     if (on) {
       o.onOpen?.()
       if (anim) {
@@ -418,9 +466,16 @@ export function isle(el, o = {}) {
       // la línea de tiempo del cierre (la que ya llevaba el dedo, o una nueva), hasta el final
       const tl = given || closer()
       fx = tl.all
-      scrim.style.transition = ''
-      tl.all.forEach(a => { a.playbackRate = 1; a.play() })
-      Promise.all(tl.all.map(a => a.finished)).then(() => t == run && shut(), () => {})
+      const end = () => {
+        if (t != run) return
+        scrim.style.transition = ''; scrim.style.opacity = ''
+        // (las que ya llegaron a su final se dan por terminadas: play() las rebobinaría al principio
+        // y el contenido reaparecía un instante al cerrarse)
+        tl.all.forEach(a => { a.playbackRate = 1; a.currentTime >= a.effect.getComputedTiming().endTime ? a.finish() : a.play() })
+        Promise.all(tl.all.map(a => a.finished)).then(() => t == run && shut(), () => {})
+      }
+      // (soltada a medio camino: lo que falta hasta la cápsula, suave; luego la cápsula aparece)
+      given ? glide(given, HOME, end) : end()
       return
     }
     unmorph()
