@@ -12,8 +12,18 @@ const HOLES = [
   ['tri 56 38', 'Triángulo', 'M10 3.5 17 16H3Z'],
 ]
 const FILLS = [['', 'Sólido'], ['is-photo', 'Foto'], ['is-data', 'Dato']]
-const FX = [['glow', 'Luz', true], ['ripple', 'Toque', true], ['stream', 'Corriente'], ['trace', 'Trazo'], ['wave', 'Onda'], ['pulse', 'Pulso'], ['aurora', 'Aurora'], ['dots', 'Puntos'], ['grid', 'Retícula']] as const
-const on = FX.filter(f => f[2]).map(f => f[0]).join(' ')
+// un efecto a la vez en la demo (la librería los combina: data-ns-mosaic="stream dots")
+const FX = [['', 'Ninguno'], ['stream', 'Corriente'], ['trace', 'Trazo'], ['wave', 'Onda'], ['sweep', 'Barrido'], ['pulse', 'Pulso'], ['aurora', 'Aurora'], ['dots', 'Puntos'], ['grid', 'Retícula'], ['glow', 'Luz'], ['ripple', 'Toque']] as const
+const START = 'stream'
+// color de la luz (--ns-mosaic-light)
+const TINTS = [['#ffffff', 'Blanco'], ['#00e676', 'Verde'], ['#3de0ff', 'Cian'], ['#ffb547', 'Ámbar']]
+// los grupos, también como selectores nativos para el móvil (los mismos valores; cada uno pulsa su botón)
+const PICKS = [
+  ['mo-modes', 'Plantilla', TEMPLATES.map(([v, n]) => [v, n])],
+  ['mo-hole', 'Hueco', HOLES.map(([v, n]) => [v, n])],
+  ['mo-fill', 'Orbe', FILLS.map(([v, n]) => [v, n])],
+  ['mo-fx', 'Efecto', FX.map(([v, n]) => [v, n])],
+] as const
 ---
 <section class="sec dark2" id="mosaico" aria-labelledby="t-mo">
   <div class="wrap">
@@ -22,18 +32,28 @@ const on = FX.filter(f => f[2]).map(f => f[0]).join(' ')
       Un bento donde cada pieza puede ser una L, una T o una escalera. Las curvas guardan el mismo hueco que las rectas, y un orbe recorta a sus vecinas. <b>En el móvil sigue siendo un mosaico, no una lista.</b>
     </SectionHead>
 
-    <!-- barra fija: mientras el mosaico está en pantalla, los controles siguen a mano (sin subir
-         y bajar para probar otra opción). En el móvil es una sola fila que se desliza de lado. -->
+    <!-- barra: en el escritorio, fija mientras el mosaico está en pantalla (sin subir y bajar para
+         probar otra opción); en el móvil, selectores nativos en dos columnas, sin desplazamiento lateral -->
     <div class="bar" role="group" aria-label="Opciones del mosaico">
-      <div class="seg" id="mo-modes" role="group" data-ns-choice aria-label="Plantilla">{TEMPLATES.map(([t, n], i) => <button type="button" data-t={t} aria-pressed={String(!i)}>{n}</button>)}</div>
-      <div class="seg" id="mo-hole" role="group" data-ns-choice aria-label="Forma del hueco">{HOLES.map(([h, n, d], i) => <button type="button" class="ico" data-h={h} aria-pressed={String(!i)} aria-label={n} title={n}><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d={d} /></svg></button>)}</div>
-      <div class="seg" id="mo-fill" role="group" data-ns-choice aria-label="Contenido del orbe">{FILLS.map(([c, n]) => <button type="button" data-c={c} aria-pressed={String(c == 'is-photo')}>{n}</button>)}</div>
-      <div class="fx" id="mo-fx" role="group" aria-label="Luz en toda la figura" data-ns-choice="many">
-        {FX.map(([k, n, d]) => <button type="button" data-fx={k} aria-pressed={String(!!d)}>{n}</button>)}
+      <div class="seg" id="mo-modes" role="group" data-ns-choice aria-label="Plantilla">{TEMPLATES.map(([t, n], i) => <button type="button" data-v={t} aria-pressed={String(!i)}>{n}</button>)}</div>
+      <div class="seg" id="mo-hole" role="group" data-ns-choice aria-label="Forma del hueco">{HOLES.map(([h, n, d], i) => <button type="button" class="ico" data-v={h} aria-pressed={String(!i)} aria-label={n} title={n}><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d={d} /></svg></button>)}</div>
+      <div class="seg" id="mo-fill" role="group" data-ns-choice aria-label="Contenido del orbe">{FILLS.map(([c, n]) => <button type="button" data-v={c} aria-pressed={String(c == 'is-photo')}>{n}</button>)}</div>
+      <div class="fx" id="mo-fx" role="group" aria-label="Efecto de luz" data-ns-choice>
+        {FX.map(([k, n]) => <button type="button" data-v={k} aria-pressed={String(k == START)}>{n}</button>)}
+      </div>
+      <div class="picks">
+        {PICKS.map(([id, n, opts]) => (
+          <label><span>{n}</span><select data-for={id}>{opts.map(([v, t]) => <option value={v} selected={id == 'mo-fx' ? v == START : id == 'mo-fill' ? v == 'is-photo' : v == opts[0][0]}>{t}</option>)}</select></label>
+        ))}
+      </div>
+      <div class="knobs">
+        <label><span>Velocidad <output id="mo-speed-v">1×</output></span><input type="range" id="mo-speed" min="0.4" max="2.5" step="0.1" value="1"></label>
+        <label><span>Intensidad <output id="mo-int-v">7 %</output></span><input type="range" id="mo-int" min="0" max="0.3" step="0.01" value="0.07"></label>
+        <div class="tints" id="mo-tint" role="group" data-ns-choice aria-label="Color de la luz">{TINTS.map(([c, n], i) => <button type="button" data-v={c} aria-pressed={String(!i)} aria-label={n} title={n}></button>)}</div>
       </div>
     </div>
 
-    <div class="mo ns-mosaic t-orb" id="mo" data-ns-mosaic={on}>
+    <div class="mo ns-mosaic t-orb" id="mo" data-ns-mosaic={START}>
       <article data-ns-area="h" class="hi"><h3>Formas que se abrazan.</h3><p>La plantilla vive en CSS: cámbiala con una media query y las piezas se reacomodan.</p></article>
       <article data-ns-area="a" class="ph"><img src="https://picsum.photos/seed/ns-mosaic-a/700/800.webp" alt="Fachada de edificios antiguos" width="700" height="800" loading="lazy"><h3>Fotos con forma</h3><p>La imagen se recorta con la pieza.</p></article>
       <article data-ns-area="b"><h3>Pesa 7,4 KB</h3><p>Un módulo opcional, con gzip.</p></article>
@@ -62,23 +82,56 @@ const on = FX.filter(f => f[2]).map(f => f[0]).join(' ')
   // plantilla: con View Transitions las piezas viajan a su nuevo sitio (arrange de ns-frame/mosaic)
   const TEMPLATES = ['t-orb', 't-duo', 't-lock', 't-step']
   const template = (t: string) => arrange(mo, () => { mo.classList.remove(...TEMPLATES); mo.classList.add(t) })
-  modes.addEventListener('change', e => template(picked(e).dataset.t!))
+  modes.addEventListener('change', e => template(picked(e).dataset.v!))
 
   hole.addEventListener('change', e => {
-    const [k, r, rm] = picked(e).dataset.h!.split(' ')
+    const [k, r, rm] = picked(e).dataset.v!.split(' ')
     Object.entries({ '--hole': k, '--hole-r': r, '--hole-rm': rm }).forEach(([p, v]) => mo.style.setProperty(p, v))
-    mo.classList.contains('t-orb') ? refresh() : modes.querySelector<HTMLElement>('[data-t=t-orb]')!.click()
+    mo.classList.contains('t-orb') ? refresh() : modes.querySelector<HTMLElement>('[data-v=t-orb]')!.click()
   })
 
   // contenido del orbe; si sólo es decoración, se oculta a los lectores de pantalla
   fill.addEventListener('change', e => {
-    const c = picked(e).dataset.c
+    const c = picked(e).dataset.v
     orb.classList.remove('is-photo', 'is-data')
     if (c) { orb.classList.add(c); orb.removeAttribute('aria-hidden') } else orb.setAttribute('aria-hidden', 'true')
   })
 
-  // luz en toda la figura: los efectos se combinan libremente (data-ns-choice="many")
-  fx.addEventListener('change', () => mo.setAttribute('data-ns-mosaic', [...fx.querySelectorAll<HTMLElement>('[aria-pressed=true]')].map(x => x.dataset.fx).join(' ')))
+  // un efecto a la vez; velocidad, intensidad y color son variables de la librería:
+  // --ns-mosaic-fx-time (la duración de cada efecto), --ns-mosaic-speed (la corriente, px/s),
+  // --ns-mosaic-fill (sobre los fondos) y --ns-mosaic-light
+  const BASE: Record<string, number> = { wave: 4.5, sweep: 5, scan: 4.5, pulse: 3.6, trace: 6, aurora: 5 }
+  let effect = mo.getAttribute('data-ns-mosaic') || ''
+  const speed = $('mo-speed') as HTMLInputElement, int = $('mo-int') as HTMLInputElement
+  const tune = () => {
+    const k = +speed.value
+    $('mo-speed-v').textContent = k.toFixed(1).replace('.0', '').replace('.', ',') + '×'
+    $('mo-int-v').textContent = Math.round(+int.value * 100) + ' %'
+    effect in BASE ? mo.style.setProperty('--ns-mosaic-fx-time', (BASE[effect] / k).toFixed(2) + 's') : mo.style.removeProperty('--ns-mosaic-fx-time')
+    mo.style.setProperty('--ns-mosaic-speed', String(Math.round(160 * k)))
+    mo.style.setProperty('--ns-mosaic-fill', int.value)
+  }
+  fx.addEventListener('change', e => { effect = picked(e).dataset.v || ''; mo.setAttribute('data-ns-mosaic', effect); tune() })
+  // (la corriente es JS: su velocidad se relee al soltar el control; lo demás es CSS y cambia al momento)
+  speed.addEventListener('input', tune); int.addEventListener('input', tune)
+  speed.addEventListener('change', () => refresh())
+  $('mo-tint').addEventListener('change', e => mo.style.setProperty('--ns-mosaic-light', picked(e).dataset.v!))
+  // (el color de cada muestra por CSSOM: la CSP estricta del sitio no deja estilos en línea en el HTML)
+  $('mo-tint').querySelectorAll<HTMLElement>('button').forEach(b => b.style.setProperty('--c', b.dataset.v!))
+  tune()
+
+  // en táctil no hay puntero que flote: la luz que lo sigue y la onda al tocar no existen (la librería
+  // las quita), así que tampoco se ofrecen
+  if (matchMedia('(hover: none) and (pointer: coarse)').matches)
+    document.querySelectorAll('#mo-fx [data-v=glow], #mo-fx [data-v=ripple], .picks option[value=glow], .picks option[value=ripple]').forEach(n => n.remove())
+
+  // móvil: cada selector pulsa el botón de su grupo (mismo estado, mismo evento change)
+  document.querySelectorAll<HTMLSelectElement>('.picks select').forEach(s => {
+    const g = $(s.dataset.for!)
+    s.addEventListener('change', () => [...g.querySelectorAll<HTMLElement>('button')].find(b => (b.dataset.v || '') == s.value)?.click())
+    // (y al revés: un cambio desde los botones —o desde el código— se refleja en el selector)
+    g.addEventListener('change', e => { s.value = picked(e).dataset.v || '' })
+  })
 </script>
 
 <style>
@@ -86,10 +139,20 @@ const on = FX.filter(f => f[2]).map(f => f[0]).join(' ')
   .bar .seg button { min-height: 36px; padding: 0 12px }
   .seg .ico { width: 40px; padding: 0 !important; display: grid; place-items: center }
   .seg .ico svg { width: 18px; height: 18px }
-  .fx { display: flex; flex-wrap: wrap; gap: 6px; align-items: center }
+  /* dos filas: plantilla, hueco, orbe y los ajustes; debajo, los efectos */
+  .fx { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; order: 2; flex-basis: 100% }
   .fx button { min-height: 36px; padding: 0 12px; border-radius: 980px; border: 1px solid var(--line); background: transparent; color: var(--text-2); font-size: var(--t-small); cursor: pointer; transition: color .2s, border-color .2s, background-color .2s }
   .fx button:hover { color: var(--text); border-color: var(--line-2) }
   .fx button[aria-pressed=true] { color: var(--text); border-color: rgba(0, 230, 118, .55); background: rgba(0, 230, 118, .08) }
+  .picks { display: none }
+  .knobs { display: flex; gap: 8px 16px; align-items: center; order: 1; flex: 1 1 380px; padding: 0 4px }
+  .knobs label { display: grid; gap: 2px; min-width: 110px; flex: 1 1 130px; max-width: 200px; font-size: var(--t-caption); color: var(--text-2) }
+  .knobs label span { display: flex; justify-content: space-between }
+  .knobs output { font: var(--t-caption) var(--mono); color: var(--text) }
+  .knobs input { width: 100%; height: 24px; margin: 0; accent-color: var(--signal) }
+  .tints { display: flex; gap: 8px; margin-left: auto }
+  .tints button { width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; background: var(--c) padding-box; box-shadow: 0 0 0 1px var(--line-2); cursor: pointer }
+  .tints button[aria-pressed=true] { border-color: #0e0e10; box-shadow: 0 0 0 2px var(--text) }
 
   .mo { --ns-gap: 14px; --ns-row: 150px; --ns-mosaic-radius: 26px; --ns-pad: 24px; --ns-mosaic-light: #fff }
   .mo > [data-ns-area] { background: #18181a; --ns-border: rgba(255, 255, 255, .08); min-width: 0 }
@@ -127,13 +190,17 @@ const on = FX.filter(f => f[2]).map(f => f[0]).join(' ')
   .t-duo { --ns-areas: 'h h a b' 'h h c b' 'x y c d' 'x y e f'; --ns-orb: 3 3 70 hex, 2 4 44 circle }
   .t-lock { --ns-areas: 'h h h b' 'a x x b' 'a a x c' 'd y e f'; --ns-orb: none }
   .t-step { --ns-areas: 'h h a a' 'x h h a' 'x b h c' 'd y e f'; --ns-orb: none }
-  /* en táctil la luz que sigue al puntero y la onda al tocar no existen (la librería las quita) */
-  @media (hover: none) and (pointer: coarse) { .fx [data-fx=glow], .fx [data-fx=ripple] { display: none } }
   @media (max-width: 900px) {
-    /* una fila que se desliza de lado, de borde a borde */
-    .bar { flex-wrap: nowrap; overflow-x: auto; margin: 0 -24px 12px; padding: 8px 24px; border-radius: 0; border-width: 1px 0; scrollbar-width: none; overscroll-behavior-x: contain }
-    .bar::-webkit-scrollbar { display: none }
-    .bar > *, .fx { flex: none; flex-wrap: nowrap }
+    /* selectores nativos en dos columnas (nada que desplazar de lado) y los ajustes debajo; la barra
+       no es fija: en el móvil taparía media pantalla */
+    .bar { position: static; display: grid; gap: 10px; padding: 12px }
+    .bar > .seg, .bar > .fx { display: none }
+    .picks { display: grid; grid-template-columns: 1fr 1fr; gap: 10px }
+    .picks label { display: grid; gap: 4px; font-size: var(--t-caption); color: var(--text-2) }
+    .picks select { width: 100%; min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line-2); background: #18181a; color: var(--text); font: inherit; font-size: var(--t-small) }
+    .knobs { flex-wrap: wrap; padding: 8px 0 0; border-top: 1px solid var(--line) }
+    .knobs label { max-width: none }
+    .tints { margin-left: 0 }
     .mo { --ns-row: 112px; --ns-gap: 10px; --ns-mosaic-radius: 20px; --ns-pad: 16px }
     .t-orb { --ns-areas: 'h h' 'h h' 'x y' 'x y' 'a b' 'a c' 'd c' 'e f'; --ns-orb: 2 3 var(--hole-rm, 62) var(--hole, circle) }
     .t-duo { --ns-areas: 'h h' 'h h' 'x y' 'x y' 'a b' 'c b' 'c e' 'd e' 'f f'; --ns-orb: 2 3 50 hex, 2 7 34 circle }

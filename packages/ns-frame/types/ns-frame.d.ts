@@ -106,6 +106,14 @@ export function modal(dialog: HTMLDialogElement, options?: { panel?: Element; mo
  * lo que devuelva, al quitar el atributo o sacar el elemento del documento (moverlo no cuenta).
  */
 export function watch<T extends { destroy?(): void }>(attr: string, make: (el: Element) => T | null | undefined): Map<Element, T>
+/**
+ * Nivel para los efectos caros: automático (memoria ≤ 4 GB, ≤ 2 núcleos, ahorro de datos o fotogramas
+ * lentos al cargar) o fijo con `<html data-ns-quality>`. Queda en `<html data-ns-tier>`; un cambio avisa
+ * con el evento `ns-quality` en `document`.
+ */
+export function quality(): 'high' | 'low'
+/** `fn` cuando las fuentes web ya cargaron, en un momento libre (una sola espera para todos los módulos). */
+export function fontsReady(fn: () => void): Promise<void>
 
 /** Fuerza una relectura (p. ej. tras cambiar variables CSS por JS). */
 export function update(el: Element): void

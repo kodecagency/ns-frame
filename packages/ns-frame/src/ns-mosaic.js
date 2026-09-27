@@ -19,7 +19,9 @@ import { flow, unflow } from './ns-flow.js'
 // nombres: las variables de efectos se llaman --ns-mosaic-* (light, width, fill, dot, line, a1, a2,
 // speed, y fx-time para el tiempo: --ns-mosaic-time es el de arrange); los antiguos --ns-mo-* siguen
 // valiendo. var(--ns-mo-X,d) → var(--ns-mosaic-X,var(--ns-mo-X,d)) (con un nivel de paréntesis en d)
-const alias = s => s.replace(/var\(--ns-mo-([\w-]+),((?:[^()]|\([^()]*\))*)\)/g, (_, k, d) => `var(--ns-mosaic-${k == 'time' ? 'fx-time' : k},var(--ns-mo-${k},${d}))`)
+// una duración en ms desde una variable CSS: "1100", "1100ms" o "1.1s"
+const dur = (raw, def) => { raw = raw.trim(); const v = parseFloat(raw); return isNaN(v) ? def : /[^m]s$/.test(raw) ? v * 1000 : v }
+const alias = s =>s.replace(/var\(--ns-mo-([\w-]+),((?:[^()]|\([^()]*\))*)\)/g, (_, k, d) => `var(--ns-mosaic-${k == 'time' ? 'fx-time' : k},var(--ns-mo-${k},${d}))`)
 
 const CSS = `@layer ns{
 .ns-mosaic{display:grid;position:relative;gap:var(--ns-gap,14px);grid-template-columns:repeat(var(--ns-cn,3),minmax(0,1fr));grid-template-rows:repeat(var(--ns-rn,2),var(--ns-row,150px))}
@@ -366,7 +368,9 @@ function layout() {
     const pad = cs.getPropertyValue('--ns-pad') ? px(cs.getPropertyValue('--ns-pad')) : 22
     for (const f of flows) flow(f, pad) || unflow(f.k)
     fit(el)
-    light(el, parts, W, H, holes, matchMedia('(prefers-reduced-motion: reduce)').matches, px(cs.paddingLeft), px(cs.paddingTop), { G, xs, ys, gx, gy, r: ro_, speed: px(cs.getPropertyValue('--ns-mosaic-speed') || cs.getPropertyValue('--ns-mo-speed')) || 160 })
+    light(el, parts, W, H, holes, matchMedia('(prefers-reduced-motion: reduce)').matches, px(cs.paddingLeft), px(cs.paddingTop), { G, xs, ys, gx, gy, r: ro_, speed: px(cs.getPropertyValue('--ns-mosaic-speed') || cs.getPropertyValue('--ns-mo-speed')) || 160,
+      // la luz que sigue al puntero (radio) y la onda al tocar (duración: 1100, 1100ms o 1.1s)
+      glow: px(cs.getPropertyValue('--ns-mosaic-glow-size')) || 240, ripple: dur(cs.getPropertyValue('--ns-mosaic-ripple-time'), 1100) })
   }
 }
 
@@ -430,7 +434,7 @@ function light(el, parts, W, H, holes, reduce, pl, pt, grid) {
       const L = el._nsl
       if (!L?.on.includes('ripple') || matchMedia('(prefers-reduced-motion: reduce)').matches) return
       const r = L.svg.getBoundingClientRect()
-      ring(L, e.clientX - r.left, e.clientY - r.top, Math.hypot(L.W, L.H), 1100)
+      ring(L, e.clientX - r.left, e.clientY - r.top, Math.hypot(L.W, L.H), L.ripple || 1100)
     })
     el.addEventListener('pointermove', e => {
       const L = el._nsl
@@ -440,7 +444,8 @@ function light(el, parts, W, H, holes, reduce, pl, pt, grid) {
     }, { passive: true })
     el.addEventListener('pointerleave', () => { const L = el._nsl; L?.gg.setAttribute('cx', -9e3); L?.gg.setAttribute('cy', -9e3) })
   }
-  L.on = want; L.W = W; L.H = H
+  L.on = want; L.W = W; L.H = H; L.ripple = grid.ripple
+  if (L.gg.getAttribute('r') != grid.glow) L.gg.setAttribute('r', grid.glow)
   Object.assign(L.svg.style, { left: fx(pl) + 'px', top: fx(pt) + 'px', width: fx(W) + 'px', height: fx(H) + 'px' })
   L.svg.setAttribute('viewBox', `0 0 ${fx(W)} ${fx(H)}`)
   for (const m of [L.ml, L.mf]) { m.setAttribute('width', fx(W + 80)); m.setAttribute('height', fx(H + 80)) }

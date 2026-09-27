@@ -2,6 +2,15 @@
 
 ## Sin publicar
 
+### Móviles modestos
+- **Nivel de calidad** (`quality()`, `<html data-ns-tier>`): automático por memoria, núcleos, ahorro de datos y fotogramas medidos al cargar, o fijo con `data-ns-quality`. En `low` el vidrio es sólo desenfoque nativo, tinte y canto (sin lente, sin WebGL): en un Android modesto la pestaña ya no se queda en negro ni pinta cuadros vacíos. Ver [Rendimiento](docs/rendimiento.md#dispositivos-modestos).
+- **Menos trabajo en el desplazamiento:** el vidrio mide su tono una vez (y en uno fijo, en un momento libre); el campo de la lente sólo se calcula al detenerse la forma; el carrusel y las pestañas ya no maquetan en cada fotograma; la luz de la página cambia en pasos de 2°; `ns-link` comprueba la altura tres veces por segundo.
+- **Sin maquetación forzada al montar** (pestañas, relieve, carrusel, esqueleto) y `update()` en lote; `fontsReady()` compartido en un momento libre.
+- Isla: nada asoma fuera de la silueta al cerrar (una máscara vertical sigue a su borde, con el borde difuminado); la página se libera al terminar el cierre (antes, al soltar, un tirón); la cápsula cabe el texto de todas las secciones sin cambiar de ancho al cambiar de sección.
+- Mosaico: `--ns-mosaic-glow-size` y `--ns-mosaic-ripple-time`. Landing: un efecto a la vez, con velocidad, intensidad y color; en el móvil, selectores en dos columnas en vez de una fila que se desliza.
+- `ns-mark`: dos líneas con los bordes casi alineados se igualan (sin escalones diminutos).
+- Autoría: © Francesco Sierchio (Kodec Agency) en la licencia y en la cabecera de cada archivo compilado.
+
 ### Isla que se convierte en la hoja (`ns-frame/isle`)
 - Al tocar la cápsula, se convierte en la hoja como la Dynamic Island: primero se ensancha a los lados, después crece hacia arriba (un muelle por eje). La forma que crece es la propia hoja (su color y su radio) y su contenido aparece pieza a pieza justo cuando la forma lo alcanza. Al cerrar, el camino inverso: baja hasta ser una barra y se estrecha hasta la cápsula. Un destello de luz da la vuelta al contorno durante el recorrido y mientras se arrastra, con un halo hacia dentro (`--ns-isle-glow`, `--ns-isle-rim`; blanco y gris por defecto). Al cerrar, sin rebote; soltada a medio camino, lo que falta (hasta cerrarse o de vuelta) va con una curva suave, y el contenido ya no reaparece un instante al terminar (un `play()` sobre animaciones ya acabadas las rebobinaba). Las piezas se van al paso del borde de arriba o de los lados.
 - Casillas de secciones con formas de ns-frame de serie (`tile`, `current`): su contorno ya sigue su forma.

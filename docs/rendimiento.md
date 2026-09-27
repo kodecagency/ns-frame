@@ -62,6 +62,18 @@ Como referencia (bundlephobia, gzip): `@floating-ui/dom` 8,2 KB sólo para posic
 - **Mosaico:** la luz que sigue al puntero y la onda al tocar no se crean en táctil; los reintentos mientras llega el estilo de una plantilla nueva están acotados (nunca un bucle de frames).
 - **Hoja e isla:** sólo animan `translate` y `opacity`; el progreso del gesto se calcula de la temporización de la animación, sin leer estilos en cada frame.
 - El morph interpola vértices, no texto de path.
+- **Sin maquetación forzada al montar.** Pestañas, relieve y carrusel toman su primera medida del `ResizeObserver` (llega ya maquetado); el esqueleto mide en lote al final de la tarea; `update()` agrupa las llamadas de una tarea. Montar veinte piezas cuesta una maquetación, no veinte.
+
+## Dispositivos modestos
+
+Un móvil de gama baja no debe ser un bloqueo. La librería tiene **dos niveles** (`quality()`):
+
+- **Automático:** `low` con poca memoria (Chrome la informa en tramos: 4 GB o menos), 2 núcleos o menos, ahorro de datos activado, o si durante un segundo tras cargar más de un cuarto de los fotogramas pasa de 34 ms (sólo baja, nunca sube). Un iPhone no informa su memoria y queda en `high`.
+- **Fijo:** `<html data-ns-quality="low">` (o `"high"`).
+- **Qué cambia en `low`:** el vidrio usa sólo el desenfoque nativo con su tinte y la luz del canto: sin mapa de lente, sin WebGL y sin la capa aparte del canto (lo que agotaba la memoria gráfica de un móvil modesto y dejaba la pestaña en negro o con cuadros sin pintar). La luz de la página queda fija. El resto de la librería es igual.
+- El nivel queda en `<html data-ns-tier="low|high">` para tu propio CSS (por ejemplo, apagar una animación decorativa), y un cambio avisa con el evento `ns-quality`.
+
+Con la CPU ×6 en un móvil simulado, estos cambios bajaron las tareas largas de la sección más cargada de la landing de 3,3 s a 2,1 s en total, y el trabajo de montaje junto al mosaico de 1300 a 886 ms.
 
 ## Benchmark
 

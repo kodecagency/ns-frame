@@ -87,7 +87,9 @@ Efectos que tratan todo el mosaico como una sola figura. Se combinan libremente:
 | `aurora` | fondos | Dos manchas de color derivan despacio por toda la figura |
 | `dots` / `grid` | fondos | Puntos o retícula continuos: el patrón no se corta entre piezas |
 
-Ajustes: `--ns-mosaic-light` (color de la luz), `--ns-mosaic-width` (grosor en los bordes), `--ns-mosaic-fx-time` (duración), `--ns-mosaic-fill` (intensidad sobre los fondos), `--ns-mosaic-a1` y `--ns-mosaic-a2` (colores de la aurora), `--ns-mosaic-dot` y `--ns-mosaic-line` (color de los patrones). (`--ns-mosaic-time` es otra cosa: la duración de `arrange()`.)
+Ajustes: `--ns-mosaic-light` (color de la luz), `--ns-mosaic-width` (grosor en los bordes), `--ns-mosaic-fx-time` (duración), `--ns-mosaic-fill` (intensidad sobre los fondos), `--ns-mosaic-a1` y `--ns-mosaic-a2` (colores de la aurora), `--ns-mosaic-dot` y `--ns-mosaic-line` (color de los patrones). (`--ns-mosaic-time` es otra cosa: la duración de `arrange()`.) Además, `--ns-mosaic-glow-size` (radio de la luz que sigue al puntero, `240`) y `--ns-mosaic-ripple-time` (duración de la onda al tocar: `1100`, `1100ms` o `1.1s`). Las duraciones y el color cambian al momento; la velocidad de `stream` y los dos últimos, con `refresh()`.
+
+Los efectos se combinan (`data-ns-mosaic="stream dots"`), pero cada uno suma trabajo: en una página para móviles, uno o dos. Fuera de la pantalla se pausan solos.
 
 **Móvil y escritorio por separado.** En pantallas táctiles (`hover: none` y `pointer: coarse`) no hay un puntero que flote: `glow` no tiene a quién seguir y `ripple` convierte cada toque, que casi siempre es para hacer scroll, en una onda. Por eso en táctil se quitan esos dos por defecto. Para elegir tú qué efectos se ven en táctil, usa `data-ns-mosaic-touch` (vacío = ninguno):
 

@@ -45,6 +45,7 @@ Read `references/shapes.md` before writing any non-trivial shape and `references
 ## Liquid glass: ready to use
 
 - Variable names follow one convention everywhere: `--ns-<module>-time` (accepts `320`, `320ms`, `.32s`), `-ease`, `-radius`, `-width`, `-ink` (text color), `-fill`/`-bg`.
+- Low-end phones: the library downgrades itself (`quality()`, `<html data-ns-tier="low">`: glass becomes native blur without lens/WebGL). Force it with `<html data-ns-quality="low">`; use `[data-ns-tier=low]` in your CSS to drop decorative animations. Prefer one mosaic effect at a time on mobile.
 - One attribute is enough: `data-ns-glass` (any element, any ns-frame shape) or `data-ns-liquid="glass"` (groups that melt). Do **not** set `--ns-glass-lens`, `--ns-glass-depth` or `--ns-glass-blur` unless asked: the defaults scale with the element's size and look right.
 - Text colour: use `color: var(--ns-glass-ink)` inside glass. The glass measures what passes behind it and flips/deepens its tone; the ink follows. Hard-coded white or black text breaks this.
 - Put glass content inside elements (`<button><span>+</span></button>`), never as a bare text node: it would sit under the glass layers.
