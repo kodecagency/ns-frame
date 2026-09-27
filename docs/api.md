@@ -66,6 +66,7 @@ await open(panel, 'iris', 500)
 | `ns-frame/fx` | `decode(el, ms?)` |
 | `ns-frame/audit` | `audit({ root, mark, margin, clearance })` → problemas encontrados |
 | `ns-frame/carousel` | `carousel(el)` → `{ go(i), index, destroy() }` · automático con `data-ns-carousel` · evento `change` con `detail { index, slide }` |
+| `ns-frame/controls` | Automático con `data-ns-segment`, `data-ns-chips`, `data-ns-field`, `data-ns-range`, `data-ns-swatches` · `range(el)` → `{ update(), destroy() }` · `swatches(el)` |
 | `ns-frame/pop` | Sin exportaciones: se activa con sus atributos |
 
 ## Geometría sin DOM (concentric, flow, mark, liquid)

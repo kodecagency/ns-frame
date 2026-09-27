@@ -139,7 +139,7 @@ export function tabs(el, o = {}) {
       else b.setAttribute('aria-pressed', String(k == i))
       b.classList.toggle('ns-tabs-on', k == i)
     })
-    if (focus) all[i]?.focus()
+    if (focus) all[i]?.focus({ preventScroll: true })
     if (place) { aim(i); run() }
     if (emit && changed) el.dispatchEvent(new CustomEvent('change', { bubbles: true, detail: { index: i, tab: all[i] } }))
   }
@@ -209,6 +209,18 @@ export function tabs(el, o = {}) {
     const rtl = getComputedStyle(el).direction == 'rtl' && e.key.startsWith('Arrow')
     select(((rtl ? 2 * i - n : n) + all.length) % all.length, { focus: true })
   }
+  // (con el indicador ya en marcha, el dedo no desplaza la página: touch-action pan-y deja que el
+  // navegador empiece un desplazamiento vertical a mitad del arrastre y la barra se movía arriba y abajo)
+  // (se decide en el primer movimiento: en iOS, un desplazamiento ya empezado no se puede cancelar)
+  let t0 = null, horiz = null
+  const start = e => { const t = e.touches[0]; t0 = t && [t.clientX, t.clientY]; horiz = null }
+  const hold = e => {
+    const t = e.touches[0]
+    if (horiz == null && t0 && t) { const dx = Math.abs(t.clientX - t0[0]), dy = Math.abs(t.clientY - t0[1]); if (dx + dy > 3) horiz = dx > dy }
+    if ((horiz || drag?.on) && e.cancelable) e.preventDefault()
+  }
+  el.addEventListener('touchstart', start, { passive: true })
+  el.addEventListener('touchmove', hold, { passive: false })
   const EV = [['pointerdown', down], ['pointermove', move], ['pointerup', upE], ['pointercancel', cancel], ['lostpointercapture', e => e.target == el && drag?.on && upE(e)], ['click', click, true], ['keydown', key]]
   EV.forEach(([t, f, c]) => el.addEventListener(t, f, c))
   // el material del indicador sigue al de la barra (vidrio o sólido)
@@ -253,7 +265,7 @@ export function tabs(el, o = {}) {
   const api = {
     select: i => select(i),
     get index() { return cur },
-    destroy() { if (T.get(el) != api) return; T.delete(el); cancelAnimationFrame(raf); cancelAnimationFrame(sraf); (scroller || window).removeEventListener('scroll', scrollEv); ro.disconnect(); mo.disconnect(); EV.forEach(([t, f, c]) => el.removeEventListener(t, f, c)); glass.destroy(); lens.remove(); track.remove(); el.classList.remove('ns-tabs', 'ns-tabs-lift') },
+    destroy() { if (T.get(el) != api) return; T.delete(el); cancelAnimationFrame(raf); cancelAnimationFrame(sraf); (scroller || window).removeEventListener('scroll', scrollEv); ro.disconnect(); mo.disconnect(); EV.forEach(([t, f, c]) => el.removeEventListener(t, f, c)); el.removeEventListener('touchmove', hold); el.removeEventListener('touchstart', start); glass.destroy(); lens.remove(); track.remove(); el.classList.remove('ns-tabs', 'ns-tabs-lift') },
   }
   T.set(el, api)
   return api

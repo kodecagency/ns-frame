@@ -12,10 +12,10 @@
 // · La diapositiva actual lleva la clase ns-car-on; con data-ns-carousel-current="forma" cambia de
 //   silueta al llegar (morph) y las demás toman data-ns-carousel-shape (o la suya). --ns-snap alinea
 //   las diapositivas (start por defecto; center para verlas centradas con las vecinas asomando).
-import { styles, watch } from './ns-frame.js'
+import { styles, watch, update } from './ns-frame.js'
 
 const CSS_ = `@layer ns{
-[data-ns-carousel]{display:flex;gap:var(--ns-gap,16px);overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;overscroll-behavior-x:contain;scrollbar-width:none}
+[data-ns-carousel]{display:flex;gap:var(--ns-gap,16px);overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-behavior:smooth;overscroll-behavior-x:contain;scrollbar-width:none}
 [data-ns-carousel]::-webkit-scrollbar{display:none}
 [data-ns-carousel]>*{flex:0 0 var(--ns-slide,100%);scroll-snap-align:var(--ns-snap,start);min-width:0}
 .ns-car{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:16px}
@@ -96,7 +96,12 @@ export function carousel(sc) {
       on = s
       slides.forEach((d, j) => {
         d.classList.toggle('ns-car-on', j == s)
-        if (curShape) { const f = j == s ? curShape : restShape || own[j]; f ? d.getAttribute('data-ns') != f && d.setAttribute('data-ns', f) : d.removeAttribute('data-ns') }
+        if (curShape) {
+          const f = j == s ? curShape : restShape || own[j]
+          f ? d.getAttribute('data-ns') != f && d.setAttribute('data-ns', f) : d.removeAttribute('data-ns')
+          // (lo que va dentro con data-ns-nest —un rótulo concéntrico— sigue a la forma nueva)
+          d.querySelectorAll('[data-ns-nest]').forEach(n => update(n))
+        }
       })
     }
     if (i != cur) { cur = i; sc.dispatchEvent(new CustomEvent('change', { detail: { index: i, slide: slides[s] } })) }

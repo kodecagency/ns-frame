@@ -31,7 +31,7 @@ const MEDIA = [
     <div class="play">
       <div class="stage" data-ns="all round 22">
         <div class="bar">
-          <div class="seg" id="shape-tabs" role="group" aria-label="Forma de la tarjeta" data-ns-choice>
+          <div data-ns-segment id="shape-tabs" role="group" aria-label="Forma de la tarjeta" data-ns-choice>
             {SHAPES.map((s, i) => <button type="button" data-full={s.full} data-code={s.code} aria-pressed={String(i == 0)}>{s.name}</button>)}
           </div>
         </div>
@@ -114,5 +114,5 @@ const MEDIA = [
   .k3 { --tone: #b8f36b }
   .k4 { --tone: #ff7a59; background-image: linear-gradient(160deg, rgba(255, 122, 89, .09), transparent 60%) }
   @media (max-width: 1000px) { .play { grid-template-columns: 1fr } .wall { grid-template-columns: repeat(4, minmax(0, 1fr)) } }
-  @media (max-width: 560px) { .wall { grid-template-columns: repeat(2, minmax(0, 1fr)) } .media { grid-template-rows: auto } .m0 img { height: 210px } .m1 img, .m2 img { height: 170px } .stage .seg button { padding: 0 10px; font-size: var(--t-small) } }
+  @media (max-width: 560px) { .wall { grid-template-columns: repeat(2, minmax(0, 1fr)) } .media { grid-template-rows: auto } .m0 img { height: 210px } .m1 img, .m2 img { height: 170px } .stage [data-ns-segment] { --ns-ui-h: 36px } }
 </style>

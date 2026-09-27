@@ -44,7 +44,7 @@ const MODES = ['open', 'split', 'iris', 'wipe', 'drop']
       <article class="c dlg-c" data-ns="tl bevel 26; br bevel 26; top cut center 30% 6; radius 3">
         <h3>Diálogos que se despliegan</h3>
         <p>Abren y cierran respetando los cortes: el borde acompaña y el contenido se revela recortado.</p>
-        <div class="seg" id="dlg-modes" role="group" aria-label="Apertura" data-ns-choice>{MODES.map((m, i) => <button type="button" data-mode={m} aria-pressed={String(!i)}>{m}</button>)}</div>
+        <div data-ns-segment="sm" id="dlg-modes" role="group" aria-label="Apertura" data-ns-choice>{MODES.map((m, i) => <button type="button" data-mode={m} aria-pressed={String(!i)}>{m}</button>)}</div>
         <div class="acts"><button type="button" class="btn" data-ns="button" id="dlg-open">Abrir diálogo</button></div>
       </article>
 
@@ -72,7 +72,7 @@ const MODES = ['open', 'split', 'iris', 'wipe', 'drop']
         <p>El gesto y el ajuste son los del sistema. La diapositiva que llega al centro cambia de silueta (morph) y su rótulo es vidrio sobre la foto; flechas e indicadores con forma, también con teclado.</p>
         <div class="car" data-ns-carousel data-ns-carousel-current="tl+br bevel 28; radius 3" data-ns-carousel-shape="all squircle 24" aria-label="Rutas destacadas">
           {SLIDES.map(([seed, alt, t, s]) => (
-            <article class="slide"><img src={`https://picsum.photos/seed/${seed}/720/900.webp`} alt={alt} width="720" height="900" loading="lazy"><div class="lbl" data-ns-glass><b>{t}</b><span>{s}</span></div></article>
+            <article class="slide"><img src={`https://picsum.photos/seed/${seed}/720/900.webp`} alt={alt} width="720" height="900" loading="lazy"><div class="lbl" data-ns-nest data-ns-glass><b>{t}</b><span>{s}</span></div></article>
           ))}
         </div>
         <code class="tag">data-ns-carousel-current · data-ns-carousel-shape · --ns-snap: center</code>
@@ -172,8 +172,8 @@ const MODES = ['open', 'split', 'iris', 'wipe', 'drop']
   .pop { background: radial-gradient(80% 70% at 100% 0%, rgba(255, 255, 255, .06), transparent 60%), var(--surface) }
   .press { background: radial-gradient(80% 70% at 0% 100%, rgba(0, 230, 118, .1), transparent 60%), var(--surface) }
   .dlg-c { --ns-border: rgba(212, 212, 216, .3) }
-  .dlg-c .seg { align-self: flex-start; margin-top: 6px }
-  .dlg-c .seg button { font-family: var(--mono); font-size: var(--t-caption); padding: 0 10px }
+  /* (los nombres de las aperturas, en mono: una variable de ns-frame/controls) */
+  .dlg-c [data-ns-segment] { align-self: flex-start; margin-top: 6px; --ns-ui-font: var(--mono) }
   .toast { background: radial-gradient(80% 70% at 100% 100%, rgba(255, 181, 71, .08), transparent 60%), var(--surface) }
   .car-c { --ns-car: #f4f4f5; --ns-car-bg: #1b1b1e; --ns-car-dot: rgba(255, 255, 255, .25) }
   .pp { --ns-border: rgba(255, 255, 255, .25); --ns-pop-bg: #1b1b1e; color: var(--text); font-size: var(--t-ui); max-width: 240px }
@@ -190,7 +190,8 @@ const MODES = ['open', 'split', 'iris', 'wipe', 'drop']
   .slide:global(.ns-car-on) { opacity: 1; scale: 1 }
   .slide img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover }
   /* el rótulo: vidrio sobre la foto (el texto contrasta solo con --ns-glass-ink) */
-  .lbl { position: absolute; left: 12px; right: 12px; bottom: 12px; padding: 12px 14px; border-radius: 16px; color: var(--ns-glass-ink, #fff); display: grid; gap: 2px }
+  /* (data-ns-nest: sus esquinas son concéntricas con las de la diapositiva, también al cambiar de forma) */
+  .lbl { position: absolute; left: 12px; right: 12px; bottom: 12px; padding: 12px 14px; color: var(--ns-glass-ink, #fff); display: grid; gap: 2px }
   .lbl span { color: color-mix(in srgb, var(--ns-glass-ink, #fff) 78%, transparent) }
   .car-c .tag { margin-top: 12px; font: var(--t-caption) var(--mono); color: var(--text-3) }
   @media (min-width: 961px) { .car-c .car { margin-top: auto } }

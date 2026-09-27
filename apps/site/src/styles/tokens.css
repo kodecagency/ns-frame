@@ -24,6 +24,14 @@
   --display: var(--font-mona);
   --body: var(--font-mona);
   --mono: var(--font-mono);
+  /* tema de los controles de ns-frame (ns-frame/controls): el sitio sólo elige colores y fuentes */
+  --ns-ui-surface: var(--surface);
+  --ns-ui-line: var(--line-2);
+  --ns-ui-ink: var(--text);
+  --ns-ui-muted: var(--text-2);
+  --ns-ui-accent: var(--signal);
+  --ns-ui-mono: var(--mono);
+  --ns-ui-gap: #0e0e10;
   /* neutros de apoyo: tintas sobre claro, velos y tonos de demo */
   --graphite: #0a0a0a;
   --ink-go: #04210f;          /* texto sobre el verde de señal */
@@ -144,7 +152,3 @@ main > .sec:not(.hero) { content-visibility: auto; contain-intrinsic-size: auto 
 .tag { font: 500 11.5px/1.4 var(--mono); color: var(--text-3); word-break: break-word }
 .tag b { color: var(--signal); font-weight: 500 }
 .chip-row { display: flex; flex-wrap: wrap; gap: 6px }
-.seg { display: inline-flex; flex-wrap: wrap; padding: 4px; gap: 2px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line) }
-.seg button { min-height: 40px; padding: 0 14px; border: 0; border-radius: 10px; background: transparent; color: var(--text-2); font-size: 13.5px; cursor: pointer; transition: background-color .25s var(--ease), color .2s }
-.seg button:hover { color: var(--text) }
-.seg button[aria-pressed=true] { background: var(--text); color: #0a0a0a }

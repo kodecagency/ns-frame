@@ -46,6 +46,28 @@ config({ x: 'center', y: 'top', max: 4, time: 5000, shape: 'all bevel 10', enter
 - **Seguro:** mensaje y título se insertan como texto, nunca como HTML.
 - Tipos `info`, `ok`, `warn`, `error`. Colores: `--ns-toast-c`, `--ns-toast-ok`, `--ns-toast-warn`, `--ns-toast-error`; fondo `--ns-toast-bg`.
 
+## Controles (`ns-frame/controls`)
+
+```html
+<div role="group" aria-label="Plantilla" data-ns-segment data-ns-choice>
+  <button aria-pressed="true">Orbe</button> <button>Dúo</button> <button aria-label="Hexágono"><svg>…</svg></button>
+</div>
+<div role="group" aria-label="Efecto" data-ns-chips data-ns-choice> <button aria-pressed="true">Corriente</button> <button>Onda</button> </div>
+<label data-ns-field><span>Plantilla</span><select>…</select></label>
+<label data-ns-field><span>Velocidad <output for="v"></output></span><input id="v" type="range" data-ns-range data-ns-unit="×" min="0.4" max="2.5" step="0.1" value="1"></label>
+<div role="group" aria-label="Color" data-ns-swatches data-ns-choice> <button data-color="#00e676" aria-label="Verde" aria-pressed="true"></button> … </div>
+```
+
+Los controles de la landing, en la librería: el aspecto de serie, listo para usar. La selección (`aria-pressed`, flechas, evento `change`) la pone `data-ns-choice` del núcleo; el módulo sólo pinta.
+
+- `data-ns-segment` (`"sm"` más bajo): carril con el elegido relleno; un botón que sólo lleva un icono es cuadrado.
+- `data-ns-chips`: fichas con borde; la elegida, con el acento.
+- `data-ns-field`: la etiqueta (su primer `span`, pequeño y en mono) con un `select` o un `input`. El `select` es nativo (en el teléfono abre la lista del sistema) con su flecha.
+- `data-ns-range`: pista fina con lo recorrido en el acento; rellena el `output[for]` de su id (`data-ns-unit` detrás, `data-ns-scale` lo multiplica: `100` para un porcentaje). Si cambias el valor por código, `range(el).update()`.
+- `data-ns-swatches`: muestras redondas con el color de su `data-color` (por CSSOM: vale con CSP estricta).
+- **Tema:** `--ns-ui-surface`, `--ns-ui-line`, `--ns-ui-ink`, `--ns-ui-muted`, `--ns-ui-accent`, `--ns-ui-on` y `--ns-ui-on-ink` (el elegido), `--ns-ui-radius`, `--ns-ui-h` (alto), `--ns-ui-font`, `--ns-ui-mono`. Todo en `@layer ns` salvo los colores del texto (un reset como `button { color: inherit }` los anulaba).
+- Foco visible sólo con el teclado; en alto contraste, el elegido se marca con el color del sistema.
+
 ## Carrusel (`ns-frame/carousel`)
 
 > **Con forma:** `data-ns-carousel-current="tl+br bevel 28"` da una forma a la diapositiva actual (cambia con morph al llegar) y `data-ns-carousel-shape` otra al resto; la actual lleva la clase `ns-car-on`. `--ns-snap: center` las alinea al centro (con `padding-inline` en el carrusel, también la primera y la última).
@@ -383,6 +405,7 @@ Un botón que suelta sus acciones como gotas: salen fundidas con él, se separan
 El material de `ns-frame/liquid` (cuerpo, lente, canto, reflejos) sobre cualquier elemento, con su **forma exacta**: chaflanes, muescas, cortes, pestañas, curvas y squircles de ns-frame, o su `border-radius` esquina por esquina (elíptico incluido). La lente sale del **campo de distancias del propio path**: se rellena en un canvas y se calcula la distancia euclídea exacta (transformada de Felzenszwalb, lineal), así que el fondo se curva igual junto a un chaflán que junto a una esquina redonda. El recorte y los reflejos usan el path exacto. Lente en todos los motores, como en `ns-frame/liquid` (en Safari y Firefox, en WebGL sobre una copia del fondo; material grueso y vidrio fijo, con el desenfoque nativo).
 
 - `data-ns-glass="clear"`: casi sin tinte, una lente. `"tint"`: más cuerpo, para texto largo. `"frost"`: vidrio esmerilado, sin lente ni WebGL ni filtros de luz (desenfoque nativo, tinte y un canto fino): ligero e igual en todos los motores, para muchas piezas a la vez o para el móvil. Es el vidrio que usa todo el mundo con calidad baja (`quality()`); `--ns-glass-frost-edge` es el color de su canto.
+- **En el móvil, pocas piezas de vidrio grandes a la vez.** Cada una es una capa de desenfoque que la GPU compone en cada fotograma; en un teléfono, nueve piezas grandes a la vez superan lo que el navegador pinta (Safari deja zonas en negro). Una barra, una cápsula, unos botones o un par de tarjetas van bien. En pantallas táctiles fuera de Chromium el vidrio usa el desenfoque nativo (pegado al desplazamiento, sin parpadeos); `"lens"` fuerza la lente.
 - Las capas del vidrio sobresalen un poco de su elemento (para la lente y el halo). Si un vidrio llega al borde de la pantalla, pon `overflow: hidden` (o `clip`) a su contenedor: si no, en el móvil ensancha la página. `overflow` no corta el fondo que ve el vidrio.
 - **Sin contorno: el canto lo dibuja la luz** de `ns-frame/light`: un filtro de iluminación SVG sobre la silueta exacta, así que cada tramo brilla según el ángulo con la luz (fuerte y estrecho donde mira hacia ella, casi nada en los costados), nítido a cualquier zoom. Un chaflán es una cara que se enciende entera; una curva, un degradado. La luz es la de toda la página: el puntero la gira un poco; sin puntero fino (móvil), el desplazamiento; con movimiento reducido queda fija arriba a la izquierda. Una **sombra** suave (`--ns-glass-shadow`, `none` para quitarla) separa el cristal del fondo. El borde de ns-frame (`--ns-border`) no se dibuja sobre el vidrio (quedaba un doble contorno); si lo quieres, `data-ns-glass="border"`.
 - **`"facet"` — cristal tallado.** El canto es más duro (bisel estrecho: cada cara se enciende con su arista) y la lente es **plana por caras**: junto a cada cara, el fondo se desvía lo mismo en toda ella, así que se ve partido en cada corte, como a través de una gema.

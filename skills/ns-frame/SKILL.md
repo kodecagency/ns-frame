@@ -39,6 +39,8 @@ ns-frame draws shapes with a small shape language written in HTML attributes. Th
 | Tactile controls / cards with real bevels (ceramic, metal, paper, clay) that sink when pressed | `data-ns-relief` (`inset`, `flat`) + `ns-frame/relief` |
 | iOS-style tab bar whose glass indicator can be dragged between tabs | `data-ns-tabs` + `ns-frame/tabs` |
 | A button that releases its actions as liquid drops (FAB / speed dial) | `data-ns-drops` + `ns-frame/liquid` |
+| Segmented controls, filter chips, labelled selects, sliders with a filled track, color swatches | `data-ns-segment` / `data-ns-chips` / `data-ns-field` / `data-ns-range` / `data-ns-swatches` + `ns-frame/controls` (selection: `data-ns-choice`). Theme with `--ns-ui-*`; never hand-roll these |
+| Many glass pieces on phones | Keep it to a few; use `data-ns-glass="frost"` (no lens, no WebGL) for groups of pieces |
 
 Read `references/shapes.md` before writing any non-trivial shape and `references/components.md` before using a module.
 

@@ -55,7 +55,7 @@ const ACTIONS = [
               <button type="button" class="cta" data-ns-concentric>Reservar</button>
             </div>
           </article>
-          <div class="seg" id="cc-gap" role="group" data-ns-choice aria-label="Hueco">{GAPS.map(([v, n], i) => <button type="button" data-g={v} aria-pressed={String(i == 1)}>{n}</button>)}</div>
+          <div data-ns-segment="sm" id="cc-gap" role="group" data-ns-choice aria-label="Hueco">{GAPS.map(([v, n], i) => <button type="button" data-g={v} aria-pressed={String(i == 1)}>{n}</button>)}</div>
         </div>
         <div class="cap">
           <h3>Esquinas concéntricas</h3>
@@ -70,7 +70,7 @@ const ACTIONS = [
           <div class="quote" id="fq" data-ns={SHAPES[0][0]} data-ns-flow="22">
             <p><b>El texto llena la forma.</b> Cada línea mide lo que le deja el contorno, con el mismo margen en las diagonales, en las curvas y en los vértices. CSS lo especificó hace más de diez años con shape-inside y ningún navegador lo ha implementado.</p>
           </div>
-          <div class="seg" id="fq-shape" role="group" data-ns-choice aria-label="Forma">{SHAPES.map(([s, n], i) => <button type="button" data-s={s} aria-pressed={String(!i)}>{n}</button>)}</div>
+          <div data-ns-segment="sm" id="fq-shape" role="group" data-ns-choice aria-label="Forma">{SHAPES.map(([s, n], i) => <button type="button" data-s={s} aria-pressed={String(!i)}>{n}</button>)}</div>
         </div>
         <div class="cap">
           <h3>Texto que llena la forma</h3>
@@ -84,7 +84,7 @@ const ACTIONS = [
         <div class="stage s3">
           <p class="hl" id="hl">Titulares con <mark data-ns-mark id="mk" class="go" contenteditable="plaintext-only" spellcheck="false">un resaltado que abraza cada línea y se adapta mientras escribes</mark></p>
           <div class="row">
-            <div class="seg" id="mk-style" role="group" data-ns-choice aria-label="Estilo del resaltado">{MARKS.map(([c, n], i) => <button type="button" data-c={c} aria-pressed={String(!i)}>{n}</button>)}</div>
+            <div data-ns-segment="sm" id="mk-style" role="group" data-ns-choice aria-label="Estilo del resaltado">{MARKS.map(([c, n], i) => <button type="button" data-c={c} aria-pressed={String(!i)}>{n}</button>)}</div>
             <small class="hint">Escribe en el texto verde</small>
           </div>
         </div>
@@ -106,7 +106,7 @@ const ACTIONS = [
             {ACTIONS.map(([n, d]) => <button type="button" aria-label={n} inert><Icon d={d} /></button>)}
             <button type="button" aria-expanded="false" aria-label="Más acciones"><Icon d="M10 4.5v11 M4.5 10h11" /></button>
           </div>
-          <div class="seg" id="lq-mode" role="group" data-ns-choice aria-label="Material">{[['glass', 'Vidrio'], ['', 'Sólido']].map(([v, n], i) => <button type="button" data-m={v} aria-pressed={String(!i)}>{n}</button>)}</div>
+          <div data-ns-segment="sm" id="lq-mode" role="group" data-ns-choice aria-label="Material">{[['glass', 'Vidrio'], ['', 'Sólido']].map(([v, n], i) => <button type="button" data-m={v} aria-pressed={String(!i)}>{n}</button>)}</div>
         </div>
         <div class="cap">
           <h3>Formas líquidas y vidrio</h3>
@@ -224,7 +224,6 @@ const ACTIONS = [
   .cap { padding: 18px 24px 24px; display: grid; gap: 6px }
   .cap h3 { font-size: var(--t-title) }
   .cap p { margin: 0; color: var(--text-2); font-size: var(--t-ui); line-height: 1.5; max-width: 60ch }
-  .stage .seg button { min-height: 36px; padding: 0 12px; font-size: var(--t-small) }
 
   /* 1 · tarjeta de reserva: foto y botón concéntricos con la tarjeta */
   .s1 { background: radial-gradient(70% 80% at 50% 30%, rgba(0, 230, 118, .08), transparent 70%) }
@@ -255,7 +254,9 @@ const ACTIONS = [
   /* 4 · líquido: selector de periodo y acciones que salen en gotas, en vidrio o sólidos */
   /* sin isolation ni z-index negativos: el vidrio tiene que ver la foto como fondo real. La foto
      va primero en el DOM y el resto, posicionado, se pinta encima */
-  .s4 { gap: 36px; overflow: hidden; padding-bottom: 22px }
+  /* (overflow: clip y no hidden: hidden la hace desplazable por código, y el foco de una pestaña
+     podía moverla en vertical) */
+  .s4 { gap: 36px; overflow: hidden; overflow: clip; padding-bottom: 22px }
   .s4 .bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(.82) }
   .s4 > :not(.bg) { position: relative }
   /* ns-frame/tabs: la barra es un cristal oscuro y el indicador, una lente clara que se arrastra */
@@ -294,7 +295,7 @@ const ACTIONS = [
   /* 6 · editor de fotos: controles de vidrio sobre la imagen (la foto va primero y se filtra de
      verdad; los controles, posicionados, encima) */
   .x6 { grid-column: 1 / -1 }
-  .s6 { min-height: 470px; padding: 0; overflow: hidden; justify-content: flex-end }
+  .s6 { min-height: 470px; padding: 0; overflow: hidden; overflow: clip; justify-content: flex-end }
   .s6 .bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: filter .45s var(--ease) }
   .s6 > :not(.bg) { color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, .4) }
   .ed-name { position: absolute; left: 22px; top: 22px; margin: 0; padding: 10px 18px; font: 600 var(--t-small)/1 var(--body); color: var(--ns-glass-ink, #fff); transition: color .35s; --ns-glass-tint: rgba(12, 12, 16, .2) }

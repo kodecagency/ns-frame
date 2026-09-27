@@ -21,7 +21,8 @@
 //      backdrop-filter; en Safari y Firefox (que no admiten filtros SVG en backdrop-filter), en
 //      WebGL sobre una copia del fondo: la imagen, el vídeo o el canvas que haya detrás (con CORS),
 //      lo que diga data-ns-liquid-src="selector", o la página rasterizada bajo el grupo. Allí, un
-//      material grueso (blur ≥ 12px) o un vidrio fijo/pegajoso usan el desenfoque nativo (la copia
+//      material grueso (blur ≥ 12px), un vidrio fijo/pegajoso o cualquiera en una pantalla táctil
+//      usan el desenfoque nativo (la copia
 //      se vería granulada o llegaría tarde al desplazar); data-ns-glass="lens" fuerza la lente;
 //   3. canto: lo de detrás, más luminoso y saturado, en una franja junto al borde (dentro del
 //      filtro de la lente; en WebGL, en el mismo paso);
@@ -73,6 +74,9 @@ let styled = 0
 const LENS = typeof navigator != 'undefined' && !!navigator.userAgentData?.brands?.some(b => b.brand == 'Chromium')
 // WebKit (Safari y todos los navegadores de iPhone)
 const WK = !LENS && typeof navigator != 'undefined' && /AppleWebKit/.test(navigator.userAgent)
+// pantalla táctil (sin puntero fino)
+let coarse = null
+const COARSE = () => (coarse ??= typeof matchMedia == 'function' && matchMedia('(pointer: coarse)').matches)
 // -moz-element(): Firefox pinta cualquier elemento, en vivo, como imagen de fondo
 const MOZ = !!globalThis.CSS?.supports?.('background-image', '-moz-element(#a)')
 const FIT = { cover: 'cover', contain: 'contain', fill: '100% 100%', none: 'auto', 'scale-down': 'contain' }
@@ -1224,7 +1228,9 @@ export function liquid(el, o = {}) {
       // por debajo y en iPhone el scroll lo mueve el compositor, por delante del hilo principal; una
       // copia pintada con JS siempre llegaría tarde (y cambiar de lente a nativo al desplazar se veía:
       // el vidrio parpadeaba). El desenfoque nativo va pegado al scroll y nunca cambia de aspecto
-      if (!LENS && (V.blur >= 12 || pin) && !/(^|\s)lens(\s|$)/.test(el.getAttribute('data-ns-glass') || '')) V.src = null
+      // Y en táctil (iPhone, iPad, Android fuera de Chromium): un desplazamiento rápido lo lleva el
+      // compositor y la copia pintada con JS llegaba tarde o se escondía y volvía (un parpadeo)
+      if (!LENS && (V.blur >= 12 || pin || COARSE()) && !/(^|\s)lens(\s|$)/.test(el.getAttribute('data-ns-glass') || '')) V.src = null
       // si cambió algo del mapa de la lente (al levantarse un indicador, por ejemplo), se regenera ya,
       // aunque la forma siga en marcha; si no, sólo al detenerse
       const vk = [V.lens, V.depth, V.zoom, V.hard, V.prism].join()

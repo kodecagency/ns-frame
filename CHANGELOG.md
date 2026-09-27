@@ -13,7 +13,11 @@
 - **`data-ns-glass="frost"`**: vidrio esmerilado sin lente, sin WebGL y sin filtros de luz (desenfoque nativo, tinte y canto fino), igual en todos los motores; es el que usa todo vidrio con calidad baja. En el iPhone, nueve piezas con lente a la vez salían negras, con bordes dentados y puntos blancos en las esquinas.
 - **Mosaico, efecto `stream`:** la estela sólo enciende el contorno de las piezas (va en la capa enmascarada por los bordes): ya no hay líneas duras cruzando los huecos.
 - **Carrusel:** `data-ns-carousel-current` y `data-ns-carousel-shape` (la diapositiva que llega cambia de silueta con morph), clase `ns-car-on`, `--ns-snap` (centradas, con las vecinas asomando); las posiciones siguen la alineación real.
-- Landing: fuera la sección de relieve (el módulo sigue en la librería); mosaico con material vidrio; selectores y deslizadores con acabado propio.
+- **`ns-frame/controls`**: segmentos, fichas, campos (select nativo con su flecha), deslizadores con la pista rellena y su `output`, y muestras de color, con aspecto de serie y tema por `--ns-ui-*`. La landing ya no tiene controles hechos a mano: usa éstos.
+- Carrusel: sólo se desplaza en horizontal (las capas de un vidrio dentro lo volvían desplazable en vertical: en el iPhone la diapositiva se movía y se cortaba); lo anidado (`data-ns-nest`) sigue a la forma nueva de la diapositiva: el rótulo es concéntrico.
+- Pestañas: un gesto horizontal ya no desplaza la página a medias (la barra se movía en vertical al arrastrar).
+- Vidrio en pantallas táctiles fuera de Chromium: desenfoque nativo (la copia para la lente parpadeaba al desplazarse rápido); `"lens"` la fuerza.
+- Landing: fuera la sección de relieve (el módulo sigue en la librería); mosaico con material vidrio (en PC: en el móvil, nueve capas de desenfoque grandes superan lo que el navegador pinta).
 - `ns-mark`: dos líneas con los bordes casi alineados se igualan (sin escalones diminutos).
 - Autoría: © Francesco Sierchio (Kodec Agency) en la licencia y en la cabecera de cada archivo compilado.
 

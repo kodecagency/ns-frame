@@ -174,6 +174,16 @@ export function drops(el: HTMLElement, options?: {
   stay?: boolean
 }): { open(): void; close(): void; toggle(): void; readonly isOpen: boolean; destroy(): void } | null
 
+// ── ns-frame/controls ──
+/**
+ * Deslizador de ns-frame (automático con `input[type=range][data-ns-range]`): lo recorrido en `--p` y el
+ * `output[for]` de su id con el valor (`data-ns-unit` detrás; `data-ns-scale` lo multiplica). Llama a
+ * `update()` si cambias el valor por código.
+ */
+export function range(el: HTMLInputElement): { update(): void; destroy(): void }
+/** Muestras de color (automático con `data-ns-swatches`): cada botón toma el color de su `data-color`. */
+export function swatches(el: HTMLElement): { update(): void; destroy(): void }
+
 // ── ns-frame/glass ──
 /**
  * Vidrio líquido en cualquier elemento, con su forma de ns-frame (data-ns) o su border-radius.

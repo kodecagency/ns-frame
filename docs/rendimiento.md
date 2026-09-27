@@ -29,6 +29,7 @@ order: 13
 | `ns-pop.js` | 1,8 KB | 1,5 KB | Popovers |
 | `ns-link.js` | 1,8 KB | 1,6 KB | Callouts HUD |
 | `ns-carousel.js` | 1,7 KB | 1,4 KB | Carrusel |
+| `ns-controls.js` | 2,1 KB | 1,8 KB | Controles de serie (segmentos, fichas, campos, deslizadores, muestras) |
 | `ns-bento.js` | 1,5 KB | 1,3 KB | Bento |
 | `ns-sheet.js` | 1,7 KB | 1,5 KB | Hoja arrastrable |
 | `ns-audit.js` | 1,3 KB | 1,2 KB | Sólo desarrollo |
