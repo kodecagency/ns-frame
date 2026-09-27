@@ -22,6 +22,14 @@
 // · data-ns-switch: en un <input type="checkbox">, un interruptor (role="switch"). Variables:
 //   --ns-switch-w, -h, -on, -off, -knob, -time.
 // · data-ns-copy="#id": un botón que copia el texto de #id y dice «Copiado» un momento (ver copy()).
+// · data-ns-badge: insignia (una versión, un estado); "solid", rellena con el acento. Variables
+//   --ns-badge-bg, -ink, -line, -radius, -pad, -size.
+// · data-ns-code: bloque de código (en un <pre>); "scroll" sin partir líneas, "bare" sin fondo.
+//   Variables --ns-code-bg, -ink, -pad, -radius, -size.
+// · data-ns-grip: el asa de una hoja o de algo que se arrastra (decorativa: aria-hidden). Variables
+//   --ns-grip, -w, -h, -margin.
+// · data-ns-card: un botón o enlace con aspecto de tarjeta (sin el reinicio de estilos a mano), con
+//   hover y foco. Variables --ns-card-bg, -hover, -pad, -gap. Admite data-ns (forma) y todo lo demás.
 // · data-ns-level: nivel vertical (brillo, volumen): una píldora alta que se llena desde abajo, con
 //   un icono abajo. <label data-ns-level><input type="range" aria-label="Brillo"><svg …/></label>.
 //   Es un input range de verdad (teclado, lector de pantalla), vertical con writing-mode (sin girar:
@@ -31,7 +39,7 @@
 import { styles, watch, cssTime } from './ns-frame.js'
 
 const CSS = `@layer ns{
-:where([data-ns-segment],[data-ns-chips],[data-ns-field],[data-ns-swatches],[data-ns-range],[data-ns-level],[data-ns-switch]){--_s:var(--ns-ui-surface,#141416);--_l:var(--ns-ui-line,rgba(255,255,255,.09));--_i:var(--ns-ui-ink,#f4f4f5);--_m:var(--ns-ui-muted,rgba(244,244,245,.62));--_a:var(--ns-ui-accent,#00e676);--_r:var(--ns-ui-radius,14px);--_h:var(--ns-ui-h,40px)}
+:where([data-ns-segment],[data-ns-chips],[data-ns-field],[data-ns-swatches],[data-ns-range],[data-ns-level],[data-ns-switch],[data-ns-badge],[data-ns-code],[data-ns-card],[data-ns-grip]){--_s:var(--ns-ui-surface,#141416);--_l:var(--ns-ui-line,rgba(255,255,255,.09));--_i:var(--ns-ui-ink,#f4f4f5);--_m:var(--ns-ui-muted,rgba(244,244,245,.62));--_a:var(--ns-ui-accent,#00e676);--_r:var(--ns-ui-radius,14px);--_h:var(--ns-ui-h,40px)}
 :where([data-ns-segment]){display:inline-flex;flex-wrap:wrap;gap:2px;padding:4px;border-radius:var(--_r);background:var(--_s);border:1px solid var(--_l)}
 :where([data-ns-segment]) > :where(button){min-height:var(--_h);padding:0 14px;border:0;border-radius:calc(var(--_r) - 4px);background:transparent;color:var(--_m);font:inherit;font-family:var(--ns-ui-font,inherit);font-size:13.5px;cursor:pointer;transition:background-color .25s cubic-bezier(.2,.8,.2,1),color .2s}
 :where([data-ns-segment~=sm]) > :where(button){min-height:calc(var(--_h) - 6px);padding:0 11px;font-size:12.5px}
@@ -83,6 +91,16 @@ const CSS = `@layer ns{
 :where(input[type=checkbox][data-ns-switch]):disabled{opacity:.45;cursor:default}
 :root:not([data-ns-input=pointer]) :where(input[type=checkbox][data-ns-switch]):focus-visible{outline:2px solid var(--_a);outline-offset:2px}
 :where([data-ns-copy]){cursor:pointer}
+:where([data-ns-badge]){display:inline-flex;align-items:center;gap:4px;padding:var(--ns-badge-pad,4px 7px);border-radius:var(--ns-badge-radius,6px);border:1px solid var(--ns-badge-line,var(--_l));background:var(--ns-badge-bg,transparent);color:var(--ns-badge-ink,var(--_m));font:500 var(--ns-badge-size,11px)/1 var(--ns-ui-mono,ui-monospace,monospace);letter-spacing:0;white-space:nowrap;vertical-align:middle}
+:where([data-ns-badge~=solid]){--ns-badge-bg:var(--_a);--ns-badge-line:transparent;--ns-badge-ink:var(--ns-ui-on-ink,#0a0a0a);--ns-badge-radius:999px;--ns-badge-pad:6px 9px;font-family:var(--ns-ui-font,inherit);font-weight:600}
+:where([data-ns-code]){margin:0;padding:var(--ns-code-pad,12px 14px);border-radius:var(--ns-code-radius,10px);background:var(--ns-code-bg,rgba(0,0,0,.28));color:var(--ns-code-ink,var(--_m));font:var(--ns-code-size,12.5px)/1.65 var(--ns-ui-mono,ui-monospace,monospace);white-space:pre-wrap;overflow-wrap:anywhere;tab-size:2}
+:where([data-ns-code~=scroll]){white-space:pre;overflow-x:auto;overflow-wrap:normal}
+:where([data-ns-code~=bare]){padding:0;background:none}
+:where([data-ns-grip]){display:block;flex:none;width:var(--ns-grip-w,38px);height:var(--ns-grip-h,4px);margin:var(--ns-grip-margin,0 auto);border-radius:999px;background:var(--ns-grip,rgba(255,255,255,.25))}
+@media (forced-colors:active){:where([data-ns-grip]){background:CanvasText}}
+:where([data-ns-card]){-webkit-appearance:none;appearance:none;box-sizing:border-box;display:flex;flex-direction:column;gap:var(--ns-card-gap,4px);margin:0;padding:var(--ns-card-pad,14px);border:0;background:var(--ns-card-bg,var(--_s));color:inherit;font:inherit;text-align:start;cursor:pointer;transition:background-color .25s}
+:where([data-ns-card]):hover{background:var(--ns-card-hover,color-mix(in srgb,var(--_i) 6%,var(--ns-card-bg,var(--_s))))}
+:root:not([data-ns-input=pointer]) :where([data-ns-card]):focus-visible{outline:2px solid var(--_a);outline-offset:2px}
 @media (forced-colors:active){:where(input[type=checkbox][data-ns-switch]){border:1px solid CanvasText}:where(input[type=checkbox][data-ns-switch]):checked{background:Highlight}:where(input[type=checkbox][data-ns-switch])::after{background:CanvasText}}
 @media (prefers-reduced-motion:reduce){:where([data-ns-segment],[data-ns-chips]) > :where(button),:where(input[type=checkbox][data-ns-switch]),:where(input[type=checkbox][data-ns-switch])::after{transition:none}}
 @media (forced-colors:active){:where([data-ns-segment],[data-ns-chips]) > :where(button):is([aria-pressed=true],[aria-checked=true]){outline:2px solid Highlight}}
@@ -207,4 +225,4 @@ watch('data-ns-switch', el => {
 })
 watch('data-ns-copy', el => copy(el))
 watch('data-ns-swatches', el => swatches(el))
-for (const a of ['data-ns-segment', 'data-ns-chips', 'data-ns-field']) watch(a, () => { css(); return null })
+for (const a of ['data-ns-segment', 'data-ns-chips', 'data-ns-field', 'data-ns-badge', 'data-ns-code', 'data-ns-card', 'data-ns-grip']) watch(a, () => { css(); return null })

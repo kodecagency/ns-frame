@@ -280,8 +280,9 @@ const TIME = /^\d*\.?\d+m?s$/
 
 // Constructor de nodos SVG sin parsear markup: atributos con setAttribute y estilos
 // con CSSOM. Ningún valor (de atributos o de CSS) puede inyectar nodos, y funciona
-// con una Content-Security-Policy estricta (sin 'unsafe-inline').
-function mk(tag, a = {}, st = {}, ...kids) {
+// con una Content-Security-Policy estricta (sin 'unsafe-inline'). Lo usan también los
+// módulos que dibujan en SVG (light, glass, liquid, mosaic, isle, mark…).
+export function mk(tag, a = {}, st = {}, ...kids) {
   const e = document.createElementNS(SVGNS, tag)
   for (const k in a) e.setAttribute(k, a[k])
   for (const k in st) e.style.setProperty(k, st[k])
@@ -325,7 +326,11 @@ const S = new WeakMap()
 let ro, vo, lo, styled, uid = 0
 
 const attr = (el, k) => el.getAttribute(el.localName == 'ns-frame' ? k : k == 'shape' ? 'data-ns' : 'data-ns-' + k)
-const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches
+/**
+ * ¿Pide la persona movimiento reducido? Se consulta en el momento (sin caché: la preferencia puede
+ * cambiar sin recargar) y es false fuera del navegador (SSR). La usan todos los módulos que animan.
+ */
+export const reduced = () => typeof matchMedia == 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
 // alto contraste (Windows): un marco sin borde quedaría invisible, así que recibe uno del sistema
 const FORCED = DOM && matchMedia('(forced-colors: active)')
 
@@ -759,7 +764,13 @@ export function watch(attr, make) {
 const PICK = 'button,[role=radio],[role=checkbox]'
 function choice(g) {
   const many = g.getAttribute('data-ns-choice') == 'many'
-  const items = () => [...g.querySelectorAll(PICK)].filter(b => b.closest('[data-ns-choice]') == g)
+  // (si el grupo tiene radios o casillas, sólo ellos son opciones: un botón de al lado —las opciones
+  // «•••» de cada fila de una lista— no entra en la elección)
+  const items = () => {
+    const all = [...g.querySelectorAll(PICK)].filter(b => b.closest('[data-ns-choice]') == g)
+    const roles = all.filter(b => /^(radio|checkbox)$/.test(b.getAttribute('role')))
+    return roles.length ? roles : all
+  }
   const aria = b => /^(radio|checkbox)$/.test(b.getAttribute('role')) ? 'aria-checked' : 'aria-pressed'
   const on = b => b.getAttribute(aria(b)) == 'true'
   const pick = b => {

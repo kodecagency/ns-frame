@@ -12,7 +12,7 @@
 // · Variables: --ns-toast-bg, --ns-toast-c (y -ok, -warn, -error), --ns-toast-width (400px),
 //   --ns-toast-gap (10px), --ns-toast-time (entrada, 420), --ns-toast-close-time (260),
 //   --ns-toast-move-time (reacomodo, 240) y --ns-toast-ease.
-import { open, close, styles, cssTime, cssVal } from './ns-frame.js'
+import { open, close, styles, cssTime, cssVal, reduced } from './ns-frame.js'
 
 const CSS_ = `@layer ns{
 .ns-toasts{position:fixed;inset:auto;margin:0;padding:16px;border:0;background:none;color:inherit;overflow:visible;display:none;flex-direction:column;gap:var(--ns-toast-gap,10px);width:min(var(--ns-toast-width,400px),100%);max-height:100%;pointer-events:none}
@@ -36,7 +36,6 @@ const POP = typeof HTMLElement != 'undefined' && 'showPopover' in HTMLElement.pr
 const shown = b => POP ? b.matches(':popover-open') : b.classList.contains('ns-on')
 const show = b => POP ? b.showPopover() : b.classList.add('ns-on')
 const hide = b => POP ? b.hidePopover() : b.classList.remove('ns-on')
-const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 const make = (tag, props, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e }
 
 /** Posición y valores por defecto: { x: 'start'|'center'|'end', y: 'top'|'bottom', max, time, shape, enter }. */

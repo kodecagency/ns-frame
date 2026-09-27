@@ -30,11 +30,11 @@ const GAINS = [
     <div class="vs">
       <figure class="code before" data-ns="all round 18">
         <figcaption><span>Sin ns-frame</span><span class="dim">CSS + SVG + JS · 3 archivos</span></figcaption>
-        <pre set:html={BEFORE} />
+        <pre data-ns-code="bare" set:html={BEFORE} />
       </figure>
       <figure class="code after" data-ns="all round 18">
         <figcaption><span>Con ns-frame</span><span class="dim">1 atributo</span></figcaption>
-        <pre>&lt;<b>article</b> <i>data-ns</i>=<em>"tl+br bevel 24; radius 3"</em>
+        <pre data-ns-code="bare">&lt;<b>article</b> <i>data-ns</i>=<em>"tl+br bevel 24; radius 3"</em>
          <i>data-ns-hover</i>=<em>"all bevel 12; radius 3"</em>&gt;</pre>
         <div class="live ns-dots">
           <article class="demo" data-ns="tl+br bevel 24; radius 3" data-ns-hover="all bevel 12; radius 3" data-ns-motion="spot" tabindex="0">
@@ -62,7 +62,8 @@ const GAINS = [
   .code { margin: 0; background: var(--surface); --ns-border: var(--line-2); padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0 }
   figcaption { display: flex; justify-content: space-between; gap: 12px; font-size: var(--t-small); font-weight: 500 }
   figcaption .dim { font: var(--t-caption) var(--mono) }
-  pre { margin: 0; font: var(--t-caption)/1.7 var(--mono); color: var(--text-2); white-space: pre-wrap; overflow-wrap: anywhere }
+  /* código: data-ns-code="bare" de ns-frame/controls */
+  pre { line-height: 1.7; --ns-code-ink: var(--text-2) }
   .before pre :global(.c) { color: var(--coral-ink) }
   .before { --ns-border: rgba(255, 122, 89, .28) }
   .after { --ns-border: linear-gradient(135deg, rgba(0, 230, 118, .6), rgba(255, 255, 255, .08) 45%, rgba(0, 230, 118, .25)) }

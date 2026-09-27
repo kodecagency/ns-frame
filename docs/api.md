@@ -11,7 +11,7 @@ Casi nunca hace falta: `data-ns` y los atributos cubren el uso normal. La API si
 ## Núcleo (`ns-frame`)
 
 ```js
-import { path, geometry, commands, lerp, safe, define, PRESETS, attach, detach, update, shapeOf, pathOf, watch, jump, modal, quality, fontsReady, open, close, styles } from 'ns-frame'
+import { path, geometry, commands, lerp, safe, define, PRESETS, attach, detach, update, shapeOf, pathOf, watch, jump, modal, quality, fontsReady, open, close, styles, reduced, mk, cssTime, cssNum, cssVal } from 'ns-frame'
 ```
 
 | Función | Qué hace |
@@ -25,6 +25,9 @@ import { path, geometry, commands, lerp, safe, define, PRESETS, attach, detach, 
 | `attach(el)` · `detach(el, clear?)` | Activa / desactiva manualmente (normalmente no hace falta) |
 | `update(el)` | Relee el elemento (tras cambiar variables CSS por JS). Las llamadas de una misma tarea se agrupan: se lee todo y luego se escribe todo, antes del siguiente pintado |
 | `quality()` | `'high'` o `'low'`: el nivel para los efectos caros. Automático (memoria ≤ 4 GB, 2 núcleos o menos, ahorro de datos, o fotogramas lentos al cargar) o fijo con `<html data-ns-quality="low\|high">`. Queda en `<html data-ns-tier>` para tu CSS; un cambio avisa con el evento `ns-quality` en `document` |
+| `reduced()` | `true` si la persona pide movimiento reducido; se consulta en el momento (y es `false` fuera del navegador). La usan todos los módulos que animan |
+| `mk(tag, attrs?, style?, ...hijos)` | un nodo SVG sin parsear markup (CSP estricta): atributos, estilos por CSSOM e hijos. Lo usan todos los módulos que dibujan en SVG |
+| `cssTime(el, var, def)` · `cssNum` · `cssVal` | una variable CSS de `el` como duración en ms, número o texto (o `def`) |
 | `fontsReady(fn)` | `fn` cuando las fuentes web ya cargaron (para volver a medir texto), en un momento libre y con una sola espera para todos |
 | `shapeOf(el)` | Forma efectiva que se está usando (con hover, press, nest y `--ns-shape`) |
 | `jump(el, { smooth, focus })` | Salto fiable a una sección, también con `content-visibility: auto`: suave si se pide, corrige al llegar, respeta `scroll-padding-top` y el movimiento reducido, y enfoca el destino |

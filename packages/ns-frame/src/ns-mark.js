@@ -15,7 +15,7 @@
 // · Líneas que no se tocan en horizontal quedan como piezas separadas.
 // Sin dependencias (salvo el núcleo) y CSP-safe: sólo CSSOM y atributos SVG.
 
-import { styles, path, fontsReady } from './ns-frame.js'
+import { styles, path, fontsReady, mk } from './ns-frame.js'
 
 const CSS = `@layer ns{
 .ns-mark-host{position:relative;isolation:isolate}
@@ -26,7 +26,6 @@ const CSS = `@layer ns{
 @media (prefers-reduced-motion:reduce){.ns-mark-fx{transition:none}}
 @media (forced-colors:active){.ns-mark-fx path{fill:Mark;stroke:none}}
 }`
-const SVG = 'http://www.w3.org/2000/svg'
 const r2 = n => Math.round(n * 100) / 100 || 0
 let styled = 0
 
@@ -94,9 +93,7 @@ function run() {
   }
   for (const { el, st, host, polys, R, vars } of jobs) {
     if (!st.svg) {
-      st.svg = document.createElementNS(SVG, 'svg')
-      st.svg.setAttribute('class', 'ns-mark-fx'); st.svg.setAttribute('aria-hidden', 'true'); st.svg.setAttribute('focusable', 'false')
-      st.svg.append(document.createElementNS(SVG, 'path'))
+      st.svg = mk('svg', { class: 'ns-mark-fx', 'aria-hidden': 'true', focusable: 'false' }, {}, mk('path'))
       host.classList.add('ns-mark-host')
     }
     // el svg va justo después del resaltado (el selector de "draw" lo usa) y dentro del anfitrión

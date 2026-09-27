@@ -30,11 +30,11 @@ const PRESETS = ['card', 'button', 'chip', 'soft', 'notch', 'scoop', 'wing', 'pa
       </div>
       <div class="out" data-ns="tl+br bevel 16; radius 3">
         <div class="row"><span class="lb">HTML</span><button type="button" class="cp" data-ns="all round 10" data-ns-copy="#pg-html">Copiar</button></div>
-        <pre id="pg-html"></pre>
+        <pre id="pg-html" data-ns-code></pre>
         <div class="row"><span class="lb">CSS · <code>clip-path: shape()</code> · cero JS</span><button type="button" class="cp" data-ns="all round 10" data-ns-copy="#pg-css">Copiar</button></div>
-        <pre id="pg-css"></pre>
+        <pre id="pg-css" data-ns-code></pre>
         <div class="row"><span class="lb">Ruta SVG · tamaño actual</span><button type="button" class="cp" data-ns="all round 10" data-ns-copy="#pg-svg">Copiar</button></div>
-        <pre id="pg-svg"></pre>
+        <pre id="pg-svg" data-ns-code></pre>
       </div>
     </div>
   </div>
@@ -109,6 +109,7 @@ const PRESETS = ['card', 'button', 'chip', 'soft', 'notch', 'scoop', 'wing', 'pa
   .row { display: flex; justify-content: space-between; align-items: center; gap: 12px }
   .cp { min-height: 34px; padding: 0 14px; border: 0; background: rgba(255, 255, 255, .08); color: var(--text); font-size: var(--t-small); cursor: pointer }
   .cp:hover { background: rgba(255, 255, 255, .14) }
-  pre { margin: 0 0 8px; padding: 12px 14px; border-radius: 10px; background: var(--veil-1); color: var(--text-2); font: var(--t-caption)/1.6 var(--mono); white-space: pre-wrap; word-break: break-all; max-height: 92px; overflow: auto }
+  /* bloques de código: data-ns-code de ns-frame/controls (aquí, con altura máxima) */
+  pre { margin-bottom: 8px; max-height: 92px; overflow: auto; word-break: break-all; --ns-code-bg: var(--veil-1); --ns-code-ink: var(--text-2) }
   @media (max-width: 900px) { .pg { grid-template-columns: 1fr } .st { min-height: 300px } .rz { height: 200px } }
 </style>

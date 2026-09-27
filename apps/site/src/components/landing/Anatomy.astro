@@ -51,13 +51,13 @@ const NOTES = [
         <p>Debajo de 420 px el panel pierde la muesca y reduce el chaflán. Mueve el control o arrastra el borde derecho.</p>
         <label data-ns-field><span>Ancho del componente <output for="q-in" class="num">100 %</output></span><input type="range" min="30" max="100" value="100" id="q-in" data-ns-range data-ns-unit=" %"></label>
         <div class="qbox" id="q-box"><div class="q" data-ns="panel; @<420 all bevel 10; @<420 top none; radius 3"><span id="q-w" class="num"></span></div></div>
-        <pre>panel; <b>@&lt;420</b> all bevel 10; <b>@&lt;420</b> top none</pre>
+        <pre data-ns-code>panel; <b>@&lt;420</b> all bevel 10; <b>@&lt;420</b> top none</pre>
       </div>
       <div class="box" data-ns="tl+br bevel 18; radius 3">
         <h3>Tu propio polígono</h3>
         <p>Coordenadas en px, % o <code>100%-24</code>; <code>rN</code> redondea ese vértice. Una flecha de «siguiente» en una sola línea:</p>
         <div class="poly ns-dots"><a href="#empezar" class="arrow" data-ns="poly 26 0 r4, 100%-56 0 r4, 100% 50% r3, 100%-56 100% r4, 26 100% r4, 0 100%-26 r3, 0 26 r3" data-ns-hover="poly 18 0 r4, 100%-44 0 r4, 100% 50% r3, 100%-44 100% r4, 18 100% r4, 0 100%-18 r3, 0 18 r3">Siguiente paso</a></div>
-        <pre>poly 26 0 r4, 100%-56 0 r4, 100% 50% r3,
+        <pre data-ns-code>poly 26 0 r4, 100%-56 0 r4, 100% 50% r3,
      100%-56 100% r4, 26 100% r4, 0 100%-26 r3, 0 26 r3</pre>
       </div>
     </div>
@@ -100,7 +100,8 @@ const NOTES = [
   .q { height: 150px; display: grid; place-items: center; background: linear-gradient(180deg, rgba(255, 181, 71, .1), rgba(20, 20, 22, .6)); --ns-border: rgba(255, 181, 71, .55); --ns-inner: 5px; --ns-morph-time: 360; font: var(--t-caption) var(--mono); color: var(--text-2) }
   .poly { display: grid; place-items: center; min-height: 150px; border-radius: 12px; --ns-pat: rgba(255, 255, 255, .07); --ns-pat-mask: none }
   .arrow { display: inline-grid; place-items: center; min-height: 64px; padding: 0 64px 0 34px; background: var(--signal); color: var(--ink-go); font: 600 var(--t-body) var(--display); font-stretch: 106%; --ns-morph-time: 300 }
-  pre { margin: auto 0 0; padding: 12px 14px; border-radius: 10px; background: var(--veil-1); color: var(--text-2); font: var(--t-caption)/1.6 var(--mono); white-space: pre-wrap; word-break: break-word }
+  /* bloques de código: data-ns-code de ns-frame/controls */
+  pre { margin-top: auto; --ns-code-bg: var(--veil-1); --ns-code-ink: var(--text-2) }
   pre b { color: var(--signal); font-weight: 500 }
   @media (max-width: 960px) {
     .anno { grid-template-columns: 1fr; gap: 28px }

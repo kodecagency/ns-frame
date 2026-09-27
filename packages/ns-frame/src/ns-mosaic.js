@@ -13,7 +13,7 @@
 // · El contenido va dentro del mayor rectángulo libre de cada pieza (padding automático).
 // Requiere ns-frame.js (que dibuja las formas). CSP-safe: estilos por constructable stylesheet.
 
-import { styles as inject, path, fontsReady, cssTime } from './ns-frame.js'
+import { styles as inject, path, fontsReady, cssTime, mk, reduced } from './ns-frame.js'
 import { flow, unflow } from './ns-flow.js'
 
 // nombres: las variables de efectos se llaman --ns-mosaic-* (light, width, fill, dot, line, a1, a2,
@@ -362,7 +362,7 @@ function layout() {
     const pad = cs.getPropertyValue('--ns-pad') ? px(cs.getPropertyValue('--ns-pad')) : 22
     for (const f of flows) flow(f, pad) || unflow(f.k)
     fit(el)
-    light(el, parts, W, H, holes, matchMedia('(prefers-reduced-motion: reduce)').matches, px(cs.paddingLeft), px(cs.paddingTop), { G, xs, ys, gx, gy, r: ro_, speed: px(cs.getPropertyValue('--ns-mosaic-speed') || cs.getPropertyValue('--ns-mo-speed')) || 160,
+    light(el, parts, W, H, holes, reduced(), px(cs.paddingLeft), px(cs.paddingTop), { G, xs, ys, gx, gy, r: ro_, speed: px(cs.getPropertyValue('--ns-mosaic-speed') || cs.getPropertyValue('--ns-mo-speed')) || 160,
       // la luz que sigue al puntero (radio) y la onda al tocar (duración: 1100, 1100ms o 1.1s)
       glow: px(cs.getPropertyValue('--ns-mosaic-glow-size')) || 240, ripple: cssTime(cs, '--ns-mosaic-ripple-time', 1100) })
   }
@@ -373,15 +373,7 @@ function layout() {
 // solo objeto: bordes (máscara de trazo) y fondos (máscara de relleno, tenue).
 // data-ns-mosaic="sweep wave ripple glow" · color --ns-mosaic-light · grosor --ns-mosaic-width ·
 // tiempo --ns-mosaic-fx-time · intensidad del fondo --ns-mosaic-fill (o los antiguos --ns-mo-*)
-const SVG = 'http://www.w3.org/2000/svg'
 let uid = 0
-function mk(tag, a = {}, st = {}, ...kids) {
-  const e = document.createElementNS(SVG, tag)
-  for (const k in a) e.setAttribute(k, a[k])
-  for (const k in st) e.style.setProperty(k, st[k])
-  e.append(...kids)
-  return e
-}
 const LIGHT = alias('var(--ns-mo-light,var(--ns-motion,#fff))')
 const stops = (...s) => s.map(([o, a]) => mk('stop', { offset: o }, { 'stop-color': LIGHT, 'stop-opacity': a }))
 
@@ -426,7 +418,7 @@ function light(el, parts, W, H, holes, reduce, pl, pt, grid) {
     el._nse = 1
     el.addEventListener('pointerdown', e => {
       const L = el._nsl
-      if (!L?.on.includes('ripple') || matchMedia('(prefers-reduced-motion: reduce)').matches) return
+      if (!L?.on.includes('ripple') || reduced()) return
       const r = L.svg.getBoundingClientRect()
       ring(L, e.clientX - r.left, e.clientY - r.top, Math.hypot(L.W, L.H), L.ripple || 1100)
     })
@@ -622,7 +614,7 @@ let vtStyled = 0, vtRun = null, vtN = 0
 /** Aplica update() (otra plantilla) con las piezas viajando a su sitio. Devuelve una promesa. */
 export function arrange(el, update) {
   const go = () => { update(); if (M.has(el)) layout() }
-  if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) return Promise.resolve(go())
+  if (!document.startViewTransition || reduced()) return Promise.resolve(go())
   if (!vtStyled) { vtStyled = 1; inject(VT_CSS) }
   const root = document.documentElement, id = 'nsm' + ++vtN
   const pieces = [...el.querySelectorAll(':scope > [data-ns-area], :scope > [data-ns-orb]')]

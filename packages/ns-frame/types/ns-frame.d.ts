@@ -112,6 +112,13 @@ export function watch<T extends { destroy?(): void }>(attr: string, make: (el: E
  * con el evento `ns-quality` en `document`.
  */
 export function quality(): 'high' | 'low'
+/** ¿Pide la persona movimiento reducido? Se consulta en el momento; false fuera del navegador. */
+export function reduced(): boolean
+/**
+ * Nodo SVG sin parsear markup (CSP-safe): atributos con setAttribute, estilos por CSSOM y los hijos
+ * que se le pasen. `mk('path', { d }, {}, …hijos)`.
+ */
+export function mk<K extends keyof SVGElementTagNameMap>(tag: K, attrs?: Record<string, string | number>, style?: Record<string, string>, ...kids: (Node | string)[]): SVGElementTagNameMap[K]
 /** Una variable CSS de `el` (o de un estilo calculado) como duración en ms: "320", "320ms" o ".32s". */
 export function cssTime(el: Element | CSSStyleDeclaration, name: string, def: number): number
 /** Una variable CSS como número (o `def`). */

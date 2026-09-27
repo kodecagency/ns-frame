@@ -39,7 +39,7 @@ const MEDIA = [
           <img src="https://picsum.photos/seed/nsframe-dune/720/450.webp" alt="Dunas al atardecer" width="720" height="450" loading="lazy">
           <div class="meta"><b>Dunas de Médanos</b><span>Recorrido de 12 km · 4 h</span><i class="pill">Reservar</i></div>
         </article>
-        <pre class="snippet">&lt;<b>article</b> <i>data-ns</i>="<em id="shape-code">{SHAPES[0].code}</em>"&gt;</pre>
+        <pre class="snippet" data-ns-code="bare">&lt;<b>article</b> <i>data-ns</i>="<em id="shape-code">{SHAPES[0].code}</em>"&gt;</pre>
       </div>
       <div class="media">
         {MEDIA.map((m, i) => (
@@ -54,7 +54,7 @@ const MEDIA = [
     <h3 class="sub">14 formas listas, o la tuya en una línea</h3>
     <div class="wall" id="presets">
       {PRESETS.map((p, i) => (
-        <button type="button" class:list={['pre', 'k' + (i % 5)]} data-ns={p} data-p={p} aria-label={`Aplicar la forma ${p} a la tarjeta`}>
+        <button type="button" class:list={['pre', 'k' + (i % 5)]} data-ns-card data-ns={p} data-p={p} aria-label={`Aplicar la forma ${p} a la tarjeta`}>
           <span class="nm">{p}</span><code class="tag">data-ns="{p}"</code>
         </button>
       ))}
@@ -92,7 +92,7 @@ const MEDIA = [
   .meta b { font: 700 var(--t-title)/1.2 var(--display); font-stretch: 106%; letter-spacing: -.02em }
   .meta span { grid-row: 2; font-size: var(--t-small); color: var(--ink-2) }
   .pill { grid-row: 1 / 3; grid-column: 2; font: 500 var(--t-small)/1 var(--body); font-style: normal; background: #0a0a0a; color: #fff; padding: 10px 14px; border-radius: 99px }
-  .snippet { margin: 0; font: var(--t-small)/1.5 var(--mono); color: var(--text-2); text-align: center; white-space: pre-wrap; word-break: break-word }
+  .snippet { text-align: center; line-height: 1.5; --ns-code-ink: var(--text-2); --ns-code-size: var(--t-small) }
   .snippet b { color: var(--text); font-weight: 500 }
   .snippet i { font-style: normal; color: var(--signal) }
   .snippet em { font-style: normal; color: var(--text) }
@@ -106,7 +106,8 @@ const MEDIA = [
 
   .sub { margin: 44px 0 14px; font-size: var(--t-title); color: var(--text) }
   .wall { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px }
-  .pre { appearance: none; border: 0; margin: 0; font: inherit; color: inherit; text-align: left; position: relative; box-sizing: border-box; cursor: pointer; min-height: 112px; padding: 20px 24px; display: flex; flex-direction: column; justify-content: space-between; gap: 8px; background: var(--surface); --ns-border: color-mix(in srgb, var(--tone, #fff) 30%, rgba(255, 255, 255, .16)); --ns-morph-time: 300; transition: background-color .25s }
+  /* tarjeta-botón: data-ns-card de ns-frame/controls */
+  .pre { position: relative; min-height: 112px; justify-content: space-between; --ns-card-pad: 20px 24px; --ns-card-gap: 8px; background: var(--surface); --ns-border: color-mix(in srgb, var(--tone, #fff) 30%, rgba(255, 255, 255, .16)); --ns-morph-time: 300; transition: background-color .25s }
   .pre[data-p=pill] { padding-left: 44px }
   .pre:hover { background: var(--surface-2); --ns-border: var(--tone) }
   .nm { font: 600 var(--t-control)/1 var(--display); font-stretch: 106% }

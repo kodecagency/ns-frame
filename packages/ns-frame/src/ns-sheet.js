@@ -13,7 +13,7 @@
 //   se cierra; y el fondo (::backdrop) se aclara a la vez que la hoja baja (--ns-sheet-p en el diálogo).
 // CSP-safe (sólo CSSOM y Web Animations).
 
-import { styles, cssTime, cssVal } from './ns-frame.js'
+import { styles, cssTime, cssVal, reduced } from './ns-frame.js'
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v))
 let styled = 0
@@ -27,7 +27,6 @@ export const rubber = (x, h) => (1 - 1 / (x / h * 2.2 + 1)) * h / 4
  */
 export const release = (y, v, h) => y > h * .35 || (v > .5 && y > 8)
 
-const reduced = () => typeof matchMedia == 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
 const EASE = 'cubic-bezier(.2,.8,.2,1)'
 
 /**

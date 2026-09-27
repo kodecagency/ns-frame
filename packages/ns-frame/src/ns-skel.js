@@ -11,7 +11,7 @@
 //   coordenadas de la ventana, así la luz cruza de un skeleton al siguiente.
 // · aria-busy mientras carga; el contenido oculto no se lee ni recibe foco.
 // · Variables: --ns-sk (color de los huesos), --ns-sk-glint (brillo), --ns-skel-time (o --ns-sk-time), --ns-sk-band.
-import { geometry, commands, shapeOf, styles, fontsReady, cssTime } from './ns-frame.js'
+import { geometry, commands, shapeOf, styles, fontsReady, cssTime, reduced } from './ns-frame.js'
 
 const CSS_ = `@layer ns{
 :where([data-ns-skeleton]){position:relative}
@@ -142,7 +142,7 @@ function off(el) {
   st.busy == null ? el.removeAttribute('aria-busy') : el.setAttribute('aria-busy', st.busy)
   // los huesos se desvanecen sobre el contenido, que ya está en su sitio
   st.sk.style.opacity = '0'
-  setTimeout(() => st.sk.remove(), matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : cssTime(st.sk, '--ns-skel-fade-time', 400))
+  setTimeout(() => st.sk.remove(), reduced() ? 0 : cssTime(st.sk, '--ns-skel-fade-time', 400))
 }
 
 /** Vuelve a medir (tras cambiar el contenido de relleno por JS sin cambiar el tamaño). */

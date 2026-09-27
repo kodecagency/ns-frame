@@ -7,7 +7,7 @@
 //   (el compilador de ns-css), así un chaflán de 18 px mide 18 px durante todo el recorrido.
 //   Si origen y destino tienen la misma estructura de forma, el navegador interpola una en otra.
 // · Sin soporte (o con prefers-reduced-motion), el cambio ocurre al instante: nada se rompe.
-import { shapeOf, styles } from './ns-frame.js'
+import { shapeOf, styles, reduced } from './ns-frame.js'
 import { css } from './ns-css.js'
 
 // durante el morph, el resto de la página cambia sin fundido: un fundido entre dos layouts de
@@ -23,7 +23,7 @@ const shapeCss = el => el && css(shapeOf(el) || el.getAttribute('data-ns') || el
  * Opciones: { duration: 480, easing }. Devuelve una promesa que se resuelve al terminar.
  */
 export async function morph(from, update, to, { duration = 480, easing = 'cubic-bezier(.3,.7,.2,1)' } = {}) {
-  if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) return update()
+  if (!document.startViewTransition || reduced()) return update()
   if (!styled) { styled = 1; styles(CSS_) }
   const name = 'ns-vt-' + ++n, a = shapeCss(from), root = document.documentElement.classList
   let dest

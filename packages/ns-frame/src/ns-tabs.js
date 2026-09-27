@@ -27,7 +27,7 @@
 // --ns-tabs-ink y --ns-tabs-ink-hot.
 // Con prefers-reduced-motion: sin muelle, sin estiramiento y sin levantar.
 
-import { styles, watch, cssNum } from './ns-frame.js'
+import { styles, watch, cssNum, reduced } from './ns-frame.js'
 import { liquid } from './ns-liquid.js'
 
 const CSS = `@layer ns{
@@ -46,7 +46,6 @@ const CSS = `@layer ns{
 .ns-tabs[data-ns-liquid~=glass]>.ns-tabs-hot.ns-tabs-hot{color:var(--ns-tabs-ink-hot,var(--ns-glass-ink,#fff))}`
 let styled = 0
 const T = new WeakMap()
-const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 const blob = cls => { const e = document.createElement('i'); e.className = cls; e.setAttribute('data-ns-blob', ''); return e }
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v))
 // muelles (rigidez, amortiguación): el indicador, un poco sub-amortiguado (llega con un rebote

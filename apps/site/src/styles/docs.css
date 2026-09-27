@@ -6,7 +6,7 @@ html { scroll-padding-top: 76px }
 .dtop .wrap { height: 100%; display: flex; align-items: center; gap: 24px }
 .brand { display: flex; align-items: center; gap: 10px; white-space: nowrap; font: 700 var(--t-title)/1 var(--display); font-stretch: 110%; letter-spacing: -.02em; min-height: 44px }
 .brand i { width: 15px; height: 15px; background: var(--text) }
-.brand span { font: 500 var(--t-micro)/1 var(--mono); color: var(--text-3); padding: 4px 6px; border: 1px solid var(--line); border-radius: var(--r-xs); letter-spacing: 0 }
+.brand span { --ns-badge-ink: var(--text-3); --ns-badge-line: var(--line) }
 .dtop nav { margin-left: auto; display: flex; gap: 4px; font-size: var(--t-ui); color: var(--text-2) }
 .dtop nav a { padding: 12px 11px; transition: color .2s }
 .dtop nav a:hover, .dtop nav a[aria-current] { color: var(--text) }

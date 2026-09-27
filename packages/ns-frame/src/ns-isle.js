@@ -31,7 +31,7 @@
 // · Se inicia con isle(el); el atributo solo no la arranca (necesita saber qué hacer con la página).
 // Sin dependencias externas (usa el núcleo y ns-frame/sheet) y CSP-safe: estilos adoptados en @layer ns.
 
-import { styles, jump, fontsReady, cssTime, cssVal } from './ns-frame.js'
+import { styles, jump, fontsReady, cssTime, cssVal, mk, reduced } from './ns-frame.js'
 import { sheet } from './ns-sheet.js'
 
 const CSS = `@layer ns{
@@ -113,16 +113,13 @@ html.ns-has-isle body{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
 :where([data-ns-isle-actions]) :is(a,button):hover{filter:brightness(1.12)}
 }
 }`
-const SVGNS = 'http://www.w3.org/2000/svg'
 // un icono de trazo (la flecha de la cápsula y el × de la hoja), si su hueco está vacío
 const glyph = (host, d) => {
   if (!host || host.firstElementChild) return
-  const s = document.createElementNS(SVGNS, 'svg'), p = document.createElementNS(SVGNS, 'path')
-  for (const [k, v] of Object.entries({ viewBox: '0 0 14 14', fill: 'none', stroke: 'currentColor', 'stroke-width': '1.8', 'stroke-linecap': 'round', 'aria-hidden': 'true' })) s.setAttribute(k, v)
-  p.setAttribute('d', d); s.append(p); host.textContent = ''; host.append(s)
+  const s = mk('svg', { viewBox: '0 0 14 14', fill: 'none', stroke: 'currentColor', 'stroke-width': '1.8', 'stroke-linecap': 'round', 'aria-hidden': 'true' }, {}, mk('path', { d }))
+  host.textContent = ''; host.append(s)
 }
 let styled = 0
-const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 const q = (el, s) => el.querySelector(s)
 const r2 = n => Math.round(n * 100) / 100
 // muelle con un rebote leve (≈2,5 %), como las animaciones de sistema, para abrir
@@ -357,7 +354,7 @@ function mount(el, o) {
       // silueta en cada fotograma (sólo cambian cinco atributos); el destello corre con una animación
       // CSS del trazo. Sin filtros de desenfoque: redibujados en cada fotograma frenaban la apertura
       // en el iPhone; el halo son dos trazos anchos y tenues
-      const id = 'nsil' + Math.random().toString(36).slice(2, 7), NS = SVGNS, mk = (t, a = {}) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); return e }
+      const id = 'nsil' + Math.random().toString(36).slice(2, 7)
       const svg = mk('svg', { class: 'ns-isle-light', width: 1, height: 1 }), defs = mk('defs'), cp = mk('clipPath', { id: id + 'c' })
       lr = [mk('rect'), mk('rect', { class: 'b' }), mk('rect', { class: 'h2', pathLength: 100 }), mk('rect', { class: 'h1', pathLength: 100 }), mk('rect', { class: 'r', pathLength: 100 })]
       cp.append(lr[0]); defs.append(cp)

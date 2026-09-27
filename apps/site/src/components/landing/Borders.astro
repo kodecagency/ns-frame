@@ -57,7 +57,7 @@ const PATTERNS = [
     <div class="plans">
       {PLANS.map(pl => (
         <article class:list={['plan', 'ns-u', pl.cls, { top: pl.top }]} data-ns={pl.top ? 'tl+br bevel 28; tr+bl round 16; radius 3' : 'all round 18'} data-ns-spin={pl.top ? '8s' : undefined}>
-          <h3>{pl.n}{pl.top && <span class="badge">Recomendado</span>}</h3>
+          <h3>{pl.n}{pl.top && <span class="badge" data-ns-badge="solid">Recomendado</span>}</h3>
           <p class="price num">{pl.p} €<small> / mes</small></p>
           <ul>{pl.f.map(f => <li>{f}</li>)}</ul>
           <a href="#empezar" class:list={['btn', { ghost: !pl.top, go: pl.top }]} data-ns="all round 12">{pl.cta}</a>
@@ -94,7 +94,7 @@ const PATTERNS = [
   .plans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 14px; align-items: stretch }
   .plan { --ns-u-bg: var(--surface); --ns-u-glow: .55; --ns-border: var(--line-2); padding: 26px 24px 24px; display: flex; flex-direction: column; gap: 10px; min-width: 0 }
   .plan h3 { font-size: var(--t-control); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; color: var(--tone) }
-  .badge { font: 600 var(--t-micro)/1 var(--body); padding: 6px 9px; border-radius: 99px; background: var(--signal); color: var(--ink-go) }
+  .badge { --ns-badge-bg: var(--signal); --ns-badge-ink: var(--ink-go) }
   .price { margin: 0; font: 700 40px/1 var(--display); font-stretch: 108%; letter-spacing: -.03em }
   .price small { font-size: var(--t-ui); font-weight: 500; color: var(--text-3); letter-spacing: 0 }
   .plan ul { list-style: none; padding: 0; margin: 6px 0 12px; display: grid; gap: 8px; align-content: start; color: var(--text-2); font-size: var(--t-ui); flex: 1 }

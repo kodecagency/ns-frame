@@ -10,10 +10,10 @@
 // · Dos tipos de filtro: "surface" (una superficie opaca: cara de su color, canto, sombras y hundido) y
 //   "rim" (sólo la luz del canto, sin cara: para el vidrio).
 
-import { quality } from './ns-frame.js'
+import { quality, mk, reduced } from './ns-frame.js'
 
-const NS = 'http://www.w3.org/2000/svg'
-export const mk = (t, a = {}, ...k) => { const e = document.createElementNS(NS, t); for (const n in a) e.setAttribute(n, a[n]); e.append(...k); return e }
+// (mk vive en el núcleo; se re-exporta para no romper a quien lo importaba de aquí, como ns-relief)
+export { mk }
 const pxv = v => parseFloat(v) || 0
 // rectángulo con el border-radius real, esquina por esquina (elíptico si hace falta, con el mismo
 // reparto que el navegador cuando los radios no caben). Lo usan el vidrio y el relieve.
@@ -53,22 +53,22 @@ export function material(M) {
   const id = 'nsl' + ++uid, k = 1 / Math.sin(EL * Math.PI / 180)
   const f = mk('filter', { id, x: '-30%', y: '-30%', width: '160%', height: '160%', 'color-interpolation-filters': 'sRGB' })
   f.append(mk('feGaussianBlur', { in: 'SourceAlpha', stdDeviation: M.b, result: 'h0' }))
-  f.append(mk('feComponentTransfer', { in: 'h0', result: 'h' }, mk('feFuncA', M.inset ? { type: 'linear', slope: -1, intercept: 1 } : { type: 'identity' })))
+  f.append(mk('feComponentTransfer', { in: 'h0', result: 'h' }, {}, mk('feFuncA', M.inset ? { type: 'linear', slope: -1, intercept: 1 } : { type: 'identity' })))
   if (M.rim) {
     // canto del vidrio: la luz principal y un reflejo tenue por el lado contrario (la luz que atraviesa
     // el cristal); especular muy dura, así que la cara plana queda limpia
-    f.append(mk('feSpecularLighting', { in: 'h', surfaceScale: M.s, specularConstant: M.ks, specularExponent: M.n, 'lighting-color': '#fff', result: 's1' }, light()))
-    f.append(mk('feSpecularLighting', { in: 'h', surfaceScale: M.s, specularConstant: M.ks * (M.back ?? .45), specularExponent: M.n, 'lighting-color': M.backColor || '#fff', result: 's2' }, light(180)))
+    f.append(mk('feSpecularLighting', { in: 'h', surfaceScale: M.s, specularConstant: M.ks, specularExponent: M.n, 'lighting-color': '#fff', result: 's1' }, {}, light()))
+    f.append(mk('feSpecularLighting', { in: 'h', surfaceScale: M.s, specularConstant: M.ks * (M.back ?? .45), specularExponent: M.n, 'lighting-color': M.backColor || '#fff', result: 's2' }, {}, light(180)))
     f.append(mk('feComposite', { in: 's1', in2: 's2', operator: 'arithmetic', k2: 1, k3: 1, result: 's' }))
     f.append(mk('feComposite', { in: 's', in2: 'SourceAlpha', operator: 'in' }))
   } else {
     // superficie: difusa llevada a [amb, 1] (la cara plana queda de su color) + especular del canto
-    f.append(mk('feDiffuseLighting', { in: 'h', surfaceScale: M.s, diffuseConstant: 1, 'lighting-color': '#fff', result: 'd0' }, light()))
-    f.append(mk('feComponentTransfer', { in: 'd0', result: 'd1' }, ...['R', 'G', 'B'].map(c => mk('feFunc' + c, { type: 'linear', slope: k * (1 - M.amb), intercept: M.amb }))))
+    f.append(mk('feDiffuseLighting', { in: 'h', surfaceScale: M.s, diffuseConstant: 1, 'lighting-color': '#fff', result: 'd0' }, {}, light()))
+    f.append(mk('feComponentTransfer', { in: 'd0', result: 'd1' }, {}, ...['R', 'G', 'B'].map(c => mk('feFunc' + c, { type: 'linear', slope: k * (1 - M.amb), intercept: M.amb }))))
     // (un desenfoque mínimo quita el grano de cuantizar las alturas a 8 bits)
     f.append(mk('feGaussianBlur', { in: 'd1', stdDeviation: .35, result: 'd' }))
     f.append(mk('feBlend', { in: 'SourceGraphic', in2: 'd', mode: 'multiply', result: 'lit' }))
-    f.append(mk('feSpecularLighting', { in: 'h', surfaceScale: M.s, specularConstant: M.ks, specularExponent: M.n, 'lighting-color': '#fff', result: 'sp' }, light()))
+    f.append(mk('feSpecularLighting', { in: 'h', surfaceScale: M.s, specularConstant: M.ks, specularExponent: M.n, 'lighting-color': '#fff', result: 'sp' }, {}, light()))
     f.append(mk('feComposite', { in: 'sp', in2: 'lit', operator: 'arithmetic', k2: 1, k3: 1, result: 'sum' }))
     f.append(mk('feComposite', { in: 'sum', in2: 'SourceAlpha', operator: 'in', result: 'face' }))
     const merge = []
@@ -81,7 +81,7 @@ export function material(M) {
     })
     merge.push('face')
     if (M.inset) {
-      f.append(mk('feComponentTransfer', { in: 'SourceAlpha', result: 'iv' }, mk('feFuncA', { type: 'linear', slope: -1, intercept: 1 })))
+      f.append(mk('feComponentTransfer', { in: 'SourceAlpha', result: 'iv' }, {}, mk('feFuncA', { type: 'linear', slope: -1, intercept: 1 })))
       f.append(mk('feGaussianBlur', { in: 'iv', stdDeviation: 2, result: 'ib' }))
       f.append(mk('feOffset', { in: 'ib', dx: 0, dy: 1.5, result: 'io' }))
       f.append(mk('feFlood', { 'flood-color': '#000', 'flood-opacity': M.inset, result: 'if' }))
@@ -89,7 +89,7 @@ export function material(M) {
       f.append(mk('feComposite', { in: 'i0', in2: 'SourceAlpha', operator: 'in', result: 'is' }))
       merge.push('is')
     }
-    f.append(mk('feMerge', {}, ...merge.map(n => mk('feMergeNode', { in: n }))))
+    f.append(mk('feMerge', {}, {}, ...merge.map(n => mk('feMergeNode', { in: n }))))
   }
   host().append(f)
   FILTERS.set(key, id)
@@ -98,12 +98,11 @@ export function material(M) {
 
 // la luz: el puntero la gira un poco (±18°); en el móvil, el desplazamiento; con movimiento reducido, fija
 let MQ = null, lraf = 0, px = .5
-const calm = () => (MQ ||= [matchMedia('(prefers-reduced-motion: reduce)'), matchMedia('(hover: hover) and (pointer: fine)')])[0].matches
 const aim = () => {
   lraf = 0
   // (en pasos de 2°: cada cambio repinta todos los filtros de luz a la vista; con 0,1° cambiaba en
   // casi cada fotograma del desplazamiento. En calidad baja, fija)
-  const az = 258 + (calm() || quality() == 'low' ? 0 : Math.round((px - .5) * 18) * 2)
+  const az = 258 + (reduced() || quality() == 'low' ? 0 : Math.round((px - .5) * 18) * 2)
   if (az == AZ) return
   AZ = az
   for (const l of LIGHTS) l.setAttribute('azimuth', ((az + l._flip) % 360).toFixed(1))
@@ -113,5 +112,5 @@ function bind() {
   if (bound || typeof addEventListener == 'undefined') return
   bound = true
   addEventListener('pointermove', e => { if (e.pointerType == 'mouse' || e.pointerType == 'pen') move(e.clientX / innerWidth) }, { passive: true })
-  addEventListener('scroll', () => { if (!MQ?.[1].matches) move(Math.min(1, scrollY / Math.max(1, document.documentElement.scrollHeight - innerHeight))) }, { passive: true })
+  addEventListener('scroll', () => { if (!(MQ ||= matchMedia('(hover: hover) and (pointer: fine)')).matches) move(Math.min(1, scrollY / Math.max(1, document.documentElement.scrollHeight - innerHeight))) }, { passive: true })
 }

@@ -41,7 +41,7 @@
 //   reposo no hace nada.
 // Sin dependencias externas (usa el núcleo y ns-frame/light). Sólo CSSOM y atributos SVG (sin HTML en texto).
 
-import { styles, watch, quality } from './ns-frame.js'
+import { styles, watch, quality, mk } from './ns-frame.js'
 import { material } from './ns-light.js'
 
 // (los hijos del vidrio van con position:relative para quedar sobre piezas posicionadas, como el
@@ -743,7 +743,6 @@ const REG = new WeakMap(), BUDGET = { t: -1, used: 0 }
 const HOLD = '.ns-glass-hold,.ns-sheet-drag'
 // firma de lo que pinta una imagen o un fondo: si no cambia, la copia no se rehace
 const sig = n => { const s = getComputedStyle(n); return n.tagName == 'IMG' ? [n.currentSrc || n.src, s.objectFit, s.objectPosition, s.filter].join('|') : [s.backgroundImage, s.backgroundSize, s.backgroundPosition, s.backgroundColor, s.filter].join('|') }
-const mk = (tag, a = {}) => { const e = document.createElementNS(SVG, tag); for (const k in a) e.setAttribute(k, a[k]); return e }
 const stops = (g, s) => { for (const [o, a] of s) g.append(mk('stop', { offset: o, 'stop-color': '#fff', 'stop-opacity': a })); return g }
 const div = cls => { const e = document.createElement('div'); e.className = cls; e.setAttribute('aria-hidden', 'true'); return e }
 const setA = (e, a) => { for (const k in a) e.setAttribute(k, a[k]) }

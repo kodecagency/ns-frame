@@ -23,7 +23,7 @@
 //   mismo, las aperturas (open, data-ns-open) no lo recortan.
 // · Como cualquier vidrio: sin filter, opacity < 1, mask ni backdrop-filter en sus antepasados.
 
-import { styles, path, shapeOf, pathOf, update, watch, quality, cssNum } from './ns-frame.js'
+import { styles, path, shapeOf, pathOf, update, watch, quality, cssNum, mk } from './ns-frame.js'
 import { liquid, shift, pathField, lensURL, LENS } from './ns-liquid.js'
 import { rounded } from './ns-light.js'
 
@@ -123,8 +123,7 @@ function source(host) {
 // mapa anterior; al detenerse se regenera. En Safari y Firefox la capa se queda con el desenfoque
 // (WebKit no aplica feDisplacementMap al fondo: bug 245510)
 function unionLens(host, layer) {
-  const NS = 'http://www.w3.org/2000/svg', id = 'nsgg' + ++gid + '-'
-  const mk = (t, a) => { const n = document.createElementNS(NS, t); setA(n, a); return n }
+  const id = 'nsgg' + ++gid + '-'
   const svg = mk('svg', { width: 0, height: 0, 'aria-hidden': 'true', focusable: 'false' })
   svg.style.position = 'absolute'
   const F = [0, 1].map(n => {

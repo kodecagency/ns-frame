@@ -108,6 +108,12 @@ if (typeof document != 'undefined') {
   }
   const boot = () => {
     scan(document.body)
+    // (un popover que abren varios botones —las opciones de cada fila de una lista— apunta al que lo
+    // abrió: se recuerda el último disparador pulsado, también con la Popover API nativa)
+    document.addEventListener('click', e => {
+      const b = e.target.closest?.('[popovertarget]'), p = b && document.getElementById(b.getAttribute('popovertarget'))
+      if (p?.matches('[data-ns-arrow]')) { p._nsT = b; if (isOpen(p)) schedule() }
+    }, true)
     new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(scan))).observe(document.body, { childList: true, subtree: true })
     if (POP) return
     // respaldo de popovertarget: abrir/cerrar con su botón, cerrar con click fuera o Escape
