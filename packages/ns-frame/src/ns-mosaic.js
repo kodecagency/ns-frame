@@ -544,13 +544,11 @@ function streams(shapes, gap, speed, id, host) {
     return { pts, len }
   }
   const lines = [], spots = []
-  // Una luz = varias capas de trazo que terminan en el mismo punto, cada vez más largas y tenues:
-  // la cola se desvanece en degradado. Y un foco que viaja con la cabeza e ilumina los bordes de
-  // las piezas por donde pasa (va en la capa de bordes, como la luz que sigue al puntero).
-  const TAIL = [[210, .06], [150, .12], [96, .22], [58, .45], [28, 1]]
+  // Una luz = un foco que recorre la ruta e ilumina los bordes de las piezas por donde pasa (va en la
+  // capa de bordes, como la luz que sigue al puntero; y tenue en la de fondos), con una estela de
+  // focos más tenues detrás.
   const comet = ({ pts, len: L }, delay) => {
     if (pts.length < 3 || L < 80) return
-    const d = 'M' + pts.map(([x, y]) => `${fx(x)} ${fx(y)}`).join('L')
     const acc = [0]
     for (let k = 1; k < pts.length; k++) acc.push(acc[k - 1] + Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]))
     const pt = f => {
@@ -561,28 +559,21 @@ function streams(shapes, gap, speed, id, host) {
       return [pts[lo][0] + (pts[hi][0] - pts[lo][0]) * k, pts[lo][1] + (pts[hi][1] - pts[lo][1]) * k]
     }
     const dur = L / speed * 1000, u = 100 / L, ch = Math.min(40, 28 * u), opt = { duration: dur, iterations: Infinity, delay: delay * dur, easing: 'linear' }
-    for (const [len, op] of TAIL) {
-      // la estela termina donde termina la cabeza: se desplaza hacia atrás lo que mide de más
-      const c = Math.min(60, len * u), sh = c - ch
-      // (va en la capa enmascarada por los bordes: sólo enciende el contorno de las piezas, con su
-      // degradado; en los huecos, nada. Un trazo ancho: la máscara deja la parte que cae en el borde)
-      const e = mk('path', { d, pathLength: 100 }, { 'stroke-dasharray': `${fx(c)} 300`, opacity: op, fill: 'none', stroke: LIGHT, 'stroke-width': '8px', 'stroke-linecap': 'round' })
-      // Web Animations (no var() dentro de @keyframes: en Safari no es fiable): la luz entra por un
-      // extremo de la ruta y sale por el otro
-      e.animate([{ strokeDashoffset: ch + sh }, { strokeDashoffset: -100 + sh }], opt)
-      lines.push(e)
-    }
-    // el foco: la posición de la cabeza en cada instante del mismo ciclo
-    spots.push((rad, op) => {
+    // (sin estela de trazo: por nítida que fuera la máscara, se leía como una línea sólida recorriendo
+    // el borde, y el desenfoque que la suavizaba no se aplica en Safari. La luz es sólo el foco: una
+    // luz radial suave que enciende el borde por donde pasa, con su degradado)
+    // el foco: la posición de la cabeza en cada instante del mismo ciclo. Y su estela: dos focos más
+    // tenues y algo más pequeños que lo siguen a poca distancia (luz que se desvanece, no una línea)
+    for (const [lag, k, s] of [[0, 1, 1], [.018, .5, .85], [.04, .22, .7]]) spots.push((rad, op) => {
       const K = []
       for (let i = 0; i <= 96; i++) {
         const t = i / 96, f = ((100 + ch) * t - ch / 2) / 100
         const fade = Math.min(1, Math.max(0, Math.min(f, 1 - f) * 10))
         const [x, y] = pt(Math.min(1, Math.max(0, f)))
-        K.push({ offset: t, transform: `translate(${fx(x)}px,${fx(y)}px)`, opacity: fade * op })
+        K.push({ offset: t, transform: `translate(${fx(x)}px,${fx(y)}px)`, opacity: fade * op * k })
       }
-      const e = mk('circle', { r: rad, cx: 0, cy: 0, fill: `url(#${id}p)` })
-      e.animate(K, opt)
+      const e = mk('circle', { r: fx(rad * s), cx: 0, cy: 0, fill: `url(#${id}p)` })
+      e.animate(K, { ...opt, delay: (delay - lag) * dur })
       return e
     })
   }

@@ -70,7 +70,7 @@ const CSS = `@layer ns{
 [data-ns-isle-panel].ns-stage{translate:0 0;visibility:hidden;transition:none}
 [data-ns-isle-panel].ns-morphing{translate:0 0;visibility:visible;transition:none;background:none!important;box-shadow:none!important;border-color:transparent!important}
 [data-ns-isle-panel].ns-morphing>:is(.ns-liquid-src,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-fx,.ns-svg){visibility:hidden}
-[data-ns-isle-panel].ns-morphing{-webkit-mask-image:linear-gradient(transparent var(--ns-isle-cut,0px),#000 calc(var(--ns-isle-cut,0px) + var(--ns-isle-feather,36px)));mask-image:linear-gradient(transparent var(--ns-isle-cut,0px),#000 calc(var(--ns-isle-cut,0px) + var(--ns-isle-feather,36px)))}
+[data-ns-isle-panel].ns-morphing{--_v:linear-gradient(transparent var(--ns-isle-cut,0px),#000 calc(var(--ns-isle-cut,0px) + var(--ns-isle-feather,36px)));--_h:linear-gradient(90deg,transparent var(--ns-isle-cl,-40px),#000 calc(var(--ns-isle-cl,-40px) + 18px),#000 calc(var(--ns-isle-cr,9999px) - 18px),transparent var(--ns-isle-cr,9999px));-webkit-mask-image:var(--_v),var(--_h);-webkit-mask-composite:source-in;mask-image:var(--_v),var(--_h);mask-composite:intersect}
 @media (prefers-reduced-motion:reduce){.ns-isle-scrim,[data-ns-isle],[data-ns-isle-panel]{transition:none!important}}
 html.ns-has-isle body{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
 [data-ns-isle][data-ns-isle]{--ns-glass-tint:rgba(16,16,20,.42);position:fixed;z-index:var(--ns-isle-z,40);left:50%;bottom:calc(14px + env(safe-area-inset-bottom));width:min(calc(100vw - 32px),max(var(--ns-isle-width,212px),var(--ns-isle-fit,0px)));height:54px;translate:-50% 0;border-radius:27px;color:var(--ns-isle-ink,var(--ns-glass-ink,#f4f4f5));contain:layout style}
@@ -211,7 +211,8 @@ function mount(el, o) {
     // el corte de la máscara, interpolado y sin heredar (si se heredara, cada fotograma recalcularía
     // los estilos de todo el contenido de la hoja). Sin registro, igual funciona: por saltos de una
     // muestra, uno por fotograma
-    try { globalThis.CSS.registerProperty({ name: '--ns-isle-cut', syntax: '<length>', inherits: false, initialValue: '0px' }) } catch {}
+    for (const [name, v] of [['--ns-isle-cut', '0px'], ['--ns-isle-cl', '-40px'], ['--ns-isle-cr', '9999px']])
+      try { globalThis.CSS.registerProperty({ name, syntax: '<length>', inherits: false, initialValue: v }) } catch {}
   }
   const btn = q(el, '[data-ns-isle-toggle]') || q(el, 'button')
   const panel = o.panel || document.getElementById(btn?.getAttribute('aria-controls')) || q(document, '[data-ns-isle-panel]')
@@ -306,7 +307,13 @@ function mount(el, o) {
   // reposo (borde en su sitio) el corte queda por encima de la hoja: todo a la vista
   const cut = (R, B, dur) => {
     const f = parseFloat(getComputedStyle(panel).getPropertyValue('--ns-isle-feather')) || 36
-    return panel.animate(R.map(s => { const e = Math.max(0, s.top - B.top); return { '--ns-isle-cut': r2(e - f * Math.max(0, 1 - e / f)) + 'px' } }), { duration: dur, fill: 'both' })
+    // (y los lados: lo que la silueta deja fuera al estrecharse —los botones de abajo— se va con ella.
+    // En reposo, los cortes quedan fuera de la hoja)
+    const W = B.width, g = 18
+    return panel.animate(R.map(s => {
+      const e = Math.max(0, s.top - B.top), l = s.left - B.left, r = s.left + s.width - B.left
+      return { '--ns-isle-cut': r2(e - f * Math.max(0, 1 - e / f)) + 'px', '--ns-isle-cl': r2(l > 1 ? l - g / 2 : -g - 2) + 'px', '--ns-isle-cr': r2(r < W - 1 ? r + g / 2 : W + g + 2) + 'px' }
+    }), { duration: dur, fill: 'both' })
   }
   // la silueta recorre las muestras R en dur ms (cada pieza con las mismas: encajan siempre)
   const morph = (R, dur, open, col) => {
