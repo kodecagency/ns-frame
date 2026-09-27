@@ -106,18 +106,15 @@ const PICKS = [
 
   // material: vidrio líquido en cada pieza (salvo la foto), con la forma que le da el mosaico. El
   // módulo del vidrio se pide la primera vez; el mosaico pasa a estar sobre una foto.
-  // (en un teléfono, nueve capas de desenfoque de ese tamaño superan lo que el navegador pinta y deja
-  // zonas en negro: allí, sólo las tres piezas que rodean el orbe, en vidrio esmerilado "frost")
-  const touch = matchMedia('(pointer: coarse)').matches
+  // (data-ns-glass-group: una sola capa de desenfoque para todas las piezas, recortada con la unión de
+  // sus siluetas. Nueve vidrios sueltos eran nueve desenfoques, demasiado para un móvil; así el coste
+  // no depende de cuántas piezas haya)
   $('mo-mat').addEventListener('change', e => {
-    const glass = picked(e).dataset.v == 'glass'
+    const glass = picked(e).dataset.v == 'glass', stage = $('mo-stage')
     if (glass) import('ns-frame/glass')
-    $('mo-stage').classList.toggle('glassy', glass)
-    mo.querySelectorAll<HTMLElement>(':scope > [data-ns-area]:not(.ph)').forEach(a => {
-      const on = glass && (!touch || /^[hxy]$/.test(a.dataset.nsArea!))
-      on ? a.setAttribute('data-ns-glass', touch ? 'frost' : '') : a.removeAttribute('data-ns-glass')
-      a.classList.toggle('solid', glass && !on)
-    })
+    stage.classList.toggle('glassy', glass)
+    glass ? stage.setAttribute('data-ns-glass-group', '') : stage.removeAttribute('data-ns-glass-group')
+    mo.querySelectorAll<HTMLElement>(':scope > [data-ns-area]:not(.ph)').forEach(a => glass ? a.setAttribute('data-ns-glass', '') : a.removeAttribute('data-ns-glass'))
   })
 
   // un efecto a la vez; velocidad, intensidad y color son variables de la librería:
@@ -171,9 +168,7 @@ const PICKS = [
      ensanchaban la página en el móvil. overflow no corta el fondo que ve el vidrio) */
   .mo-stage { position: relative; border-radius: 30px; overflow: hidden; transition: padding .35s var(--ease) }
   .mo-stage.glassy { padding: 18px; background: #0b0b0d url(https://picsum.photos/seed/ns-mosaic-glass/1400/1000.webp) center / cover }
-  .glassy .mo > [data-ns-area]:not(.ph):not(.solid) { background: none !important; color: var(--ns-glass-ink, #fff) }
-  /* (en el móvil, las piezas que siguen sólidas: oscuras sobre la foto) */
-  .glassy .mo > .solid { background: rgba(20, 20, 22, .92) }
+  .glassy .mo > [data-ns-area]:not(.ph) { background: none !important; color: var(--ns-glass-ink, #fff) }
   .glassy .mo p, .glassy .mo .hi h3, .glassy .mo .hi p { color: color-mix(in srgb, var(--ns-glass-ink, #fff) 88%, transparent) }
   .glassy .mo .hi h3 { color: var(--ns-glass-ink, #fff) }
   .mo > [data-ns-area] { background: #18181a; --ns-border: rgba(255, 255, 255, .08); min-width: 0 }

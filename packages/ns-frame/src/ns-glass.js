@@ -24,7 +24,7 @@
 // · Como cualquier vidrio: sin filter, opacity < 1, mask ni backdrop-filter en sus antepasados.
 
 import { styles, path, shapeOf, pathOf, update, watch } from './ns-frame.js'
-import { liquid } from './ns-liquid.js'
+import { liquid, shift } from './ns-liquid.js'
 
 const CSS = `@layer ns{
 [data-ns-glass]{background:none;--ns-glass-shadow:rgba(0,0,0,.28)}
@@ -32,9 +32,14 @@ const CSS = `@layer ns{
 [data-ns-glass~=clear]{--ns-glass-tint:rgba(255,255,255,.02);--ns-glass-blur:1.5px}
 [data-ns-glass~=tint]{--ns-glass-tint:rgba(18,18,22,.46);--ns-glass-blur:10px}
 [data-ns-glass~=u]{--ns-glass-tint:radial-gradient(55% 45% at 6% 100%,color-mix(in srgb,var(--ns-u,#3de0ff) 42%,transparent),transparent),radial-gradient(55% 45% at 94% 100%,color-mix(in srgb,var(--ns-u,#3de0ff) 42%,transparent),transparent),linear-gradient(to top,color-mix(in srgb,var(--ns-u,#3de0ff) 26%,transparent),transparent 58%),rgba(12,14,18,.26);--ns-glass-rim-color:var(--ns-u,#3de0ff);--ns-glass-rim-back:.9}
+.ns-glass-group{position:relative}
+.ns-glass-shared{position:absolute;left:0;top:0;z-index:0;pointer-events:none;-webkit-backdrop-filter:blur(var(--ns-glass-group-blur,10px)) saturate(var(--ns-glass-sat,1.3));backdrop-filter:blur(var(--ns-glass-group-blur,10px)) saturate(var(--ns-glass-sat,1.3))}
+.ns-glass-grouped>.ns-liquid-glass,.ns-glass-grouped>.ns-liquid-rim{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+@media (prefers-reduced-transparency:reduce){.ns-glass-shared{display:none}}
+@media (forced-colors:active){.ns-glass-shared{display:none}}
 }`
 let styled = 0
-const G = new WeakMap()
+const G = new WeakMap(), SH = new WeakMap()
 const px = v => parseFloat(v) || 0
 // rectángulo con el border-radius real, esquina por esquina (elíptico si hace falta, con el mismo
 // reparto que el navegador cuando los radios no caben)
@@ -68,14 +73,18 @@ export function glass(el, o = {}) {
     const d = s ? pathOf(el) || path(s, w, hh) : rounded(el, w, hh)
     return { d, w, h: hh }
   }
-  const h = liquid(el, { glass: true, prism: () => tok().includes('prism'), hard: () => tok().includes('facet'), frost: () => tok().includes('frost'), path: shape, ...o })
+  SH.set(el, shape)
+  // (dentro de un grupo, data-ns-glass-group, el desenfoque lo pone la capa compartida del grupo: la
+  // pieza sólo pinta su tinte, su canto y su contenido)
+  const grouped = () => !!el.parentElement?.closest('[data-ns-glass-group]')
+  const h = liquid(el, { glass: true, prism: () => tok().includes('prism'), hard: () => tok().includes('facet'), frost: () => tok().includes('frost'), grouped, path: shape, ...o })
   el.addEventListener('ns-shape', h.frame)
   // un marco de ns-frame deja de recortarse (lo lee el núcleo al pintar)
   if (el.hasAttribute('data-ns') || el.localName == 'ns-frame') update(el)
   const api = {
     ...h,
     destroy() {
-      h.destroy(); el.removeEventListener('ns-shape', h.frame); el.classList.remove('ns-glass-shape'); G.delete(el)
+      h.destroy(); el.removeEventListener('ns-shape', h.frame); el.classList.remove('ns-glass-shape'); G.delete(el); SH.delete(el)
       // (sin vidrio, el marco vuelve a recortarse con su forma)
       if (el.isConnected && (el.hasAttribute('data-ns') || el.localName == 'ns-frame')) update(el)
     },
@@ -86,3 +95,63 @@ export function glass(el, o = {}) {
 
 // automático con data-ns-glass: se monta al aparecer y se desmonta al quitar el atributo o el elemento
 watch('data-ns-glass', el => glass(el))
+
+// ── Grupo de vidrio ──
+// Cada vidrio suelto es una capa de backdrop-filter: el navegador copia y desenfoca el fondo para
+// cada una. Con muchas piezas grandes (un bento, un mosaico) son muchas texturas, y en un móvil se
+// agota la memoria gráfica (Safari deja zonas en negro). Con data-ns-glass-group en su contenedor hay
+// UNA sola capa de desenfoque para todas: recortada con la unión de sus siluetas (un path con un
+// subtrazado por pieza). Las piezas pintan sólo su tinte, su canto y su contenido. El coste ya no
+// crece con el número de piezas.
+const GR = new WeakMap()
+/** Grupo de vidrio en `host`: { update(), destroy() }. Automático con data-ns-glass-group. */
+export function glassGroup(host) {
+  if (GR.has(host)) return GR.get(host)
+  if (!styled) { styled = 1; styles(CSS) }
+  const layer = document.createElement('div')
+  layer.className = 'ns-glass-shared'
+  layer.setAttribute('aria-hidden', 'true')
+  host.classList.add('ns-glass-group')
+  host.prepend(layer)
+  let raf = 0, last = ''
+  const draw = () => {
+    raf = 0
+    const H = host.getBoundingClientRect(), ox = H.left + host.clientLeft, oy = H.top + host.clientTop, parts = []
+    for (const e of host.querySelectorAll('[data-ns-glass]')) {
+      const P = SH.get(e)?.()
+      if (!P?.d) continue
+      const r = e.getBoundingClientRect()
+      // (el path va en la caja de borde de la pieza: se lleva a su sitio dentro del grupo)
+      parts.push(shift(P.d, r.left - ox, r.top - oy))
+    }
+    const d = parts.join('')
+    if (d == last) return
+    last = d
+    Object.assign(layer.style, { width: host.scrollWidth + 'px', height: host.scrollHeight + 'px', clipPath: d ? `path("${d}")` : 'inset(50%)' })
+  }
+  const schedule = () => { raf ||= requestAnimationFrame(draw) }
+  // cambia la unión si cambia el tamaño de algo, una forma (también a mitad de un morph: ns-shape) o
+  // entra o sale una pieza
+  const ro = new ResizeObserver(schedule)
+  ro.observe(host)
+  const watchParts = () => host.querySelectorAll('[data-ns-glass]').forEach(e => ro.observe(e))
+  const mo = new MutationObserver(ms => { if (ms.some(m => m.target != layer)) { watchParts(); schedule() } })
+  mo.observe(host, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-ns', 'data-ns-glass', 'class', 'style'] })
+  const EV = ['ns-shape', 'transitionend', 'animationend']
+  EV.forEach(t => host.addEventListener(t, schedule, true))
+  watchParts(); schedule()
+  const api = {
+    update: schedule,
+    destroy() {
+      if (GR.get(host) != api) return
+      GR.delete(host); cancelAnimationFrame(raf); ro.disconnect(); mo.disconnect(); EV.forEach(t => host.removeEventListener(t, schedule, true))
+      layer.remove(); host.classList.remove('ns-glass-group')
+      // (las piezas vuelven a su desenfoque propio)
+      host.querySelectorAll('[data-ns-glass]').forEach(e => G.get(e)?.update())
+    },
+  }
+  GR.set(host, api)
+  host.querySelectorAll('[data-ns-glass]').forEach(e => G.get(e)?.update())
+  return api
+}
+watch('data-ns-glass-group', el => glassGroup(el))

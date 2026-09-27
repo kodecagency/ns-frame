@@ -1215,8 +1215,11 @@ export function liquid(el, o = {}) {
       // (lente por defecto según el tamaño, como el cristal de Apple: el canto dobla el fondo en casi
       // la mitad del lado corto; una barra o un botón refractan enteros, un panel grande sólo su borde)
       const ms = Math.min(el.offsetWidth, el.offsetHeight) || 48, cl = (v, a, b) => Math.max(a, Math.min(b, v))
-      // (calidad baja o "frost": el vidrio ligero)
-      low = quality() == 'low' || !!o.frost?.()
+      // (calidad baja o "frost": el vidrio ligero. Dentro de un grupo, también: su desenfoque lo pone la
+      // capa compartida del grupo)
+      const inGroup = !!o.grouped?.()
+      el.classList.toggle('ns-glass-grouped', inGroup)
+      low = quality() == 'low' || !!o.frost?.() || inGroup
       V = { k: num('--ns-liquid', 14), lens: num('--ns-glass-lens', cl(ms * .55, 10, 44)), edge: num('--ns-glass-edge', 8), depth: num('--ns-glass-depth', cl(ms * .42, 8, 36)), blur: num('--ns-glass-blur', lt ? 7 : 3), sat: num('--ns-glass-sat', lt ? 1.2 : 1.3), src: LENS || !glassy() || low ? null : source(), prism: !!o.prism?.(), hard: !!o.hard?.(), shadow: cs.getPropertyValue('--ns-glass-shadow').trim(), glow: cs.getPropertyValue('--ns-glass-glow').trim(), glowSize: num('--ns-glass-glow-size', 16), zoom: Math.min(1, num('--ns-glass-zoom', 0)),
         // canto: intensidad y reflejo opuesto (su fuerza y su color: la luz en U lo tiñe)
         light: lt, rim: num('--ns-glass-rim', 1), back: num('--ns-glass-rim-back', .5), backColor: cs.getPropertyValue('--ns-glass-rim-color').trim() || '#fff' }
