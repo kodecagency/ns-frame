@@ -39,7 +39,10 @@ const EASE = 'cubic-bezier(.2,.8,.2,1)'
  * dialog: el <dialog> que la contiene (por defecto, el más cercano; null = ninguno).
  * Devuelve { open(), close(), reset(), destroy() }.
  */
+const SHEETS = new WeakMap()
 export function sheet(el, { handle = el, onClose, onProgress, track, settle, threshold = 6, dialog = el.closest('dialog') } = {}) {
+  // (una vez por elemento: una segunda llamada devuelve la misma hoja, sin enganchar el gesto otra vez)
+  if (SHEETS.has(el)) return SHEETS.get(el)
   let id = null, y0 = 0, y = 0, h = 1, drag = false, anim = null
   const samples = []
   if (dialog) {
@@ -148,9 +151,11 @@ export function sheet(el, { handle = el, onClose, onProgress, track, settle, thr
   handle.style.touchAction = handle == el && el.scrollHeight > el.clientHeight + 1 ? 'pan-y' : 'none'
   el.style.overscrollBehavior = 'contain'
 
-  return {
+  const api = {
     open, close, reset,
     destroy() {
+      if (SHEETS.get(el) != api) return
+      SHEETS.delete(el)
       reset()
       if (dialog) { dialog.removeEventListener('cancel', esc); dialog.removeEventListener('click', back); dialog.classList.remove('ns-sheet-dialog') }
       handle.removeEventListener('pointerdown', down)
@@ -161,4 +166,6 @@ export function sheet(el, { handle = el, onClose, onProgress, track, settle, thr
       handle.style.touchAction = ''
     },
   }
+  SHEETS.set(el, api)
+  return api
 }

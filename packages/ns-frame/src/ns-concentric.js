@@ -141,10 +141,11 @@ const norm = (A, B, o) => { const dx = B.x - A.x, dy = B.y - A.y, L = Math.hypot
 
 // ── automático: [data-ns-concentric] ──
 // el padre sin forma de ns-frame: sus radios de CSS como forma "round"
-function cssShape(el, w) {
+// (el radio horizontal en % es del ancho y el vertical, del alto)
+function cssShape(el, w, h) {
   const cs = getComputedStyle(el), out = []
   for (const [k, p] of [['tl', 'TopLeft'], ['tr', 'TopRight'], ['br', 'BottomRight'], ['bl', 'BottomLeft']]) {
-    const [x, y = x] = cs[`border${p}Radius`].split(' '), X = num(x, w), Y = num(y, w)
+    const [x, y = x] = cs[`border${p}Radius`].split(' '), X = num(x, w), Y = num(y, h)
     if (X > 0 && Y > 0) out.push(`${k} round ${r1(X)} ${r1(Y)}`)
   }
   return out.join('; ')
@@ -165,7 +166,7 @@ function run() {
     // medidas sin transformaciones: un padre que se escala (hover, apertura) no cambia la forma;
     // offsetWidth no existe en SVG, allí vale la medida en pantalla
     const k = p.offsetWidth ? P.width / p.offsetWidth : 1, w = P.width / k, h = P.height / k
-    const src = shapeOf(p) ?? p.getAttribute('data-ns') ?? cssShape(p, w)
+    const src = shapeOf(p) ?? p.getAttribute('data-ns') ?? cssShape(p, w, h)
     // el hueco hasta el borde exterior del padre (su propio borde CSS cuenta como hueco)
     const min = parseFloat(getComputedStyle(el).getPropertyValue('--ns-concentric-min')) || 0
     const ins = [C.top - P.top, P.right - C.right, P.bottom - C.bottom, C.left - P.left].map(v => v / k)

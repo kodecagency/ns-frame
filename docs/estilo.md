@@ -112,3 +112,7 @@ La otra cara: un reset total también gana. `all: unset` (habitual para limpiar 
 - `box-shadow` en la vía rápida nativa, donde el borde es una sombra interior.
 
 Resetea sólo lo que quieres quitar (`appearance: none; border: 0; font: inherit; color: inherit; …`) o vuelve a poner `position: relative` y no toques `box-shadow`. `audit()` (de `ns-frame/audit`) avisa de ambos casos: tipos `unanchored` y `reset`.
+
+## Un acento común (`--ns-accent`)
+
+Cada módulo tiene su variable de color (`--ns-ui-accent` en los controles, `--ns-car` en el carrusel, `--ns-toast-c` en los avisos, `--ns-link` en los callouts), y todas caen en `--ns-accent` si no se fijan. Con `--ns-accent` en un contenedor (o en `:root`), todo lo de dentro toma ese acento; la variable propia de un módulo sigue ganando. Para teñir además la luz en U, el halo y la aguada, `class="ns-tone"` con `--ns-tone` (ver [Efectos](efectos.md)).

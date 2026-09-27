@@ -20,7 +20,7 @@ const CSS_ = `@layer ns{
 .ns-toasts.ns-on{display:flex;z-index:2147483647}
 .ns-toasts[data-y=bottom]{bottom:0;justify-content:flex-end}.ns-toasts[data-y=top]{top:0}
 .ns-toasts[data-x=end]{right:0}.ns-toasts[data-x=start]{left:0}.ns-toasts[data-x=center]{left:calc(50% - min(var(--ns-toast-width,400px) / 2,50%))}
-.ns-toast{--c:var(--ns-toast-c,#3de0ff);pointer-events:auto;display:flex;gap:12px;align-items:flex-start;--ns-pad:14px;background:var(--ns-toast-bg,#0b1520);--ns-border:color-mix(in srgb,var(--c) 45%,transparent);--ns-motion:var(--c);--ns-accent-width:1.5px;font-size:14px;line-height:1.45}
+.ns-toast{--c:var(--ns-toast-c,var(--ns-accent,#3de0ff));pointer-events:auto;display:flex;gap:12px;align-items:flex-start;--ns-pad:14px;background:var(--ns-toast-bg,#0b1520);--ns-border:color-mix(in srgb,var(--c) 45%,transparent);--ns-motion:var(--c);--ns-accent-width:1.5px;font-size:14px;line-height:1.45}
 .ns-toast[data-type=ok]{--c:var(--ns-toast-ok,#3dffa8)}.ns-toast[data-type=warn]{--c:var(--ns-toast-warn,#ffb547)}.ns-toast[data-type=error]{--c:var(--ns-toast-error,#ff4d6d)}
 .ns-toast>i{flex:none;width:9px;height:9px;margin-top:6px;background:var(--c)}
 .ns-toast>div{flex:1;min-width:0}
@@ -29,7 +29,8 @@ const CSS_ = `@layer ns{
 .ns-toast [data-close]{color:inherit;opacity:.6;font-size:16px;line-height:1}
 .ns-toast button:hover,.ns-toast button:focus-visible{opacity:1;text-decoration:underline}}`
 
-const C = { x: 'end', y: 'bottom', max: 4, time: 5000, shape: 'tl+br bevel 12; radius 2', enter: 'open' }
+// (label y closeLabel: los textos para lectores de pantalla, para traducirlos)
+const C = { x: 'end', y: 'bottom', max: 4, time: 5000, shape: 'tl+br bevel 12; radius 2', enter: 'open', label: 'Notificaciones', closeLabel: 'Cerrar notificación' }
 let box, seq = 0
 // sin Popover API (Safari < 17, Firefox < 125): la pila es un div fijo con un z-index máximo
 const POP = typeof HTMLElement != 'undefined' && 'showPopover' in HTMLElement.prototype
@@ -38,9 +39,9 @@ const show = b => POP ? b.showPopover() : b.classList.add('ns-on')
 const hide = b => POP ? b.hidePopover() : b.classList.remove('ns-on')
 const make = (tag, props, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e }
 
-/** Posición y valores por defecto: { x: 'start'|'center'|'end', y: 'top'|'bottom', max, time, shape, enter }. */
+/** Posición y valores por defecto: { x: 'start'|'center'|'end', y: 'top'|'bottom', max, time, shape, enter, label, closeLabel }. */
 export const config = o => { Object.assign(C, o); box && place() }
-const place = () => { box.dataset.x = C.x; box.dataset.y = C.y }
+const place = () => { box.dataset.x = C.x; box.dataset.y = C.y; box.setAttribute('aria-label', C.label) }
 
 function stack() {
   if (box) return box
@@ -49,7 +50,6 @@ function stack() {
   box = make('div', { className: 'ns-toasts' })
   if (POP) box.popover = 'manual'
   box.setAttribute('role', 'region')
-  box.setAttribute('aria-label', 'Notificaciones')
   box.setAttribute('aria-live', 'polite')
   box.addEventListener('keydown', e => e.key == 'Escape' && e.target.closest('.ns-toast')?._x())
   document.addEventListener('visibilitychange', () => box.querySelectorAll('.ns-toast').forEach(t => document.hidden ? t._p() : t._r()))
@@ -83,7 +83,7 @@ export function toast(msg, o = {}) {
   if (o.action) body.append(make('div', {}, make('button', { type: 'button', textContent: o.action.label, onclick: () => { o.action.onClick?.(); t._x() } })))
   const x = make('button', { type: 'button', textContent: '×', onclick: () => t._x() })
   x.dataset.close = ''
-  x.setAttribute('aria-label', 'Cerrar notificación')
+  x.setAttribute('aria-label', o.closeLabel || C.closeLabel)
   t.append(body, x)
 
   // cuenta atrás en el borde: se pausa y se reanuda sin perder el tiempo restante
@@ -108,7 +108,8 @@ export function toast(msg, o = {}) {
     t._gone = 1
     t._p()
     if (t.contains(document.activeElement)) (t._back?.isConnected ? t._back : o.back)?.focus?.({ preventScroll: true })
-    close(t, C.enter, cssTime(t, '--ns-toast-close-time', 260)).then(() => flip(() => t.remove())).then(() => b.children.length || hide(b))
+    // (se cierra con la misma apertura con la que entró: la suya, o.enter, o la de serie)
+    close(t, o.enter || C.enter, cssTime(t, '--ns-toast-close-time', 260)).then(() => flip(() => t.remove())).then(() => b.children.length || hide(b))
   }
   if (time) { t.setAttribute('data-ns-motion', 'progress'); t.style.setProperty('--ns-progress', '100') }
 

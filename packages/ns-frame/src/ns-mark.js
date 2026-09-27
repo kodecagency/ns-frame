@@ -76,7 +76,12 @@ function run() {
   const jobs = []
   for (const [el, st] of M) {
     // desconectado o sin el atributo: el dibujo se va con él
-    if (!el.isConnected || !el.hasAttribute('data-ns-mark')) { st.svg?.remove(); M.delete(el); io?.unobserve(el); continue }
+    if (!el.isConnected || !el.hasAttribute('data-ns-mark')) {
+      st.svg?.remove(); M.delete(el); io?.unobserve(el)
+      // (deja de observar su contenedor si ningún otro resaltado lo usa)
+      if (st.obs && ![...M.values()].some(s => s.obs == st.obs)) ro.unobserve(st.obs)
+      continue
+    }
     const host = st.host ||= hostOf(el)
     if (!host) continue
     const H = host.getBoundingClientRect(), cs = getComputedStyle(el)
@@ -118,9 +123,10 @@ if (typeof document != 'undefined') {
   const add = el => {
     if (M.has(el)) return
     if (!styled) { styled = 1; styles(CSS); fontsReady(schedule) }
-    M.set(el, {})
+    const obs = el.parentElement || el
+    M.set(el, { obs })
     ro ||= new ResizeObserver(schedule)
-    ro.observe(el.parentElement || el)
+    ro.observe(obs)
     if (/(^|\s)draw(\s|$)/.test(el.getAttribute('data-ns-mark'))) {
       io ||= new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('ns-in'); io.unobserve(e.target) } }), { rootMargin: '0px 0px -15% 0px' })
       io.observe(el)

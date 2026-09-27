@@ -79,7 +79,7 @@ Copia el texto (o el `value`) del destino y dice «Copiado» durante `--ns-copy-
 ## Insignias, código, tarjetas y asas
 
 ```html
-<span data-ns-badge>0.13</span> <span data-ns-badge="solid">Nuevo</span>
+<span data-ns-badge>0.14</span> <span data-ns-badge="solid">Nuevo</span>
 <pre data-ns-code="scroll">…</pre>
 <button data-ns-card data-ns="tl+br bevel 16"><b>Plan Pro</b><span>Para equipos</span></button>
 <i data-ns-grip aria-hidden="true"></i>

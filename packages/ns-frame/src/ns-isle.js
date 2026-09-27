@@ -189,19 +189,29 @@ const sample = (R, ms, dur) => {
  *   onChange(i, link) · onOpen() · onClose()
  * Devuelve { open(), close(), toggle(), go(i), get index(), destroy() }.
  */
+// (una vez por elemento: una segunda llamada devuelve la misma isla, sin montar otra encima)
+const ISLES = new WeakMap()
 export function isle(el, o = {}) {
-  if (!o.media) return mount(el, o)
-  // sólo mientras se cumple la media query: fuera de ella, nada montado (ni escuchas ni velo)
-  const mq = matchMedia(o.media)
-  let h = null
-  const sync = () => { if (mq.matches) h ||= mount(el, o); else { h?.destroy(); h = null } }
-  mq.addEventListener('change', sync)
-  sync()
-  return {
-    open: () => h?.open(), close: () => h?.close(), toggle: () => h?.toggle(), go: i => h?.go(i),
-    get index() { return h ? h.index : -1 },
-    destroy() { mq.removeEventListener('change', sync); h?.destroy(); h = null },
+  if (ISLES.has(el)) return ISLES.get(el)
+  let api
+  if (!o.media) {
+    const h = mount(el, o), d = h.destroy
+    api = Object.assign(h, { destroy() { ISLES.delete(el); d() } })
+  } else {
+    // sólo mientras se cumple la media query: fuera de ella, nada montado (ni escuchas ni velo)
+    const mq = matchMedia(o.media)
+    let h = null
+    const sync = () => { if (mq.matches) h ||= mount(el, o); else { h?.destroy(); h = null } }
+    mq.addEventListener('change', sync)
+    sync()
+    api = {
+      open: () => h?.open(), close: () => h?.close(), toggle: () => h?.toggle(), go: i => h?.go(i),
+      get index() { return h ? h.index : -1 },
+      destroy() { ISLES.delete(el); mq.removeEventListener('change', sync); h?.destroy(); h = null },
+    }
   }
+  ISLES.set(el, api)
+  return api
 }
 
 function mount(el, o) {
@@ -722,6 +732,8 @@ function mount(el, o) {
     destroy() {
       run++; unfade(); mo?.remove(); mo = null; lock(false); document.documentElement.classList.remove('ns-has-isle'); el.style.zIndex = ''; el.classList.remove('ns-isle-m')
       io.disconnect(); endRO.disconnect(); sh.destroy(); scrim.remove(); clearTimeout(timer)
+      // (los fotogramas pendientes: el del pliegue al desplazarse, el del ajuste del texto y el de la luz)
+      cancelAnimationFrame(raf); cancelAnimationFrame(fr2); cancelAnimationFrame(lf)
       removeEventListener('scroll', scroll); removeEventListener('resize', measureEnd); removeEventListener('keydown', key); document.removeEventListener('focusin', trap)
       btn.removeEventListener('pointerdown', down); btn.removeEventListener('pointerup', up)
       btn.removeEventListener('pointerenter', warm); btn.removeEventListener('focus', warm); btn.removeEventListener('click', click)

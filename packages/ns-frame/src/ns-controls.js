@@ -45,7 +45,7 @@ import { styles, watch, cssTime } from './ns-frame.js'
 
 const CSS = `@layer ns{
 :where([data-ns-segment],[data-ns-chips],[data-ns-field],[data-ns-swatches],[data-ns-range],[data-ns-level],[data-ns-switch],[data-ns-copy],[data-ns-card]),:where([data-ns-segment],[data-ns-chips],[data-ns-swatches],[data-ns-level],[data-ns-card]) *{-webkit-tap-highlight-color:transparent}
-:where([data-ns-segment],[data-ns-chips],[data-ns-field],[data-ns-swatches],[data-ns-range],[data-ns-level],[data-ns-switch],[data-ns-badge],[data-ns-code],[data-ns-card],[data-ns-grip],[data-ns-checks],[data-ns-avatars]){--_s:var(--ns-ui-surface,#141416);--_l:var(--ns-ui-line,rgba(255,255,255,.09));--_i:var(--ns-ui-ink,#f4f4f5);--_m:var(--ns-ui-muted,rgba(244,244,245,.62));--_a:var(--ns-ui-accent,#00e676);--_r:var(--ns-ui-radius,14px);--_h:var(--ns-ui-h,40px)}
+:where([data-ns-segment],[data-ns-chips],[data-ns-field],[data-ns-swatches],[data-ns-range],[data-ns-level],[data-ns-switch],[data-ns-badge],[data-ns-code],[data-ns-card],[data-ns-grip],[data-ns-checks],[data-ns-avatars]){--_s:var(--ns-ui-surface,#141416);--_l:var(--ns-ui-line,rgba(255,255,255,.09));--_i:var(--ns-ui-ink,#f4f4f5);--_m:var(--ns-ui-muted,rgba(244,244,245,.62));--_a:var(--ns-ui-accent,var(--ns-accent,#00e676));--_r:var(--ns-ui-radius,14px);--_h:var(--ns-ui-h,40px)}
 :where([data-ns-segment]){display:inline-flex;flex-wrap:wrap;gap:2px;padding:4px;border-radius:var(--_r);background:var(--_s);border:1px solid var(--_l)}
 :where([data-ns-segment]) > :where(button){min-height:var(--_h);padding:0 14px;border:0;border-radius:calc(var(--_r) - 4px);background:transparent;color:var(--_m);font:inherit;font-family:var(--ns-ui-font,inherit);font-size:13.5px;cursor:pointer;transition:background-color .25s cubic-bezier(.2,.8,.2,1),color .2s}
 :where([data-ns-segment~=sm]) > :where(button){min-height:calc(var(--_h) - 6px);padding:0 11px;font-size:12.5px}
@@ -87,7 +87,7 @@ const CSS = `@layer ns{
 :where([data-ns-level]) > :where(input[type=range])::-webkit-slider-thumb{-webkit-appearance:none;width:100%;height:1px;background:transparent}
 :where([data-ns-level]) > :where(input[type=range])::-moz-range-thumb{width:100%;height:1px;border:0;background:transparent}
 :where([data-ns-level]) > :where(svg:not(.ns-liquid-fx),img,[data-ns-level-icon]){position:absolute;left:50%;bottom:var(--ns-level-icon-y,18px);width:var(--ns-level-icon,28px);height:var(--ns-level-icon,28px);translate:-50% 0;pointer-events:none}
-:root:not([data-ns-input=pointer]) :where([data-ns-level]):has(> input:focus-visible){outline:2px solid var(--ns-ui-accent,#00e676);outline-offset:3px}
+:root:not([data-ns-input=pointer]) :where([data-ns-level]):has(> input:focus-visible){outline:2px solid var(--ns-ui-accent,var(--ns-accent,#00e676));outline-offset:3px}
 :where([data-ns-level]) > :where(input[type=range]):focus-visible{outline:none}
 @media (forced-colors:active){:where([data-ns-level]){border:1px solid CanvasText}:where([data-ns-level]) > :where(input[type=range]){background:linear-gradient(0deg,Highlight var(--p,50%),transparent var(--p,50%));forced-color-adjust:none}}
 :where(input[type=checkbox][data-ns-switch]){-webkit-appearance:none;appearance:none;position:relative;flex:none;width:var(--ns-switch-w,51px);height:var(--ns-switch-h,31px);margin:0;border-radius:999px;background:var(--ns-switch-off,rgba(120,120,128,.36));cursor:pointer;transition:background-color var(--ns-switch-time,.25s)}
@@ -124,9 +124,12 @@ const CSS = `@layer ns{
 [data-ns-field]>:is(select,input,textarea){color:var(--ns-ui-ink,#f4f4f5)}`
 let styled = 0
 const css = () => { if (!styled) { styled = 1; styles(CSS) } }
+// (una vez por elemento: llamar dos veces devuelve el mismo manejador, sin enganchar los eventos otra
+// vez; tras destroy() se puede volver a montar)
+const once = make => { const M = new WeakMap(); return el => { if (M.has(el)) return M.get(el); const h = make(el); if (h) { const d = h.destroy; h.destroy = () => { M.delete(el); d() }; M.set(el, h) } return h } }
 
 /** Deslizador: lo recorrido (--p) y el output[for] de su id. Devuelve { update(), destroy() }. */
-export function range(el) {
+export const range = once(function range(el) {
   css()
   const out = () => el.id ? document.querySelector(`output[for~="${CSS_ESC(el.id)}"]`) : null
   const update = () => {
@@ -138,7 +141,7 @@ export function range(el) {
   el.addEventListener('input', update)
   update()
   return { update, destroy() { el.removeEventListener('input', update); el.style.removeProperty('--p') } }
-}
+})
 const CSS_ESC = s => globalThis.CSS?.escape ? globalThis.CSS.escape(s) : s
 
 /**
@@ -148,7 +151,7 @@ const CSS_ESC = s => globalThis.CSS?.escape ? globalThis.CSS.escape(s) : s
  * por eso el input no recibe el puntero: queda para el teclado y el lector de pantalla, y cada gesto
  * cambia su value y lanza input y change como si fuera él. Devuelve { update(), destroy() } o null.
  */
-export function level(el) {
+export const level = once(function level(el) {
   css()
   const i = el.querySelector(':scope > input[type=range]')
   if (!i) return null
@@ -184,7 +187,7 @@ export function level(el) {
   const EV = [['pointerdown', down], ['pointermove', move], ['pointerup', up], ['pointercancel', up], ['click', click]]
   EV.forEach(([t, f]) => el.addEventListener(t, f))
   return { update: () => r?.update(), destroy() { r?.destroy(); EV.forEach(([t, f]) => el.removeEventListener(t, f)) } }
-}
+})
 
 /**
  * Botón de copiar: data-ns-copy="#id" (o un selector) copia el texto de ese elemento (su value si es un
@@ -193,7 +196,7 @@ export function level(el) {
  * Evento ns-copy en el botón con detail { text, ok }. Devuelve { destroy() }.
  */
 let live = null
-export function copy(el) {
+export const copy = once(function copy(el) {
   css()
   let t = 0, label = null
   const say = s => {
@@ -215,17 +218,17 @@ export function copy(el) {
   }
   el.addEventListener('click', click)
   return { destroy() { el.removeEventListener('click', click); clearTimeout(t); if (label != null) el.textContent = label } }
-}
+})
 
 /** Muestras de color: cada botón toma el color de su data-color. */
-export function swatches(el) {
+export const swatches = once(function swatches(el) {
   css()
   const paint = () => el.querySelectorAll(':scope > [data-color]').forEach(b => b.style.setProperty('--c', b.getAttribute('data-color')))
   paint()
   const mo = new MutationObserver(paint)
   mo.observe(el, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-color'] })
   return { update: paint, destroy() { mo.disconnect() } }
-}
+})
 
 // automático: el CSS con cualquiera de los atributos; los que necesitan JS, con el suyo
 watch('data-ns-range', el => el.matches('input[type=range]') ? range(el) : null)

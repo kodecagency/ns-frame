@@ -2,6 +2,7 @@
 // Las coordenadas son de página (no de ventana): el scroll no obliga a recalcular nada.
 // Se recalcula sólo cuando cambia el tamaño de algún extremo, la altura del documento o la ventana,
 // y sólo las líneas cerca de la pantalla (las de lejos se dibujan al acercarse).
+import { cssTime, reduced, fontsReady } from './ns-frame.js'
 
 const NS = 'http://www.w3.org/2000/svg', L = new Map()
 // near: los orígenes cerca de la pantalla (medio alto de margen). Sólo esas líneas se miden y se
@@ -48,7 +49,7 @@ function add(el) {
       for (const [el, o] of L) if (e.target.contains?.(el) != e.target.contains?.(o.t)) return schedule()
     }, { passive: true, capture: true })
     addEventListener('load', check, true)
-    ;(globalThis.requestIdleCallback || setTimeout)(() => document.fonts?.ready.then(schedule), { timeout: 1500 })
+    fontsReady(schedule)
   }
   const g = mk('g'), p = mk('path', { fill: 'none', 'stroke-linejoin': 'round' }), a = mk('circle', { r: 2.5 }), b = mk('circle', { r: 4, fill: 'none' })
   g.append(p, a, b)
@@ -60,10 +61,8 @@ function add(el) {
   hook(el, o, 1)
   bind(o, target(el))
   // (el flujo: un ciclo de guiones cada --ns-link-time, 900 ms; "900", "900ms" o ".9s")
-  if (el.hasAttribute('data-ns-link-flow') && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    const raw = getComputedStyle(el).getPropertyValue('--ns-link-time').trim(), v = parseFloat(raw)
-    p.animate([{ strokeDashoffset: 0 }, { strokeDashoffset: -18 }], { duration: isNaN(v) ? 900 : /[^m]s$/.test(raw) ? v * 1000 : v, iterations: Infinity })
-  }
+  if (el.hasAttribute('data-ns-link-flow') && !reduced())
+    p.animate([{ strokeDashoffset: 0 }, { strokeDashoffset: -18 }], { duration: cssTime(el, '--ns-link-time', 900), iterations: Infinity })
   schedule()
 }
 // un extremo: resaltado al pasar el puntero y redibujo al cambiar de tamaño
@@ -98,7 +97,7 @@ function draw() {
     if (!o.t?.isConnected) bind(o, target(el))
     if (!o.t) { o.g.style.display = 'none'; continue }
     const cs = getComputedStyle(el)
-    jobs.push([o, el.getBoundingClientRect(), o.t.getBoundingClientRect(), cs.getPropertyValue('--ns-link').trim() || '#3de0ff',
+    jobs.push([o, el.getBoundingClientRect(), o.t.getBoundingClientRect(), cs.getPropertyValue('--ns-link').trim() || cs.getPropertyValue('--ns-accent').trim() || '#3de0ff',
       parseFloat(cs.getPropertyValue('--ns-link-width')) || 1, el.hasAttribute('data-ns-link-flow')])
   }
   // 2) escrituras

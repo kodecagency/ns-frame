@@ -36,15 +36,17 @@ const t = toast('No se pudo enviar el formulario.', {
 })
 t.close()
 config({ x: 'center', y: 'top', max: 4, time: 5000, shape: 'all bevel 10', enter: 'drop' })
+// los textos para lectores de pantalla, traducibles (también closeLabel en cada toast)
+config({ label: 'Notifications', closeLabel: 'Close' })
 ```
 
 - **Capa superior nativa:** la pila es un `popover="manual"`: queda por encima de todo, sin `z-index`. No usa `popover="hint"` a propósito: un `hint` se cierra al hacer click fuera y cuando se abre otro, lo que rompería la pila.
-- **Entrada con apertura** (`open`, `split`, `iris`, `wipe`, `drop`) y salida inversa. La pila se reacomoda con animación.
+- **Entrada con apertura** (`open`, `split`, `iris`, `wipe`, `drop`) y salida inversa, con la misma apertura con la que entró. La pila se reacomoda con animación.
 - **El tiempo se consume en el borde.** Se pausa con el puntero, con el foco y con la pestaña oculta, y retoma el tiempo restante.
 - **Pila automática:** el más nuevo queda junto al borde de la pantalla. Por encima de `max` se cierran los más antiguos, pero **los persistentes (`time: 0`) se quedan**, porque esperan una acción.
 - **Accesible:** región `aria-live="polite"`; los errores usan `role="alert"`; Esc cierra el toast enfocado. Al cerrarse con el foco dentro, el foco vuelve a donde estaba (o a `back`, un elemento que se pasa en las opciones).
 - **Seguro:** mensaje y título se insertan como texto, nunca como HTML.
-- Tipos `info`, `ok`, `warn`, `error`. Colores: `--ns-toast-c`, `--ns-toast-ok`, `--ns-toast-warn`, `--ns-toast-error`; fondo `--ns-toast-bg`.
+- Tipos `info`, `ok`, `warn`, `error`. Colores: `--ns-toast-c` (si no, `--ns-accent`), `--ns-toast-ok`, `--ns-toast-warn`, `--ns-toast-error`; fondo `--ns-toast-bg`.
 
 ## Controles (`ns-frame/controls`)
 
@@ -63,7 +65,7 @@ Los controles de la landing, en la librería: el aspecto de serie, listo para us
 - `data-ns-segment` (`"sm"` más bajo): carril con el elegido relleno; un botón que sólo lleva un icono es cuadrado.
 - `data-ns-chips`: fichas con borde; la elegida, con el acento.
 - `data-ns-field`: la etiqueta (su primer `span`, pequeño y en mono) con un `select` o un `input`. El `select` es nativo (en el teléfono abre la lista del sistema) con su flecha.
-- `data-ns-range`: pista fina con lo recorrido en el acento; rellena el `output[for]` de su id (`data-ns-unit` detrás, `data-ns-scale` lo multiplica: `100` para un porcentaje). Si cambias el valor por código, `range(el).update()`.
+- `data-ns-range`: pista fina con lo recorrido en el acento; rellena el `output[for]` de su id (`data-ns-unit` detrás, `data-ns-scale` lo multiplica: `100` para un porcentaje). Si cambias el valor por código, `range(el).update()` (llamar dos veces a `range`, `level`, `copy` o `swatches` sobre el mismo elemento devuelve el mismo manejador).
 - `data-ns-swatches`: muestras redondas con el color de su `data-color` (por CSSOM: vale con CSP estricta).
 - `data-ns-switch`: en un `<input type="checkbox">`, un interruptor. Se anuncia como `role="switch"`, con teclado y foco de serie. Variables: `--ns-switch-w`, `--ns-switch-h`, `--ns-switch-on` (el acento por defecto), `--ns-switch-off`, `--ns-switch-knob`, `--ns-switch-time`.
 - `data-ns-copy="#id"`: un botón que copia el texto de `#id` (o su `value`, si es un campo) y dice «Copiado» durante `--ns-copy-time` (1.4s). Los textos se cambian con `data-ns-copied` y `data-ns-copy-error`; un lector de pantalla lo oye por una región `aria-live`. Evento `ns-copy` con `{ text, ok }`.
@@ -74,7 +76,7 @@ Los controles de la landing, en la librería: el aspecto de serie, listo para us
 - `data-ns-checks`: en un `<ul>`/`<ol>`, lista con una marca de check en cada elemento (`--ns-check`, `--ns-checks-gap`); conserva el rol de lista.
 - `data-ns-avatars`: fila de avatares redondos que se montan (`<img>` o iniciales). Variables `--ns-avatar-size`, `-overlap`, `-ring`, `-ring-w`, `-bg`, `-ink`, `-font`.
 - `data-ns-level`: nivel vertical, como el brillo o el volumen de un panel de ajustes: `<label data-ns-level><input type="range" aria-label="Brillo"><svg …/></label>`. Una píldora alta que se llena desde abajo (`--ns-level-fill`) con el icono abajo (`--ns-level-ink`). Es un `input type=range` de verdad puesto en vertical con `writing-mode` (teclado, lector de pantalla, `aria-orientation="vertical"`), no un dibujo. El gesto lo lleva la librería: se arrastra arriba y abajo desde cualquier punto y el valor sigue al dedo, sin saltar a donde se toca (en iOS un deslizador nativo sólo se mueve por su mando); lanza `input` y `change` como el propio input. Con `data-ns-glass` es de vidrio. Tamaño y forma: `--ns-level-w`, `--ns-level-h`, `--ns-level-radius`, `--ns-level-icon`, `--ns-level-icon-y`; sin vidrio, `--ns-level-track`.
-- **Tema:** `--ns-ui-surface`, `--ns-ui-line`, `--ns-ui-ink`, `--ns-ui-muted`, `--ns-ui-accent`, `--ns-ui-on` y `--ns-ui-on-ink` (el elegido), `--ns-ui-radius`, `--ns-ui-h` (alto), `--ns-ui-font`, `--ns-ui-mono`. Todo en `@layer ns` salvo los colores del texto (un reset como `button { color: inherit }` los anulaba).
+- **Tema:** `--ns-ui-surface`, `--ns-ui-line`, `--ns-ui-ink`, `--ns-ui-muted`, `--ns-ui-accent` (si no, `--ns-accent`), `--ns-ui-on` y `--ns-ui-on-ink` (el elegido), `--ns-ui-radius`, `--ns-ui-h` (alto), `--ns-ui-font`, `--ns-ui-mono`. Todo en `@layer ns` salvo los colores del texto (un reset como `button { color: inherit }` los anulaba).
 - Foco visible sólo con el teclado; en alto contraste, el elegido se marca con el color del sistema.
 
 ## Carrusel (`ns-frame/carousel`)
@@ -92,8 +94,9 @@ Los controles de la landing, en la librería: el aspecto de serie, listo para us
 - **Flechas e indicadores con forma** (`data-ns-carousel="all bevel 8"` cambia la forma de las flechas); el indicador activo se alarga con morph.
 - **Un indicador por posición alcanzable:** con 3 diapositivas visibles de 5 hay 3 posiciones. Si al final sobra recorrido, el final cuenta como una más.
 - **Teclado:** ← → (invertidas en RTL), Inicio y Fin. Las flechas se desactivan en los extremos.
-- **Accesible** (patrón carrusel de WAI-ARIA): región con `aria-roledescription`, diapositivas "n de N", `aria-current` en el indicador.
-- Variables: `--ns-slide`, `--ns-gap`, `--ns-car`, `--ns-car-bg`, `--ns-car-dot`.
+- **Accesible** (patrón carrusel de WAI-ARIA): región con `aria-roledescription`, diapositivas "n de N", `aria-current` en el indicador. Los textos se traducen con `data-ns-carousel-role`, `-slide`, `-prev`, `-next`, `-of` (`"{i} de {n}"`) y `-go` (`"Ir a la diapositiva {i}"`).
+- **Evento `change`** (burbujea) con `detail { index, slide }`.
+- Variables: `--ns-slide`, `--ns-gap`, `--ns-car` (si no, `--ns-accent`), `--ns-car-bg`, `--ns-car-dot`.
 - No usa `::scroll-button` / `::scroll-marker`: son pseudo-elementos (no admiten formas ni comportamiento) y hoy sólo existen en Chromium.
 
 ## Skeletons (`ns-frame/skel`)

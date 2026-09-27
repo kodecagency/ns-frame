@@ -22,7 +22,8 @@ const CSS_ = `@layer ns{
 .ns-sk>i{position:absolute;top:0;bottom:0;left:0;width:var(--ns-sk-band,280px);background:linear-gradient(100deg,transparent 15%,var(--ns-sk-glint,rgba(255,255,255,.13)),transparent 85%);animation:ns-sk var(--ns-skel-time,var(--ns-sk-time,1.8s)) linear var(--ns-sk-d,0s) infinite;will-change:transform}
 .ns-sk-off>i{animation-play-state:paused}
 @keyframes ns-sk{from{transform:translateX(var(--ns-sk-a,-100%))}to{transform:translateX(var(--ns-sk-b,100vw))}}
-@media (prefers-reduced-motion:reduce){.ns-sk>i{display:none}}}`
+@media (prefers-reduced-motion:reduce){.ns-sk>i{display:none}}
+@media (forced-colors:active){.ns-sk{forced-color-adjust:none;background:GrayText}.ns-sk>i{display:none}}}`
 
 const CORNERS = ['tl', 'tr', 'br', 'bl']
 // elementos que se dibujan como un bloque (no se entra en ellos)

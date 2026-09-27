@@ -31,17 +31,23 @@ export interface ToastOptions {
   time?: number
   action?: { label: string; onClick?: () => void }
   shape?: Shape
+  /** apertura al entrar y, al revés, al salir */
   enter?: ToastEnter
+  /** a dónde vuelve el foco si el aviso se cierra con el foco dentro y no se sabe de dónde venía */
+  back?: HTMLElement
+  /** etiqueta del botón de cerrar (lectores de pantalla); por defecto, la de config() */
+  closeLabel?: string
 }
 export function toast(message: string, options?: ToastOptions): { el: HTMLElement; close: () => void }
-export function config(options: { x?: 'start' | 'center' | 'end'; y?: 'top' | 'bottom'; max?: number; time?: number; shape?: Shape; enter?: ToastEnter }): void
+/** label: nombre de la región de avisos; closeLabel: el del botón de cerrar (para traducirlos). */
+export function config(options: { x?: 'start' | 'center' | 'end'; y?: 'top' | 'bottom'; max?: number; time?: number; shape?: Shape; enter?: ToastEnter; label?: string; closeLabel?: string }): void
 
 // ── ns-frame/skel, bento, mosaic, link, concentric, flow, mark ──
 /** Vuelve a medir (skeletons: uno o todos; el resto: todos sus elementos). */
 export function refresh(el?: Element): void
 
 // ── ns-frame/carousel ──
-/** Carrusel con scroll-snap nativo (automático con data-ns-carousel). Emite "change" con detail { index, slide }. */
+/** Carrusel con scroll-snap nativo (automático con data-ns-carousel). Emite "change" (burbujea) con detail { index, slide }. Textos traducibles con data-ns-carousel-role, -slide, -prev, -next, -of ("{i} de {n}") y -go. */
 export function carousel(el: HTMLElement): { go(index: number): void; readonly index: number; destroy(): void }
 
 // ── ns-frame/mosaic ──
@@ -164,8 +170,8 @@ export function blend(boxes: { x: number; y: number; w: number; h: number; r?: n
 export function pathField(d: string, w: number, h: number, step?: number): LiquidField | null
 /** Contorno de un path `d` absoluto como polígono cerrado (curvas en tramos de ~`seg` px). */
 export function polyline(d: string, seg?: number): [number, number][]
-/** Desplaza un path `d` absoluto (M, L, C, Q, A, Z) en (dx, dy). */
-export function shift(d: string, dx: number, dy: number): string
+/** Desplaza un path `d` absoluto (M, L, C, Q, A, Z) en (dx, dy), escalándolo antes en (sx, sy) si se pide (sy = sx por defecto). */
+export function shift(d: string, dx: number, dy: number, sx?: number, sy?: number): string
 /** Mapa de desplazamiento de la lente (PNG en data URL) para un campo de pathField, con canto de `rim` px. */
 export function lensURL(f: LiquidField, rim: number, hard?: boolean): Promise<string>
 /** true en Chromium: backdrop-filter admite filtros SVG (la lente sobre el fondo de la página). */

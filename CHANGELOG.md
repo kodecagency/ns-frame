@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.14.0 — API más coherente: tipos por módulo, acento común, textos traducibles
+
+Repaso de los 28 módulos (duplicados, nombres, limpieza, tipos):
+- **Tipos por módulo:** cada subpaquete (`ns-frame/toast`, `/carousel`…) tiene su `.d.ts` con sólo lo que exporta de verdad. Antes todos apuntaban al mismo archivo: `import { toast } from 'ns-frame/carousel'` pasaba la comprobación de tipos y fallaba al ejecutar. Tipos al día: `shift(d, dx, dy, sx?, sy?)`, `toast({ back, closeLabel })`, `config({ label, closeLabel })`.
+- **Acento común:** `--ns-accent` es el respaldo de `--ns-ui-accent` (controles), `--ns-car` (carrusel), `--ns-toast-c` (avisos) y `--ns-link` (callouts). Un solo valor en un contenedor los tiñe a todos; la variable propia sigue ganando.
+- **Textos traducibles:** carrusel (`data-ns-carousel-role`, `-slide`, `-prev`, `-next`, `-of`, `-go`) y avisos (`config({ label, closeLabel })`, `closeLabel` por aviso).
+- **Fallos:** un aviso se cerraba con la apertura de serie aunque entrara con otra; `concentric` medía el radio vertical en % contra el ancho; `data-ns-decode` no descifraba lo añadido después de cargar (ahora usa `watch` del núcleo y admite `--ns-decode-time`); el esqueleto desaparecía en alto contraste.
+- **Limpieza:** la isla cancela sus fotogramas pendientes al destruirse; `mark` deja de observar el contenedor de un resaltado que se va; `range`, `level`, `copy`, `swatches`, `sheet` e `isle` no se montan dos veces sobre el mismo elemento (devuelven el mismo manejador).
+- **Eventos:** el `change` del carrusel burbujea, como el de las pestañas y los grupos de elección.
+- **Sin duplicados:** `ns-link` y `ns-fx` usan `cssTime`, `reduced`, `fontsReady` y `watch` del núcleo (y en el build ya no llevan una copia propia del núcleo: comparten la de la página).
+
 ## 0.13.2 — adornos en pausa durante el scroll
 
 - **Núcleo:** en táctil, `<html>` lleva `.ns-scrolling` mientras se desplaza la página (o algo dentro) y ~160 ms después se quita. Los adornos animados de la librería se pausan entretanto y siguen donde estaban: bordes con movimiento (`data-ns-motion`, degradados que giran), luces del mosaico y, en `ns-fx.css`, luz en U viva, aura, destellos, escaneo y texto animado. En la sección Movimiento de la landing (doce bordes animados) los fotogramas largos al desplazarse bajan de ~77 a ~20. `<html data-ns-scroll-motion>` los deja siempre en marcha; la clase sirve también para tus animaciones.

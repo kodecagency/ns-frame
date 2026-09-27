@@ -12,7 +12,9 @@
 // · La diapositiva actual lleva la clase ns-car-on; con data-ns-carousel-current="forma" cambia de
 //   silueta al llegar (morph) y las demás toman data-ns-carousel-shape (o la suya). --ns-snap alinea
 //   las diapositivas (start por defecto; center para verlas centradas con las vecinas asomando).
-// · Variables: --ns-car (acento), --ns-car-bg (flechas), --ns-car-dot (color de los puntos),
+// · Textos traducibles: data-ns-carousel-role, -slide, -prev, -next, -of ("{i} de {n}"), -go.
+// · Evento change: burbujea (como el de las pestañas y los grupos de elección).
+// · Variables: --ns-car (acento; si no, --ns-accent), --ns-car-bg (flechas), --ns-car-dot (color de los puntos),
 //   --ns-car-size (flechas, 40px), --ns-car-dot-size (10px), --ns-car-dot-on (el actual, 28px),
 //   --ns-car-time y --ns-car-ease (su transición), --ns-slide, --ns-gap, --ns-snap.
 import { styles, watch, update } from './ns-frame.js'
@@ -22,10 +24,10 @@ const CSS_ = `@layer ns{
 [data-ns-carousel]::-webkit-scrollbar{display:none}
 [data-ns-carousel]>*{flex:0 0 var(--ns-slide,100%);scroll-snap-align:var(--ns-snap,start);min-width:0}
 .ns-car{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:16px}
-.ns-car>button{font:inherit;font-size:18px;line-height:1;width:var(--ns-car-size,40px);height:calc(var(--ns-car-size,40px) * .85);border:0;cursor:pointer;color:inherit;background:var(--ns-car-bg,rgba(61,224,255,.1));--ns-border:var(--ns-car,#3de0ff)}
+.ns-car>button{font:inherit;font-size:18px;line-height:1;width:var(--ns-car-size,40px);height:calc(var(--ns-car-size,40px) * .85);border:0;cursor:pointer;color:inherit;background:var(--ns-car-bg,color-mix(in srgb,var(--ns-car,var(--ns-accent,#3de0ff)) 10%,transparent));--ns-border:var(--ns-car,var(--ns-accent,#3de0ff))}
 .ns-car>button[aria-disabled=true]{opacity:.35;cursor:default}
 .ns-car>span{display:flex;gap:14px;align-items:center}
-.ns-car>span>button{width:var(--ns-car-dot-size,10px);height:var(--ns-car-dot-size,10px);padding:0;border:0;cursor:pointer;background:var(--ns-car-dot,rgba(255,255,255,.25));transition:width var(--ns-car-time,.35s) var(--ns-car-ease,cubic-bezier(.3,.7,.3,1))}.ns-car>span>button[aria-current=true]{width:var(--ns-car-dot-on,28px);background:var(--ns-car,#3de0ff)}
+.ns-car>span>button{width:var(--ns-car-dot-size,10px);height:var(--ns-car-dot-size,10px);padding:0;border:0;cursor:pointer;background:var(--ns-car-dot,rgba(255,255,255,.25));transition:width var(--ns-car-time,.35s) var(--ns-car-ease,cubic-bezier(.3,.7,.3,1))}.ns-car>span>button[aria-current=true]{width:var(--ns-car-dot-on,28px);background:var(--ns-car,var(--ns-accent,#3de0ff))}
 @media (prefers-reduced-motion:reduce){[data-ns-carousel]{scroll-behavior:auto}.ns-car>span>button{transition:none}}}`
 
 let styled
@@ -41,17 +43,20 @@ export function carousel(sc) {
   }
   const slides = [...sc.children], n = slides.length
   const shape = sc.getAttribute('data-ns-carousel') || 'tl+br bevel 8; radius 1.5'
+  // textos para lectores de pantalla, traducibles: data-ns-carousel-role, -slide, -prev, -next, -of
+  // ("{i} de {n}") y -go ("Ir a la diapositiva {i}")
+  const T = (k, d, i) => (sc.getAttribute('data-ns-carousel-' + k) || d).replace('{i}', i).replace('{n}', n)
   sc.setAttribute('role', 'region')
-  sc.setAttribute('aria-roledescription', 'carrusel')
+  sc.setAttribute('aria-roledescription', T('role', 'carrusel'))
   sc.tabIndex = 0
-  slides.forEach((s, i) => { s.setAttribute('role', 'group'); s.setAttribute('aria-roledescription', 'diapositiva'); s.setAttribute('aria-label', `${i + 1} de ${n}`) })
+  slides.forEach((s, i) => { s.setAttribute('role', 'group'); s.setAttribute('aria-roledescription', T('slide', 'diapositiva')); s.setAttribute('aria-label', T('of', '{i} de {n}', i + 1)) })
 
   const bar = make('div', { class: 'ns-car' }), dots = make('span')
   // (en los extremos, aria-disabled y no disabled: una flecha enfocada que se desactiva perdería el
   // foco, que saltaría al principio de la página)
   const arrow = (d, label, txt) => { const b = make('button', { type: 'button', 'aria-label': label, 'data-ns': shape }); b.textContent = txt; b.onclick = () => b.getAttribute('aria-disabled') != 'true' && go(cur + d); return b }
-  const prev = arrow(-1, 'Anterior', '‹'), next = arrow(1, 'Siguiente', '›')
-  const marks = slides.map((_, i) => { const b = make('button', { type: 'button', 'aria-label': `Ir a la diapositiva ${i + 1}`, 'data-ns': 'all bevel 3' }); b.onclick = () => go(i); return b })
+  const prev = arrow(-1, T('prev', 'Anterior'), '‹'), next = arrow(1, T('next', 'Siguiente'), '›')
+  const marks = slides.map((_, i) => { const b = make('button', { type: 'button', 'aria-label': T('go', 'Ir a la diapositiva {i}', i + 1), 'data-ns': 'all bevel 3' }); b.onclick = () => go(i); return b })
   dots.append(...marks)
   bar.append(prev, dots, next)
   sc.after(bar)
@@ -107,7 +112,7 @@ export function carousel(sc) {
         }
       })
     }
-    if (i != cur) { cur = i; sc.dispatchEvent(new CustomEvent('change', { detail: { index: i, slide: slides[s] } })) }
+    if (i != cur) { cur = i; sc.dispatchEvent(new CustomEvent('change', { bubbles: true, detail: { index: i, slide: slides[s] } })) }
   }
   const onScroll = () => { raf ||= requestAnimationFrame(sync) }
   const onSize = () => { P = null; seen = ''; onScroll() }
