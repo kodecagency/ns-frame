@@ -85,19 +85,31 @@ function measure(el) {
     const h = q[3] - q[2], bh = Math.max(4, Math.round(h * .56))
     return d(own || bone(cn, bh, 5), q[0] - R.left, q[2] + (h - bh) / 2 - R.top, q[1] - q[0], bh)
   }).join('')
-  const s = st.sk.style, band = parseFloat(getComputedStyle(st.sk).getPropertyValue('--ns-sk-band')) || 280
-  s.left = -el.clientLeft + 'px'
-  s.top = -el.clientTop + 'px'
-  s.width = W + 'px'
-  s.height = H + 'px'
-  s.clipPath = D ? `path('${D}')` : ''
-  // el brillo viaja en coordenadas de la ventana: cruza todos los skeletons como una sola luz
-  s.setProperty('--ns-sk-a', f(-R.left - band) + 'px')
-  s.setProperty('--ns-sk-b', f(innerWidth - R.left + 80) + 'px')
+  const cs = getComputedStyle(st.sk), band = parseFloat(cs.getPropertyValue('--ns-sk-band')) || 280, cl = el.clientLeft, ct = el.clientTop
+  // (la primera vez, el punto del ciclo: el mismo en todos, así los brillos van sincronizados)
+  let delay = ''
+  if (!st.synced) { st.synced = true; const T = (cs.getPropertyValue('--ns-skel-time') || cs.getPropertyValue('--ns-sk-time')).trim(); delay = -f(performance.now() % ((parseFloat(T) || 1.8) * (/ms$/.test(T) ? 1 : 1e3))) + 'ms' }
+  // (lectura y escritura separadas: en un lote se mide todo y después se escribe todo)
+  return () => {
+    const s = st.sk.style
+    s.left = -cl + 'px'
+    s.top = -ct + 'px'
+    s.width = W + 'px'
+    s.height = H + 'px'
+    s.clipPath = D ? `path('${D}')` : ''
+    if (delay) s.setProperty('--ns-sk-d', delay)
+    // el brillo viaja en coordenadas de la ventana: cruza todos los skeletons como una sola luz
+    s.setProperty('--ns-sk-a', f(-R.left - band) + 'px')
+    s.setProperty('--ns-sk-b', f(innerWidth - R.left + 80) + 'px')
+  }
 }
 
 const later = el => { Q.add(el); raf ||= requestAnimationFrame(flush) }
-function flush() { raf = 0; const q = [...Q]; Q.clear(); q.forEach(measure) }
+function flush() { raf = 0; const q = [...Q]; Q.clear(); q.map(measure).forEach(w => w?.()) }
+// los que se montan en la misma tarea se miden juntos al terminarla (antes de pintar: sin un
+// fotograma sin esqueleto). Uno a uno, cada medida obligaba a maquetar tras la anterior
+let micro = false
+const soon = el => { Q.add(el); if (!micro) { micro = true; queueMicrotask(() => { micro = false; cancelAnimationFrame(raf); flush() }) } }
 
 function on(el) {
   if (ON.has(el)) return later(el)
@@ -109,18 +121,16 @@ function on(el) {
     addEventListener('resize', () => ON.forEach((_, e) => later(e)))
     fontsReady(() => ON.forEach((_, e) => later(e)))
   }
-  const cs = getComputedStyle(el), T = (cs.getPropertyValue('--ns-skel-time') || cs.getPropertyValue('--ns-sk-time')).trim(), sk = document.createElement('div')
+  const sk = document.createElement('div')
   sk.className = 'ns-sk'
   sk.setAttribute('aria-hidden', 'true')
   sk.append(document.createElement('i'))
-  // mismo punto del ciclo en todos: los brillos van sincronizados aunque empiecen en otro momento
-  sk.style.setProperty('--ns-sk-d', -f(performance.now() % ((parseFloat(T) || 1.8) * (/ms$/.test(T) ? 1 : 1e3))) + 'ms')
   ON.set(el, { sk, busy: el.getAttribute('aria-busy') })
   el.setAttribute('aria-busy', 'true')
   el.append(sk)
   ro.observe(el)
   io.observe(el)
-  measure(el)
+  soon(el)
 }
 
 function off(el) {

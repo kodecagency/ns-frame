@@ -99,7 +99,7 @@ export function carousel(sc) {
   const ro = new ResizeObserver(onSize)
   ro.observe(sc); slides.forEach(s => ro.observe(s))
   sc.addEventListener('keydown', key)
-  sync()
+  // (la primera medida la pide el ResizeObserver, ya maquetado: medir aquí forzaba la maquetación)
   const api = {
     go, get index() { return cur },
     destroy() { C.delete(sc); cancelAnimationFrame(raf); ro.disconnect(); sc.removeEventListener('scroll', onScroll); sc.removeEventListener('keydown', key); bar.remove() },

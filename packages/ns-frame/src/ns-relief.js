@@ -112,7 +112,8 @@ export function relief(el) {
   ro.observe(el)
   const mo = new MutationObserver(draw)
   mo.observe(el, { attributes: true, attributeFilter: ['data-ns', 'data-ns-relief', 'class', 'style', 'aria-pressed', 'aria-checked'] })
-  draw()
+  // (el primer dibujo lo pide el ResizeObserver, que entrega el tamaño ya maquetado: dibujar aquí
+  // leía medidas justo tras insertar el svg y obligaba a maquetar la página en cada pieza montada)
   // un marco de ns-frame deja de recortarse (el recorte cortaría la sombra)
   if (el.hasAttribute('data-ns') || el.localName == 'ns-frame') update(el)
   const api = {

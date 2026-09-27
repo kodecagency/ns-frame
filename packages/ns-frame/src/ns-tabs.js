@@ -129,7 +129,7 @@ export function tabs(el, o = {}) {
   }
 
   /** Selecciona la pestaña `i` (con animación). */
-  const select = (i, { emit = true, focus = false } = {}) => {
+  const select = (i, { emit = true, focus = false, place = true } = {}) => {
     const all = items()
     i = clamp(i, 0, all.length - 1)
     const changed = i != cur
@@ -140,7 +140,7 @@ export function tabs(el, o = {}) {
       b.classList.toggle('ns-tabs-on', k == i)
     })
     if (focus) all[i]?.focus()
-    aim(i); run()
+    if (place) { aim(i); run() }
     if (emit && changed) el.dispatchEvent(new CustomEvent('change', { bubbles: true, detail: { index: i, tab: all[i] } }))
   }
 
@@ -246,7 +246,9 @@ export function tabs(el, o = {}) {
     el.addEventListener('transitionrun', e => { if (e.target == el) { ts = 1; tl ||= requestAnimationFrame(tick) } })
     for (const t of ['transitionend', 'transitioncancel']) el.addEventListener(t, e => { if (e.target == el) { ts = 0; glass.frame() } })
   }
-  select(cur, { emit: false })
+  // (sin medir al montar: la primera entrega del ResizeObserver, que llega ya maquetada, coloca el
+  // indicador. Medir aquí obligaba a maquetar la página en mitad de otros montajes)
+  select(cur, { emit: false, place: false })
 
   const api = {
     select: i => select(i),

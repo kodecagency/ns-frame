@@ -873,7 +873,19 @@ export function jump(el, { focus = false, smooth = false } = {}) {
 export const pathOf = el => { const s = S.get(el); return s?.cur?.length ? dOf(s.cur) : null }
 
 /** Fuerza una relectura (p. ej. tras cambiar variables CSS por JS). */
-export const update = el => { const s = S.get(el); s && refresh(s, 1) }
+// (en lote: las llamadas de una misma tarea —varias piezas de vidrio o de relieve que se montan
+// juntas— se leen todas y después se escriben todas, al final de la tarea y antes de pintar. Una a
+// una, cada lectura obligaba a recalcular estilos tras la escritura anterior)
+let upQ = null
+export const update = el => {
+  const s = S.get(el)
+  if (!s) return
+  if (!upQ) {
+    upQ = new Set()
+    queueMicrotask(() => { const L = [...upQ].filter(s => s.w && S.get(s.el) == s); upQ = null; const R = L.map(read); L.forEach((s, i) => write(s, R[i], 1)) })
+  }
+  upQ.add(s)
+}
 
 /**
  * Apertura / cierre respetando la forma: 'open' | 'split' | 'iris' | 'wipe' | 'drop'.
