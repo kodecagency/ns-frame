@@ -16,9 +16,9 @@ const CSS = `@layer ns{
 .ns-mg{stroke:var(--ns-motion,#ff3df0)!important;opacity:0;animation:ns-mg var(--ns-motion-time,3s) steps(1) infinite}
 .ns-mr{stroke-dasharray:var(--ns-progress,0) 100;transition:stroke-dasharray .6s cubic-bezier(.3,.7,.3,1)}
 :is([data-ns-motion~=hover],ns-frame[motion~=hover]):not(:hover,:focus-within) .ns-m{opacity:0}
-.ns-sc{animation:ns-sc 3.2s linear infinite}
+.ns-sc{animation:ns-sc var(--ns-motion-time,3.2s) linear infinite}
 .ns-or{animation:ns-or 4s linear infinite}
-@keyframes ns-sc{0%{transform:translate(var(--a),0)}62%,to{transform:translate(var(--b),0)}}
+@keyframes ns-sc{from{transform:translate(var(--a),0)}to{transform:translate(var(--b),0)}}
 @keyframes ns-or{to{transform:rotate(1turn)}}
 @keyframes ns-sp{from{transform:translate(var(--c)) rotate(0) translate(var(--nc)) var(--t0)}to{transform:translate(var(--c)) rotate(1turn) translate(var(--nc)) var(--t0)}}
 @keyframes ns-t{to{stroke-dashoffset:-100}}
@@ -131,10 +131,19 @@ const motions = () => MOTION ||= {
   pulse: () => [mk('path', { class: 'ns-mp' })],                     // respira
   glitch: () => [mk('path', { class: 'ns-mg' })],                    // parpadeo desplazado
   progress: () => [mk('path', { class: 'ns-mr', pathLength: 100 })], // --ns-progress: 0–100
-  // barrido de luz que cruza el marco y enciende el borde a su paso
-  scan: (id, w, h, t, r, fps) => band(id, w, h, { x1: 0, y1: 0, x2: f(w * .22), y2: f(w * .07) },
-    { x: f(-w * 1.2), y: f(-h - 20), width: f(w * 2.6), height: f(h * 3 + 40) }, 'ns-sc', t || '3.2s',
-    { '--a': f(-w * .3) + 'px', '--b': f(w * 1.05) + 'px', ...cap(t, 3200, fps) }),
+  // barrido de luz que cruza el marco y enciende el borde a su paso. Viaja en la dirección de la
+  // diagonal de la forma (casi horizontal en una ancha; en una alta, en diagonal y cubriendo todo el
+  // alto) y va de justo fuera a justo fuera en línea recta: al salir una pasada entra la siguiente,
+  // sin tiempo muerto. La banda se dibuja en un grupo girado; la anima un translate en su eje
+  scan: (id, w, h, t, r, fps) => {
+    const a = Math.atan2(h, w), c = Math.cos(a), s = Math.sin(a)
+    const L = w * c + h * s, bw = Math.max(40, Math.min(240, L * .32)), v0 = -w * s - 20, vh = w * s + h * c + 40
+    const [defs, mask, g] = band(id, w, h, { x1: f(-bw), y1: 0, x2: 0, y2: 0 },
+      { x: f(-bw), y: f(v0), width: f(bw), height: f(vh) }, 'ns-sc', t || 'var(--ns-motion-time,3.2s)',
+      { '--a': '0px', '--b': f(L + bw) + 'px', ...cap(t, 3200, fps) })
+    g.replaceChildren(mk('g', { transform: `rotate(${f(a * 180 / Math.PI)})` }, {}, ...g.childNodes))
+    return [defs, mask, g]
+  },
   // banda que gira sobre el centro: dos destellos orbitando
   orbit: (id, w, h, t, r, fps) => { const D = Math.hypot(w, h) + 40; return band(id, w, h, { x1: 0, y1: f(h / 2), x2: f(w), y2: f(h / 2) },
     { x: f(w / 2 - D / 2), y: f(h / 2 - D / 2), width: f(D), height: f(D) }, 'ns-or', t || '4s',

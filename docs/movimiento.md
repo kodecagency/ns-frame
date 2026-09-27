@@ -32,7 +32,7 @@ El morph interpola **vértices**, no el texto del path, así que funciona igual 
 |---|---|
 | `comet` | Cometa con estela que recorre el borde |
 | `twin` | Dos cometas opuestos |
-| `scan` | Barrido de luz que cruza el marco y enciende el borde a su paso |
+| `scan` | Barrido de luz que cruza el marco y enciende el borde a su paso. Viaja en la dirección de la diagonal de la forma (casi horizontal en una ancha; en una alta, en diagonal y cubriendo todo el alto) y en bucle continuo: al salir una pasada entra la siguiente. Dura `--ns-motion-time` (3,2 s) |
 | `orbit` | Dos destellos que giran alrededor del centro |
 
 `scan`, `orbit` y el giro de degradados (`data-ns-spin`) se animan con CSS (`transform`), no con SMIL: se pausan fuera de pantalla y funcionan igual en móviles.

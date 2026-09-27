@@ -10,6 +10,8 @@ const M = [
   { m: 'twin', s: 'soft', c: 'green', t: 'Dos luces', d: 'Carga o espera' },
   { m: 'orbit', s: 'all squircle 36', c: 'amber', t: 'Órbita', d: 'Destellos alrededor' },
   { m: 'scan', s: 'wing', c: 'white', t: 'Barrido', d: 'Cruza el marco' },
+  // (alta y angosta, con muescas: el barrido sigue su diagonal y cubre todo el alto)
+  { m: 'scan', s: 'tl+br bevel 14; left+right scoop -70 -46 12; radius 1.5', c: 'cyan', t: 'Barrido en alto', d: 'En una forma alta cruza en diagonal, sin pausas', tall: true },
   { m: 'chase', s: 'hud', c: 'lime', t: 'Persecución', d: 'Pulsos de datos' },
   { m: 'pulse', s: 'ticket', c: 'green', t: 'Pulso', d: 'El borde respira' },
   { m: 'loop', s: 'plate', c: 'silver', t: 'Trazo', d: 'Se dibuja y se borra' },
@@ -28,7 +30,7 @@ const M = [
 
     <div class="grid">
       {M.map(x => (
-        <article class:list={['mv', 'ns-wash', 'ns-tone-' + x.c]} data-ns={x.s} data-ns-hover={x.hover} data-ns-motion={x.m}>
+        <article class:list={['mv', 'ns-wash', 'ns-tone-' + x.c, x.tall && 'tall']} data-ns={x.s} data-ns-hover={x.hover} data-ns-motion={x.m}>
           <b>{x.t}</b><span>{x.d}</span><code class="tag">"{x.m}"</code>
         </article>
       ))}
@@ -50,7 +52,10 @@ const M = [
 
 <style>
   code { font: var(--t-small) var(--mono); color: var(--text) }
-  .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px }
+  .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-flow: dense; gap: 12px }
+  /* (la alta ocupa dos filas; el progreso, lo que falte para cerrar la última: 3, 2 o 1 columnas) */
+  .tall { grid-row: span 2 }
+  .prog { grid-column: span 3 }
   .mv { min-height: 150px; padding: 20px; display: flex; flex-direction: column; gap: 4px; min-width: 0;
     background-color: var(--surface); --ns-wash-size: 90% 70%; --ns-wash-at: 50% 120%; --ns-wash-fade: 70%;
     --ns-border: rgba(255, 255, 255, .1); --ns-accent-width: 1.5px; --ns-glow: drop-shadow(0 0 5px var(--ns-tone)); --ns-spot-size: 140; --ns-spot-fill: .08; --ns-morph-time: 360 }
@@ -59,6 +64,6 @@ const M = [
   .mv b { font: 600 var(--t-title)/1.2 var(--display); font-stretch: 106% }
   .mv span { font-size: var(--t-small); color: var(--text-2) }
   .mv .tag { margin-top: auto; padding-top: 12px }
-  @media (max-width: 960px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)) } }
-  @media (max-width: 640px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px } .mv { min-height: 128px; padding: 20px 18px } .mv b { font-size: var(--t-control) } .mv span { font-size: var(--t-caption) } }
+  @media (max-width: 960px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)) } .prog { grid-column: span 2 } }
+  @media (max-width: 640px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px } .prog { grid-column: auto } .mv { min-height: 128px; padding: 20px 18px } .mv b { font-size: var(--t-control) } .mv span { font-size: var(--t-caption) } }
 </style>

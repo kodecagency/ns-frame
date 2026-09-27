@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.15.1 — barrido continuo en cualquier proporción
+
+- **`data-ns-motion="scan"`:** la banda viaja en la dirección de la diagonal de la forma y cruza de justo fuera a justo fuera en línea recta, en bucle sin tiempo muerto (antes se detenía el 38 % del ciclo fuera del marco y, en formas altas y angostas, sólo barría en horizontal: se veía cortada y parecía quedarse a mitad de camino). El ancho de la banda y el recorrido salen de la proporción de la forma; la duración, de `--ns-motion-time` (3,2 s por defecto).
+- **Landing:** una tarjeta alta con muescas laterales en la sección Movimiento.
+
 ## 0.15.0 — reposo: los adornos no gastan con la página quieta
 
 - **`.ns-resting`:** tras 20 s sin puntero, toque, tecla ni desplazamiento, el núcleo pone `.ns-resting` en `<html>` y se pausan los adornos animados (bordes con `data-ns-motion`, degradados que giran, luz en U viva, destellos, pulso, aurora y luces del mosaico) hasta la siguiente señal de vida. Un teléfono con la página abierta y un borde animado a la vista lo repintaba sin fin y se calentaba: con cuatro tarjetas con `twin` a la vista, de ~1,9 s de CPU cada 6 s a 1 ms. `<html data-ns-rest="30">` cambia la espera (segundos), `data-ns-rest="off"` lo apaga, y `document` recibe el evento `ns-rest` con `detail { resting }`.
