@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.11.4 — mosaico de la landing sin esquinas recortadas
+
+- El escenario del mosaico tenía un radio fijo (30 px) mayor que el de las piezas (26, 20 en el móvil) y recortaba la esquina —y el borde— de las cuatro piezas de los extremos (se veía sobre todo en el iPhone). Ahora el radio es concéntrico: el de las piezas más el relleno del escenario (sólo con el material vidrio).
+
 ## 0.11.3 — web en producción y panel más limpio
 
 - **Sitio en producción:** `site: https://ns-frame-site.vercel.app` en `astro.config.mjs`: URL canónica, `og:url` y `og:image` absolutos, `sitemap.xml` con las 17 páginas y `robots.txt` que lo enlaza. `homepage` del paquete apunta a la web.

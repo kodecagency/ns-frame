@@ -210,14 +210,17 @@ const PICKS = [
   .knobs [data-ns-field] { flex: 1 1 130px; min-width: 110px; max-width: 200px }
   .knobs [data-ns-swatches] { margin-left: auto }
 
-  .mo { --ns-gap: 14px; --ns-row: 150px; --ns-mosaic-radius: 26px; --ns-pad: 24px; --ns-mosaic-light: #fff }
+  .mo { --ns-gap: 14px; --ns-row: 150px; --ns-mosaic-radius: var(--mr); --ns-pad: 24px; --ns-mosaic-light: #fff }
   /* material vidrio: el mosaico sobre una foto y las piezas de vidrio líquido (sin fondo propio; el
      texto toma el color que contrasta con lo de detrás, --ns-glass-ink) */
   /* (overflow: las capas de cada vidrio sobresalen un poco de su pieza para la lente; sin recortar,
      ensanchaban la página en el móvil. overflow no corta el fondo que ve el vidrio) */
-  .mo-stage { position: relative; border-radius: 30px; overflow: hidden; transition: padding .35s var(--ease) }
+  /* radio concéntrico: el de las piezas (--mr) más el relleno del escenario (--sp). Con un radio fijo
+     mayor que el de las piezas, el recorte se comía la esquina —y el borde— de las cuatro de los
+     extremos */
+  .mo-stage { --mr: 26px; --sp: 0px; position: relative; border-radius: calc(var(--mr) + var(--sp)); overflow: hidden; transition: padding .35s var(--ease), border-radius .35s var(--ease) }
   /* (isolation: el vídeo de fondo va detrás de todo, pero dentro del escenario) */
-  .mo-stage.glassy { padding: 18px; isolation: isolate; background: #0b0b0d }
+  .mo-stage.glassy { --sp: 18px; padding: var(--sp); isolation: isolate; background: #0b0b0d }
   .mo-stage.glassy.bg-photo { background: #0b0b0d url(https://picsum.photos/seed/ns-mosaic-glass/1400/1000.webp) center / cover }
   .mo-stage.glassy.bg-grad { background: radial-gradient(40% 55% at 18% 22%, #ff4d6d, transparent 70%), radial-gradient(45% 55% at 82% 30%, #3de0ff, transparent 70%), radial-gradient(50% 60% at 55% 85%, #ffd23f, transparent 70%), radial-gradient(40% 50% at 10% 90%, #7c4dff, transparent 70%), #101014 }
   .mo-vid { display: none; position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; object-fit: cover; pointer-events: none }
@@ -268,11 +271,12 @@ const PICKS = [
     .bar { position: static; display: grid; gap: 10px; padding: 12px }
     .bar > .grp { display: none }
     .picks { display: grid; grid-template-columns: 1fr 1fr; gap: 10px }
-    .mo-stage.glassy { padding: 10px; border-radius: 24px }
+    .mo-stage { --mr: 20px }
+    .mo-stage.glassy { --sp: 10px }
     .knobs { flex-wrap: wrap; padding: 8px 0 0; border-top: 1px solid var(--line) }
     .knobs [data-ns-field] { max-width: none }
     .knobs [data-ns-swatches] { margin-left: 0 }
-    .mo { --ns-row: 112px; --ns-gap: 10px; --ns-mosaic-radius: 20px; --ns-pad: 16px }
+    .mo { --ns-row: 112px; --ns-gap: 10px; --ns-pad: 16px }
     .t-orb { --ns-areas: 'h h' 'h h' 'x y' 'x y' 'a b' 'a c' 'd c' 'e f'; --ns-orb: 2 3 var(--hole-rm, 62) var(--hole, circle) }
     .t-duo { --ns-areas: 'h h' 'h h' 'x y' 'x y' 'a b' 'c b' 'c e' 'd e' 'f f'; --ns-orb: 2 3 50 hex, 2 7 34 circle }
     .t-lock { --ns-areas: 'h h' 'h b' 'a b' 'a a' 'x a' 'x x' 'c y' 'd y' 'e f' }
