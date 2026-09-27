@@ -60,7 +60,8 @@ Como referencia (bundlephobia, gzip): `@floating-ui/dom` 8,2 KB sólo para posic
 - **Memo de geometría por (forma, ancho, alto).** Marcos con la misma forma y el mismo tamaño (listas, rejillas, bentos) comparten la geometría, los comandos y la cadena del path: se calculan una vez. La caché está acotada (se vacía al pasar de 400 entradas).
 - **Repintado perezoso.** Al cambiar de tamaño sólo se recalculan los marcos en pantalla o a menos de una pantalla de distancia; los demás quedan pendientes y se pintan al acercarse, antes de verse. `open()`, `close()`, `shapeOf()` y las aperturas de `data-ns-enter` pintan en el acto un marco pendiente; antes de imprimir se pinta todo.
 - **Vía rápida nativa** para formas sólo de esquinas con borde liso (ver arriba).
-- Las animaciones se pausan fuera de pantalla (son CSS y Web Animations: no hay SMIL).
+- Las animaciones se pausan fuera de pantalla (son CSS y Web Animations: no hay SMIL) y, en táctil, mientras se desplaza la página (`.ns-scrolling` en `<html>`; `data-ns-scroll-motion` lo desactiva): cada borde animado a la vista se repintaba en cada fotograma del scroll.
+- El vidrio que llega a la vez (las piezas de un panel) se monta unas pocas por fotograma, con ~6 ms de presupuesto, una pantalla antes de verse.
 - **Mosaico:** la luz que sigue al puntero y la onda al tocar no se crean en táctil; los reintentos mientras llega el estilo de una plantilla nueva están acotados (nunca un bucle de frames).
 - **Hoja e isla:** sólo animan `translate` y `opacity`; el progreso del gesto se calcula de la temporización de la animación, sin leer estilos en cada frame.
 - El morph interpola vértices, no texto de path.

@@ -316,7 +316,7 @@ const STYLE = `
 .ns-pre .ns-b,.ns-pre .ns-a{stroke-dasharray:100 100;stroke-dashoffset:100}
 .ns-draw .ns-b{stroke-dasharray:100 100;animation:ns-d var(--ns-draw-time,1.2s) cubic-bezier(.65,0,.35,1) both}
 .ns-draw .ns-a{animation:ns-o .4s var(--ns-draw-time,1.2s) both}
-.ns-off *{animation-play-state:paused!important}
+.ns-off *,.ns-scrolling :is(.ns-svg,.ns-mo-fx) *{animation-play-state:paused!important}
 @keyframes ns-d{from{stroke-dashoffset:100}to{stroke-dashoffset:0}}
 @keyframes ns-o{from{opacity:0}}
 @media (prefers-reduced-motion:reduce){.ns-svg *{animation:none!important;stroke-dashoffset:0!important}.ns-pre .ns-b{stroke-dasharray:none}}
@@ -678,6 +678,22 @@ function delegate() {
   on('focusout', e => { const a = chain(e.target); a.forEach(up); requestAnimationFrame(() => a.forEach(hot)) })
 }
 
+// En táctil, mientras se desplaza la página (o algo dentro), <html> lleva .ns-scrolling y las
+// animaciones de adorno de la librería se pausan; ~160 ms después de parar, siguen donde estaban. Cada
+// borde animado a la vista se repintaba en cada fotograma del desplazamiento, que en un teléfono es lo
+// que más cuesta. <html data-ns-scroll-motion> las deja siempre en marcha. En tu CSS, .ns-scrolling
+// sirve para lo mismo con tus animaciones
+function scrolling() {
+  if (!touch()) return
+  const h = document.documentElement
+  let t = 0
+  addEventListener('scroll', () => {
+    if (h.hasAttribute('data-ns-scroll-motion')) return
+    h.classList.add('ns-scrolling'); clearTimeout(t)
+    t = setTimeout(() => h.classList.remove('ns-scrolling'), 160)
+  }, { passive: true, capture: true })
+}
+
 /** Activa ns-frame sobre cualquier elemento (normalmente vía data-ns / <ns-frame>). */
 export function attach(el) {
   if (!DOM) return el
@@ -695,6 +711,7 @@ export function attach(el) {
     // borde del sistema, y la vía rápida nativa, que allí perdería el borde)
     FORCED.addEventListener?.('change', () => document.querySelectorAll(SEL).forEach(e => { const s = S.get(e); s && refresh(s) }))
     delegate()
+    if (typeof NS_LITE == 'undefined') scrolling()
   }
   let s = S.get(el)
   if (!s) {

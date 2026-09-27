@@ -6,7 +6,7 @@ order: 5
 
 # Movimiento
 
-Todo el movimiento de ns-frame respeta `prefers-reduced-motion` y se pausa fuera de pantalla.
+Todo el movimiento de ns-frame respeta `prefers-reduced-motion` y se pausa fuera de pantalla. En táctil, además, los adornos animados (bordes, luz en U viva, destellos, luces del mosaico) se pausan mientras se desplaza la página y siguen al parar: `<html>` lleva `.ns-scrolling` durante el desplazamiento (úsala también para tus animaciones) y `<html data-ns-scroll-motion>` los deja siempre en marcha.
 
 ## Morph: hover, foco y presión
 

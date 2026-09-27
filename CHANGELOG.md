@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.13.2 — adornos en pausa durante el scroll
+
+- **Núcleo:** en táctil, `<html>` lleva `.ns-scrolling` mientras se desplaza la página (o algo dentro) y ~160 ms después se quita. Los adornos animados de la librería se pausan entretanto y siguen donde estaban: bordes con movimiento (`data-ns-motion`, degradados que giran), luces del mosaico y, en `ns-fx.css`, luz en U viva, aura, destellos, escaneo y texto animado. En la sección Movimiento de la landing (doce bordes animados) los fotogramas largos al desplazarse bajan de ~77 a ~20. `<html data-ns-scroll-motion>` los deja siempre en marcha; la clase sirve también para tus animaciones.
+- **Vidrio:** las piezas que llegan a la vez se montan unas pocas por fotograma (~6 ms de presupuesto), una pantalla antes de verse, en vez de todas en una tarea.
+
 ## 0.13.1 — menos trabajo al desplazarse y responsive a 320 px
 
 Medido en la landing con un móvil emulado (390 px, táctil, CPU 4×), sección por sección:

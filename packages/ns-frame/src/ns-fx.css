@@ -190,6 +190,11 @@
   .ns-text-shimmer, .ns-text-aurora { background: none; color: CanvasText; animation: none }
 }
 
+/* (en táctil, mientras se desplaza la página —.ns-scrolling, que pone el núcleo en <html>— los efectos
+   animados se pausan y siguen al parar: cada uno se repintaba en cada fotograma del desplazamiento) */
+.ns-scrolling :is(.ns-aura, .ns-aura-top)::before, .ns-scrolling .ns-u-breathe::after, .ns-scrolling :is(.ns-u-hue, .ns-u-live, .ns-u-tide, .ns-u-surge, .ns-text-shimmer, .ns-text-aurora),
+.ns-scrolling .ns-scan::before, .ns-scrolling .ns-shimmer::after, .ns-scrolling .ns-pulse > .ns-svg { animation-play-state: paused }
+
 @media (prefers-reduced-motion: reduce) {
   .ns-u-hover { transition: none }
   :is(.ns-aura, .ns-aura-top)::before, .ns-u-breathe::after, .ns-u-hue, .ns-u-live, .ns-u-tide, .ns-u-surge, .ns-scan::before, .ns-shimmer::after, .ns-text-shimmer, .ns-text-aurora, .ns-pulse > .ns-svg { animation: none }

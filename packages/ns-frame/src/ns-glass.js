@@ -292,12 +292,21 @@ const near = (el, make) => {
   NIO ||= new IntersectionObserver(es => es.forEach(e => {
     if (!e.isIntersecting) return
     NIO.unobserve(e.target)
-    const f = NEAR.get(e.target); NEAR.delete(e.target); f?.()
+    QUEUE.push(e.target); qraf ||= requestAnimationFrame(pump)
   }), { rootMargin: '100% 0px 100% 0px' })
   NIO.observe(el)
   return { destroy() { NIO.unobserve(el); NEAR.delete(el); h?.destroy() } }
 }
-const NEAR = new Map()
-let NIO = null
+const NEAR = new Map(), QUEUE = []
+let NIO = null, qraf = 0
+// (los que llegan a la vez —las quince piezas de un panel— se montan unos pocos por fotograma, con
+// ~6 ms de presupuesto: todos en una tarea eran un tirón al desplazarse. Van una pantalla por
+// delante, así que están listos antes de verse; uno quitado mientras esperaba ya no se monta)
+const pump = () => {
+  qraf = 0
+  const t0 = performance.now()
+  while (QUEUE.length && performance.now() - t0 < 6) { const el = QUEUE.shift(), f = NEAR.get(el); NEAR.delete(el); f?.() }
+  if (QUEUE.length) qraf = requestAnimationFrame(pump)
+}
 watch('data-ns-glass', el => near(el, glass))
 watch('data-ns-glass-group', el => near(el, glassGroup))
