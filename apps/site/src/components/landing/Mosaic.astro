@@ -12,6 +12,8 @@ const HOLES = [
   ['tri 56 38', 'Triángulo', 'M10 3.5 17 16H3Z'],
 ]
 const FILLS = [['', 'Sólido'], ['is-photo', 'Foto'], ['is-data', 'Dato']]
+// material de las piezas: sólido o vidrio líquido (ns-frame/glass sobre la forma de cada pieza)
+const MATS = [['', 'Sólido'], ['glass', 'Vidrio']]
 // un efecto a la vez en la demo (la librería los combina: data-ns-mosaic="stream dots")
 const FX = [['', 'Ninguno'], ['stream', 'Corriente'], ['trace', 'Trazo'], ['wave', 'Onda'], ['sweep', 'Barrido'], ['pulse', 'Pulso'], ['aurora', 'Aurora'], ['dots', 'Puntos'], ['grid', 'Retícula'], ['glow', 'Luz'], ['ripple', 'Toque']] as const
 const START = 'stream'
@@ -22,6 +24,7 @@ const PICKS = [
   ['mo-modes', 'Plantilla', TEMPLATES.map(([v, n]) => [v, n])],
   ['mo-hole', 'Hueco', HOLES.map(([v, n]) => [v, n])],
   ['mo-fill', 'Orbe', FILLS.map(([v, n]) => [v, n])],
+  ['mo-mat', 'Material', MATS.map(([v, n]) => [v, n])],
   ['mo-fx', 'Efecto', FX.map(([v, n]) => [v, n])],
 ] as const
 ---
@@ -38,6 +41,7 @@ const PICKS = [
       <div class="seg" id="mo-modes" role="group" data-ns-choice aria-label="Plantilla">{TEMPLATES.map(([t, n], i) => <button type="button" data-v={t} aria-pressed={String(!i)}>{n}</button>)}</div>
       <div class="seg" id="mo-hole" role="group" data-ns-choice aria-label="Forma del hueco">{HOLES.map(([h, n, d], i) => <button type="button" class="ico" data-v={h} aria-pressed={String(!i)} aria-label={n} title={n}><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d={d} /></svg></button>)}</div>
       <div class="seg" id="mo-fill" role="group" data-ns-choice aria-label="Contenido del orbe">{FILLS.map(([c, n]) => <button type="button" data-v={c} aria-pressed={String(c == 'is-photo')}>{n}</button>)}</div>
+      <div class="seg" id="mo-mat" role="group" data-ns-choice aria-label="Material de las piezas">{MATS.map(([c, n], i) => <button type="button" data-v={c} aria-pressed={String(!i)}>{n}</button>)}</div>
       <div class="fx" id="mo-fx" role="group" aria-label="Efecto de luz" data-ns-choice>
         {FX.map(([k, n]) => <button type="button" data-v={k} aria-pressed={String(k == START)}>{n}</button>)}
       </div>
@@ -53,6 +57,7 @@ const PICKS = [
       </div>
     </div>
 
+    <div class="mo-stage" id="mo-stage">
     <div class="mo ns-mosaic t-orb" id="mo" data-ns-mosaic={START}>
       <article data-ns-area="h" class="hi"><h3>Formas que se abrazan.</h3><p>La plantilla vive en CSS: cámbiala con una media query y las piezas se reacomodan.</p></article>
       <article data-ns-area="a" class="ph"><img src="https://picsum.photos/seed/ns-mosaic-a/700/800.webp" alt="Fachada de edificios antiguos" width="700" height="800" loading="lazy"><h3>Fotos con forma</h3><p>La imagen se recorta con la pieza.</p></article>
@@ -65,6 +70,7 @@ const PICKS = [
       <article data-ns-area="f"><p>El orden del DOM no cambia: se lee igual con lector de pantalla.</p></article>
       <div data-ns-orb class="orb is-photo" id="mo-orb"><img src="https://picsum.photos/seed/ns-orb-city/400/400.webp" alt="Ciudad de noche" width="400" height="400" loading="lazy"><div class="ok"><b class="num">99,9 %</b><small>disponibilidad</small></div></div>
       <div data-ns-orb class="orb orb-2" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3 5 13h6l-1 8 8-10h-6Z" /></svg></div>
+    </div>
     </div>
     <p class="after"><a class="more" href="/docs/mosaico">Cómo funciona el mosaico<Arrow /></a></p>
   </div>
@@ -95,6 +101,15 @@ const PICKS = [
     const c = picked(e).dataset.v
     orb.classList.remove('is-photo', 'is-data')
     if (c) { orb.classList.add(c); orb.removeAttribute('aria-hidden') } else orb.setAttribute('aria-hidden', 'true')
+  })
+
+  // material: vidrio líquido en cada pieza (salvo la foto), con la forma que le da el mosaico. El
+  // módulo del vidrio se pide la primera vez; el mosaico pasa a estar sobre una foto
+  $('mo-mat').addEventListener('change', e => {
+    const glass = picked(e).dataset.v == 'glass'
+    if (glass) import('ns-frame/glass')
+    $('mo-stage').classList.toggle('glassy', glass)
+    mo.querySelectorAll<HTMLElement>(':scope > [data-ns-area]:not(.ph)').forEach(a => glass ? a.setAttribute('data-ns-glass', '') : a.removeAttribute('data-ns-glass'))
   })
 
   // un efecto a la vez; velocidad, intensidad y color son variables de la librería:
@@ -155,6 +170,13 @@ const PICKS = [
   .tints button[aria-pressed=true] { border-color: #0e0e10; box-shadow: 0 0 0 2px var(--text) }
 
   .mo { --ns-gap: 14px; --ns-row: 150px; --ns-mosaic-radius: 26px; --ns-pad: 24px; --ns-mosaic-light: #fff }
+  /* material vidrio: el mosaico sobre una foto y las piezas de vidrio líquido (sin fondo propio; el
+     texto toma el color que contrasta con lo de detrás, --ns-glass-ink) */
+  .mo-stage { position: relative; border-radius: 30px; transition: padding .35s var(--ease) }
+  .mo-stage.glassy { padding: 18px; background: #0b0b0d url(https://picsum.photos/seed/ns-mosaic-glass/1400/1000.webp) center / cover }
+  .glassy .mo > [data-ns-area]:not(.ph) { background: none !important; color: var(--ns-glass-ink, #fff) }
+  .glassy .mo p, .glassy .mo .hi h3, .glassy .mo .hi p { color: color-mix(in srgb, var(--ns-glass-ink, #fff) 88%, transparent) }
+  .glassy .mo .hi h3 { color: var(--ns-glass-ink, #fff) }
   .mo > [data-ns-area] { background: #18181a; --ns-border: rgba(255, 255, 255, .08); min-width: 0 }
   /* rectángulos: columna; piezas con forma (.ns-flow): el texto recorre toda la figura */
   .mo > [data-ns-area]:not(:global(.ns-flow)) { display: flex; flex-direction: column; gap: 6px }
@@ -196,6 +218,7 @@ const PICKS = [
     .bar { position: static; display: grid; gap: 10px; padding: 12px }
     .bar > .seg, .bar > .fx { display: none }
     .picks { display: grid; grid-template-columns: 1fr 1fr; gap: 10px }
+    .mo-stage.glassy { padding: 10px; border-radius: 24px }
     .picks label { display: grid; gap: 4px; font-size: var(--t-caption); color: var(--text-2) }
     .picks select { width: 100%; min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line-2); background: #18181a; color: var(--text); font: inherit; font-size: var(--t-small) }
     .knobs { flex-wrap: wrap; padding: 8px 0 0; border-top: 1px solid var(--line) }
