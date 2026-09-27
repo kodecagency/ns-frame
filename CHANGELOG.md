@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.11.3 — web en producción y panel más limpio
+
+- **Sitio en producción:** `site: https://ns-frame-site.vercel.app` en `astro.config.mjs`: URL canónica, `og:url` y `og:image` absolutos, `sitemap.xml` con las 17 páginas y `robots.txt` que lo enlaza. `homepage` del paquete apunta a la web.
+- Datos estructurados: autor Francesco Sierchio (Kodec Agency) y Kodec Agency como editora.
+- Panel de la landing: el modo encendido se rellena entero con su color (el círculo de la pastilla y la fila elegida), como las conexiones; la salida se apaga deprisa desde el principio y la entrada empieza a los 100 ms, sin que asomen las pastillas de la vista anterior.
+
 ## 0.11.2 — el vidrio del grupo se desvanece con su pieza; sin destello al tocar
 
 - **Grupo de vidrio:** cada caja lleva la opacidad de su pieza (`draw(d, moving, boxes)` con 9 valores por caja). Una pieza que se desvanece se lleva su vidrio; antes quedaba su silueta vacía y se iba de golpe (en el panel de la landing parecía un parpadeo al abrir la lista de modos). El grupo redibuja también cuando sólo cambia la opacidad.

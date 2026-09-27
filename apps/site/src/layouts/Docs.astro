@@ -7,7 +7,7 @@ import '../styles/tokens.css'
 import '../styles/docs.css'
 import Footer from '../components/landing/Footer.astro'
 import Seo from '../components/Seo.astro'
-import { LINKS } from '../data/sections'
+import { LINKS, AUTHOR, AGENCY } from '../data/sections'
 
 interface Props { title: string; description: string; slug: string }
 const { title, description, slug } = Astro.props
@@ -25,7 +25,7 @@ const here = Astro.site && new URL(`/docs/${slug}`, Astro.site).href
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <Seo title={`${title} · ns-frame`} description={description} type="article" ld={[
-    { '@type': 'TechArticle', headline: title, description, inLanguage: 'es', proficiencyLevel: 'Beginner', about: { '@type': 'SoftwareSourceCode', name: 'ns-frame', codeRepository: LINKS.github }, author: { '@type': 'Organization', name: 'Kodec Agency' }, ...(here && { url: here }) },
+    { '@type': 'TechArticle', headline: title, description, inLanguage: 'es', proficiencyLevel: 'Beginner', about: { '@type': 'SoftwareSourceCode', name: 'ns-frame', codeRepository: LINKS.github }, author: AUTHOR, publisher: AGENCY, ...(here && { url: here }) },
     ...(Astro.site ? [{ '@type': 'BreadcrumbList', itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'ns-frame', item: Astro.site.href },
       { '@type': 'ListItem', position: 2, name: 'Guías', item: new URL(LINKS.docs, Astro.site).href },

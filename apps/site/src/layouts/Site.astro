@@ -4,7 +4,7 @@ import { Font } from 'astro:assets'
 import 'ns-frame/fx.css'
 import '../styles/tokens.css'
 import Seo from '../components/Seo.astro'
-import { LINKS } from '../data/sections'
+import { LINKS, AUTHOR, AGENCY } from '../data/sections'
 import pkg from 'ns-frame/package.json'
 
 interface Props { title: string; description: string }
@@ -17,7 +17,7 @@ const { title, description } = Astro.props
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <Seo title={title} description={description} ld={[
     { '@type': 'WebSite', name: 'ns-frame', inLanguage: 'es', ...(Astro.site && { url: Astro.site.href }) },
-    { '@type': 'SoftwareSourceCode', name: 'ns-frame', description, programmingLanguage: ['JavaScript', 'CSS'], runtimePlatform: 'Navegador web', license: 'https://opensource.org/licenses/MIT', codeRepository: LINKS.github, version: pkg.version, keywords: pkg.keywords.join(', '), author: { '@type': 'Organization', name: 'Kodec Agency', url: 'https://github.com/kodecagency' } },
+    { '@type': 'SoftwareSourceCode', name: 'ns-frame', description, programmingLanguage: ['JavaScript', 'CSS'], runtimePlatform: 'Navegador web', license: 'https://opensource.org/licenses/MIT', codeRepository: LINKS.github, version: pkg.version, keywords: pkg.keywords.join(', '), author: AUTHOR, publisher: AGENCY },
   ]} />
   <meta name="theme-color" content="#0a0a0a">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">

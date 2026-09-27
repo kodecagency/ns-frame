@@ -32,6 +32,10 @@ export const SECTIONS: Section[] = [
   { id: 'empezar', name: 'Empezar', sub: 'En un minuto', icon: 'M4 10h11 M11 5.5l4.5 4.5-4.5 4.5' },
 ]
 
+// autoría para buscadores (JSON-LD): la persona que lo hace y la agencia que lo publica
+export const AGENCY = { '@type': 'Organization', name: 'Kodec Agency', url: 'https://github.com/kodecagency' }
+export const AUTHOR = { '@type': 'Person', name: 'Francesco Sierchio', url: 'https://github.com/kodecagency', worksFor: AGENCY }
+
 export const LINKS = {
   github: 'https://github.com/kodecagency/ns-frame',
   docs: '/docs/introduccion',

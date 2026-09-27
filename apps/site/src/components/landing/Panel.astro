@@ -158,17 +158,20 @@ const ROW: [K, string][] = [['torch', 'Linterna'], ['timer', 'Temporizador'], ['
   const OUT: Keyframe[] = [{ transform: 'none', opacity: 1, visibility: 'visible' }, { transform: 'scale(.92)', opacity: 0, visibility: 'visible', offset: .99 }, { transform: 'scale(.92)', opacity: 0, visibility: 'hidden' }]
   const IN: Keyframe[] = [{ transform: 'translateY(-10px) scale(.9)', opacity: 0, visibility: 'hidden' }, { transform: 'translateY(-10px) scale(.9)', opacity: 0, visibility: 'visible', offset: .01 }, { transform: 'none', opacity: 1, visibility: 'visible' }]
   // (curva de frenado largo, sin rebote: arranca rápido y se posa)
-  const EASE_IN = 'cubic-bezier(.22,1,.36,1)', EASE_OUT = 'cubic-bezier(.4,0,.8,.6)'
+  // (la salida se apaga deprisa desde el principio: cuando entra la vista nueva, lo anterior ya casi
+  // no se ve; con una curva que arrancaba despacio, las pastillas de antes asomaban bajo las nuevas)
+  const EASE_IN = 'cubic-bezier(.22,1,.36,1)', EASE_OUT = 'cubic-bezier(.3,0,.2,1)'
   const go = async (to: V, focus?: HTMLElement | null) => {
     if (busy || to == cur) return
     busy = true
     const from = cur, calm = reduced(), old = pieces(from)
     cur = to
     more.setAttribute('aria-expanded', String(to != 'grid'))
-    // salida: todas a la vez, 170 ms. La entrada empieza a mitad (se solapan: sin hueco vacío)
+    // salida: todas a la vez, 150 ms. La entrada empieza al final de la salida (a los 100 ms, con lo
+    // anterior ya casi transparente): sin hueco vacío y sin que se vean las dos vistas a la vez
     const out = calm ? Promise.resolve() : Promise.all(old.map(e => anim(e, OUT,
-      { duration: 170, easing: EASE_OUT, fill: 'forwards' })))
-    if (!calm) await new Promise(r => setTimeout(r, 70))
+      { duration: 150, easing: EASE_OUT, fill: 'forwards' })))
+    if (!calm) await new Promise(r => setTimeout(r, 100))
     show(to, true)
     // entrada: de arriba abajo, una tras otra; el escalonado total no pasa de ~200 ms (la cuadrícula
     // tiene once piezas: si no, la última llegaría tarde)
@@ -270,7 +273,8 @@ const ROW: [K, string][] = [['torch', 'Linterna'], ['timer', 'Temporizador'], ['
   .pn-fsw { display: contents }
   .pn-fon { flex: none; padding: 0; border: 0; border-radius: 50%; background: none; color: #fff }
   .pn-dot { display: grid; place-items: center; width: calc(var(--c) - 28px); aspect-ratio: 1; border-radius: 50%; background: rgba(255, 255, 255, .16); color: #fff; transition: background-color .25s, color .25s }
-  .pn-fon[aria-pressed=true] .pn-dot { background: #fff; color: var(--m) }
+  /* (encendido, relleno entero con el color del modo y el icono en blanco, como las conexiones de arriba) */
+  .pn-fon[aria-pressed=true] .pn-dot { background: var(--m); color: #fff }
   .pn-dot svg { width: 46%; height: 46% }
   /* (el nombre y su flecha: abre la lista; ocupa el resto de la pastilla) */
   .pn-fmore { flex: 1; min-width: 0; align-self: stretch; display: flex; align-items: center; gap: 4px; padding: 0 4px; border: 0; border-radius: 0 999px 999px 0; background: none; color: #fff; font-weight: 600; text-align: left }
@@ -290,13 +294,14 @@ const ROW: [K, string][] = [['torch', 'Linterna'], ['timer', 'Temporizador'], ['
   .pn-back svg { width: 20px; height: 20px; stroke-width: 2.4 }
   :global(:root:not([data-ns-input=pointer])) .pn-back:focus-visible { outline: 2px solid #fff; outline-offset: 2px }
 
-  /* modos: filas de vidrio neutras; el elegido, algo más claro y con el icono en su color */
+  /* modos: filas de vidrio neutras; el elegido, relleno con su color */
   .pn-modes { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: calc(var(--g) * .7) }
   .pn-mode { flex: none; position: relative; display: flex; align-items: center; min-height: calc(var(--c) * .82); border-radius: 999px; transition: background-color .25s }
-  .pn-mode:has(> .pn-mpick[aria-checked=true]) { background: rgba(255, 255, 255, .14) }
+  /* el elegido, relleno entero con su color (texto e iconos en blanco), como un botón encendido */
+  .pn-mode:has(> .pn-mpick[aria-checked=true]) { background: var(--m) }
+  .pn-mode:has(> .pn-mpick[aria-checked=true]) :is(.pn-mt small, .pn-mx) { color: rgba(255, 255, 255, .85) }
   .pn-mpick { flex: 1; min-width: 0; align-self: stretch; display: grid; grid-template-columns: 52px 1fr 52px; align-items: center; padding: 6px 0; border: 0; border-radius: inherit; background: none; color: inherit; text-align: center }
   .pn-mi { width: 22px; height: 22px; justify-self: center }
-  .pn-mpick[aria-checked=true] .pn-mi { color: var(--m) }
   .pn-mt { display: grid; gap: 1px; min-width: 0 }
   .pn-mt b { font-size: 16px; font-weight: 600; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
   .pn-mt small { font-size: 13px; font-weight: 400; color: rgba(255, 255, 255, .6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }

@@ -26,7 +26,8 @@ const docLinks = () => ({
 })
 
 export default defineConfig({
-  // site: 'https://…',   ← pon aquí la URL de producción cuando esté desplegado (URLs canónicas)
+  // URL de producción: canónicas, og:url/og:image absolutos, sitemap y robots.txt
+  site: 'https://ns-frame-site.vercel.app',
   // formas estáticas (data-ns-static) compiladas a CSS en el build: sin JS en el navegador
   integrations: [nsStatic(), docLinks()],
   // fuentes autoalojadas (sin petición a Google en cada visita) y con fallback de métricas ajustadas
