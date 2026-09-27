@@ -471,6 +471,15 @@ function decorate(s, V, d, T, at) {
 
 // una duración de una variable CSS en ms: "320" y "320ms" son 320, ".32s" también; vacía, def
 const ms = (raw, def) => { raw = raw.trim(); const v = parseFloat(raw); return isNaN(v) ? def : /[^m]s$/.test(raw) ? v * 1000 : v }
+/**
+ * Lee una variable CSS de `el` (o de su estilo calculado `cs`): cssTime da una duración en ms
+ * ("320", "320ms" o ".32s"; si falta, def); cssNum un número (o def); cssVal el texto (o def).
+ * Las usan los módulos para que todo lo visual se ajuste con variables.
+ */
+const csOf = el => el instanceof Element ? getComputedStyle(el) : el
+export const cssTime = (el, name, def) => ms(csOf(el).getPropertyValue(name), def)
+export const cssNum = (el, name, def) => { const v = parseFloat(csOf(el).getPropertyValue(name)); return isNaN(v) ? def : v }
+export const cssVal = (el, name, def) => csOf(el).getPropertyValue(name).trim() || def
 
 function morph(s) {
   const from = s.cur, t0 = performance.now(), dur = ms(getComputedStyle(s.el).getPropertyValue('--ns-morph-time'), 320)

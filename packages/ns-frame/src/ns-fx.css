@@ -95,7 +95,7 @@
 @keyframes ns-fade { to { opacity: var(--ns-aura-o, .55) } }
 
 /* ── Aurora: borde multicolor (añade data-ns-spin para que gire) ── */
-.ns-aurora { --ns-border: linear-gradient(90deg, #3de0ff, #8b7bff, #ff6bd6, #ffb547, #3de0ff) }
+.ns-aurora { --ns-border: linear-gradient(90deg, var(--ns-aurora-1, #3de0ff), var(--ns-aurora-2, #8b7bff), var(--ns-aurora-3, #ff6bd6), var(--ns-aurora-4, #ffb547), var(--ns-aurora-1, #3de0ff)) }
 
 /* ── Halo: glow externo que sigue la forma (ponlo en un contenedor del marco) ── */
 .ns-halo { filter: drop-shadow(0 0 var(--ns-halo-size, 16px) var(--ns-halo, rgba(61, 224, 255, .35))) }
@@ -135,7 +135,7 @@
 /* ── Texto ── */
 .ns-text-shimmer, .ns-text-aurora { -webkit-background-clip: text; background-clip: text; color: transparent; animation: ns-text var(--ns-text-time, 2.8s) linear infinite }
 .ns-text-shimmer { background-image: linear-gradient(90deg, var(--ns-text, #93a7b8) 0 42%, var(--ns-text-hi, #fff) 50%, var(--ns-text, #93a7b8) 58% 100%); background-size: 300% 100% }
-.ns-text-aurora { background-image: linear-gradient(90deg, #3de0ff, #8b7bff, #ff6bd6, #ffb547, #3de0ff, #8b7bff); background-size: 200% 100% }
+.ns-text-aurora { background-image: linear-gradient(90deg, var(--ns-aurora-1, #3de0ff), var(--ns-aurora-2, #8b7bff), var(--ns-aurora-3, #ff6bd6), var(--ns-aurora-4, #ffb547), var(--ns-aurora-1, #3de0ff), var(--ns-aurora-2, #8b7bff)); background-size: 200% 100% }
 @keyframes ns-text { from { background-position: 100% 0 } to { background-position: 0 0 } }
 
 /* ── Con vidrio (ns-frame/glass, data-ns-glass) ──

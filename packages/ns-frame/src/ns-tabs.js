@@ -27,7 +27,7 @@
 // --ns-tabs-ink y --ns-tabs-ink-hot.
 // Con prefers-reduced-motion: sin muelle, sin estiramiento y sin levantar.
 
-import { styles, watch } from './ns-frame.js'
+import { styles, watch, cssNum } from './ns-frame.js'
 import { liquid } from './ns-liquid.js'
 
 const CSS = `@layer ns{
@@ -36,7 +36,7 @@ const CSS = `@layer ns{
 .ns-tabs>.ns-tabs-lens.ns-tabs-lens{position:absolute;inset:0;pointer-events:none;--ns-liquid:var(--ns-tabs-fuse,16px);--ns-liquid-fill:var(--ns-tabs-fill,currentColor);--ns-glass-tint:var(--ns-tabs-tint,rgba(255,255,255,.16));--ns-glass-blur:var(--ns-tabs-blur,2px);--ns-glass-lens:var(--ns-tabs-lens,8px);--ns-glass-depth:var(--ns-tabs-depth,8px);--ns-glass-edge:var(--ns-tabs-edge,3px);--ns-glass-sat:1.1}
 .ns-tabs.ns-tabs-lift>.ns-tabs-lens.ns-tabs-lens{--ns-glass-tint:var(--ns-tabs-tint-lift,rgba(255,255,255,.05));--ns-glass-blur:var(--ns-tabs-blur-lift,1.2px);--ns-glass-lens:var(--ns-tabs-lens-lift,32px);--ns-glass-depth:var(--ns-tabs-depth-lift,20px);--ns-glass-zoom:var(--ns-tabs-zoom-lift,.38)}
 .ns-tabs .ns-tabs-lens>.ns-tabs-ind.ns-tabs-ind,.ns-tabs .ns-tabs-lens>.ns-tabs-drop.ns-tabs-drop{position:absolute;left:0;top:0;border-radius:var(--ns-tabs-ind-radius,var(--ns-tabs-radius,999px));transform-origin:50% 50%}
-.ns-tabs[data-ns-tabs~=shrink]{transform-origin:var(--ns-tabs-origin,50% 100%);transition:scale .5s cubic-bezier(.3,1.25,.4,1)}
+.ns-tabs[data-ns-tabs~=shrink]{transform-origin:var(--ns-tabs-origin,50% 100%);transition:scale var(--ns-tabs-shrink-time,.5s) var(--ns-tabs-ease,cubic-bezier(.3,1.25,.4,1))}
 .ns-tabs.ns-tabs-min{scale:var(--ns-tabs-min,.84)}
 .ns-tabs.ns-glass-light{--ns-tabs-shadow:0 0 0 transparent}
 @media (prefers-reduced-motion:reduce){.ns-tabs[data-ns-tabs~=shrink]{transition:none}}
@@ -52,6 +52,9 @@ const clamp = (v, a, b) => Math.min(b, Math.max(a, v))
 // muelles (rigidez, amortiguación): el indicador, un poco sub-amortiguado (llega con un rebote
 // corto); siguiendo al dedo, mucho más rígido; la gota (opcional), algo más blanda que el indicador
 const GO = [520, 34], HOLD = [1600, 80], DROP = [300, 30], LIFT = [620, 38]
+// ajustados con --ns-tabs-speed (rigidez × v², amortiguación × v: el mismo gesto, más rápido) y
+// --ns-tabs-bounce (1 = el rebote de serie; 0 = amortiguado crítico, sin rebote)
+const tune = ([k, c], v, b) => { k *= v * v; c *= v; return [k, c + (2 * Math.sqrt(k) - c) * Math.max(0, 1 - b)] }
 // (en subpasos de 1/240 s: estable con muelles rígidos aunque el navegador dé pocos frames)
 const spring = (s, target, [k, c], dt) => { for (let n = Math.ceil(dt * 240), h = dt / n; n--;) { s.v += (k * (target - s.x) - c * s.v) * h; s.x += s.v * h } }
 const still = (s, t) => Math.abs(t - s.x) < .05 && Math.abs(s.v) < .05
@@ -91,7 +94,7 @@ export function tabs(el, o = {}) {
   let Y = 0, H = 0, tx = 0, tw = 0, up = 0, drag = null, skip = false, raf = 0, last = 0, hot = -1, ready = false
   const box = b => ({ x: b.offsetLeft, y: b.offsetTop, w: b.offsetWidth, h: b.offsetHeight })
   // cajas de las pestañas: se miden una vez y se olvidan al cambiar el tamaño o las pestañas
-  let cache = null
+  let cache = null, feel = null
   const boxes = () => cache ||= items().map(b => ({ b, ...box(b) }))
   const aim = i => { const b = items()[i]; if (!b) return; const r = box(b); tx = r.x; tw = r.w; Y = r.y; H = r.h }
   const paint = () => {
@@ -111,8 +114,10 @@ export function tabs(el, o = {}) {
     raf = 0
     const dt = Math.min(1 / 12, last ? (t - last) / 1000 : 1 / 60); last = t
     const dragging = drag?.on
-    spring(X, tx, dragging ? HOLD : GO, dt); spring(W, tw, GO, dt); spring(U, up, LIFT, dt)
-    if (hasDrop) spring(D, X.x + W.x / 2, DROP, dt); else D.x = tx + tw / 2
+    if (!feel) { const s = getComputedStyle(el), v = cssNum(s, '--ns-tabs-speed', 1), b = cssNum(s, '--ns-tabs-bounce', 1); feel = [GO, HOLD, DROP, LIFT].map(m => tune(m, v, b)) }
+    const [go, hold, dropS, liftS] = feel
+    spring(X, tx, dragging ? hold : go, dt); spring(W, tw, go, dt); spring(U, up, liftS, dt)
+    if (hasDrop) spring(D, X.x + W.x / 2, dropS, dt); else D.x = tx + tw / 2
     paint()
     glass.frame()
     if (dragging || !(still(X, tx) && still(W, tw) && still(D, tx + tw / 2) && still(U, up))) raf = requestAnimationFrame(loop)
@@ -227,7 +232,7 @@ export function tabs(el, o = {}) {
   const mo = new MutationObserver(ms => { cache = null; if (ms.some(m => m.attributeName == 'data-ns-liquid')) lens.setAttribute('data-ns-liquid', el.getAttribute('data-ns-liquid') || '') })
   mo.observe(el, { attributes: true, attributeFilter: ['data-ns-liquid'], childList: true })
   // al cambiar de tamaño, el indicador se recoloca sin animación
-  const ro = new ResizeObserver(() => { cache = null; if (drag?.on) return; aim(cur); if (!ready || !raf) { X.x = tx; W.x = tw; D.x = tx + tw / 2; paint(); glass.frame(); ready = true } })
+  const ro = new ResizeObserver(() => { cache = null; feel = null; if (drag?.on) return; aim(cur); if (!ready || !raf) { X.x = tx; W.x = tw; D.x = tx + tw / 2; paint(); glass.frame(); ready = true } })
   ro.observe(el); items().forEach(b => ro.observe(b))
   // data-ns-tabs="shrink": como la barra de iOS 26, se encoge un poco al desplazar hacia abajo y
   // vuelve al subir o al tocarla. Escucha el contenedor de data-ns-tabs-scroll (o la página). Sólo

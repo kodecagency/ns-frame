@@ -176,6 +176,8 @@ function aperture(s) {
   return geometry(s.src, W, H).map(v => ({ ...v, x: v.x + ox, y: v.y + oy, b: v.b?.map((z, i) => z + (i % 2 ? oy : ox)) }))
 }
 
+// una duración de una variable CSS del elemento: "720", "720ms" o ".72s"
+const cssMs = (el, k, d) => { const raw = getComputedStyle(el).getPropertyValue(k).trim(), v = parseFloat(raw); return isNaN(v) ? d : /[^m]s$/.test(raw) ? v * 1000 : v }
 function play(s, mode, dir, dur, delay = 0) {
   cancelAnimationFrame(s.ap?.raf)
   s.ap?.res?.()
@@ -183,7 +185,8 @@ function play(s, mode, dir, dur, delay = 0) {
   const ap = (s.ap = { mode: mode || s.ap?.mode || 'open', p: from })
   if (!s.w) { s.w = s.el.offsetWidth; s.h = s.el.offsetHeight; write(s, read(s)) }
   if (reduced() || !s.w) dur = 1
-  dur ??= dir > 0 ? 720 : 420
+  // (sin duración pedida: --ns-open-time / --ns-close-time del elemento, 720 y 420 ms)
+  dur ??= dir > 0 ? cssMs(s.el, '--ns-open-time', 720) : cssMs(s.el, '--ns-close-time', 420)
   return new Promise(res => {
     ap.res = res
     const t0 = performance.now() + delay

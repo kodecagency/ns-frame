@@ -59,8 +59,11 @@ function add(el) {
   io.observe(el)
   hook(el, o, 1)
   bind(o, target(el))
-  if (el.hasAttribute('data-ns-link-flow') && !matchMedia('(prefers-reduced-motion: reduce)').matches)
-    p.animate([{ strokeDashoffset: 0 }, { strokeDashoffset: -18 }], { duration: 900, iterations: Infinity })
+  // (el flujo: un ciclo de guiones cada --ns-link-time, 900 ms; "900", "900ms" o ".9s")
+  if (el.hasAttribute('data-ns-link-flow') && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const raw = getComputedStyle(el).getPropertyValue('--ns-link-time').trim(), v = parseFloat(raw)
+    p.animate([{ strokeDashoffset: 0 }, { strokeDashoffset: -18 }], { duration: isNaN(v) ? 900 : /[^m]s$/.test(raw) ? v * 1000 : v, iterations: Infinity })
+  }
   schedule()
 }
 // un extremo: resaltado al pasar el puntero y redibujo al cambiar de tamaño

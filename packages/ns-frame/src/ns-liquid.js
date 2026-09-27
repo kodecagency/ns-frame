@@ -1515,16 +1515,17 @@ watch('data-ns-liquid', el => liquid(el))
 // Palabras de data-ns-drops: "x" (a ambos lados, por defecto), "left", "right", "up", "down".
 // Variables: --ns-drops-size (botón, 56px), --ns-drops-act (acciones, 44px), --ns-drops-step
 // (distancia entre gotas, 72px; mayor que 2,4 × --ns-liquid para que abiertas queden separadas),
-// --ns-drops-time (500ms), --ns-drops-turn (giro del icono al abrir, 45deg).
+// --ns-drops-time (500ms), --ns-drops-ease, --ns-drops-stagger (retardo entre gotas, 60ms),
+// --ns-drops-turn (giro del icono al abrir, 45deg) y --ns-drops-turn-time (.4s).
 const DROPS_CSS = `@layer ns{
 .ns-drops{position:relative;width:var(--ns-drops-size,56px);height:var(--ns-drops-size,56px);--ns-liquid:8px}
 .ns-drops>button{position:absolute;padding:0;border:0;background:none;color:inherit;font:inherit;border-radius:50%;display:grid;place-items:center;cursor:pointer}
 .ns-drops>.ns-drops-main{inset:0;width:100%;height:100%}
-.ns-drops>.ns-drops-main>svg{transition:rotate .4s cubic-bezier(.3,1.3,.4,1)}
+.ns-drops>.ns-drops-main>svg{transition:rotate var(--ns-drops-turn-time,.4s) cubic-bezier(.3,1.3,.4,1)}
 .ns-drops.ns-drops-open>.ns-drops-main>svg{rotate:var(--ns-drops-turn,45deg)}
-.ns-drops>.ns-drops-act{left:50%;top:50%;width:var(--ns-drops-act,44px);height:var(--ns-drops-act,44px);margin:calc(var(--ns-drops-act,44px) / -2);transition:translate var(--ns-drops-time,500ms) cubic-bezier(.3,.9,.3,1) var(--ns-drops-wait,0ms)}
+.ns-drops>.ns-drops-act{left:50%;top:50%;width:var(--ns-drops-act,44px);height:var(--ns-drops-act,44px);margin:calc(var(--ns-drops-act,44px) / -2);transition:translate var(--ns-drops-time,500ms) var(--ns-drops-ease,cubic-bezier(.3,.9,.3,1)) var(--ns-drops-wait,0ms)}
 .ns-drops>.ns-drops-act>*{opacity:0;transition:opacity .2s}
-.ns-drops.ns-drops-open>.ns-drops-act{translate:calc(var(--ns-drops-x) * var(--ns-drops-step,72px)) calc(var(--ns-drops-y) * var(--ns-drops-step,72px));--ns-drops-wait:calc(var(--ns-drops-n) * 60ms)}
+.ns-drops.ns-drops-open>.ns-drops-act{translate:calc(var(--ns-drops-x) * var(--ns-drops-step,72px)) calc(var(--ns-drops-y) * var(--ns-drops-step,72px));--ns-drops-wait:calc(var(--ns-drops-n) * var(--ns-drops-stagger,60ms))}
 .ns-drops.ns-drops-open>.ns-drops-act>*{opacity:1;transition-delay:.16s}
 @media (prefers-reduced-motion:reduce){.ns-drops>button,.ns-drops>button>*{transition:none!important}}
 }`

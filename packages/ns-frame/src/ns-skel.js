@@ -11,14 +11,14 @@
 //   coordenadas de la ventana, así la luz cruza de un skeleton al siguiente.
 // · aria-busy mientras carga; el contenido oculto no se lee ni recibe foco.
 // · Variables: --ns-sk (color de los huesos), --ns-sk-glint (brillo), --ns-skel-time (o --ns-sk-time), --ns-sk-band.
-import { geometry, commands, shapeOf, styles, fontsReady } from './ns-frame.js'
+import { geometry, commands, shapeOf, styles, fontsReady, cssTime } from './ns-frame.js'
 
 const CSS_ = `@layer ns{
 :where([data-ns-skeleton]){position:relative}
 [data-ns-skeleton]{-webkit-text-fill-color:transparent!important;text-shadow:none!important}
 [data-ns-skeleton] *{visibility:hidden!important}
 [data-ns-skeleton]>.ns-svg,[data-ns-skeleton]>.ns-svg *,[data-ns-skeleton]>.ns-sk,[data-ns-skeleton]>.ns-sk>i{visibility:visible!important}
-.ns-sk{position:absolute;z-index:2;pointer-events:none;overflow:hidden;background:var(--ns-sk,rgba(150,185,215,.13));transition:opacity .4s}
+.ns-sk{position:absolute;z-index:2;pointer-events:none;overflow:hidden;background:var(--ns-sk,rgba(150,185,215,.13));transition:opacity var(--ns-skel-fade-time,.4s)}
 .ns-sk>i{position:absolute;top:0;bottom:0;left:0;width:var(--ns-sk-band,280px);background:linear-gradient(100deg,transparent 15%,var(--ns-sk-glint,rgba(255,255,255,.13)),transparent 85%);animation:ns-sk var(--ns-skel-time,var(--ns-sk-time,1.8s)) linear var(--ns-sk-d,0s) infinite;will-change:transform}
 .ns-sk-off>i{animation-play-state:paused}
 @keyframes ns-sk{from{transform:translateX(var(--ns-sk-a,-100%))}to{transform:translateX(var(--ns-sk-b,100vw))}}
@@ -142,7 +142,7 @@ function off(el) {
   st.busy == null ? el.removeAttribute('aria-busy') : el.setAttribute('aria-busy', st.busy)
   // los huesos se desvanecen sobre el contenido, que ya está en su sitio
   st.sk.style.opacity = '0'
-  setTimeout(() => st.sk.remove(), matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 400)
+  setTimeout(() => st.sk.remove(), matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : cssTime(st.sk, '--ns-skel-fade-time', 400))
 }
 
 /** Vuelve a medir (tras cambiar el contenido de relleno por JS sin cambiar el tamaño). */

@@ -112,6 +112,12 @@ export function watch<T extends { destroy?(): void }>(attr: string, make: (el: E
  * con el evento `ns-quality` en `document`.
  */
 export function quality(): 'high' | 'low'
+/** Una variable CSS de `el` (o de un estilo calculado) como duración en ms: "320", "320ms" o ".32s". */
+export function cssTime(el: Element | CSSStyleDeclaration, name: string, def: number): number
+/** Una variable CSS como número (o `def`). */
+export function cssNum(el: Element | CSSStyleDeclaration, name: string, def: number): number
+/** Una variable CSS como texto (o `def`). */
+export function cssVal(el: Element | CSSStyleDeclaration, name: string, def: string): string
 /** `fn` cuando las fuentes web ya cargaron, en un momento libre (una sola espera para todos los módulos). */
 export function fontsReady(fn: () => void): Promise<void>
 

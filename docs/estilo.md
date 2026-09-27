@@ -80,6 +80,28 @@ Todos los módulos siguen la misma convención, así lo que aprendes en uno vale
 
 Los nombres anteriores siguen funcionando como alias: `--ns-mark-round`, `--ns-sk-time`, `--ns-round` (y `-in`, `-out`), `--ns-orb-round` y `--ns-mo-*` (hoy `--ns-mosaic-light`, `-width`, `-fill`, `-dot`, `-line`, `-a1`, `-a2`, `-speed` y `-fx-time`; `--ns-mosaic-time` es la duración de `arrange()`).
 
+### Lo que se ajusta en cada componente
+
+Nada visual va escrito a fuego: duraciones, curvas, tamaños y colores tienen su variable (en el propio elemento o en un antepasado).
+
+| Módulo | Variables |
+|---|---|
+| Núcleo | `--ns-morph-time` · `--ns-open-time` y `--ns-close-time` (aperturas, 720 y 420) · `--ns-draw-time` · `--ns-focus`, `--ns-focus-width` |
+| Isla | `--ns-isle-open-time` (600) y `--ns-isle-close-time` (480) de la transformación · `--ns-isle-item-time` (entrada del contenido, 320) · `--ns-isle-ease` · `--ns-isle-size` (alto de la cápsula, 54px) · `--ns-isle-width` · `--ns-isle-fill` (cápsula sin vidrio) · `--ns-isle-bg` y `--ns-isle-radius` (hoja) · `--ns-isle-ink`, `-ink-muted`, `-action-ink` · `--ns-isle-glow`, `--ns-isle-rim` · `--ns-isle-feather` |
+| Hoja | `--ns-sheet-time` (máximo, 420) · `--ns-sheet-ease` |
+| Pestañas | `--ns-tabs-speed` (1: más alto, más rápido) · `--ns-tabs-bounce` (1: el rebote de serie; 0: sin rebote) · `--ns-tabs-shrink-time`, `--ns-tabs-ease` · radios, tinte y tinta (ver Componentes) |
+| Avisos | `--ns-toast-time` (entrada, 420), `--ns-toast-close-time` (260), `--ns-toast-move-time` (240), `--ns-toast-ease` · `--ns-toast-width` (400px), `--ns-toast-gap` · colores por tipo |
+| Popovers | `--ns-pop-delay` (120), `--ns-pop-hide-delay` (80) · `--ns-pop-width` (340px) · `--ns-pop-bg`, `--ns-pop-gap` |
+| Carrusel | `--ns-car-size` (flechas) · `--ns-car-dot-size`, `--ns-car-dot-on` · `--ns-car-time`, `--ns-car-ease` · `--ns-car`, `--ns-car-bg`, `--ns-car-dot` |
+| Gotas | `--ns-drops-time`, `--ns-drops-ease`, `--ns-drops-stagger` · `--ns-drops-turn`, `--ns-drops-turn-time` · tamaños |
+| Mosaico | `--ns-mosaic-ease` (reordenado) · `--ns-mosaic-dot-step`, `--ns-mosaic-grid-step` (patrones) · luz, grosor, relleno, velocidad, `-fx-time`, `-glow-size`, `-ripple-time` |
+| Esqueleto | `--ns-skel-time`, `--ns-skel-fade-time` · `--ns-sk`, `--ns-sk-glint`, `--ns-sk-band` |
+| Líneas (`link`) | `--ns-link`, `--ns-link-width` · `--ns-link-time` (flujo, 900) |
+| Efectos | `--ns-u`, `--ns-u-glow`, `--ns-u-time`… · `--ns-aurora-1` a `--ns-aurora-4` (aurora y texto aurora) |
+| Controles | `--ns-ui-*` (ver Componentes) |
+
+Desde JS, el núcleo exporta `cssTime(el, "--variable", def)`, `cssNum` y `cssVal`, los mismos lectores que usan los módulos.
+
 ## Cascada predecible
 
 Los estilos del runtime van en `@layer ns`: **tu CSS siempre gana**, sin importar el orden de carga ni la especificidad.

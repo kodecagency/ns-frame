@@ -12,6 +12,9 @@
 // · La diapositiva actual lleva la clase ns-car-on; con data-ns-carousel-current="forma" cambia de
 //   silueta al llegar (morph) y las demás toman data-ns-carousel-shape (o la suya). --ns-snap alinea
 //   las diapositivas (start por defecto; center para verlas centradas con las vecinas asomando).
+// · Variables: --ns-car (acento), --ns-car-bg (flechas), --ns-car-dot (color de los puntos),
+//   --ns-car-size (flechas, 40px), --ns-car-dot-size (10px), --ns-car-dot-on (el actual, 28px),
+//   --ns-car-time y --ns-car-ease (su transición), --ns-slide, --ns-gap, --ns-snap.
 import { styles, watch, update } from './ns-frame.js'
 
 const CSS_ = `@layer ns{
@@ -19,10 +22,10 @@ const CSS_ = `@layer ns{
 [data-ns-carousel]::-webkit-scrollbar{display:none}
 [data-ns-carousel]>*{flex:0 0 var(--ns-slide,100%);scroll-snap-align:var(--ns-snap,start);min-width:0}
 .ns-car{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:16px}
-.ns-car>button{font:inherit;font-size:18px;line-height:1;width:40px;height:34px;border:0;cursor:pointer;color:inherit;background:var(--ns-car-bg,rgba(61,224,255,.1));--ns-border:var(--ns-car,#3de0ff)}
+.ns-car>button{font:inherit;font-size:18px;line-height:1;width:var(--ns-car-size,40px);height:calc(var(--ns-car-size,40px) * .85);border:0;cursor:pointer;color:inherit;background:var(--ns-car-bg,rgba(61,224,255,.1));--ns-border:var(--ns-car,#3de0ff)}
 .ns-car>button[aria-disabled=true]{opacity:.35;cursor:default}
 .ns-car>span{display:flex;gap:14px;align-items:center}
-.ns-car>span>button{width:10px;height:10px;padding:0;border:0;cursor:pointer;background:var(--ns-car-dot,rgba(255,255,255,.25));transition:width .35s cubic-bezier(.3,.7,.3,1)}.ns-car>span>button[aria-current=true]{width:28px;background:var(--ns-car,#3de0ff)}
+.ns-car>span>button{width:var(--ns-car-dot-size,10px);height:var(--ns-car-dot-size,10px);padding:0;border:0;cursor:pointer;background:var(--ns-car-dot,rgba(255,255,255,.25));transition:width var(--ns-car-time,.35s) var(--ns-car-ease,cubic-bezier(.3,.7,.3,1))}.ns-car>span>button[aria-current=true]{width:var(--ns-car-dot-on,28px);background:var(--ns-car,#3de0ff)}
 @media (prefers-reduced-motion:reduce){[data-ns-carousel]{scroll-behavior:auto}.ns-car>span>button{transition:none}}}`
 
 let styled

@@ -31,7 +31,7 @@
 // · Se inicia con isle(el); el atributo solo no la arranca (necesita saber qué hacer con la página).
 // Sin dependencias externas (usa el núcleo y ns-frame/sheet) y CSP-safe: estilos adoptados en @layer ns.
 
-import { styles, jump, fontsReady } from './ns-frame.js'
+import { styles, jump, fontsReady, cssTime, cssVal } from './ns-frame.js'
 import { sheet } from './ns-sheet.js'
 
 const CSS = `@layer ns{
@@ -73,9 +73,9 @@ const CSS = `@layer ns{
 [data-ns-isle-panel].ns-morphing{--_v:linear-gradient(transparent var(--ns-isle-cut,0px),#000 calc(var(--ns-isle-cut,0px) + var(--ns-isle-feather,36px)));--_h:linear-gradient(90deg,transparent var(--ns-isle-cl,-40px),#000 calc(var(--ns-isle-cl,-40px) + 18px),#000 calc(var(--ns-isle-cr,9999px) - 18px),transparent var(--ns-isle-cr,9999px));-webkit-mask-image:var(--_v),var(--_h);-webkit-mask-composite:source-in;mask-image:var(--_v),var(--_h);mask-composite:intersect}
 @media (prefers-reduced-motion:reduce){.ns-isle-scrim,[data-ns-isle],[data-ns-isle-panel]{transition:none!important}}
 html.ns-has-isle body{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
-[data-ns-isle][data-ns-isle]{--ns-glass-tint:rgba(16,16,20,.42);position:fixed;z-index:var(--ns-isle-z,40);left:50%;bottom:calc(14px + env(safe-area-inset-bottom));width:min(calc(100vw - 32px),max(var(--ns-isle-width,212px),var(--ns-isle-fit,0px)));height:54px;translate:-50% 0;border-radius:27px;color:var(--ns-isle-ink,var(--ns-glass-ink,#f4f4f5));contain:layout style}
-[data-ns-isle]:not(.ns-glass){background:rgba(18,18,20,.97);--ns-border:rgba(255,255,255,.14)}
-[data-ns-isle][data-ns-isle].ns-mini{width:54px}
+[data-ns-isle][data-ns-isle]{--ns-glass-tint:rgba(16,16,20,.42);position:fixed;z-index:var(--ns-isle-z,40);left:50%;bottom:calc(14px + env(safe-area-inset-bottom));width:min(calc(100vw - 32px),max(var(--ns-isle-width,212px),var(--ns-isle-fit,0px)));height:var(--ns-isle-size,54px);translate:-50% 0;border-radius:calc(var(--ns-isle-size,54px) / 2);color:var(--ns-isle-ink,var(--ns-glass-ink,#f4f4f5));contain:layout style}
+[data-ns-isle]:not(.ns-glass){background:var(--ns-isle-fill,rgba(18,18,20,.97));--ns-border:rgba(255,255,255,.14)}
+[data-ns-isle][data-ns-isle].ns-mini{width:var(--ns-isle-size,54px)}
 :root:not([data-ns-input=pointer]) [data-ns-isle-toggle]:focus-visible{outline:2px solid var(--ns-isle-ring,rgba(255,255,255,.72))!important;outline-offset:3px}
 :where([data-ns-isle-toggle]){border-radius:inherit;position:absolute;inset:0;display:flex;align-items:center;gap:11px;padding:0 8px 0 9px;border:0;background:none;color:inherit;font:inherit;cursor:pointer;text-align:left}
 :where([data-ns-isle-icon]){width:36px;height:36px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--ns-isle-ink,#f4f4f5);color:var(--ns-isle-action-ink,#0a0a0a)}
@@ -86,7 +86,7 @@ html.ns-has-isle body{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
 :where([data-ns-isle-more]){width:32px;height:32px;border-radius:50%;display:grid;place-items:center;flex:none;background:rgba(255,255,255,.1);transition:opacity .2s,visibility .2s}
 :where([data-ns-isle-more],[data-ns-isle-close]) svg{width:14px;height:14px}
 :where([data-ns-isle].ns-mini) :is([data-ns-isle-text],[data-ns-isle-more]){opacity:0;visibility:hidden}
-:where([data-ns-isle-panel]){display:flex;flex-direction:column;gap:14px;padding:18px 16px 16px;border-radius:32px;background:var(--ns-isle-bg,#161618);box-shadow:inset 0 0 0 1px rgba(255,255,255,.07),inset 0 1px 0 rgba(255,255,255,.1);color:var(--ns-isle-ink,#f4f4f5);contain:layout style}
+:where([data-ns-isle-panel]){display:flex;flex-direction:column;gap:14px;padding:18px 16px 16px;border-radius:var(--ns-isle-radius,32px);background:var(--ns-isle-bg,#161618);box-shadow:inset 0 0 0 1px rgba(255,255,255,.07),inset 0 1px 0 rgba(255,255,255,.1);color:var(--ns-isle-ink,#f4f4f5);contain:layout style}
 :where([data-ns-isle-handle]){position:relative;display:flex;align-items:center;justify-content:space-between;padding:14px 6px 0;cursor:grab}
 :where([data-ns-isle-handle])::before{content:"";position:absolute;top:0;left:50%;width:36px;height:4px;margin-left:-18px;border-radius:2px;background:rgba(255,255,255,.22)}
 :where([data-ns-isle-handle]) :where(b,h2,h3){font-size:24px;font-weight:700;line-height:1;letter-spacing:-.02em;margin:0}
@@ -135,7 +135,9 @@ const spring = t => {
 // y sin rebote (amortiguado crítico) para cerrar: la hoja se recoge suave, sin pasarse
 const calm = t => t <= 0 ? 0 : t >= 1 ? 1 : 1 - Math.exp(-7 * t) * (1 + 7 * t)
 const lerp = (a, b, p) => a + (b - a) * p
-const OPEN = 600, CLOSE = 480, N = 32
+// duraciones de la transformación (se releen de --ns-isle-open-time y --ns-isle-close-time)
+let OPEN = 600, CLOSE = 480
+const N = 32
 // formas de serie de las casillas de secciones: squircle, y la actual con chaflán y redondeo
 const TILE = 'all squircle 16', CUR = 'tl+br bevel 14; tr+bl round 16; radius 2'
 // El recorrido de la silueta, como la Dynamic Island: al abrir, primero se ensancha a los lados (y
@@ -451,8 +453,11 @@ function mount(el, o) {
   // camino), así se puede reproducir sola o llevarla con el dedo. La hoja pasa a ser la silueta (mismo
   // color y forma), que baja hasta ser una barra y se estrecha hasta la cápsula; el contenido se va
   // justo antes de que deje de cubrirlo; al llegar, la cápsula aparece encima y la silueta se va
-  const HOME = CLOSE * .84
+  let HOME = CLOSE * .84
+  // las duraciones de la hoja (sus variables): se leen al empezar cada transformación
+  const times = () => { const s = getComputedStyle(panel); OPEN = cssTime(s, '--ns-isle-open-time', 600); CLOSE = cssTime(s, '--ns-isle-close-time', 480); HOME = CLOSE * .84; return s }
   const closer = () => {
+    times()
     const B = panel.getBoundingClientRect(), A = el.getBoundingClientRect(), R = route(B, A, rad(), cap(A), false), col = paint()
     el.style.zIndex = Z() + 2
     morph(R, CLOSE, false, col)
@@ -556,9 +561,10 @@ function mount(el, o) {
         panel.classList.remove('ns-warm', 'ns-stage'); panel.classList.add('ns-morphing')
         const B = panel.getBoundingClientRect(), R = route(A, B, cap(A), r, true)
         el.style.zIndex = Z() + 2
+        const ts = times(), item = cssTime(ts, '--ns-isle-item-time', 320), ease = cssVal(ts, '--ns-isle-ease', 'cubic-bezier(.2,.8,.2,1)')
         const g = morph(R, OPEN, true, col), p = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 130, easing: 'ease-out', fill: 'forwards' })
         fx = [p, cut(R, B, OPEN), ...leaves().map(k => k.animate([{ opacity: 0, translate: '0 10px', scale: '.97' }, { opacity: 1, translate: '0 0', scale: '1' }],
-          { duration: 320, delay: Math.max(90, when(R, k.getBoundingClientRect(), true) / N * OPEN), easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }))]
+          { duration: item, delay: Math.max(90, when(R, k.getBoundingClientRect(), true) / N * OPEN), easing: ease, fill: 'backwards' }))]
         // (el desvanecido de la cápsula se queda puesto: si se cancelara, su texto volvería un
         // instante antes de ocultarse, un parpadeo)
         at(p, 1, () => t == run && el.setAttribute('data-ns-hidden', ''))

@@ -31,7 +31,7 @@ const CSS = `@layer ns{
 .ns-flow>.ns-fl,.ns-flow>.ns-fr{display:block;pointer-events:none;margin:0}
 .ns-flow>.ns-fl{float:left;clear:left}.ns-flow>.ns-fr{float:right;clear:right}
 .ns-mosaic>[data-ns-area]{position:relative;isolation:isolate}
-.ns-mosaic:is([data-ns-mosaic~=aurora],[data-ns-mosaic~=dots],[data-ns-mosaic~=grid])>[data-ns-area]::before{content:'';position:absolute;z-index:-1;pointer-events:none;left:calc(-1 * var(--ns-mx,0px));top:calc(-1 * var(--ns-my,0px));width:var(--ns-mw,100%);height:var(--ns-mh,100%);background-image:var(--_d,none),var(--_g,none),var(--_a,none),var(--_b,none);background-size:16px 16px,28px 28px,100% 100%,100% 100%}
+.ns-mosaic:is([data-ns-mosaic~=aurora],[data-ns-mosaic~=dots],[data-ns-mosaic~=grid])>[data-ns-area]::before{content:'';position:absolute;z-index:-1;pointer-events:none;left:calc(-1 * var(--ns-mx,0px));top:calc(-1 * var(--ns-my,0px));width:var(--ns-mw,100%);height:var(--ns-mh,100%);background-image:var(--_d,none),var(--_g,none),var(--_a,none),var(--_b,none);background-size:var(--ns-mosaic-dot-step,16px) var(--ns-mosaic-dot-step,16px),var(--ns-mosaic-grid-step,28px) var(--ns-mosaic-grid-step,28px),100% 100%,100% 100%}
 .ns-mosaic[data-ns-mosaic~=dots]>[data-ns-area]{--_d:radial-gradient(circle,var(--ns-mo-dot,rgba(255,255,255,.16)) 1px,transparent 1.6px)}
 .ns-mosaic[data-ns-mosaic~=grid]>[data-ns-area]{--_g:linear-gradient(90deg,var(--ns-mo-line,rgba(255,255,255,.07)) 1px,transparent 1px),linear-gradient(var(--ns-mo-line,rgba(255,255,255,.07)) 1px,transparent 1px)}
 .ns-mosaic[data-ns-mosaic~=grid]:not([data-ns-mosaic~=dots])>[data-ns-area]{--_d:none}
@@ -623,7 +623,7 @@ export const refresh = schedule
 // update() cambia la plantilla (una clase, --ns-areas…); el mosaico se recalcula dentro de la
 // transición, antes de la captura. Sin soporte o con movimiento reducido, el cambio es inmediato.
 const VT_CSS = `@layer ns{
-::view-transition-group(*.ns-mosaic-piece){animation-duration:var(--ns-mosaic-time,.5s);animation-timing-function:cubic-bezier(.3,.7,.2,1)}
+::view-transition-group(*.ns-mosaic-piece){animation-duration:var(--ns-mosaic-time,.5s);animation-timing-function:var(--ns-mosaic-ease,cubic-bezier(.3,.7,.2,1))}
 ::view-transition-old(*.ns-mosaic-piece){animation-duration:.18s}::view-transition-new(*.ns-mosaic-piece){animation-duration:.26s}
 html.ns-mosaic-vt::view-transition-old(root),html.ns-mosaic-vt::view-transition-new(root){animation:none}}`
 let vtStyled = 0, vtRun = null, vtN = 0

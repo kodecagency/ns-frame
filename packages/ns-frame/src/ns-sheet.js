@@ -13,7 +13,7 @@
 //   se cierra; y el fondo (::backdrop) se aclara a la vez que la hoja baja (--ns-sheet-p en el diálogo).
 // CSP-safe (sólo CSSOM y Web Animations).
 
-import { styles } from './ns-frame.js'
+import { styles, cssTime, cssVal } from './ns-frame.js'
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v))
 let styled = 0
@@ -85,8 +85,10 @@ export function sheet(el, { handle = el, onClose, onProgress, track, settle, thr
     cancelAnimationFrame(raf); raf = 0
     const from = y
     if (reduced() || Math.abs(target - from) < 1) { put(target); done?.(); return }
-    const dur = clamp(Math.abs(target - from) * 1.1, 180, 420)
-    const a = anim = el.animate([{ translate: `0 ${from}px` }, { translate: `0 ${target}px` }], { duration: dur, easing: EASE, fill: 'forwards' })
+    // (según la distancia, hasta --ns-sheet-time; la curva, --ns-sheet-ease)
+    const cs = getComputedStyle(el), top = cssTime(cs, '--ns-sheet-time', 420)
+    const dur = clamp(Math.abs(target - from) * 1.1, Math.min(180, top), top)
+    const a = anim = el.animate([{ translate: `0 ${from}px` }, { translate: `0 ${target}px` }], { duration: dur, easing: cssVal(cs, '--ns-sheet-ease', EASE), fill: 'forwards' })
     a.from = from; a.to = target
     // (ns-glass-hold: un vidrio de ns-frame no se repinta mientras la hoja se desliza)
     el.classList.add('ns-glass-hold')

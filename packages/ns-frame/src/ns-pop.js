@@ -9,13 +9,13 @@
 // · Posicionado con Anchor Positioning (CSS nativo); respaldo en JS si el navegador no lo soporta.
 // · Variables: --ns-arrow (tamaño de la flecha, 9px), --ns-pop-gap (separación, 6px), --ns-pop-bg.
 
-import { styles } from './ns-frame.js'
+import { styles, cssTime } from './ns-frame.js'
 
 const ANCHOR = typeof CSS != 'undefined' && CSS.supports('position-area: top')
 // sin Popover API (Safari < 17, Firefox < 125) el popover se oculta y se abre con una clase; el
 // click en su disparador, el click fuera y Escape se atienden aquí
 const POP = typeof HTMLElement != 'undefined' && 'showPopover' in HTMLElement.prototype
-const CSS_ = `@layer ns{[popover][data-ns-arrow]{position:fixed;border:0;margin:var(--ns-pop-gap,6px);inset:auto;overflow:visible;color:inherit;background:var(--ns-pop-bg,#0b1520);max-width:min(340px,calc(100vw - 24px));position-area:top;position-try-fallbacks:flip-block,flip-inline,flip-block flip-inline}
+const CSS_ = `@layer ns{[popover][data-ns-arrow]{position:fixed;border:0;margin:var(--ns-pop-gap,6px);inset:auto;overflow:visible;color:inherit;background:var(--ns-pop-bg,#0b1520);max-width:min(var(--ns-pop-width,340px),calc(100vw - 24px));position-area:top;position-try-fallbacks:flip-block,flip-inline,flip-block flip-inline}
 @supports not selector(:popover-open){[popover]:not(.ns-pop-on){display:none}[popover].ns-pop-on{z-index:2147483646}}}`
 const OPEN = new Set()
 let raf, styled
@@ -87,8 +87,9 @@ function tip(t) {
   t.style.setProperty('anchor-name', name)
   p.style.setProperty('position-anchor', name)
   let timer, touch = false
-  const show = () => { clearTimeout(timer); timer = setTimeout(() => { p._nsT = t; isOpen(p) || showP(p) }, 120) }
-  const hide = () => { clearTimeout(timer); timer = setTimeout(() => isOpen(p) && hideP(p), 80) }
+  // (retardos: --ns-pop-delay y --ns-pop-hide-delay, en el tooltip)
+  const show = () => { clearTimeout(timer); timer = setTimeout(() => { p._nsT = t; isOpen(p) || showP(p) }, cssTime(p, '--ns-pop-delay', 120)) }
+  const hide = () => { clearTimeout(timer); timer = setTimeout(() => isOpen(p) && hideP(p), cssTime(p, '--ns-pop-hide-delay', 80)) }
   // con el dedo no hay hover (y Safari no enfoca un botón al tocarlo): un toque lo abre o lo cierra,
   // y tocar fuera lo cierra
   t.addEventListener('pointerdown', e => { touch = e.pointerType == 'touch' })

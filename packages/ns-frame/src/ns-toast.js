@@ -9,14 +9,17 @@
 // · La cuenta atrás se dibuja en el propio borde (motion "progress") y se pausa con el puntero,
 //   el foco o la pestaña oculta. La pila se reacomoda con animación (FLIP).
 // · Accesible: región con aria-live; los errores usan role="alert"; Esc cierra el toast enfocado.
-import { open, close, styles } from './ns-frame.js'
+// · Variables: --ns-toast-bg, --ns-toast-c (y -ok, -warn, -error), --ns-toast-width (400px),
+//   --ns-toast-gap (10px), --ns-toast-time (entrada, 420), --ns-toast-close-time (260),
+//   --ns-toast-move-time (reacomodo, 240) y --ns-toast-ease.
+import { open, close, styles, cssTime, cssVal } from './ns-frame.js'
 
 const CSS_ = `@layer ns{
-.ns-toasts{position:fixed;inset:auto;margin:0;padding:16px;border:0;background:none;color:inherit;overflow:visible;display:none;flex-direction:column;gap:10px;width:min(400px,100%);max-height:100%;pointer-events:none}
+.ns-toasts{position:fixed;inset:auto;margin:0;padding:16px;border:0;background:none;color:inherit;overflow:visible;display:none;flex-direction:column;gap:var(--ns-toast-gap,10px);width:min(var(--ns-toast-width,400px),100%);max-height:100%;pointer-events:none}
 .ns-toasts:popover-open{display:flex}
 .ns-toasts.ns-on{display:flex;z-index:2147483647}
 .ns-toasts[data-y=bottom]{bottom:0;justify-content:flex-end}.ns-toasts[data-y=top]{top:0}
-.ns-toasts[data-x=end]{right:0}.ns-toasts[data-x=start]{left:0}.ns-toasts[data-x=center]{left:calc(50% - min(200px,50%))}
+.ns-toasts[data-x=end]{right:0}.ns-toasts[data-x=start]{left:0}.ns-toasts[data-x=center]{left:calc(50% - min(var(--ns-toast-width,400px) / 2,50%))}
 .ns-toast{--c:var(--ns-toast-c,#3de0ff);pointer-events:auto;display:flex;gap:12px;align-items:flex-start;--ns-pad:14px;background:var(--ns-toast-bg,#0b1520);--ns-border:color-mix(in srgb,var(--c) 45%,transparent);--ns-motion:var(--c);--ns-accent-width:1.5px;font-size:14px;line-height:1.45}
 .ns-toast[data-type=ok]{--c:var(--ns-toast-ok,#3dffa8)}.ns-toast[data-type=warn]{--c:var(--ns-toast-warn,#ffb547)}.ns-toast[data-type=error]{--c:var(--ns-toast-error,#ff4d6d)}
 .ns-toast>i{flex:none;width:9px;height:9px;margin-top:6px;background:var(--c)}
@@ -63,7 +66,7 @@ function flip(fn) {
   if (reduced()) return
   for (const t of box.children) {
     const d = y0.has(t) && y0.get(t) - t.getBoundingClientRect().top
-    d && t.animate([{ translate: `0 ${d}px` }, { translate: '0 0' }], { duration: 240, easing: 'cubic-bezier(.3,.7,.3,1)' })
+    d && t.animate([{ translate: `0 ${d}px` }, { translate: '0 0' }], { duration: cssTime(t, '--ns-toast-move-time', 240), easing: cssVal(t, '--ns-toast-ease', 'cubic-bezier(.3,.7,.3,1)') })
   }
 }
 
@@ -106,7 +109,7 @@ export function toast(msg, o = {}) {
     t._gone = 1
     t._p()
     if (t.contains(document.activeElement)) (t._back?.isConnected ? t._back : o.back)?.focus?.({ preventScroll: true })
-    close(t, C.enter, 260).then(() => flip(() => t.remove())).then(() => b.children.length || hide(b))
+    close(t, C.enter, cssTime(t, '--ns-toast-close-time', 260)).then(() => flip(() => t.remove())).then(() => b.children.length || hide(b))
   }
   if (time) { t.setAttribute('data-ns-motion', 'progress'); t.style.setProperty('--ns-progress', '100') }
 
@@ -116,7 +119,7 @@ export function toast(msg, o = {}) {
   t._t = time ? 0 : 1
   // el más nuevo, siempre junto al borde de la pantalla
   flip(() => C.y == 'top' ? b.prepend(t) : b.append(t))
-  open(t, o.enter || C.enter, 420)
+  open(t, o.enter || C.enter, cssTime(t, '--ns-toast-time', 420))
   t._r()
   // sobre el máximo se van los más antiguos; los persistentes (esperan una acción) se quedan
   const live = [...b.children].filter(k => !k._gone).sort((p, q) => p._t - q._t || p._n - q._n)
