@@ -49,6 +49,8 @@ export default defineConfig({
       directives: [
         "default-src 'self'",
         "img-src 'self' data: https://picsum.photos https://fastly.picsum.photos",
+        // (el vídeo de fondo del vidrio en el mosaico: CC0, de los ejemplos de MDN, servido con CORS)
+        "media-src 'self' https://interactive-examples.mdn.mozilla.net",
         "font-src 'self'",
         "connect-src 'self'",
         "object-src 'none'",

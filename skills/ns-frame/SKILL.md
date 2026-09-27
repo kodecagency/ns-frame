@@ -35,7 +35,8 @@ ns-frame draws shapes with a small shape language written in HTML attributes. Th
 | Text that fills a non-rectangular shape (shape-inside) | `data-ns-flow` on a `data-ns` element with a defined height + `ns-frame/flow` |
 | One continuous highlight across several lines, with inner and outer curves | `<mark data-ns-mark>` + `ns-frame/mark` |
 | Nearby elements that melt together (gooey) with a crisp vector edge; liquid glass | `data-ns-liquid` / `data-ns-liquid="glass"` (+ `data-ns-blob`) + `ns-frame/liquid` |
-| Liquid glass on any element / any ns-frame shape (bevels, notches, cuts); cut-glass facets lit by the pointer; prism edge | `data-ns-glass` (`clear`, `tint`, `facet`, `prism`) + `ns-frame/glass` |
+| Liquid glass on any element / any ns-frame shape (bevels, notches, cuts); cut-glass facets lit by the pointer; prism edge | `data-ns-glass` (`clear`, `tint`, `facet`, `prism`, `frost`) + `ns-frame/glass` |
+| Many glass pieces at once (bento, mosaic, control center): one pass for all, WebGL lens over a photo/video backdrop | `data-ns-glass-group` on the container (child `<img>`/`<video>`/`<canvas>` or CSS `url()` background → WebGL engine; otherwise union lens in Chromium, shared blur elsewhere; `="native"` forces the blur layer) · `--ns-glass-lens`, `-depth`, `-group-blur`, `-sat`, `-dispersion`, `-rim` |
 | Tactile controls / cards with real bevels (ceramic, metal, paper, clay) that sink when pressed | `data-ns-relief` (`inset`, `flat`) + `ns-frame/relief` |
 | iOS-style tab bar whose glass indicator can be dragged between tabs | `data-ns-tabs` + `ns-frame/tabs` |
 | A button that releases its actions as liquid drops (FAB / speed dial) | `data-ns-drops` + `ns-frame/liquid` |

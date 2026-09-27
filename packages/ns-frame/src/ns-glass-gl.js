@@ -56,9 +56,10 @@ void main(){
 const E = new WeakMap()
 /**
  * Motor del grupo `host` sobre la fuente `src` (un <img>, <video>, <canvas> o { url } de un fondo
- * CSS). Devuelve { draw(d), destroy() } o null si no se puede (sin WebGL2).
+ * CSS). Devuelve { draw(d), destroy() } o null si no se puede (sin WebGL2). onFail: si deja de
+ * poder (sin CORS, contexto perdido); onReady: al primer dibujo con el fondo cargado.
  */
-export function glEngine(host, src, onFail) {
+export function glEngine(host, src, onFail, onReady) {
   if (E.has(host)) return E.get(host)
   const cv = document.createElement('canvas')
   cv.className = 'ns-glass-gl'
@@ -82,7 +83,7 @@ export function glEngine(host, src, onFail) {
   host.prepend(cv)
 
   let img = null, iw = 0, ih = 0, lastD = '', field = null, fieldKey = '', raf = 0, dead = false, vid = 0
-  const fail = () => { if (dead) return; dead = true; api.destroy(); onFail?.() }
+  const fail = () => { if (dead) return; api.destroy(); onFail?.() }
   cv.addEventListener('webglcontextlost', e => { e.preventDefault(); fail() })
 
   // el fondo: una copia con CORS (una textura legible); sin CORS, el motor no sirve
@@ -96,7 +97,8 @@ export function glEngine(host, src, onFail) {
   }
   const load = () => {
     const url = src.url || (src.tagName == 'IMG' ? src.currentSrc || src.src : null)
-    if (src.tagName == 'VIDEO' || src.tagName == 'CANVAS') { img = src; iw = src.videoWidth || src.width; ih = src.videoHeight || src.height; if (iw) { upload(); schedule() } return }
+    // (un vídeo sin fotograma aún —readyState < 2— no se sube: esperará a loadeddata)
+    if (src.tagName == 'VIDEO' || src.tagName == 'CANVAS') { img = src; iw = src.videoWidth ?? src.width; ih = src.videoHeight ?? src.height; if (iw && ih && !(src.readyState < 2)) { upload(); schedule() } else iw = ih = 0; return }
     if (!url) return fail()
     const im = new Image()
     im.crossOrigin = 'anonymous'
@@ -126,7 +128,8 @@ export function glEngine(host, src, onFail) {
 
   const num = (s, k, d) => { const v = parseFloat(s.getPropertyValue(k)); return isNaN(v) ? d : v }
   function draw(d = lastD) {
-    if (dead || !img || !d) return
+    // (sin fotogramas —un vídeo aún sin datos— no hay nada que dibujar)
+    if (dead || !img || !iw || !ih || !d) return
     const W = host.clientWidth, H = host.clientHeight, q = Math.min(2, devicePixelRatio || 1)
     if (!W || !H) return
     const s = getComputedStyle(host)
@@ -166,12 +169,16 @@ export function glEngine(host, src, onFail) {
     gl.uniform1f(U('sat'), num(s, '--ns-glass-sat', 1.3)); gl.uniform1f(U('disp'), num(s, '--ns-glass-dispersion', 0) * .12)
     gl.uniform1f(U('rim'), num(s, '--ns-glass-rim', 1))
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
+    // (el primer dibujo con fondo: hasta aquí el grupo sigue con su capa nativa, sin un vidrio vacío)
+    if (onReady) { const f = onReady; onReady = null; f() }
   }
   const schedule = () => { raf ||= requestAnimationFrame(() => { raf = 0; draw(lastD, false) }) }
   const api = {
     draw: d => { if (d != null) lastD = d; schedule() },
     destroy() {
       if (E.get(host) != api) return
+      // (dead antes de soltar el contexto: su webglcontextlost no cuenta como un fallo)
+      dead = true
       E.delete(host); cancelAnimationFrame(raf); cancelAnimationFrame(vid)
       src.removeEventListener?.('loadeddata', load)
       cv.remove(); gl.getExtension('WEBGL_lose_context')?.loseContext()

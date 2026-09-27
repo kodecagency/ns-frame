@@ -14,6 +14,18 @@ const HOLES = [
 const FILLS = [['', 'Sólido'], ['is-photo', 'Foto'], ['is-data', 'Dato']]
 // material de las piezas: sólido o vidrio líquido (ns-frame/glass sobre la forma de cada pieza)
 const MATS = [['', 'Sólido'], ['glass', 'Vidrio']]
+// lo que hay detrás del vidrio: una foto o un vídeo (el motor WebGL del grupo, igual en todos los
+// navegadores) o un degradado CSS (fondo de la página: lente de la unión en Chromium, desenfoque en
+// Safari y Firefox)
+const BGS = [['bg-photo', 'Foto'], ['bg-video', 'Vídeo'], ['bg-grad', 'Degradado']]
+// los ajustes del motor (variables del grupo): id · nombre · variable · min · max · paso · valor · unidad · escala
+const GLASS = [
+  ['mo-lens', 'Lente', '--ns-glass-lens', 0, 60, 1, 22, ' px', 1],
+  ['mo-depth', 'Canto', '--ns-glass-depth', 4, 48, 1, 18, ' px', 1],
+  ['mo-blur', 'Desenfoque', '--ns-glass-group-blur', 0, 30, 1, 10, ' px', 1],
+  ['mo-disp', 'Dispersión', '--ns-glass-dispersion', 0, 1, 0.05, 0, ' %', 100],
+  ['mo-rim', 'Brillo', '--ns-glass-rim', 0, 2, 0.1, 1, '×', 1],
+] as const
 // un efecto a la vez en la demo (la librería los combina: data-ns-mosaic="stream dots")
 const FX = [['', 'Ninguno'], ['stream', 'Corriente'], ['trace', 'Trazo'], ['wave', 'Onda'], ['sweep', 'Barrido'], ['pulse', 'Pulso'], ['aurora', 'Aurora'], ['dots', 'Puntos'], ['grid', 'Retícula'], ['glow', 'Luz'], ['ripple', 'Toque']] as const
 const START = 'stream'
@@ -25,6 +37,7 @@ const PICKS = [
   ['mo-hole', 'Hueco', HOLES.map(([v, n]) => [v, n])],
   ['mo-fill', 'Orbe', FILLS.map(([v, n]) => [v, n])],
   ['mo-mat', 'Material', MATS.map(([v, n]) => [v, n])],
+  ['mo-bg', 'Fondo', BGS.map(([v, n]) => [v, n])],
   ['mo-fx', 'Efecto', FX.map(([v, n]) => [v, n])],
 ] as const
 ---
@@ -43,12 +56,13 @@ const PICKS = [
       <div class="grp" data-ns-segment="sm" id="mo-hole" role="group" data-ns-choice aria-label="Forma del hueco">{HOLES.map(([h, n, d], i) => <button type="button" data-v={h} aria-pressed={String(!i)} aria-label={n} title={n}><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d={d} /></svg></button>)}</div>
       <div class="grp" data-ns-segment="sm" id="mo-fill" role="group" data-ns-choice aria-label="Contenido del orbe">{FILLS.map(([c, n]) => <button type="button" data-v={c} aria-pressed={String(c == 'is-photo')}>{n}</button>)}</div>
       <div class="grp" data-ns-segment="sm" id="mo-mat" role="group" data-ns-choice aria-label="Material de las piezas">{MATS.map(([c, n], i) => <button type="button" data-v={c} aria-pressed={String(!i)}>{n}</button>)}</div>
+      <div class="grp gl" data-ns-segment="sm" id="mo-bg" role="group" data-ns-choice aria-label="Fondo del vidrio" hidden>{BGS.map(([c, n], i) => <button type="button" data-v={c} aria-pressed={String(!i)}>{n}</button>)}</div>
       <div class="grp fx" data-ns-chips id="mo-fx" role="group" aria-label="Efecto de luz" data-ns-choice>
         {FX.map(([k, n]) => <button type="button" data-v={k} aria-pressed={String(k == START)}>{n}</button>)}
       </div>
       <div class="picks">
         {PICKS.map(([id, n, opts]) => (
-          <label data-ns-field><span>{n}</span><select data-for={id}>{opts.map(([v, t]) => <option value={v} selected={id == 'mo-fx' ? v == START : id == 'mo-fill' ? v == 'is-photo' : v == opts[0][0]}>{t}</option>)}</select></label>
+          <label data-ns-field hidden={id == 'mo-bg'}><span>{n}</span><select data-for={id}>{opts.map(([v, t]) => <option value={v} selected={id == 'mo-fx' ? v == START : id == 'mo-fill' ? v == 'is-photo' : v == opts[0][0]}>{t}</option>)}</select></label>
         ))}
       </div>
       <div class="knobs">
@@ -56,9 +70,18 @@ const PICKS = [
         <label data-ns-field><span>Intensidad <output for="mo-int"></output></span><input type="range" id="mo-int" data-ns-range data-ns-scale="100" data-ns-unit=" %" min="0" max="0.3" step="0.01" value="0.07"></label>
         <div data-ns-swatches id="mo-tint" role="group" data-ns-choice aria-label="Color de la luz">{TINTS.map(([c, n], i) => <button type="button" data-v={c} data-color={c} aria-pressed={String(!i)} aria-label={n} title={n}></button>)}</div>
       </div>
+      <!-- el motor del vidrio: sólo con el material vidrio -->
+      <div class="knobs gknobs" id="mo-glass" role="group" aria-label="Ajustes del vidrio" hidden>
+        {GLASS.map(([id, n, v, min, max, step, val, unit, k]) => <label data-ns-field><span>{n} <output for={id}></output></span><input type="range" id={id} data-var={v} data-ns-range data-ns-unit={unit} data-ns-scale={k} min={min} max={max} step={step} value={val}></label>)}
+      </div>
     </div>
 
-    <div class="mo-stage" id="mo-stage">
+    <div class="mo-stage bg-photo" id="mo-stage">
+    <!-- vídeo de fondo del vidrio (CC0, ejemplos de MDN; crossorigin: el motor WebGL lo lee) -->
+    <video class="mo-vid" muted loop playsinline preload="none" crossorigin="anonymous" aria-hidden="true" tabindex="-1">
+      <source src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm" type="video/webm">
+      <source src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" type="video/mp4">
+    </video>
     <div class="mo ns-mosaic t-orb" id="mo" data-ns-mosaic={START}>
       <article data-ns-area="h" class="hi"><h3>Formas que se abrazan.</h3><p>La plantilla vive en CSS: cámbiala con una media query y las piezas se reacomodan.</p></article>
       <article data-ns-area="a" class="ph"><img src="https://picsum.photos/seed/ns-mosaic-a/700/800.webp" alt="Fachada de edificios antiguos" width="700" height="800" loading="lazy"><h3>Fotos con forma</h3><p>La imagen se recorta con la pieza.</p></article>
@@ -104,6 +127,19 @@ const PICKS = [
     if (c) { orb.classList.add(c); orb.removeAttribute('aria-hidden') } else orb.setAttribute('aria-hidden', 'true')
   })
 
+  // fondo del vidrio: la librería lo detecta sola (un <video> que cubre el grupo, un fondo con url()
+  // o nada: la página) y elige el nivel del motor; aquí sólo se cambia la clase
+  const BGS = ['bg-photo', 'bg-video', 'bg-grad']
+  const vid = document.querySelector<HTMLVideoElement>('.mo-vid')!
+  const still = matchMedia('(prefers-reduced-motion: reduce)')
+  const video = (on: boolean) => {
+    if (!on) return vid.pause()
+    // (preload="none" hasta que se pide: la página no descarga el vídeo si nadie lo elige)
+    if (vid.preload != 'auto') { vid.preload = 'auto'; vid.load() }
+    // (con movimiento reducido, el primer fotograma quieto)
+    if (!still.matches) vid.play().catch(() => {})
+  }
+
   // material: vidrio líquido en cada pieza (salvo la foto), con la forma que le da el mosaico. El
   // módulo del vidrio se pide la primera vez; el mosaico pasa a estar sobre una foto.
   // (data-ns-glass-group: una sola capa de desenfoque para todas las piezas, recortada con la unión de
@@ -115,7 +151,20 @@ const PICKS = [
     stage.classList.toggle('glassy', glass)
     glass ? stage.setAttribute('data-ns-glass-group', '') : stage.removeAttribute('data-ns-glass-group')
     mo.querySelectorAll<HTMLElement>(':scope > [data-ns-area]:not(.ph)').forEach(a => glass ? a.setAttribute('data-ns-glass', '') : a.removeAttribute('data-ns-glass'))
+    // (el fondo y los ajustes del motor sólo tienen sentido con vidrio)
+    ;[$('mo-bg'), $('mo-glass'), document.querySelector('.picks select[data-for=mo-bg]')!.parentElement!].forEach(n => n.hidden = !glass)
+    video(glass && stage.classList.contains('bg-video'))
   })
+
+  $('mo-bg').addEventListener('change', e => {
+    const c = picked(e).dataset.v!, stage = $('mo-stage')
+    stage.classList.remove(...BGS); stage.classList.add(c)
+    video(c == 'bg-video')
+  })
+
+  // los ajustes del motor son variables del grupo (--ns-glass-lens, -depth, -group-blur, -dispersion, -rim)
+  document.querySelectorAll<HTMLInputElement>('#mo-glass input').forEach(i => i.addEventListener('input', () =>
+    $('mo-stage').style.setProperty(i.dataset.var!, i.dataset.var == '--ns-glass-group-blur' ? i.value + 'px' : i.value)))
 
   // un efecto a la vez; velocidad, intensidad y color son variables de la librería:
   // --ns-mosaic-fx-time (la duración de cada efecto), --ns-mosaic-speed (la corriente, px/s),
@@ -167,7 +216,14 @@ const PICKS = [
   /* (overflow: las capas de cada vidrio sobresalen un poco de su pieza para la lente; sin recortar,
      ensanchaban la página en el móvil. overflow no corta el fondo que ve el vidrio) */
   .mo-stage { position: relative; border-radius: 30px; overflow: hidden; transition: padding .35s var(--ease) }
-  .mo-stage.glassy { padding: 18px; background: #0b0b0d url(https://picsum.photos/seed/ns-mosaic-glass/1400/1000.webp) center / cover }
+  /* (isolation: el vídeo de fondo va detrás de todo, pero dentro del escenario) */
+  .mo-stage.glassy { padding: 18px; isolation: isolate; background: #0b0b0d }
+  .mo-stage.glassy.bg-photo { background: #0b0b0d url(https://picsum.photos/seed/ns-mosaic-glass/1400/1000.webp) center / cover }
+  .mo-stage.glassy.bg-grad { background: radial-gradient(40% 55% at 18% 22%, #ff4d6d, transparent 70%), radial-gradient(45% 55% at 82% 30%, #3de0ff, transparent 70%), radial-gradient(50% 60% at 55% 85%, #ffd23f, transparent 70%), radial-gradient(40% 50% at 10% 90%, #7c4dff, transparent 70%), #101014 }
+  .mo-vid { display: none; position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; object-fit: cover; pointer-events: none }
+  .glassy.bg-video > .mo-vid { display: block }
+  .gknobs { order: 3; flex-basis: 100%; max-width: none }
+  .gknobs[hidden], .grp[hidden], .picks [hidden] { display: none }
   .glassy .mo > [data-ns-area]:not(.ph) { background: none !important; color: var(--ns-glass-ink, #fff) }
   .glassy .mo p, .glassy .mo .hi h3, .glassy .mo .hi p { color: color-mix(in srgb, var(--ns-glass-ink, #fff) 88%, transparent) }
   .glassy .mo .hi h3 { color: var(--ns-glass-ink, #fff) }

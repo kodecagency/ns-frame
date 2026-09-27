@@ -163,6 +163,10 @@ export function pathField(d: string, w: number, h: number, step?: number): Liqui
 export function polyline(d: string, seg?: number): [number, number][]
 /** Desplaza un path `d` absoluto (M, L, C, Q, A, Z) en (dx, dy). */
 export function shift(d: string, dx: number, dy: number): string
+/** Mapa de desplazamiento de la lente (PNG en data URL) para un campo de pathField, con canto de `rim` px. */
+export function lensURL(f: LiquidField, rim: number, hard?: boolean): Promise<string>
+/** true en Chromium: backdrop-filter admite filtros SVG (la lente sobre el fondo de la página). */
+export const LENS: boolean
 /**
  * Botón de gotas: el último botón (o [data-ns-drops-main]) suelta los demás como gotas que se separan.
  * Automático con data-ns-drops ("x", "left", "right", "up", "down"). Evento toggle con detail { open }.
@@ -193,6 +197,19 @@ export function swatches(el: HTMLElement): { update(): void; destroy(): void }
  * forma también a mitad de un morph.
  */
 export function glass(el: HTMLElement, options?: LiquidOptions): { update(): void; frame(): void; destroy(): void }
+/**
+ * Grupo de vidrio (automático con `data-ns-glass-group`): todas las piezas `[data-ns-glass]` de dentro
+ * en una pasada. Con un fondo conocido detrás (un img, video o canvas hijo que cubre el grupo, un fondo
+ * CSS con url(), o el selector del atributo) lo dibuja un lienzo WebGL2 (`ns-frame/glass-gl`); con el
+ * fondo de la página, una lente de la unión en Chromium y una capa de desenfoque en los demás.
+ * `data-ns-glass-group="native"` fuerza la capa. Variables: --ns-glass-lens, -depth, -group-blur, -sat,
+ * -dispersion, -rim.
+ */
+export function glassGroup(el: HTMLElement): { update(): void; destroy(): void }
+
+// ── ns-frame/glass-gl (lo carga ns-frame/glass cuando hace falta) ──
+/** Motor WebGL2 de un grupo sobre un fondo conocido; null sin WebGL2. */
+export function glEngine(host: HTMLElement, src: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | { url: string }, onFail?: () => void, onReady?: () => void): { draw(d?: string): void; destroy(): void } | null
 
 // ── ns-frame/light ──
 /** Parámetros de un material: superficie (relieve) o canto (rim: true, vidrio). */
