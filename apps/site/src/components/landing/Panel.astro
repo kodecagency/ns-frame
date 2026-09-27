@@ -119,10 +119,10 @@ const ROW: [K, string][] = [['torch', 'Linterna'], ['timer', 'Temporizador'], ['
        propio: lo pone el grupo, y el popover va en otra capa), con su vidrio esmerilado -->
   <div popover id="pn-opts" class="pn-opts" data-ns-arrow="all round 22" data-ns-glass="frost" aria-labelledby="pn-otitle">
     <b id="pn-otitle">Opciones</b>
-    <label class="pn-orow">Permitir llamadas de favoritos<input type="checkbox" data-ns-switch checked></label>
-    <label class="pn-orow">Mostrar en la pantalla bloqueada<input type="checkbox" data-ns-switch></label>
+    <label class="pn-orow">Permitir llamadas de favoritos<input type="checkbox" id="pn-o1" data-ns-switch checked></label>
+    <label class="pn-orow">Mostrar en la pantalla bloqueada<input type="checkbox" id="pn-o2" data-ns-switch></label>
     <span class="pn-olb" id="pn-odur">Duración</span>
-    <div data-ns-segment="sm" data-ns-choice role="group" aria-labelledby="pn-odur" class="pn-oseg"><button type="button" aria-pressed="true">1 h</button><button type="button" aria-pressed="false">Tarde</button><button type="button" aria-pressed="false">Mañana</button></div>
+    <div data-ns-segment="sm" data-ns-choice role="group" aria-labelledby="pn-odur" class="pn-oseg" id="pn-oseg"><button type="button" aria-pressed="true">1 h</button><button type="button" aria-pressed="false">Tarde</button><button type="button" aria-pressed="false">Mañana</button></div>
   </div>
 </section>
 
@@ -131,6 +131,7 @@ const ROW: [K, string][] = [['torch', 'Linterna'], ['timer', 'Temporizador'], ['
   // variable --ns-pane-on (por CSSOM: la CSP no deja atributos style)
   import 'ns-frame/glass'
   import 'ns-frame/pop'
+  import { near } from '../../scripts/near'
   document.querySelectorAll<HTMLElement>('.pn [data-on]').forEach(b => b.style.setProperty('--ns-pane-on', b.dataset.on!))
   // (el color de cada modo, --m, también por CSSOM)
   document.querySelectorAll<HTMLElement>('.pn-stage [data-color]').forEach(b => b.style.setProperty('--m', b.dataset.color!))
@@ -139,19 +140,42 @@ const ROW: [K, string][] = [['torch', 'Linterna'], ['timer', 'Temporizador'], ['
   // y lo activa. Se cierra al elegir, con Escape o tocando fuera de las pastillas, y el foco vuelve
   const stage = document.querySelector<HTMLElement>('.pn-stage')!, menu = document.getElementById('pn-menu')!
   const more = document.getElementById('pn-fmore')!, pill = document.querySelector<HTMLElement>('.pn-focus')!
-  const on = document.querySelector<HTMLElement>('.pn-fon')!
-  const open = (v: boolean) => {
-    // (la clase en el escenario —el grupo de vidrio— hace que redibuje sólo lo visible)
-    stage.classList.toggle('pn-open', v); menu.hidden = !v
-    more.setAttribute('aria-expanded', String(v))
-    if (v) menu.querySelector<HTMLElement>('[aria-checked=true]')?.focus()
-    else {
-      // (al cerrar la lista, también sus opciones; el foco vuelve a la pastilla)
-      const o = document.getElementById('pn-opts')!
-      if (o.matches?.(':popover-open')) o.hidePopover()
-      more.focus()
+  const on = document.querySelector<HTMLElement>('.pn-fon')!, opts = document.getElementById('pn-opts')!
+  // abrir y cerrar: la pastilla se transforma en la lista y la lista vuelve a la pastilla (morph de
+  // ns-frame/vt, con View Transitions; sin soporte o con movimiento reducido, al instante)
+  let shown = false
+  // (el módulo de la transición se pide al acercarse la sección: el primer toque ya responde al instante)
+  let vt: Promise<typeof import('ns-frame/vt')> | null = null
+  const getVt = () => vt ||= import('ns-frame/vt')
+  near(stage, getVt)
+  const open = async (v: boolean) => {
+    if (v == shown) return
+    shown = v
+    if (!v && opts.matches?.(':popover-open')) opts.hidePopover()
+    const set = () => {
+      // (la clase en el escenario —el grupo de vidrio— hace que redibuje sólo lo visible)
+      stage.classList.toggle('pn-open', v); menu.hidden = !v
+      more.setAttribute('aria-expanded', String(v))
     }
+    const { morph } = await getVt()
+    await morph(v ? pill : menu, set, v ? menu : pill, { duration: 420 })
+    // (el foco: al modo elegido al abrir; a la pastilla al cerrar)
+    ;(v ? menu.querySelector<HTMLElement>('[aria-checked=true]') : more)?.focus({ preventScroll: true })
   }
+
+  // las opciones de cada modo se guardan por modo: al abrirlas se cargan las suyas
+  const o1 = document.getElementById('pn-o1') as HTMLInputElement, o2 = document.getElementById('pn-o2') as HTMLInputElement
+  const seg = [...document.querySelectorAll<HTMLElement>('#pn-oseg button')]
+  const saved = new Map<string, { a: boolean, b: boolean, d: number }>()
+  let optsFor = ''
+  const load = (k: string) => {
+    optsFor = k
+    const s = saved.get(k) ?? { a: true, b: false, d: 0 }
+    o1.checked = s.a; o2.checked = s.b
+    seg.forEach((x, i) => x.setAttribute('aria-pressed', String(i == s.d)))
+  }
+  const save = () => optsFor && saved.set(optsFor, { a: o1.checked, b: o2.checked, d: Math.max(0, seg.findIndex(x => x.getAttribute('aria-pressed') == 'true')) })
+  opts.addEventListener('change', save)
   more.addEventListener('click', () => open(true))
   document.getElementById('pn-back')!.addEventListener('click', () => open(false))
   menu.addEventListener('change', e => {
@@ -167,11 +191,11 @@ const ROW: [K, string][] = [['torch', 'Linterna'], ['timer', 'Temporizador'], ['
     const t = e.target as Element, b = t.closest('.pn-mpick')
     // (las opciones de un modo abren su popover; el título es el del modo)
     const o = t.closest<HTMLElement>('.pn-mx')
-    if (o) { document.getElementById('pn-otitle')!.textContent = o.dataset.name!; return }
+    if (o) { document.getElementById('pn-otitle')!.textContent = o.dataset.name!; load(o.closest('.pn-mode')!.querySelector<HTMLElement>('.pn-mpick')!.dataset.mode!); return }
     if (b ? b.getAttribute('aria-checked') == 'true' : t == menu || t.classList.contains('pn-modes')) open(false)
   })
   // (Escape con las opciones abiertas las cierra a ellas —lo hace el navegador—; si no, cierra la lista)
-  menu.addEventListener('keydown', e => { if (e.key == 'Escape' && !document.getElementById('pn-opts')!.matches(':popover-open')) { e.preventDefault(); open(false) } })
+  menu.addEventListener('keydown', e => { if (e.key == 'Escape' && !opts.matches(':popover-open')) { e.preventDefault(); open(false) } })
 </script>
 
 <style>
@@ -224,7 +248,9 @@ const ROW: [K, string][] = [['torch', 'Linterna'], ['timer', 'Temporizador'], ['
   /* la lista de modos, en el sitio del panel */
   .pn-stage { position: relative }
   .pn-open .pn { visibility: hidden }
-  .pn-menu { position: absolute; inset: calc(var(--g) * 1.6); display: flex; flex-direction: column; gap: calc(var(--g) * .9); animation: pn-in .28s cubic-bezier(.2, .8, .2, 1) }
+  .pn-menu { position: absolute; inset: calc(var(--g) * 1.6); display: flex; flex-direction: column; gap: calc(var(--g) * .9) }
+  /* (la entrada la anima el morph de ns-frame/vt; sin View Transitions, un fundido corto) */
+  @supports not (view-transition-name: none) { .pn-menu { animation: pn-in .28s cubic-bezier(.2, .8, .2, 1) } }
   /* cabecera: volver al panel (un botón redondo de vidrio) y el título */
   .pn-mhead { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; color: #fff }
   .pn-mhead b { text-align: center; font-size: clamp(16px, 4.4vw, 19px); font-weight: 700 }
