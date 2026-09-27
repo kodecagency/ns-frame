@@ -13,7 +13,7 @@
 // · --ns-liquid: hueco máximo (px) que se funde (14): más cerca, puente más grueso; más lejos, gotas
 //   separadas. 0 = unión sin fundido.
 // · --ns-liquid-fill / --ns-liquid-border / --ns-liquid-width: relleno y trazo del conjunto.
-// · data-ns-liquid="glass": vidrio líquido, con las capas del material de Apple:
+// · data-ns-liquid="glass": vidrio líquido, con las capas de un material de vidrio:
 //   1. cuerpo: el fondo desenfocado, saturado y tintado dentro de la forma exacta;
 //   2. lente: el fondo se curva en el borde como a través de un cristal grueso. El mapa de
 //      desplazamiento sale del mismo campo de distancias: cada punto cerca del borde toma el
@@ -831,6 +831,16 @@ export function liquid(el, o = {}) {
   const sB = mk('feGaussianBlur', { in: 'SourceGraphic', stdDeviation: 9, result: 'b' }), sO = mk('feOffset', { in: 'b', dx: 0, dy: 7 })
   const fShadow = mk('filter', { id: id + 'h', x: '-50%', y: '-50%', width: '200%', height: '200%' }); fShadow.append(sB, sO); defs.append(fShadow)
   const shadow = mk('path', { class: 'ns-lsh', filter: `url(#${id}h)`, mask: `url(#${id}o)` })
+  // canto del vidrio ligero (frost, grupos): un degradado en diagonal, más brillante en dos esquinas
+  // opuestas (--ns-glass-edge-hi) y tenue en los costados (--ns-glass-frost-edge). Por defecto, igual
+  // en todo el contorno
+  const fe = mk('linearGradient', { id: id + 'fe', x1: 0, y1: 0, x2: 1, y2: 1 })
+  for (const [o, v] of [[0, 'hi'], [.5, ''], [1, 'hi']]) {
+    const s = mk('stop', { offset: o }), base = 'var(--ns-glass-frost-edge,rgba(255,255,255,.16))'
+    s.style.stopColor = v ? `var(--ns-glass-edge-hi,${base})` : base
+    fe.append(s)
+  }
+  defs.append(fe)
   svg.append(defs, shadow, glow, path, rim)
   const glass = div('ns-liquid-glass'), edge = div('ns-liquid-rim')
   // Lente donde backdrop-filter no admite filtros SVG (Safari, Firefox): si se indica qué hay
@@ -1153,7 +1163,7 @@ export function liquid(el, o = {}) {
   let toning = 0
   // pin: el grupo (o un antepasado) es fijo o pegajoso
   let pin = false, resized = true
-  // vidrio claro sobre fondos claros (como el de Apple), salvo que se fije --ns-glass-tint
+  // vidrio claro sobre fondos claros, salvo que se fije --ns-glass-tint
   let toned = 0
   // Con un tinte propio (un vidrio oscuro de diseño, como una barra de pestañas) no se invierte:
   // sobre lo claro se oscurece un poco más y el texto sigue blanco, como la barra de Instagram
@@ -1218,7 +1228,7 @@ export function liquid(el, o = {}) {
         for (let n = el; n && n != document.body && !pin; n = n.parentElement) pin = /^(fixed|sticky)$/.test(getComputedStyle(n).position)
       }
       const cs = getComputedStyle(el), num = (k, d) => { const v = parseFloat(cs.getPropertyValue(k)); return v >= 0 ? v : d }, lt = el.classList.contains('ns-glass-light')
-      // (lente por defecto según el tamaño, como el cristal de Apple: el canto dobla el fondo en casi
+      // (lente por defecto según el tamaño, como un cristal real: el canto dobla el fondo en casi
       // la mitad del lado corto; una barra o un botón refractan enteros, un panel grande sólo su borde)
       const ms = Math.min(el.offsetWidth, el.offsetHeight) || 48, cl = (v, a, b) => Math.max(a, Math.min(b, v))
       // (calidad baja o "frost": el vidrio ligero. Dentro de un grupo, también: su desenfoque lo pone la
@@ -1230,7 +1240,7 @@ export function liquid(el, o = {}) {
         // canto: intensidad y reflejo opuesto (su fuerza y su color: la luz en U lo tiñe)
         light: lt, rim: num('--ns-glass-rim', 1), back: num('--ns-glass-rim-back', .5), backColor: cs.getPropertyValue('--ns-glass-rim-color').trim() || '#fff' }
       // Material grueso (desenfoque ≥ 12px: una hoja, un menú) fuera de Chromium: el desenfoque nativo
-      // del navegador, como los materiales de Apple. La lente sólo se notaría en el canto y la copia
+      // del navegador, como los materiales de sistema. La lente sólo se notaría en el canto y la copia
       // de la página, tan agrandada bajo tanto desenfoque, dejaba grano y vetas; además cuesta cada
       // fotograma. La lente de copia queda para barras, botones y piezas pequeñas
       // Y lo mismo un vidrio fijo o pegajoso (una cápsula, una barra de navegación): la página corre
@@ -1337,8 +1347,8 @@ export function liquid(el, o = {}) {
     // (en el vidrio ligero, sin filtro de luz: el canto es un trazo fino y el reflejo se oculta. El
     // filtro de iluminación en cada pieza dejaba puntos blancos en las esquinas en WebKit y cuesta GPU)
     rim.style.display = g && low ? 'none' : ''
-    path.style.stroke = g && low ? 'var(--ns-glass-frost-edge,rgba(255,255,255,.16))' : ''
-    path.style.strokeWidth = g && low ? '1px' : ''
+    path.style.stroke = g && low ? `url(#${id}fe)` : ''
+    path.style.strokeWidth = g && low ? 'var(--ns-glass-edge-width,1px)' : ''
     if (g && d && !low) rim.setAttribute('filter', `url(#${material({ rim: true, b: V.hard ? .8 : 1.3, s: 1.3, ks: +(.95 * V.rim * (LENS && lensPx ? .5 : 1)).toFixed(2), n: 110, back: LENS && lensPx ? .05 : V.back, backColor: V.backColor })})`)
     el.classList.toggle('ns-glass', g)
     // (estilo en línea: el relleno de la capa en CSS ganaría a un atributo fill)

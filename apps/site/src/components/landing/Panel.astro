@@ -1,0 +1,133 @@
+---
+// Panel de vidrio: muchas piezas de vidrio a la vez (bloques, botones redondos, niveles) en UNA pasada,
+// con data-ns-glass-group="pane". Todo es de la librería: el vidrio (ns-frame/glass), los grupos de
+// botones que se activan (data-ns-choice del núcleo) y los niveles verticales (ns-frame/controls).
+// La página sólo decide la composición y los iconos.
+import SectionHead from '../SectionHead.astro'
+import Arrow from '../Arrow.astro'
+
+// iconos: Lucide 1.48.0 (https://lucide.dev), licencia ISC · Copyright (c) Lucide Contributors.
+// Trazo en una rejilla de 24 (el grosor lo pone el CSS); los de reproducción van rellenos
+const I = {
+  plane: '<path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>',
+  cast: '<path d="M2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6"/><path d="M2 12a9 9 0 0 1 8 8"/><path d="M2 16a5 5 0 0 1 4 4"/><path d="M2 20h.01"/>',
+  wifi: '<path d="M12 20h.01"/><path d="M2 8.82a15 15 0 0 1 20 0"/><path d="M5 12.859a10 10 0 0 1 14 0"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/>',
+  bars: '<path d="M2 20h.01"/><path d="M7 20v-4"/><path d="M12 20v-8"/><path d="M17 20V8"/><path d="M22 4v16"/>',
+  lock: '<circle cx="12" cy="16" r="1"/><rect x="3" y="10" width="18" height="12" rx="2"/><path d="M7 10V7a5 5 0 0 1 10 0v3"/>',
+  bell: '<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M17 17H4a1 1 0 0 1-.74-1.673C4.59 13.956 6 12.499 6 8a6 6 0 0 1 .258-1.742"/><path d="m2 2 20 20"/><path d="M8.668 3.01A6 6 0 0 1 18 8c0 2.687.77 4.653 1.707 6.05"/>',
+  moon: '<path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
+  sound: '<path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.364 18.364a9 9 0 0 0 0-12.728"/>',
+  torch: '<path d="M12 13v1"/><path d="M17 2a1 1 0 0 1 1 1v4a3 3 0 0 1-.6 1.8l-.6.8A4 4 0 0 0 16 12v8a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2v-8a4 4 0 0 0-.8-2.4l-.6-.8A3 3 0 0 1 6 7V3a1 1 0 0 1 1-1z"/><path d="M6 6h12"/>',
+  timer: '<path d="M10 2h4"/><path d="m12 14 3-3"/><circle cx="12" cy="14" r="8"/>',
+  calc: '<rect width="16" height="20" x="4" y="2" rx="2"/><path d="M8 6h8"/><path d="M16 14v4"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/>',
+  camera: '<path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z"/><circle cx="12" cy="13" r="3"/>',
+  prev: '<path d="M17.971 4.285A2 2 0 0 1 21 6v12a2 2 0 0 1-3.029 1.715l-9.997-5.998a2 2 0 0 1-.003-3.432z"/><path d="M3 20V4"/>',
+  play: '<path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/>',
+  next: '<path d="M21 4v16"/><path d="M6.029 4.285A2 2 0 0 0 3 6v12a2 2 0 0 0 3.029 1.715l9.997-5.998a2 2 0 0 0 .003-3.432z"/>',
+}
+type K = keyof typeof I
+// bloque de conexiones: icono · nombre · encendido al empezar · color al encenderse (--ns-pane-on)
+const NET: [K, string, boolean, string][] = [['plane', 'Modo avión', false, '#ff9f0a'], ['cast', 'Compartir cerca', false, '#34c759'], ['wifi', 'Wi-Fi', true, '#2f7cf6'], ['bars', 'Datos', true, '#34c759']]
+const QUICK: [K, string][] = [['lock', 'Bloquear giro'], ['bell', 'Silencio']]
+const ROW: [K, string][] = [['torch', 'Linterna'], ['timer', 'Temporizador'], ['calc', 'Calculadora'], ['camera', 'Cámara']]
+---
+<section class="sec dark" id="panel" aria-labelledby="t-pn">
+  <div class="wrap pn-wrap">
+    <div class="pn-text">
+      <SectionHead id="t-pn">
+        <Fragment slot="title">Mucho vidrio, una pasada.</Fragment>
+        Bloques, botones redondos y niveles: cada pieza es vidrio con su forma, y todas se dibujan juntas. El coste no crece con el número de piezas, así que el móvil aguanta un panel entero.
+      </SectionHead>
+      <pre class="pn-code"><code>&lt;div data-ns-glass-group="pane"&gt;
+  &lt;div data-ns-glass&gt;…&lt;/div&gt;
+  &lt;button data-ns-glass&gt;…&lt;/button&gt;
+  &lt;label data-ns-level data-ns-glass&gt;
+    &lt;input type="range"&gt;
+  &lt;/label&gt;
+&lt;/div&gt;</code></pre>
+      <p class="pn-note">Sobre una foto o un vídeo, un solo lienzo WebGL dibuja lente, desenfoque y canto de todas las piezas, igual en todos los navegadores. Sobre la página, una lente de la unión en Chromium y un desenfoque compartido en los demás. Todo se ajusta con variables.</p>
+      <p class="after"><a class="more" href="/docs/componentes">Cómo funciona el grupo de vidrio<Arrow /></a></p>
+    </div>
+
+    <div class="pn-stage" data-ns-glass-group="pane">
+      <div class="pn">
+        <div class="pn-net" data-ns-glass data-ns-choice="many" role="group" aria-label="Conexiones">
+          {NET.map(([k, n, on, c]) => <button type="button" class="pn-b" data-ns-glass aria-pressed={String(on)} aria-label={n} title={n} data-on={c}><svg viewBox="0 0 24 24" aria-hidden="true" set:html={I[k]} /></button>)}
+        </div>
+        <div class="pn-media" data-ns-glass role="group" aria-label="Reproducción">
+          <p><b>Sin reproducción</b><small>Nada en cola</small></p>
+          <div class="pn-ctl">
+            <button type="button" aria-label="Anterior"><svg class="f" viewBox="0 0 24 24" aria-hidden="true" set:html={I.prev} /></button>
+            <span data-ns-choice="many"><button type="button" aria-pressed="false" aria-label="Reproducir"><svg class="f" viewBox="0 0 24 24" aria-hidden="true" set:html={I.play} /></button></span>
+            <button type="button" aria-label="Siguiente"><svg class="f" viewBox="0 0 24 24" aria-hidden="true" set:html={I.next} /></button>
+          </div>
+        </div>
+        <div class="pn-quick" data-ns-choice="many" role="group" aria-label="Ajustes rápidos">
+          {QUICK.map(([k, n]) => <button type="button" class="pn-b" data-ns-glass aria-pressed="false" aria-label={n} title={n}><svg viewBox="0 0 24 24" aria-hidden="true" set:html={I[k]} /></button>)}
+          <button type="button" class="pn-focus" data-ns-glass aria-pressed="false"><span class="pn-dot" aria-hidden="true"><svg class="f" viewBox="0 0 24 24" set:html={I.moon} /></span>Enfoque</button>
+        </div>
+        <label class="pn-lv" data-ns-level data-ns-glass><input type="range" aria-label="Brillo" min="0" max="100" value="62"><svg viewBox="0 0 24 24" aria-hidden="true" set:html={I.sun} /></label>
+        <label class="pn-lv" data-ns-level data-ns-glass><input type="range" aria-label="Volumen" min="0" max="100" value="38"><svg viewBox="0 0 24 24" aria-hidden="true" set:html={I.sound} /></label>
+        <div class="pn-row" data-ns-choice="many" role="group" aria-label="Accesos">
+          {ROW.map(([k, n]) => <button type="button" class="pn-b" data-ns-glass aria-pressed="false" aria-label={n} title={n}><svg viewBox="0 0 24 24" aria-hidden="true" set:html={I[k]} /></button>)}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  // el vidrio y los niveles son módulos de la librería; el color de cada conexión al encenderse es su
+  // variable --ns-pane-on (por CSSOM: la CSP no deja atributos style)
+  import 'ns-frame/glass'
+  document.querySelectorAll<HTMLElement>('.pn [data-on]').forEach(b => b.style.setProperty('--ns-pane-on', b.dataset.on!))
+</script>
+
+<style>
+  .pn-wrap { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 48px; align-items: center }
+  .pn-code { margin: 20px 0 0; padding: 16px 18px; border-radius: 16px; border: 1px solid var(--line); background: #0e0e10; font: var(--t-small)/1.6 var(--mono); color: var(--text-2); overflow-x: auto }
+  .pn-note { margin: 16px 0 0; color: var(--text-2); font-size: var(--t-control); max-width: 52ch }
+
+  /* el escenario: una foto detrás (el grupo la detecta y usa el motor WebGL) */
+  .pn-stage { --c: clamp(64px, 17vw, 78px); --g: clamp(12px, 3.4vw, 16px); padding: calc(var(--g) * 1.6); border-radius: 36px; overflow: hidden; background: #111 url(https://picsum.photos/seed/ns-panel-glass/900/1100.webp) center / cover; --ns-pane-on-ink: #0a0a0a }
+  .pn { display: grid; grid-template-columns: repeat(4, var(--c)); grid-auto-rows: var(--c); gap: var(--g); color: #fff }
+  .pn svg { fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round }
+  /* (rellenos: el trazo fino redondea las esquinas, como el glifo de sistema) */
+  .pn svg.f { fill: currentColor; stroke-width: 1.2 }
+  .pn button { font: inherit; cursor: pointer }
+
+  .pn-b { display: grid; place-items: center; padding: 0; border: 0; border-radius: 50% }
+  .pn-b svg { width: 36%; height: 36% }
+  .pn-b[aria-pressed=true] { color: var(--ns-pane-on-ink) }
+  .pn-b[data-on][aria-pressed=true] { color: #fff }
+
+  .pn-net { grid-area: 1 / 1 / 3 / 3; display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--g) * .8); padding: calc(var(--g) * .9); border-radius: 30px }
+  .pn-media { grid-area: 1 / 3 / 3 / 5; display: flex; flex-direction: column; justify-content: space-between; padding: 18px; border-radius: 30px }
+  .pn-media p { margin: 0; display: grid; gap: 2px }
+  .pn-media b { font-size: var(--t-body) }
+  .pn-media small { color: rgba(255, 255, 255, .6); font-size: var(--t-small) }
+  .pn-ctl { display: flex; justify-content: space-between; align-items: center }
+  .pn-ctl span { display: contents }
+  .pn-ctl button { display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%; background: none }
+  .pn-ctl svg { width: 24px; height: 24px }
+
+  .pn-quick { display: contents }
+  .pn-quick > .pn-b:nth-child(1) { grid-area: 3 / 1 }
+  .pn-quick > .pn-b:nth-child(2) { grid-area: 3 / 2 }
+  .pn-focus { grid-area: 4 / 1 / 5 / 3; display: flex; align-items: center; gap: 12px; padding: 0 10px; border: 0; border-radius: 999px; text-align: left; font-weight: 600 }
+  .pn-dot { display: grid; place-items: center; width: calc(var(--c) - 20px); aspect-ratio: 1; border-radius: 50%; background: rgba(255, 255, 255, .92); color: #5e5ce6; flex: none }
+  .pn-dot svg { width: 48%; height: 48% }
+
+  .pn-lv { grid-row: 3 / 5; --ns-level-w: var(--c); --ns-level-h: calc(var(--c) * 2 + var(--g)); --ns-level-radius: calc(var(--c) / 2); --ns-level-icon: 26px }
+  .pn-lv:nth-of-type(1) { grid-column: 3; --ns-level-ink: #f5b400 }
+  .pn-lv:nth-of-type(2) { grid-column: 4; --ns-level-ink: #2f7cf6 }
+
+  .pn-row { display: contents }
+  .pn-row > .pn-b { grid-row: 5 }
+
+  @media (max-width: 900px) {
+    .pn-wrap { grid-template-columns: 1fr; gap: 28px }
+    .pn-stage { justify-self: center }
+  }
+</style>

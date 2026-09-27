@@ -33,6 +33,9 @@ const CSS = `@layer ns{
 [data-ns-glass~=tint]{--ns-glass-tint:rgba(18,18,22,.46);--ns-glass-blur:10px}
 [data-ns-glass~=u]{--ns-glass-tint:radial-gradient(55% 45% at 6% 100%,color-mix(in srgb,var(--ns-u,#3de0ff) 42%,transparent),transparent),radial-gradient(55% 45% at 94% 100%,color-mix(in srgb,var(--ns-u,#3de0ff) 42%,transparent),transparent),linear-gradient(to top,color-mix(in srgb,var(--ns-u,#3de0ff) 26%,transparent),transparent 58%),rgba(12,14,18,.26);--ns-glass-rim-color:var(--ns-u,#3de0ff);--ns-glass-rim-back:.9}
 .ns-glass-group{position:relative}
+[data-ns-glass-group~=pane]{--ns-glass-group-blur:26px;--ns-glass-sat:1.45;--ns-glass-lens:8;--ns-glass-depth:14;--ns-glass-rim:1.3;--ns-glass-lift:.13}
+[data-ns-glass-group~=pane] [data-ns-glass]{--ns-glass-tint:var(--ns-pane-tint,rgba(255,255,255,.09));--ns-glass-frost-edge:var(--ns-pane-edge,rgba(255,255,255,.12));--ns-glass-edge-hi:var(--ns-pane-edge-hi,rgba(255,255,255,.5));--ns-glass-edge-width:var(--ns-pane-edge-width,1.3px);--ns-glass-shadow:none;transition:background-color var(--ns-pane-time,.25s)}
+[data-ns-glass-group~=pane] [data-ns-glass]:is([aria-pressed=true],[aria-checked=true]){background:var(--ns-pane-on,rgba(255,255,255,.94));color:var(--ns-pane-on-ink,#0a0a0a)}
 .ns-glass-gl{position:absolute;left:0;top:0;z-index:0;pointer-events:none}
 .ns-glass-shared[hidden]{display:none}
 .ns-glass-shared{position:absolute;left:0;top:0;z-index:0;pointer-events:none;-webkit-backdrop-filter:blur(var(--ns-glass-group-blur,10px)) saturate(var(--ns-glass-sat,1.3));backdrop-filter:blur(var(--ns-glass-group-blur,10px)) saturate(var(--ns-glass-sat,1.3))}
@@ -104,13 +107,16 @@ export function glass(el, o = {}) {
 // subtrazado por pieza). Las piezas pintan sólo su tinte, su canto y su contenido. El coste ya no
 // crece con el número de piezas.
 const GR = new WeakMap(), NATIVE = 'native'
+// palabras de data-ns-glass-group (el resto del valor, si lo hay, es el selector del fondo)
+const WORDS = /(^|\s)(native|pane)(?=\s|$)/g
 let gid = 0
 const setA = (n, a) => { for (const k in a) n.setAttribute(k, a[k]) }
 // Lo que hay detrás del grupo: el selector de data-ns-glass-group, un <img>, <video> o <canvas> hijo
 // que lo cubre, o su fondo CSS con url(). null si es la página; NATIVE si se pide la capa nativa
 function source(host) {
-  const sel = host.getAttribute('data-ns-glass-group')
-  if (sel == NATIVE) return NATIVE
+  const v = host.getAttribute('data-ns-glass-group') || ''
+  if (/(^|\s)native(\s|$)/.test(v)) return NATIVE
+  const sel = v.replace(WORDS, ' ').trim()
   if (sel) return host.querySelector(sel) || document.querySelector(sel)
   const H = host.getBoundingClientRect()
   for (const n of host.children) {

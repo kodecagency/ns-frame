@@ -19,11 +19,18 @@
 // · data-ns-range: pista fina, lo recorrido con el acento, mando claro. Actualiza el output[for] de
 //   su id con el valor (data-ns-unit se añade detrás; data-ns-scale lo multiplica: 100 → porcentaje).
 // · data-ns-swatches: muestras redondas; el color sale de data-color (por CSSOM: CSP estricta).
+// · data-ns-level: nivel vertical (brillo, volumen): una píldora alta que se llena desde abajo, con
+//   un icono abajo. <label data-ns-level><input type="range" aria-label="Brillo"><svg …/></label>.
+//   Es un input range de verdad (teclado, lector de pantalla), vertical con writing-mode (sin girar:
+//   su caja es la del nivel). Con data-ns-glass, de vidrio.
+//   Variables: --ns-level-w, -h, -radius, -fill, -track, -ink (el icono), -icon (tamaño), -icon-y.
+//   (el input y el icono, con [data-ns-level] sin :where: tienen que ganar a la posición relativa que
+//   el vidrio da a sus hijos. Tu CSS, fuera de @layer ns, gana igual)
 // Sin dependencias (usa el núcleo) y CSP-safe.
 import { styles, watch } from './ns-frame.js'
 
 const CSS = `@layer ns{
-:where([data-ns-segment],[data-ns-chips],[data-ns-field],[data-ns-swatches],[data-ns-range]){--_s:var(--ns-ui-surface,#141416);--_l:var(--ns-ui-line,rgba(255,255,255,.09));--_i:var(--ns-ui-ink,#f4f4f5);--_m:var(--ns-ui-muted,rgba(244,244,245,.62));--_a:var(--ns-ui-accent,#00e676);--_r:var(--ns-ui-radius,14px);--_h:var(--ns-ui-h,40px)}
+:where([data-ns-segment],[data-ns-chips],[data-ns-field],[data-ns-swatches],[data-ns-range],[data-ns-level]){--_s:var(--ns-ui-surface,#141416);--_l:var(--ns-ui-line,rgba(255,255,255,.09));--_i:var(--ns-ui-ink,#f4f4f5);--_m:var(--ns-ui-muted,rgba(244,244,245,.62));--_a:var(--ns-ui-accent,#00e676);--_r:var(--ns-ui-radius,14px);--_h:var(--ns-ui-h,40px)}
 :where([data-ns-segment]){display:inline-flex;flex-wrap:wrap;gap:2px;padding:4px;border-radius:var(--_r);background:var(--_s);border:1px solid var(--_l)}
 :where([data-ns-segment]) > :where(button){min-height:var(--_h);padding:0 14px;border:0;border-radius:calc(var(--_r) - 4px);background:transparent;color:var(--_m);font:inherit;font-family:var(--ns-ui-font,inherit);font-size:13.5px;cursor:pointer;transition:background-color .25s cubic-bezier(.2,.8,.2,1),color .2s}
 :where([data-ns-segment~=sm]) > :where(button){min-height:calc(var(--_h) - 6px);padding:0 11px;font-size:12.5px}
@@ -56,6 +63,17 @@ const CSS = `@layer ns{
 :where(input[type=range][data-ns-range]):focus-visible{outline:none}
 :root:not([data-ns-input=pointer]) :where(input[type=range][data-ns-range]):focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 3px var(--ns-ui-gap,#0e0e10),0 0 0 5px var(--_a)}
 :root:not([data-ns-input=pointer]) :where(input[type=range][data-ns-range]):focus-visible::-moz-range-thumb{box-shadow:0 0 0 3px var(--ns-ui-gap,#0e0e10),0 0 0 5px var(--_a)}
+:where([data-ns-level]){position:relative;display:inline-block;width:var(--ns-level-w,72px);height:var(--ns-level-h,168px);border-radius:var(--ns-level-radius,calc(var(--ns-level-w,72px) / 2.4));color:var(--ns-level-ink,#1d1d1f);vertical-align:top}
+:where([data-ns-level]:not([data-ns-glass])){background:var(--ns-level-track,rgba(255,255,255,.12))}
+[data-ns-level] > :where(input[type=range]){-webkit-appearance:none;appearance:none;position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;box-sizing:border-box;writing-mode:vertical-lr;direction:rtl;border-radius:inherit;background:linear-gradient(0deg,var(--ns-level-fill,#fff) var(--p,50%),transparent var(--p,50%));cursor:pointer;touch-action:none;--p:50%}
+:where([data-ns-level]) > :where(input[type=range])::-webkit-slider-runnable-track{width:100%;height:100%;background:transparent}
+:where([data-ns-level]) > :where(input[type=range])::-moz-range-track{width:100%;height:100%;background:transparent}
+:where([data-ns-level]) > :where(input[type=range])::-webkit-slider-thumb{-webkit-appearance:none;width:100%;height:1px;background:transparent}
+:where([data-ns-level]) > :where(input[type=range])::-moz-range-thumb{width:100%;height:1px;border:0;background:transparent}
+[data-ns-level] > :where(svg:not(.ns-liquid-fx),img,[data-ns-level-icon]){position:absolute;left:50%;bottom:var(--ns-level-icon-y,18px);width:var(--ns-level-icon,28px);height:var(--ns-level-icon,28px);translate:-50% 0;pointer-events:none}
+:root:not([data-ns-input=pointer]) :where([data-ns-level]):has(> input:focus-visible){outline:2px solid var(--ns-ui-accent,#00e676);outline-offset:3px}
+:where([data-ns-level]) > :where(input[type=range]):focus-visible{outline:none}
+@media (forced-colors:active){:where([data-ns-level]){border:1px solid CanvasText}:where([data-ns-level]) > :where(input[type=range]){background:linear-gradient(0deg,Highlight var(--p,50%),transparent var(--p,50%));forced-color-adjust:none}}
 @media (prefers-reduced-motion:reduce){:where([data-ns-segment],[data-ns-chips]) > :where(button){transition:none}}
 @media (forced-colors:active){:where([data-ns-segment],[data-ns-chips]) > :where(button):is([aria-pressed=true],[aria-checked=true]){outline:2px solid Highlight}}
 }
@@ -94,5 +112,11 @@ export function swatches(el) {
 
 // automático: el CSS con cualquiera de los atributos; los que necesitan JS, con el suyo
 watch('data-ns-range', el => el.matches('input[type=range]') ? range(el) : null)
+// (el nivel lleva lo recorrido del deslizador de dentro: el mismo --p)
+watch('data-ns-level', el => {
+  const i = el.querySelector(':scope > input[type=range]')
+  // (se lee y se mueve en vertical: arriba es más)
+  i?.hasAttribute('aria-orientation') || i?.setAttribute('aria-orientation', 'vertical')
+  return i && !i.hasAttribute('data-ns-range') ? range(i) : (css(), null) })
 watch('data-ns-swatches', el => swatches(el))
 for (const a of ['data-ns-segment', 'data-ns-chips', 'data-ns-field']) watch(a, () => { css(); return null })

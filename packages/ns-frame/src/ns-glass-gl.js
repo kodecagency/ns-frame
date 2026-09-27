@@ -1,7 +1,7 @@
 /*! ns-frame/glass-gl · motor WebGL de un grupo de vidrio sobre un fondo conocido */
 // Lo carga ns-frame/glass cuando un grupo (data-ns-glass-group) tiene detrás una imagen, un vídeo o
-// un fondo CSS con url(): el vidrio de todas sus piezas se dibuja en UN lienzo y en UNA pasada, como
-// el GlassEffectContainer de Apple. Coste independiente del número de piezas.
+// un fondo CSS con url(): el vidrio de todas sus piezas se dibuja en UN lienzo y en UNA pasada.
+// Coste independiente del número de piezas.
 // · Formas: la unión de siluetas del grupo → campo de distancias con signo (en CPU, sólo cuando
 //   cambian las formas) → textura de un canal.
 // · Por píxel: normal del borde (del campo), lente (el fondo se desvía cerca del borde, hacia fuera,
@@ -11,7 +11,7 @@
 //   se reproduce). El desplazamiento de la página no cuesta nada: el lienzo va dentro del grupo.
 // · Variables del grupo: --ns-glass-lens (fuerza de la lente, 22px), --ns-glass-depth (ancho del
 //   canto que refracta, 18px), --ns-glass-group-blur (10px), --ns-glass-sat (1.3),
-//   --ns-glass-dispersion (0–1, 0), --ns-glass-rim (brillo del canto, 1).
+//   --ns-glass-dispersion (0–1, 0), --ns-glass-rim (brillo del canto, 1), --ns-glass-lift (aclarado, 0–1, 0).
 // Sin WebGL2, sin CORS en la imagen o si se pierde el contexto: el grupo sigue con su capa de
 // desenfoque nativa (ns-frame/glass).
 import { pathField } from './ns-liquid.js'
@@ -24,7 +24,7 @@ precision highp float;
 in vec2 p; out vec4 o;
 uniform sampler2D bg, sdf;
 uniform vec2 size, bgPos, bgSize, sdfK, sdfO, light;
-uniform float R, depth, lens, lod, sat, disp, rim;
+uniform float R, depth, lens, lod, sat, disp, rim, lift;
 // (el nodo i de la rejilla está en x = i·step: centro del texel i)
 float sd(vec2 q){ return (texture(sdf, q * sdfK + sdfO).r - .5) * 2. * R; }
 vec3 tap(vec2 q){
@@ -46,6 +46,8 @@ void main(){
   vec3 c = disp > 0. ? vec3(tap(p + off * (1. + disp)).r, tap(p + off).g, tap(p + off * (1. - disp)).b) : tap(p + off);
   float l = dot(c, vec3(.2126, .7152, .0722));
   c = mix(vec3(l), c, sat);
+  // aclarado hacia el blanco (--ns-glass-lift): el vidrio de sistema levanta y neutraliza lo de detrás
+  c = mix(c, vec3(1.), lift);
   // canto: una línea de luz donde el borde mira a la luz, y un reflejo tenue enfrente
   float edge = pow(clamp(1. + d / 2.5, 0., 1.), 2.), facing = dot(n, light);
   c += vec3(1.) * rim * edge * (max(facing, 0.) * .55 + max(-facing, 0.) * .18);
@@ -167,7 +169,7 @@ export function glEngine(host, src, onFail, onReady) {
     gl.uniform1f(U('R'), R); gl.uniform1f(U('depth'), depth); gl.uniform1f(U('lens'), lens)
     gl.uniform1f(U('lod'), Math.max(0, Math.log2(Math.max(1, blur * k))))
     gl.uniform1f(U('sat'), num(s, '--ns-glass-sat', 1.3)); gl.uniform1f(U('disp'), num(s, '--ns-glass-dispersion', 0) * .12)
-    gl.uniform1f(U('rim'), num(s, '--ns-glass-rim', 1))
+    gl.uniform1f(U('rim'), num(s, '--ns-glass-rim', 1)); gl.uniform1f(U('lift'), Math.min(1, Math.max(0, num(s, '--ns-glass-lift', 0))))
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
     // (el primer dibujo con fondo: hasta aquí el grupo sigue con su capa nativa, sin un vidrio vacío)
     if (onReady) { const f = onReady; onReady = null; f() }

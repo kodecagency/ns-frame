@@ -3,7 +3,7 @@
 //   <img data-ns-concentric src="…">          ← chaflanes de 36 − 0,59·hueco y redondeos de 24 − hueco
 // </article>
 //
-// Regla del diseño de Apple (ConcentricRectangle en SwiftUI): lo que va dentro de una forma
+// Regla de diseño de esquinas concéntricas: lo que va dentro de una forma
 // redondeada debe tener el radio exterior menos la distancia al borde, o las curvas "no casan".
 // En CSS no existe (hay una propuesta abierta en el CSSWG para border-radius); aquí funciona con
 // cualquier forma de ns-frame, no sólo con redondeos:

@@ -125,7 +125,7 @@ let styled = 0
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 const q = (el, s) => el.querySelector(s)
 const r2 = n => Math.round(n * 100) / 100
-// muelle con un rebote leve (≈2,5 %), como las animaciones de sistema de Apple, para abrir
+// muelle con un rebote leve (≈2,5 %), como las animaciones de sistema, para abrir
 const spring = t => {
   if (t <= 0) return 0
   if (t >= 1) return 1
