@@ -164,37 +164,6 @@ const ACTIONS = [
         </div>
       </article>
 
-      <!-- 7 · relieve: un panel de casa inteligente con controles que se hunden de verdad -->
-      <article class="x x7" data-ns="all round 22">
-        <div class="stage s7">
-          <div class="home" data-ns="card" data-ns-relief>
-            <header><b>Salón</b><small id="hm-info">21 °C · Auto</small></header>
-            <div class="hrow">
-              <span id="hm-l">Luz</span>
-              <button type="button" class="sw" id="hm-light" role="switch" aria-checked="true" aria-labelledby="hm-l" data-ns-relief="inset"><i data-ns-relief="knob"></i></button>
-            </div>
-            <div class="hrow">
-              <span>Modo</span>
-              <div class="hseg" id="hm-mode" role="group" aria-label="Modo" data-ns-relief="inset" data-ns-choice>
-                {['Auto', 'Frío', 'Calor'].map((m, i) => <button type="button" data-ns-relief="ghost" aria-pressed={String(!i)}>{m}</button>)}
-              </div>
-            </div>
-            <div class="hrow">
-              <span>Temperatura</span>
-              <div class="hstep">
-                <button type="button" id="hm-down" data-ns-relief aria-label="Bajar un grado">−</button>
-                <output id="hm-t" aria-live="polite">21°</output>
-                <button type="button" id="hm-up" data-ns-relief aria-label="Subir un grado">+</button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="cap">
-          <h3>Relieve: el estado se ve en el volumen</h3>
-          <p>La tendencia propia de ns-frame: superficies con un volumen mínimo y exacto, calculado de la forma (el chaflán de la tarjeta recibe su propia luz). No es decoración, es información: lo que pulsas se hunde, el segmento elegido sube dentro de su carril y el interruptor encendido se colorea. Con teclado y lectores de pantalla (aria-pressed, aria-checked). Lo que el neumorfismo prometía, con contraste y sin plástico.</p>
-          <code class="tag"><b>data-ns-relief</b> · <b>inset</b> · <b>select</b> · <b>ns-frame/relief</b></code>
-        </div>
-      </article>
     </div>
     <p class="after"><a class="more" href="/docs/componentes">Cómo usarlos<Arrow /></a></p>
   </div>
@@ -207,7 +176,7 @@ const ACTIONS = [
   // los módulos se cargan y activan al acercarse la sección (se activan solos con sus atributos)
   near($('imposibles'), () => {
     import('ns-frame/concentric'); import('ns-frame/flow'); import('ns-frame/mark')
-    import('ns-frame/liquid'); import('ns-frame/tabs'); import('ns-frame/glass'); import('ns-frame/relief')
+    import('ns-frame/liquid'); import('ns-frame/tabs'); import('ns-frame/glass')
   })
   // los grupos de botones son grupos de elección de ns-frame (data-ns-choice): aria-pressed, flechas y
   // un evento change con el botón elegido
@@ -245,15 +214,6 @@ const ACTIONS = [
   }
   $('ed-tools').addEventListener('change', e => { fx = (e as CustomEvent<{ tab: HTMLElement }>).detail.tab.textContent!.trim(); apply() })
   k.addEventListener('input', apply)
-
-  // panel con relieve: interruptor, modo y temperatura (el estado se ve en el volumen)
-  let temp = 21, mode = 'Auto'
-  const info = () => { $('hm-info').textContent = `${temp} °C · ${mode}`; $('hm-t').textContent = temp + '°' }
-  $('hm-light').addEventListener('click', e => { const s = e.currentTarget as HTMLElement; s.setAttribute('aria-checked', String(s.getAttribute('aria-checked') != 'true')) })
-  // (el elegido sube en su carril y los demás quedan como texto: el relieve lo deduce de aria-pressed)
-  $('hm-mode').addEventListener('change', e => { mode = (e as CustomEvent<{ value: string }>).detail.value; info() })
-  $('hm-down').addEventListener('click', () => { temp = Math.max(16, temp - 1); info() })
-  $('hm-up').addEventListener('click', () => { temp = Math.min(28, temp + 1); info() })
 </script>
 
 <style>
@@ -344,34 +304,8 @@ const ACTIONS = [
   .ed-tools { position: relative; margin: 0 auto 22px; padding: 5px; --ns-liquid: 0px; --ns-glass-tint: rgba(14, 14, 18, .22); --ns-tabs-radius: 26px; --ns-tabs-ind-radius: 21px }
   .ed-tools button { width: 88px; height: 42px; border: 0; background: none; font: 600 var(--t-small)/1 var(--body); cursor: pointer }
 
-  /* 7 · relieve: panel claro sobre su propio fondo (la cerámica se lee por el volumen, no por un borde) */
-  .x7 { grid-column: 1 / -1; flex-direction: row }
-  .x7 .cap { flex: 0 0 42%; align-content: center; padding: 32px 36px }
-  .s7 { background: #ecebe8; padding: 56px 24px; color: #1d1d1f }
-  .home { width: min(360px, 100%); padding: 24px 24px 26px; box-sizing: border-box; display: grid; gap: 18px }
-  .home header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px }
-  .home header b { font: 600 var(--t-title)/1.1 var(--display); letter-spacing: -.01em }
-  .home header small { color: rgba(29, 29, 31, .68); font-size: var(--t-small) }
-  .hrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: var(--t-ui) }
-  .home button, .home output { border: 0; background: none; color: inherit; padding: 0; font: 500 var(--t-small)/1 var(--body); cursor: pointer }
-  /* interruptor: carril hundido que se colorea al encenderse, mando blanco que se desliza */
-  .sw { width: 52px; height: 30px; padding: 2px; box-sizing: border-box; border-radius: 15px; display: flex }
-  .sw[aria-checked=true] { --ns-relief: #34c759 }
-  .sw i { display: block; width: 26px; height: 26px; border-radius: 50%; --ns-relief: #fff; transition: translate .28s cubic-bezier(.3, 1.2, .4, 1) }
-  .sw[aria-checked=true] i { translate: 22px 0 }
-  /* segmentos: carril hundido y el elegido en relieve (como iOS) */
-  .hseg { display: flex; padding: 2px; border-radius: 10px }
-  .hseg button { height: 28px; padding: 0 14px; border-radius: 8px; opacity: .7 }
-  .hseg button[aria-pressed=true] { opacity: 1 }
-  .hstep { display: flex; align-items: center; gap: 14px }
-  .hstep button { width: 32px; height: 32px; border-radius: 50%; font-size: 17px }
-  .hstep output { min-width: 34px; text-align: center; font-size: 17px; font-variant-numeric: tabular-nums }
-  @media (prefers-reduced-motion: reduce) { .sw i { transition: none } }
-
   @media (max-width: 960px) {
     .x1, .x2, .x3, .x4 { grid-column: 1 / -1 }
-    .x7 { flex-direction: column }
-    .x7 .cap { flex: none; padding: 18px 24px 24px }
     .x5 { flex-direction: column }
     .x5 .cap { flex: none; padding: 18px 24px 24px }
     .stage { min-height: 0; padding: 28px 18px 6px }

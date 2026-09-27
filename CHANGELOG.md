@@ -8,6 +8,8 @@
 - **Sin maquetación forzada al montar** (pestañas, relieve, carrusel, esqueleto) y `update()` en lote; `fontsReady()` compartido en un momento libre.
 - Isla: nada asoma fuera de la silueta al cerrar (una máscara vertical sigue a su borde, con el borde difuminado); la página se libera al terminar el cierre (antes, al soltar, un tirón); la cápsula cabe el texto de todas las secciones sin cambiar de ancho al cambiar de sección.
 - Mosaico: `--ns-mosaic-glow-size` y `--ns-mosaic-ripple-time`. Landing: un efecto a la vez, con velocidad, intensidad y color; en el móvil, selectores en dos columnas en vez de una fila que se desliza.
+- **Isla en el escritorio:** con ratón y 900 px o más, hoja de 600 px con cuatro columnas, sin asa, con respuesta al puntero; la rejilla de secciones pone tantas columnas como quepan (`--ns-isle-tile-min`). La landing la usa también en PC.
+- Landing: fuera la sección de relieve (el módulo sigue en la librería).
 - `ns-mark`: dos líneas con los bordes casi alineados se igualan (sin escalones diminutos).
 - Autoría: © Francesco Sierchio (Kodec Agency) en la licencia y en la cabecera de cada archivo compilado.
 

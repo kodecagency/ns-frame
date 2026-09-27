@@ -179,7 +179,9 @@ Una cápsula flotante que dice en qué sección estás y, al tocarla, se convier
 </div>
 ```
 
-Para ajustarla: `--ns-isle-bg` (fondo de la hoja, `#161618`), `--ns-isle-ink` y `--ns-isle-ink-muted` (texto; en la cápsula de vidrio, por defecto el `--ns-glass-ink` que contrasta con lo de detrás), `--ns-isle-action-ink` (texto sobre el fondo claro del botón principal y del icono), `--ns-isle-width` (ancho de la cápsula, 212px), `--ns-isle-sheet-width` (ancho máximo de la hoja, 430px), o tus propias reglas.
+Para ajustarla: `--ns-isle-bg` (fondo de la hoja, `#161618`), `--ns-isle-ink` y `--ns-isle-ink-muted` (texto; en la cápsula de vidrio, por defecto el `--ns-glass-ink` que contrasta con lo de detrás), `--ns-isle-action-ink` (texto sobre el fondo claro del botón principal y del icono), `--ns-isle-width` (ancho mínimo de la cápsula, 212px: crece hasta caber el nombre y la posición de la sección más larga, sin cambiar de ancho al cambiar de sección; `fit: false` lo desactiva), `--ns-isle-sheet-width` (ancho máximo de la hoja: 430px en el móvil, 600px en el escritorio), `--ns-isle-tile-min` (ancho mínimo de cada casilla: la rejilla pone tantas columnas como quepan), `--ns-isle-feather` (el difuminado del borde de arriba mientras se transforma, 36px), o tus propias reglas.
+
+**En el escritorio** (ratón y pantalla de 900px o más) la isla tiene su versión: hoja más ancha con cuatro columnas, sin asa (se cierra con la ×, Escape o el fondo), respuesta al pasar el puntero y la cápsula algo más separada del borde. Sirve como navegación flotante también en PC.
 
 ```js
 import { isle } from 'ns-frame/isle'

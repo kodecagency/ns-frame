@@ -91,7 +91,7 @@ html.ns-has-isle body{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
 :where([data-ns-isle-handle])::before{content:"";position:absolute;top:0;left:50%;width:36px;height:4px;margin-left:-18px;border-radius:2px;background:rgba(255,255,255,.22)}
 :where([data-ns-isle-handle]) :where(b,h2,h3){font-size:24px;font-weight:700;line-height:1;letter-spacing:-.02em;margin:0}
 :where([data-ns-isle-close]){width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.1);color:inherit;display:grid;place-items:center;cursor:pointer}
-:where([data-ns-isle-links]){display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0;padding:0;list-style:none}
+:where([data-ns-isle-links]){display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--ns-isle-tile-min,104px),1fr));gap:8px;margin:0;padding:0;list-style:none}
 :where([data-ns-isle-links]) a:not([data-ns]){border-radius:16px}
 :where([data-ns-isle-links]) a{--ns-border:rgba(255,255,255,.07);display:flex;flex-direction:column;justify-content:space-between;gap:10px;padding:12px;min-height:78px;background:rgba(255,255,255,.06);color:inherit;text-decoration:none;font-size:14px;font-weight:500;line-height:1.2;transition:background-color .2s}
 :where([data-ns-isle-links]) a svg{width:22px;height:22px;color:var(--ns-isle-ink-muted,rgba(244,244,245,.6))}
@@ -100,6 +100,18 @@ html.ns-has-isle body{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
 :where([data-ns-isle-actions]){display:flex;gap:8px}
 :where([data-ns-isle-actions]) :is(a,button){flex:1;min-height:48px;border-radius:980px;display:grid;place-items:center;border:0;font:inherit;font-size:15px;font-weight:500;color:inherit;text-decoration:none;background:rgba(255,255,255,.1);cursor:pointer}
 :where([data-ns-isle-actions]) :is(a,button):first-child{background:var(--ns-isle-ink,#f4f4f5);color:var(--ns-isle-action-ink,#0a0a0a)!important}
+@media (min-width:900px) and (hover:hover) and (pointer:fine){
+[data-ns-isle][data-ns-isle]{bottom:calc(20px + env(safe-area-inset-bottom))}
+[data-ns-isle]:not([data-ns-hidden]):hover{scale:1.03}
+[data-ns-isle-panel]{max-width:var(--ns-isle-sheet-width,600px);bottom:calc(20px + env(safe-area-inset-bottom))}
+:where([data-ns-isle-handle]){cursor:default;padding-top:4px}
+:where([data-ns-isle-handle])::before{display:none}
+:where([data-ns-isle-links]){--ns-isle-tile-min:120px}
+:where([data-ns-isle-links]) a:hover{background:rgba(255,255,255,.1)}
+:where([data-ns-isle-close],[data-ns-isle-actions] :is(a,button)){transition:background-color .2s,filter .2s}
+:where([data-ns-isle-close]):hover{background:rgba(255,255,255,.16)}
+:where([data-ns-isle-actions]) :is(a,button):hover{filter:brightness(1.12)}
+}
 }`
 const SVGNS = 'http://www.w3.org/2000/svg'
 // un icono de trazo (la flecha de la cápsula y el × de la hoja), si su hueco está vacío

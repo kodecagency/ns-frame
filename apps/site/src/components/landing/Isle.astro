@@ -1,5 +1,5 @@
 ---
-// Isla (móvil): el componente ns-frame/isle tal cual. Todo el aspecto y el comportamiento vienen de
+// Isla (móvil y escritorio): el componente ns-frame/isle tal cual. Todo el aspecto y el comportamiento vienen de
 // la librería (cápsula, hoja, transformación, arrastre, hueco al pie de la página); aquí sólo el
 // marcado, las fuentes de la marca y la luz en U de la sección actual.
 import Icon from '../Icon.astro'
@@ -8,7 +8,7 @@ import { SECTIONS, LINKS } from '../../data/sections'
 <nav class="isle" id="isle" aria-label="Secciones" data-ns-isle data-ns-glass>
   <button type="button" data-ns-isle-toggle aria-controls="isle-panel">
     <span data-ns-isle-icon aria-hidden="true"><Icon d={SECTIONS[0].icon} size={17} /></span>
-    <span data-ns-isle-text><b data-ns-isle-label>{SECTIONS[0].name}</b><small data-ns-isle-pos>1 de {SECTIONS.length} · desliza</small></span>
+    <span data-ns-isle-text><b data-ns-isle-label>{SECTIONS[0].name}</b><small data-ns-isle-pos>1 de {SECTIONS.length}</small></span>
     <span data-ns-isle-more aria-hidden="true"></span>
   </button>
 </nav>
@@ -24,27 +24,25 @@ import { SECTIONS, LINKS } from '../../data/sections'
 
 <script>
   import { isle } from 'ns-frame/isle'
-  // sólo en pantallas donde la isla se ve (en escritorio manda la barra superior): media la monta y
-  // la desmonta sola; el salto a cada sección es el de la librería (jump)
+  // en todas las pantallas: en el móvil, hoja que se arrastra; en el escritorio (ratón), la versión de
+  // la librería para PC, con la hoja más ancha y sin asa. El salto a cada sección es el de la librería
   // (en un momento libre: la cápsula ya se ve con su marcado; no suma nada al arranque de la página)
+  const touch = matchMedia('(pointer: coarse)').matches
   ;(globalThis.requestIdleCallback || setTimeout)(() => {
     isle(document.getElementById('isle')!, {
-      media: '(max-width: 900px)',
-      pos: (i, n) => `${i + 1} de ${n} · desliza`,
+      // (con el dedo, la cápsula también se desliza a los lados para cambiar de sección)
+      pos: (i, n) => `${i + 1} de ${n}` + (touch ? ' · desliza' : ''),
       // la sección actual, con la luz en U de ns-frame (su forma la pone la isla)
       onChange: (i, a) => a.closest('ul')!.querySelectorAll('a').forEach((x, j) => x.classList.toggle('ns-u', j == i)),
       onOpen: () => navigator.vibrate?.(6),
     })
     // el vidrio de la cápsula (hasta entonces, su fondo opaco de serie)
-    if (matchMedia('(max-width: 900px)').matches) import('ns-frame/glass')
+    import('ns-frame/glass')
   }, { timeout: 1500 })
 </script>
 
 <style>
-  .isle, .panel { display: none }
-  @media (max-width: 900px) {
-    .isle { display: block }
-    .panel { display: flex }
+  @media all {
     :global(.ns-isle-scrim) { --ns-isle-scrim: var(--veil-2) }
     /* las fuentes de la marca */
     .isle :global([data-ns-isle-label]) { font: 700 var(--t-control)/1.15 var(--display); font-stretch: 106% }
