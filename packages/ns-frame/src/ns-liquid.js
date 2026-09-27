@@ -44,9 +44,13 @@
 import { styles, watch, quality } from './ns-frame.js'
 import { material } from './ns-light.js'
 
+// (los hijos del vidrio van con position:relative para quedar sobre piezas posicionadas, como el
+// indicador de unas pestañas; esa regla va en la subcapa ns.base: cualquier regla de un componente en
+// @layer ns le gana —el botón de la isla con inset:0, el input de un nivel— sin depender del orden de
+// carga ni de la especificidad)
 const CSS = `@layer ns{
 .ns-liquid{position:relative;isolation:isolate}
-:where(.ns-liquid>:not(.ns-liquid-fx,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-src)){position:relative}
+@layer base{:where(.ns-liquid>:not(.ns-liquid-fx,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-src)){position:relative}}
 .ns-liquid-fx,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-src{position:absolute;z-index:-1;pointer-events:none;margin:0}
 .ns-liquid-src{overflow:hidden}.ns-liquid-gl{position:absolute;left:0;top:0;display:block}.ns-liquid-src>div{position:absolute;inset:0}.ns-liquid-src>div>div{position:absolute}
 .ns-liquid-fx{overflow:visible}

@@ -24,8 +24,6 @@
 //   Es un input range de verdad (teclado, lector de pantalla), vertical con writing-mode (sin girar:
 //   su caja es la del nivel). Con data-ns-glass, de vidrio.
 //   Variables: --ns-level-w, -h, -radius, -fill, -track, -ink (el icono), -icon (tamaño), -icon-y.
-//   (el input y el icono, con [data-ns-level] sin :where: tienen que ganar a la posición relativa que
-//   el vidrio da a sus hijos. Tu CSS, fuera de @layer ns, gana igual)
 // Sin dependencias (usa el núcleo) y CSP-safe.
 import { styles, watch } from './ns-frame.js'
 
@@ -63,14 +61,14 @@ const CSS = `@layer ns{
 :where(input[type=range][data-ns-range]):focus-visible{outline:none}
 :root:not([data-ns-input=pointer]) :where(input[type=range][data-ns-range]):focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 3px var(--ns-ui-gap,#0e0e10),0 0 0 5px var(--_a)}
 :root:not([data-ns-input=pointer]) :where(input[type=range][data-ns-range]):focus-visible::-moz-range-thumb{box-shadow:0 0 0 3px var(--ns-ui-gap,#0e0e10),0 0 0 5px var(--_a)}
-:where([data-ns-level]){position:relative;display:inline-block;width:var(--ns-level-w,72px);height:var(--ns-level-h,168px);border-radius:var(--ns-level-radius,calc(var(--ns-level-w,72px) / 2.4));color:var(--ns-level-ink,#1d1d1f);vertical-align:top}
+:where([data-ns-level]){position:relative;display:inline-block;touch-action:none;-webkit-user-select:none;user-select:none;cursor:ns-resize;width:var(--ns-level-w,72px);height:var(--ns-level-h,168px);border-radius:var(--ns-level-radius,calc(var(--ns-level-w,72px) / 2.4));color:var(--ns-level-ink,#1d1d1f);vertical-align:top}
 :where([data-ns-level]:not([data-ns-glass])){background:var(--ns-level-track,rgba(255,255,255,.12))}
-[data-ns-level] > :where(input[type=range]){-webkit-appearance:none;appearance:none;position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;box-sizing:border-box;writing-mode:vertical-lr;direction:rtl;border-radius:inherit;background:linear-gradient(0deg,var(--ns-level-fill,#fff) var(--p,50%),transparent var(--p,50%));cursor:pointer;touch-action:none;--p:50%}
+:where([data-ns-level]) > :where(input[type=range]){-webkit-appearance:none;appearance:none;position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;box-sizing:border-box;writing-mode:vertical-lr;direction:rtl;border-radius:inherit;background:linear-gradient(0deg,var(--ns-level-fill,#fff) var(--p,50%),transparent var(--p,50%));pointer-events:none;--p:50%}
 :where([data-ns-level]) > :where(input[type=range])::-webkit-slider-runnable-track{width:100%;height:100%;background:transparent}
 :where([data-ns-level]) > :where(input[type=range])::-moz-range-track{width:100%;height:100%;background:transparent}
 :where([data-ns-level]) > :where(input[type=range])::-webkit-slider-thumb{-webkit-appearance:none;width:100%;height:1px;background:transparent}
 :where([data-ns-level]) > :where(input[type=range])::-moz-range-thumb{width:100%;height:1px;border:0;background:transparent}
-[data-ns-level] > :where(svg:not(.ns-liquid-fx),img,[data-ns-level-icon]){position:absolute;left:50%;bottom:var(--ns-level-icon-y,18px);width:var(--ns-level-icon,28px);height:var(--ns-level-icon,28px);translate:-50% 0;pointer-events:none}
+:where([data-ns-level]) > :where(svg:not(.ns-liquid-fx),img,[data-ns-level-icon]){position:absolute;left:50%;bottom:var(--ns-level-icon-y,18px);width:var(--ns-level-icon,28px);height:var(--ns-level-icon,28px);translate:-50% 0;pointer-events:none}
 :root:not([data-ns-input=pointer]) :where([data-ns-level]):has(> input:focus-visible){outline:2px solid var(--ns-ui-accent,#00e676);outline-offset:3px}
 :where([data-ns-level]) > :where(input[type=range]):focus-visible{outline:none}
 @media (forced-colors:active){:where([data-ns-level]){border:1px solid CanvasText}:where([data-ns-level]) > :where(input[type=range]){background:linear-gradient(0deg,Highlight var(--p,50%),transparent var(--p,50%));forced-color-adjust:none}}
@@ -100,6 +98,51 @@ export function range(el) {
 }
 const CSS_ESC = s => globalThis.CSS?.escape ? globalThis.CSS.escape(s) : s
 
+/**
+ * Nivel vertical: el gesto lo lleva la librería. Se arrastra arriba y abajo desde cualquier punto y el
+ * valor se mueve lo que se mueve el dedo (relativo, sin saltar a donde se toca), como el nivel de un
+ * panel de ajustes. En iOS un input range sólo se mueve arrastrando su mando, que aquí es invisible;
+ * por eso el input no recibe el puntero: queda para el teclado y el lector de pantalla, y cada gesto
+ * cambia su value y lanza input y change como si fuera él. Devuelve { update(), destroy() } o null.
+ */
+export function level(el) {
+  css()
+  const i = el.querySelector(':scope > input[type=range]')
+  if (!i) return null
+  // (se lee y se mueve en vertical: arriba es más)
+  i.hasAttribute('aria-orientation') || i.setAttribute('aria-orientation', 'vertical')
+  // (lo recorrido, --p, es el del deslizador de dentro)
+  const r = i.hasAttribute('data-ns-range') ? null : range(i)
+  let drag = null
+  const down = e => {
+    if (e.button > 0 || i.disabled) return
+    drag = { id: e.pointerId, y: e.clientY, v: +i.value, h: el.getBoundingClientRect().height || 1, moved: false }
+    el.setPointerCapture?.(e.pointerId)
+    i.focus({ preventScroll: true })
+  }
+  const move = e => {
+    if (!drag || e.pointerId != drag.id) return
+    const min = +i.min || 0, max = i.max === '' ? 100 : +i.max, dy = drag.y - e.clientY
+    if (!drag.moved && Math.abs(dy) < 2) return
+    drag.moved = true
+    const before = i.value
+    // (el navegador ajusta el valor a min, max y step)
+    i.value = String(drag.v + dy / drag.h * (max - min))
+    if (i.value != before) i.dispatchEvent(new Event('input', { bubbles: true }))
+    e.preventDefault()
+  }
+  const up = e => {
+    if (!drag || e.pointerId != drag.id) return
+    if (drag.moved) i.dispatchEvent(new Event('change', { bubbles: true }))
+    drag = null
+  }
+  // (el clic de la etiqueta no hace nada más: el foco ya lo pone pointerdown)
+  const click = e => e.preventDefault()
+  const EV = [['pointerdown', down], ['pointermove', move], ['pointerup', up], ['pointercancel', up], ['click', click]]
+  EV.forEach(([t, f]) => el.addEventListener(t, f))
+  return { update: () => r?.update(), destroy() { r?.destroy(); EV.forEach(([t, f]) => el.removeEventListener(t, f)) } }
+}
+
 /** Muestras de color: cada botón toma el color de su data-color. */
 export function swatches(el) {
   css()
@@ -112,11 +155,6 @@ export function swatches(el) {
 
 // automático: el CSS con cualquiera de los atributos; los que necesitan JS, con el suyo
 watch('data-ns-range', el => el.matches('input[type=range]') ? range(el) : null)
-// (el nivel lleva lo recorrido del deslizador de dentro: el mismo --p)
-watch('data-ns-level', el => {
-  const i = el.querySelector(':scope > input[type=range]')
-  // (se lee y se mueve en vertical: arriba es más)
-  i?.hasAttribute('aria-orientation') || i?.setAttribute('aria-orientation', 'vertical')
-  return i && !i.hasAttribute('data-ns-range') ? range(i) : (css(), null) })
+watch('data-ns-level', el => level(el))
 watch('data-ns-swatches', el => swatches(el))
 for (const a of ['data-ns-segment', 'data-ns-chips', 'data-ns-field']) watch(a, () => { css(); return null })

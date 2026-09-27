@@ -84,6 +84,8 @@ export interface IsleOptions {
   collapse?: number | false
   /** 'up' (por defecto): se pliega al subir y va completa al bajar; 'down': al revés. */
   collapseOn?: 'up' | 'down'
+  /** px seguidos en una dirección antes de plegar o desplegar (40): evita el vaivén al subir y bajar rápido. */
+  collapseDelta?: number
   /** Deslizar la cápsula cambia de sección (true). */
   swipe?: boolean
   /** La cápsula se convierte en la hoja como la Dynamic Island (true); false: la hoja entra desde abajo. */
@@ -187,6 +189,11 @@ export function drops(el: HTMLElement, options?: {
 export function range(el: HTMLInputElement): { update(): void; destroy(): void }
 /** Muestras de color (automático con `data-ns-swatches`): cada botón toma el color de su `data-color`. */
 export function swatches(el: HTMLElement): { update(): void; destroy(): void }
+/**
+ * Nivel vertical (automático con `data-ns-level` en un label con un `input type=range` dentro): se
+ * arrastra arriba y abajo desde cualquier punto, relativo al dedo; el input queda para teclado y lector.
+ */
+export function level(el: HTMLElement): { update(): void; destroy(): void } | null
 
 // ── ns-frame/glass ──
 /**

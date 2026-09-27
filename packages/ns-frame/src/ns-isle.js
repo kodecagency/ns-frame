@@ -685,19 +685,27 @@ function mount(el, o) {
 
 
   // pliegue al bajar y última sección al llegar al final (no siempre alcanza la línea)
-  let y0 = scrollY, raf = 0
+  // (histéresis: sólo cambia tras recorrer collapseDelta px seguidos en la nueva dirección —40 por
+  // defecto—. Sin ella, al subir y bajar rápido se plegaba y desplegaba en cada cambio de dirección, y
+  // cada vez el vidrio fijo al pie cambiaba de ancho: en WebKit, un parpadeo abajo en cualquier
+  // sección. El rebote elástico de iOS, por encima de 0 o por debajo del final, no cuenta)
+  let y0 = scrollY, raf = 0, lean = 0
   const frame = () => {
     raf = 0
-    const y = scrollY
-    if (y + innerHeight >= document.documentElement.scrollHeight - 2) set(links.length - 1)
+    const y = scrollY, end = document.documentElement.scrollHeight - innerHeight
+    if (y >= end - 2) set(links.length - 1)
+    if (y < 0 || y > end) return
     // (al bajar leyendo, completa: dice en qué sección estás; al subir, un icono. collapseOn: 'down',
     // al revés, como la barra de Safari en iPhone)
     // (sólo al cambiar de estado: al desplegarse se mide el texto)
-    if (o.collapse !== false && !isOpen && Math.abs(y - y0) > 6) {
-      const mini = (o.collapseOn == 'down' ? y > y0 : y < y0) && y > (o.collapse ?? 200)
-      if (mini != el.classList.contains('ns-mini')) { el.classList.toggle('ns-mini', mini); mini || fitted || fit() }
-      y0 = y
-    }
+    const dy = y - y0
+    y0 = y
+    if (o.collapse === false || isOpen || !dy) return
+    // (distancia seguida en la misma dirección; al cambiar de dirección empieza de cero)
+    lean = Math.sign(dy) == Math.sign(lean) ? lean + dy : dy
+    if (Math.abs(lean) < (o.collapseDelta ?? 40)) return
+    const mini = (o.collapseOn == 'down' ? lean > 0 : lean < 0) && y > (o.collapse ?? 200)
+    if (mini != el.classList.contains('ns-mini')) { el.classList.toggle('ns-mini', mini); mini || fitted || fit() }
   }
   const scroll = () => { raf ||= requestAnimationFrame(frame) }
   addEventListener('scroll', scroll, { passive: true })
