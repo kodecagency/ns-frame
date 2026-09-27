@@ -126,6 +126,10 @@ h3 { font-size: 18px; line-height: 1.25; font-weight: 600; font-stretch: 104%; l
 /* secciones compactas; la cabecera puede llevar la entrada a la derecha */
 .sec { padding: clamp(64px, 8vw, 112px) 0; position: relative }
 .sec + .sec { border-top: 1px solid var(--line) }
+/* nada ensancha la página: lo que se dibuje fuera del borde (luces, barridos, halos) no deja un
+   desplazamiento lateral vacío. clip no crea un contenedor de scroll: sticky sigue funcionando */
+html { overflow-x: hidden }
+@supports (overflow-x: clip) { html { overflow-x: clip } }
 /* táctil: los desenfoques de fondo (backdrop-filter) se recalculan en cada frame de scroll;
    aquí las superficies translúcidas pasan a casi opacas y sin desenfoque. Salvo el vidrio de la
    librería: sus capas (ns-frame/liquid "glass") y la capa compartida de un grupo de vidrio, que es un

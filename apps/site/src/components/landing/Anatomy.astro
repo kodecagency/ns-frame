@@ -65,7 +65,9 @@ const NOTES = [
 </section>
 
 <script>
-  import 'ns-frame/link'
+  import { near } from '../../scripts/near'
+  // (las líneas de los callouts, al acercarse la sección)
+  near(document.getElementById('anatomia')!, () => import('ns-frame/link'))
   const box = document.getElementById('q-box')!, input = document.getElementById('q-in') as HTMLInputElement
   const w = document.getElementById('q-w')!
   // (la pista y la cifra, output[for], las pone ns-frame/controls: aquí sólo el ancho)

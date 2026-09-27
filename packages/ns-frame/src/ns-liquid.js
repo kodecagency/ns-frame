@@ -383,15 +383,19 @@ export function polyline(d, seg = 5) {
   return P.filter((p, j) => { const q = P[(j + P.length - 1) % P.length]; return Math.hypot(p[0] - q[0], p[1] - q[1]) > .05 })
 }
 
-/** Desplaza un path `d` absoluto (M, L, C, A, Q, Z, como los de ns-frame) en (dx, dy). */
-export function shift(d, dx, dy) {
+/**
+ * Desplaza un path `d` absoluto (M, L, C, A, Q, Z, como los de ns-frame) en (dx, dy), escalándolo
+ * antes en (sx, sy) si se pide (una pieza a mitad de una animación con scale: su vidrio la sigue).
+ */
+export function shift(d, dx, dy, sx = 1, sy = sx) {
   const t = d.match(/[A-Za-z]|-?\d*\.?\d+(?:e-?\d+)?/g) || []
   let out = '', c = '', i = 0
   const n = () => +t[i++]
   while (i < t.length) {
     if (/[A-Za-z]/.test(t[i])) { c = t[i++]; out += c; if (c == 'Z' || c == 'z') continue }
-    if (c == 'A') { const a = [n(), n(), n(), n(), n()], x = n() + dx, y = n() + dy; out += `${a.join(' ')} ${r2(x)} ${r2(y)} ` }
-    else { const k = c == 'C' ? 3 : c == 'Q' ? 2 : 1; for (let j = 0; j < k; j++) out += `${r2(n() + dx)} ${r2(n() + dy)} ` }
+    // (un arco escala sus radios; los ángulos y las banderas no cambian)
+    if (c == 'A') { const rx = n() * sx, ry = n() * sy, a = [n(), n(), n()], x = n() * sx + dx, y = n() * sy + dy; out += `${r2(rx)} ${r2(ry)} ${a.join(' ')} ${r2(x)} ${r2(y)} ` }
+    else { const k = c == 'C' ? 3 : c == 'Q' ? 2 : 1; for (let j = 0; j < k; j++) out += `${r2(n() * sx + dx)} ${r2(n() * sy + dy)} ` }
   }
   return out.trim()
 }

@@ -58,7 +58,12 @@ const CARDS = [
 
 <script>
   import { open } from 'ns-frame'
-  import { morph } from 'ns-frame/vt'
+  import { near } from '../../scripts/near'
+  // (ns-frame/vt trae el compilador de formas a CSS: se pide al acercarse la sección, no al cargar)
+  let vt: Promise<typeof import('ns-frame/vt')> | null = null
+  const getVt = () => vt ||= import('ns-frame/vt')
+  near(document.getElementById('aperturas')!, getVt)
+  const morph: typeof import('ns-frame/vt').morph = async (...a) => (await getVt()).morph(...a)
 
   // repetir las aperturas (el mismo modo, escalonado)
   const panels = [...document.querySelectorAll<HTMLElement>('#ap-enter .en')]

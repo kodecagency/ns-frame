@@ -1,6 +1,6 @@
 # Changelog
 
-## Sin publicar
+## 0.11.0 — vidrio en grupo, controles de serie y panel de sistema
 
 ### Móviles modestos
 - **Nivel de calidad** (`quality()`, `<html data-ns-tier>`): automático por memoria, núcleos, ahorro de datos y fotogramas medidos al cargar, o fijo con `data-ns-quality`. En `low` el vidrio es sólo desenfoque nativo, tinte y canto (sin lente, sin WebGL): en un Android modesto la pestaña ya no se queda en negro ni pinta cuadros vacíos. Ver [Rendimiento](docs/rendimiento.md#dispositivos-modestos).
@@ -25,6 +25,10 @@
 - **`data-ns-switch`** (interruptor sobre un checkbox, `role="switch"`) y **`data-ns-copy="#id"`** (botón de copiar con aviso y `aria-live`) en `ns-frame/controls`. `data-ns-field` da a un `textarea` su relleno y altura propios. Los patrones de `ns-fx.css` (`ns-dots`…) respetan el `border-radius` de su elemento.
 - **Nivel que se arrastra:** `level()` lleva el gesto (arrastre relativo arriba y abajo); en iOS no se movía. **Isla:** histéresis al plegar (`collapseDelta`), sin el vaivén que parpadeaba al pie al subir y bajar rápido; la cápsula vuelve a cuadrar (la regla de posición del vidrio pasa a la subcapa `ns.base`).
 - Landing sin controles hechos a mano: deslizadores (Movimiento, Anatomía), fichas y campo del Playground, interruptor del Hero, botones de copiar, fondos de puntos (`ns-dots`) y rótulos de vidrio (`frost`) son de la librería. En táctil, la capa compartida de un grupo de vidrio ya no pierde su desenfoque.
+- **El vidrio se monta al acercarse:** `data-ns-glass` y `data-ns-glass-group` esperan a estar a menos de una pantalla de la vista. Una página con vidrio más abajo (un panel con su motor WebGL y su foto) ya no lo prepara todo al cargar.
+- **El grupo de vidrio sigue a sus piezas mientras se animan** (tamaño y posición en cada fotograma, también con `scale`); las animaciones infinitas de adorno no cuentan. `shift()` escala además de desplazar.
+- **Panel Vidrio rehecho:** las vistas (panel, modos y opciones de un modo) cambian como en un panel de sistema: lo que se ve se encoge y se va, y lo nuevo aparece pieza a pieza de arriba abajo. Filas de vidrio neutras con tipografía de sistema; el modo elegido, con su icono en color; «•••» abre las opciones dentro del panel. Escape y el foco, en cada vista.
+- **Landing más ligera:** el vidrio, `ns-frame/vt` y `ns-frame/link` se piden al acercarse su sección; la página no se puede desplazar en horizontal aunque algo se dibuje fuera del borde.
 - **Guía [Controles](docs/controles.md)** con todos los controles de `ns-frame/controls`; en el sitio, cada uno en vivo encima de la guía. Las guías ya no ensanchan la página en el teléfono (la barra superior no cabía en 390 px).
 - Panel **Vidrio**: la pastilla de Enfoque se transforma en la lista con `morph()` de `ns-frame/vt`, y cada modo guarda sus opciones.
 - **Núcleo:** `touch()` y `TOUCH_MEDIA` (pantalla táctil sin hover) para el mosaico y los efectos de borde, en lugar de copias; `reduced()` y `mk()` exportados; en un grupo `data-ns-choice` con radios o casillas sólo cuentan ellos.

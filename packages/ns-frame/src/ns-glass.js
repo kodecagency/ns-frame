@@ -212,9 +212,13 @@ export function glassGroup(host) {
       const P = SH.get(e)?.()
       if (!P?.d) continue
       const r = e.getBoundingClientRect()
-      // (el path va en la caja de borde de la pieza: se lleva a su sitio dentro del grupo)
-      parts.push(shift(P.d, r.left - ox, r.top - oy))
+      // (el path va en la caja de borde de la pieza: se lleva a su sitio dentro del grupo, y a su
+      // tamaño en pantalla si está escalada, como a mitad de una entrada animada)
+      parts.push(shift(P.d, r.left - ox, r.top - oy, P.w ? r.width / P.w : 1, P.h ? r.height / P.h : 1))
     }
+    // (mientras una pieza —o lo que la contiene, dentro del grupo— se anima, se sigue cada fotograma;
+    // las animaciones infinitas de adorno no cuentan: se redibujaría para siempre)
+    if (moving()) schedule()
     const d = parts.join('')
     if (d == last) return
     last = d
@@ -225,6 +229,11 @@ export function glassGroup(host) {
     else if (d) lens?.draw(d, lw, lh)
   }
   const schedule = () => { raf ||= requestAnimationFrame(draw) }
+  const moving = () => host.getAnimations?.({ subtree: true }).some(a => {
+    const t = a.effect?.target
+    return a.playState == 'running' && !a.effect?.pseudoElement && t && t != layer && a.effect.getTiming().iterations != Infinity &&
+      (t.hasAttribute?.('data-ns-glass') || !!t.querySelector?.('[data-ns-glass]'))
+  })
   // cambia la unión si cambia el tamaño de algo, una forma (también a mitad de un morph: ns-shape) o
   // entra o sale una pieza
   const ro = new ResizeObserver(schedule)
@@ -255,8 +264,22 @@ export function glassGroup(host) {
   host.querySelectorAll('[data-ns-glass]').forEach(e => G.get(e)?.update())
   return api
 }
-// automático con data-ns-glass y data-ns-glass-group: se monta al aparecer y se desmonta al quitar el
-// atributo o el elemento. (Al final del módulo: si ya hay piezas en la página, se montan en el acto y
-// todo lo de arriba tiene que estar inicializado)
-watch('data-ns-glass', el => glass(el))
-watch('data-ns-glass-group', el => glassGroup(el))
+// automático con data-ns-glass y data-ns-glass-group: se monta al acercarse a la vista (a menos de
+// una pantalla) y se desmonta al quitar el atributo o el elemento. Una página con mucho vidrio lejos
+// —un panel más abajo, con su motor WebGL y su foto— no lo prepara todo al cargar: cada pieza, cuando
+// va a verse. (Al final del módulo: todo lo de arriba tiene que estar inicializado)
+const near = (el, make) => {
+  let h = null
+  NEAR.set(el, () => { h = make(el) })
+  NIO ||= new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return
+    NIO.unobserve(e.target)
+    const f = NEAR.get(e.target); NEAR.delete(e.target); f?.()
+  }), { rootMargin: '100% 0px 100% 0px' })
+  NIO.observe(el)
+  return { destroy() { NIO.unobserve(el); NEAR.delete(el); h?.destroy() } }
+}
+const NEAR = new Map()
+let NIO = null
+watch('data-ns-glass', el => near(el, glass))
+watch('data-ns-glass-group', el => near(el, glassGroup))

@@ -64,8 +64,10 @@ const MEDIA = [
 </section>
 
 <script>
-  // el rótulo de cada foto es vidrio de la librería
-  import 'ns-frame/glass'
+  // el rótulo de cada foto es vidrio de la librería; el módulo se pide al acercarse las fotos (no en la
+  // carga de la página: arrastra el motor del vidrio)
+  import { near } from '../../scripts/near'
+  near(document.querySelector('.media')!, () => import('ns-frame/glass'))
   const card = document.getElementById('shape-card')!, code = document.getElementById('shape-code')!, tabs = document.getElementById('shape-tabs')!
   const btns = [...tabs.querySelectorAll('button')]
   const set = (shape: string, label: string) => { card.setAttribute('data-ns', shape); code.textContent = label }
@@ -103,6 +105,8 @@ const MEDIA = [
   .m img { width: 100%; height: 100%; min-height: 150px; object-fit: cover; --ns-border: rgba(255, 255, 255, .18) }
   /* rótulo: vidrio esmerilado de ns-frame/glass (frost: desenfoque nativo, tinte y canto fino) */
   .m figcaption { position: absolute; left: 14px; bottom: 12px; padding: 5px 9px; border-radius: var(--r-sm); --ns-glass-tint: rgba(10, 10, 12, .55); --ns-glass-blur: 8px }
+  /* (hasta que llega el vidrio, un fondo legible: el vidrio lo sustituye al montarse) */
+  .m figcaption:not(:global(.ns-glass)) { background: rgba(10, 10, 12, .72) }
 
   .sub { margin: 44px 0 14px; font-size: var(--t-title); color: var(--text) }
   .wall { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px }
