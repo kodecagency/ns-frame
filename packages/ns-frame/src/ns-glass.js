@@ -23,8 +23,8 @@
 //   mismo, las aperturas (open, data-ns-open) no lo recortan.
 // · Como cualquier vidrio: sin filter, opacity < 1, mask ni backdrop-filter en sus antepasados.
 
-import { styles, path, shapeOf, pathOf, update, watch } from './ns-frame.js'
-import { liquid, shift } from './ns-liquid.js'
+import { styles, path, shapeOf, pathOf, update, watch, quality } from './ns-frame.js'
+import { liquid, shift, pathField, lensURL, LENS } from './ns-liquid.js'
 
 const CSS = `@layer ns{
 [data-ns-glass]{background:none;--ns-glass-shadow:rgba(0,0,0,.28)}
@@ -33,6 +33,8 @@ const CSS = `@layer ns{
 [data-ns-glass~=tint]{--ns-glass-tint:rgba(18,18,22,.46);--ns-glass-blur:10px}
 [data-ns-glass~=u]{--ns-glass-tint:radial-gradient(55% 45% at 6% 100%,color-mix(in srgb,var(--ns-u,#3de0ff) 42%,transparent),transparent),radial-gradient(55% 45% at 94% 100%,color-mix(in srgb,var(--ns-u,#3de0ff) 42%,transparent),transparent),linear-gradient(to top,color-mix(in srgb,var(--ns-u,#3de0ff) 26%,transparent),transparent 58%),rgba(12,14,18,.26);--ns-glass-rim-color:var(--ns-u,#3de0ff);--ns-glass-rim-back:.9}
 .ns-glass-group{position:relative}
+.ns-glass-gl{position:absolute;left:0;top:0;z-index:0;pointer-events:none}
+.ns-glass-shared[hidden]{display:none}
 .ns-glass-shared{position:absolute;left:0;top:0;z-index:0;pointer-events:none;-webkit-backdrop-filter:blur(var(--ns-glass-group-blur,10px)) saturate(var(--ns-glass-sat,1.3));backdrop-filter:blur(var(--ns-glass-group-blur,10px)) saturate(var(--ns-glass-sat,1.3))}
 .ns-glass-grouped>.ns-liquid-glass,.ns-glass-grouped>.ns-liquid-rim{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 @media (prefers-reduced-transparency:reduce){.ns-glass-shared{display:none}}
@@ -104,6 +106,8 @@ watch('data-ns-glass', el => glass(el))
 // subtrazado por pieza). Las piezas pintan sólo su tinte, su canto y su contenido. El coste ya no
 // crece con el número de piezas.
 const GR = new WeakMap()
+let gid = 0
+const setA = (n, a) => { for (const k in a) n.setAttribute(k, a[k]) }
 /** Grupo de vidrio en `host`: { update(), destroy() }. Automático con data-ns-glass-group. */
 export function glassGroup(host) {
   if (GR.has(host)) return GR.get(host)
@@ -113,7 +117,78 @@ export function glassGroup(host) {
   layer.setAttribute('aria-hidden', 'true')
   host.classList.add('ns-glass-group')
   host.prepend(layer)
-  let raf = 0, last = ''
+  let raf = 0, last = '', engine = null
+  // Con un fondo conocido detrás (data-ns-glass-group="selector", un <img>, <video> o <canvas> que
+  // cubre el grupo, o un fondo CSS con url()): el motor WebGL dibuja el vidrio de todas las piezas en
+  // una pasada, con lente, canto y dispersión, igual en todos los navegadores. Si no puede (sin
+  // WebGL2, sin CORS, contexto perdido), queda la capa de desenfoque nativa
+  const source = () => {
+    const sel = host.getAttribute('data-ns-glass-group')
+    if (sel == 'native') return null
+    if (sel) return host.querySelector(sel) || document.querySelector(sel)
+    const H = host.getBoundingClientRect()
+    for (const n of host.children) if (/^(IMG|VIDEO|CANVAS)$/.test(n.tagName)) { const r = n.getBoundingClientRect(); if (r.width >= H.width * .9 && r.height >= H.height * .9) return n }
+    const m = /url\(["']?([^"')]+)/.exec(getComputedStyle(host).backgroundImage)
+    return m ? { url: m[1] } : null
+  }
+  const src = source()
+  if (src && globalThis.WebGL2RenderingContext) import('./ns-glass-gl.js').then(m => {
+    if (GR.get(host) != api) return
+    engine = m.glEngine(host, src, () => { engine = null; layer.hidden = false; last = ''; schedule() })
+    if (engine) { layer.hidden = true; last = ''; schedule() }
+  }, () => {})
+  // Sin fondo conocido, en Chromium (el único que admite filtros SVG en backdrop-filter): la lente de
+  // la unión. Un solo mapa de desplazamiento para todas las piezas, sacado del campo de distancias de
+  // la unión, en la capa compartida. Dos filtros que se turnan: el mapa nuevo entra en el que no está
+  // en uso y sólo se cambia cuando ya está cargado (nunca un fotograma sin mapa). Mientras las piezas
+  // se mueven sigue el mapa anterior; al detenerse se regenera. En Safari y Firefox la capa se queda
+  // con el desenfoque (WebKit no aplica feDisplacementMap al fondo: bug 245510)
+  let lens = null
+  if (LENS && !src && quality() != 'low') {
+    const NS = 'http://www.w3.org/2000/svg', id = 'nsgg' + ++gid
+    const mk = (t, a) => { const n = document.createElementNS(NS, t); setA(n, a); return n }
+    const svg = mk('svg', { width: 0, height: 0, 'aria-hidden': 'true', focusable: 'false' })
+    svg.style.position = 'absolute'
+    const F = [0, 1].map(n => {
+      const f = mk('filter', { id: id + n, x: 0, y: 0, filterUnits: 'userSpaceOnUse', 'color-interpolation-filters': 'sRGB' })
+      const m = mk('feImage', { result: 'm', preserveAspectRatio: 'none' })
+      const dm = mk('feDisplacementMap', { in: 'SourceGraphic', in2: 'm', xChannelSelector: 'R', yChannelSelector: 'G' })
+      f.append(m, dm)
+      return { f, m, dm }
+    })
+    svg.append(...F.map(L => L.f))
+    layer.append(svg)
+    let timer = 0, cur = -1, tok = 0, key = ''
+    const build = (d, W, H) => {
+      const s = getComputedStyle(host), num = (k, v) => { const x = parseFloat(s.getPropertyValue(k)); return isNaN(x) ? v : x }
+      const lensPx = num('--ns-glass-lens', 22), depth = num('--ns-glass-depth', 18)
+      const k = [d, W, H, lensPx, depth].join('|')
+      if (k == key) return
+      key = k
+      // (rejilla de 1 a 3 px según el tamaño: el mapa se estira con suavizado)
+      const step = Math.min(3, Math.max(1, Math.sqrt(W * H / 120000))), f = pathField(d, W, H, step)
+      if (!f) return
+      const n = cur < 0 ? 0 : 1 - cur, L = F[n], t = ++tok
+      lensURL(f, depth).then(url => {
+        if (t != tok) return
+        setA(L.f, { width: W, height: H })
+        // (el nodo i de la rejilla está en x = i·step: centro del píxel i del mapa)
+        setA(L.m, { x: -step / 2, y: -step / 2, width: f.nx * step, height: f.ny * step, href: url })
+        // (feDisplacementMap desplaza scale·(c − ½): con el mapa en ±1, scale = 2 × el desvío en px)
+        L.dm.setAttribute('scale', 2 * lensPx)
+        const after = (k, fn) => requestAnimationFrame(() => k > 1 ? after(k - 1, fn) : fn())
+        after(2, () => {
+          if (t != tok) return
+          cur = n
+          layer.style.backdropFilter = `url(#${id + n}) blur(var(--ns-glass-group-blur,10px)) saturate(var(--ns-glass-sat,1.3))`
+        })
+      })
+    }
+    lens = {
+      draw(d, W, H) { clearTimeout(timer); timer = setTimeout(() => build(d, W, H), cur < 0 ? 0 : 140) },
+      destroy() { clearTimeout(timer); tok++; svg.remove(); layer.style.backdropFilter = '' },
+    }
+  }
   const draw = () => {
     raf = 0
     const H = host.getBoundingClientRect(), ox = H.left + host.clientLeft, oy = H.top + host.clientTop, parts = []
@@ -127,7 +202,10 @@ export function glassGroup(host) {
     const d = parts.join('')
     if (d == last) return
     last = d
-    Object.assign(layer.style, { width: host.scrollWidth + 'px', height: host.scrollHeight + 'px', clipPath: d ? `path("${d}")` : 'inset(50%)' })
+    if (engine) return engine.draw(d)
+    const lw = host.scrollWidth, lh = host.scrollHeight
+    Object.assign(layer.style, { width: lw + 'px', height: lh + 'px', clipPath: d ? `path("${d}")` : 'inset(50%)' })
+    if (d) lens?.draw(d, lw, lh)
   }
   const schedule = () => { raf ||= requestAnimationFrame(draw) }
   // cambia la unión si cambia el tamaño de algo, una forma (también a mitad de un morph: ns-shape) o
@@ -145,6 +223,7 @@ export function glassGroup(host) {
     destroy() {
       if (GR.get(host) != api) return
       GR.delete(host); cancelAnimationFrame(raf); ro.disconnect(); mo.disconnect(); EV.forEach(t => host.removeEventListener(t, schedule, true))
+      engine?.destroy(); engine = null; lens?.destroy()
       layer.remove(); host.classList.remove('ns-glass-group')
       // (las piezas vuelven a su desenfoque propio)
       host.querySelectorAll('[data-ns-glass]').forEach(e => G.get(e)?.update())

@@ -439,6 +439,12 @@ function lensMap(f, rim, cv, full, hard, zoom = 0) {
     r.readAsDataURL(b)
   }))
 }
+/**
+ * Mapa de desplazamiento de la lente para un campo `f` (de pathField): una imagen PNG en data URL,
+ * rojo y verde = desvío en x e y, neutro (128) fuera del canto de `rim` px. Lo usa el grupo de vidrio.
+ */
+export const lensURL = (f, rim, hard = false) => lensMap(f, rim, document.createElement('canvas'), null, hard)
+export { LENS }
 // el mapa en el canvas de la rejilla, sin codificar (la lente en WebGL lo sube tal cual). En azul,
 // la franja del canto: 1 en el borde y 0 a `edge` px hacia dentro
 function paintMap(f, rim, cv, hard, zoom = 0, edge = 0) {
