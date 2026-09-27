@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.15.0 — reposo: los adornos no gastan con la página quieta
+
+- **`.ns-resting`:** tras 20 s sin puntero, toque, tecla ni desplazamiento, el núcleo pone `.ns-resting` en `<html>` y se pausan los adornos animados (bordes con `data-ns-motion`, degradados que giran, luz en U viva, destellos, pulso, aurora y luces del mosaico) hasta la siguiente señal de vida. Un teléfono con la página abierta y un borde animado a la vista lo repintaba sin fin y se calentaba: con cuatro tarjetas con `twin` a la vista, de ~1,9 s de CPU cada 6 s a 1 ms. `<html data-ns-rest="30">` cambia la espera (segundos), `data-ns-rest="off"` lo apaga, y `document` recibe el evento `ns-rest` con `detail { resting }`.
+- **`--ns-motion-fps`:** tope de fotogramas para los bordes animados de trazo (`comet`, `twin`, `chase`, `march`, `scan`, `orbit`): avanzan con `steps()` y sólo se repintan al cambiar de paso. Sin tope por defecto; 30 en equipos modestos (`quality()` = `low`); `0` lo quita. A 30 fps, el caso de arriba baja de ~1,9 s a ~1,2 s.
+
 ## 0.14.1 — un solo observador para todos los módulos
 
 - **`watch` del núcleo:** todos los `watch` comparten un único `MutationObserver` del documento (antes, uno por atributo: el módulo de controles solo abría catorce y cada cambio del DOM los despertaba a todos). Los nodos que llegan se recorren una vez con el selector de todos los atributos. Varios módulos pueden vigilar el mismo atributo. En la landing, los observadores sobre todo el documento bajan de ~32 a 11.

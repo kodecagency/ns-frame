@@ -38,7 +38,7 @@ const CSS = `@layer ns{
 .ns-mo-fx{position:absolute;z-index:2;pointer-events:none;overflow:visible}
 .ns-mo-sw{transform-box:fill-box;animation:ns-mo-sw var(--ns-mo-time,5s) cubic-bezier(.45,0,.55,1) infinite}
 .ns-mo-wv{animation:ns-mo-wv var(--ns-mo-time,4.5s) cubic-bezier(.2,.6,.3,1) infinite backwards}
-.ns-mo-fx.ns-off *{animation-play-state:paused}
+.ns-mo-fx.ns-off *,.ns-resting .ns-mosaic[data-ns-mosaic~=aurora]>[data-ns-area]::before{animation-play-state:paused}
 @keyframes ns-mo-sw{0%{transform:translateX(-50%)}70%,to{transform:translateX(50%)}}
 @keyframes ns-mo-wv{0%{transform:scale(0);opacity:1}70%{opacity:1}to{transform:scale(1);opacity:0}}
 .ns-mo-sc{transform-box:fill-box;animation:ns-mo-sc var(--ns-mo-time,4.5s) cubic-bezier(.45,0,.55,1) infinite}

@@ -191,9 +191,11 @@
 }
 
 /* (en táctil, mientras se desplaza la página —.ns-scrolling, que pone el núcleo en <html>— los efectos
-   animados se pausan y siguen al parar: cada uno se repintaba en cada fotograma del desplazamiento) */
-.ns-scrolling :is(.ns-aura, .ns-aura-top)::before, .ns-scrolling .ns-u-breathe::after, .ns-scrolling :is(.ns-u-hue, .ns-u-live, .ns-u-tide, .ns-u-surge, .ns-text-shimmer, .ns-text-aurora),
-.ns-scrolling .ns-scan::before, .ns-scrolling .ns-shimmer::after, .ns-scrolling .ns-pulse > .ns-svg { animation-play-state: paused }
+   animados se pausan y siguen al parar: cada uno se repintaba en cada fotograma del desplazamiento.
+   En reposo —.ns-resting: 20 s sin tocar nada— también, hasta la siguiente señal de vida) */
+:is(.ns-scrolling, .ns-resting) :is(.ns-aura, .ns-aura-top)::before, :is(.ns-scrolling, .ns-resting) .ns-u-breathe::after,
+:is(.ns-scrolling, .ns-resting) :is(.ns-u-hue, .ns-u-live, .ns-u-tide, .ns-u-surge, .ns-text-shimmer, .ns-text-aurora),
+:is(.ns-scrolling, .ns-resting) .ns-scan::before, :is(.ns-scrolling, .ns-resting) .ns-shimmer::after, :is(.ns-scrolling, .ns-resting) .ns-pulse > .ns-svg { animation-play-state: paused }
 
 @media (prefers-reduced-motion: reduce) {
   .ns-u-hover { transition: none }

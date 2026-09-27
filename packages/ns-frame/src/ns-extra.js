@@ -99,8 +99,17 @@ function gradient(str, w, h, id, spin) {
 // estela: tres trazos con la cabeza alineada (retraso negativo = adelantado) y opacidad decreciente.
 // k escala la estela: mide unos 100–130 px sea cual sea el marco (en uno grande, el 16 % del
 // perímetro era una línea de cientos de píxeles)
-const tail = (P, n = 1, k = 1) => mk('g', { class: 'ns-t' }, {}, ...[[16, 0, .22], [8, 8, .5], [3, 13, 1]].map(([l, o, a]) =>
-  mk('path', { pathLength: 100 }, { '--d': f(-o * k / n / 100), 'stroke-dasharray': `${f(l * k / n)} ${f(P - l * k / n)}`, opacity: a })))
+const tail = (P, n = 1, k = 1, step = {}) => mk('g', { class: 'ns-t' }, {}, ...[[16, 0, .22], [8, 8, .5], [3, 13, 1]].map(([l, o, a]) =>
+  mk('path', { pathLength: 100 }, { '--d': f(-o * k / n / 100), 'stroke-dasharray': `${f(l * k / n)} ${f(P - l * k / n)}`, opacity: a, ...step })))
+// Tope de fotogramas (--ns-motion-fps, o 30 en equipos modestos): steps() en lugar de linear, y el
+// trazo sólo se repinta cuando cambia de posición (cada borde animado se repinta entero en cada paso)
+const cap = (t, def, fps) => {
+  if (!(fps > 0)) return {}
+  const ms = t ? parseFloat(t) * (/[^m]s$/.test(t) ? 1000 : 1) : def
+  return { 'animation-timing-function': `steps(${Math.max(2, Math.round(ms / 1000 * fps))})` }
+}
+// (sin parámetros declarados: el núcleo no las rehace al cambiar de tamaño)
+const fixed = fn => (...a) => fn(a[3], a[5])
 const span = (w, h) => Math.max(.3, Math.min(1, 640 / (2 * (w + h))))
 const paint_ = 'var(--ns-motion,var(--ns-accent,currentColor))'
 const grad = (tag, id, geo, stops, ...anim) => mk('defs', {}, {}, mk(tag, { id, gradientUnits: 'userSpaceOnUse', ...geo }, {},
@@ -114,22 +123,22 @@ const band = (id, w, h, geo, rect, cls, t, css, stops = [[0, 0], [.5, 1], [1, 0]
   mk('g', { mask: `url(#${id}m)` }, {}, mk('rect', { class: cls, ...rect }, { fill: `url(#${id})`, stroke: 'none', 'animation-duration': t, ...css }))]
 let MOTION
 const motions = () => MOTION ||= {
-  comet: (id, w, h) => [tail(100, 1, span(w, h))],                   // cometa con estela
-  twin: (id, w, h) => [tail(50, 2, span(w, h))],                     // dos cometas opuestos
-  chase: () => [mk('path', { class: 'ns-mc', pathLength: 100 })],    // pulsos de datos
-  march: () => [mk('path', { class: 'ns-mm' })],                     // hormigas en marcha
+  comet: (id, w, h, t, r, fps) => [tail(100, 1, span(w, h), cap(t, 5000, fps))],   // cometa con estela
+  twin: (id, w, h, t, r, fps) => [tail(50, 2, span(w, h), cap(t, 5000, fps))],    // dos cometas opuestos
+  chase: fixed((t, fps) => [mk('path', { class: 'ns-mc', pathLength: 100 }, cap(t, 4000, fps))]), // pulsos de datos
+  march: fixed((t, fps) => [mk('path', { class: 'ns-mm' }, cap('', 700, fps))]),                  // hormigas en marcha
   loop: () => [mk('path', { class: 'ns-ml', pathLength: 100 })],     // se dibuja y se borra
   pulse: () => [mk('path', { class: 'ns-mp' })],                     // respira
   glitch: () => [mk('path', { class: 'ns-mg' })],                    // parpadeo desplazado
   progress: () => [mk('path', { class: 'ns-mr', pathLength: 100 })], // --ns-progress: 0–100
   // barrido de luz que cruza el marco y enciende el borde a su paso
-  scan: (id, w, h, t) => band(id, w, h, { x1: 0, y1: 0, x2: f(w * .22), y2: f(w * .07) },
+  scan: (id, w, h, t, r, fps) => band(id, w, h, { x1: 0, y1: 0, x2: f(w * .22), y2: f(w * .07) },
     { x: f(-w * 1.2), y: f(-h - 20), width: f(w * 2.6), height: f(h * 3 + 40) }, 'ns-sc', t || '3.2s',
-    { '--a': f(-w * .3) + 'px', '--b': f(w * 1.05) + 'px' }),
+    { '--a': f(-w * .3) + 'px', '--b': f(w * 1.05) + 'px', ...cap(t, 3200, fps) }),
   // banda que gira sobre el centro: dos destellos orbitando
-  orbit: (id, w, h, t) => { const D = Math.hypot(w, h) + 40; return band(id, w, h, { x1: 0, y1: f(h / 2), x2: f(w), y2: f(h / 2) },
+  orbit: (id, w, h, t, r, fps) => { const D = Math.hypot(w, h) + 40; return band(id, w, h, { x1: 0, y1: f(h / 2), x2: f(w), y2: f(h / 2) },
     { x: f(w / 2 - D / 2), y: f(h / 2 - D / 2), width: f(D), height: f(D) }, 'ns-or', t || '4s',
-    { 'transform-origin': `${f(w / 2)}px ${f(h / 2)}px` }, [[.38, 0], [.5, 1], [.62, 0]]) },
+    { 'transform-origin': `${f(w / 2)}px ${f(h / 2)}px`, ...cap(t, 4000, fps) }, [[.38, 0], [.5, 1], [.62, 0]]) },
   // foco de luz que sigue al puntero sobre el borde
   // (el relleno tenue ilumina el interior cerca del puntero; --ns-spot-fill: 0 lo desactiva)
   spot: (id, w, h, t, r) => [grad('radialGradient', id, { cx: -9e3, cy: -9e3, r }, [[0, 1], [1, 0]]),

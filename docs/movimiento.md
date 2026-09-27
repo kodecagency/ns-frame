@@ -8,6 +8,10 @@ order: 5
 
 Todo el movimiento de ns-frame respeta `prefers-reduced-motion` y se pausa fuera de pantalla. En táctil, además, los adornos animados (bordes, luz en U viva, destellos, luces del mosaico) se pausan mientras se desplaza la página y siguen al parar: `<html>` lleva `.ns-scrolling` durante el desplazamiento (úsala también para tus animaciones) y `<html data-ns-scroll-motion>` los deja siempre en marcha.
 
+**En reposo** (20 s sin puntero, toque, tecla ni desplazamiento), `<html>` lleva `.ns-resting` y esos mismos adornos se pausan hasta la siguiente señal de vida: una página olvidada con un borde animado a la vista ya no repinta sin fin (ni calienta el teléfono). `<html data-ns-rest="30">` cambia la espera en segundos y `data-ns-rest="off"` lo apaga. `document` recibe el evento `ns-rest` con `detail { resting }`, para pausar también tus animaciones de JS.
+
+**Tope de fotogramas:** `--ns-motion-fps: 30` hace que los bordes animados de trazo (`comet`, `twin`, `chase`, `march`, `scan`, `orbit`) avancen a saltos de 30 por segundo en vez de en cada fotograma: cada borde se repinta entero en cada paso, así que la mitad de pasos es la mitad de trabajo. Sin la variable no hay tope, salvo en equipos modestos (`quality()` = `low`), donde es 30. `0` lo quita.
+
 ## Morph: hover, foco y presión
 
 ```html

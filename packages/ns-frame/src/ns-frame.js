@@ -316,7 +316,7 @@ const STYLE = `
 .ns-pre .ns-b,.ns-pre .ns-a{stroke-dasharray:100 100;stroke-dashoffset:100}
 .ns-draw .ns-b{stroke-dasharray:100 100;animation:ns-d var(--ns-draw-time,1.2s) cubic-bezier(.65,0,.35,1) both}
 .ns-draw .ns-a{animation:ns-o .4s var(--ns-draw-time,1.2s) both}
-.ns-off *,.ns-scrolling :is(.ns-svg,.ns-mo-fx) *{animation-play-state:paused!important}
+.ns-off *,:is(.ns-scrolling,.ns-resting) :is(.ns-svg,.ns-mo-fx) *{animation-play-state:paused!important}
 @keyframes ns-d{from{stroke-dashoffset:100}to{stroke-dashoffset:0}}
 @keyframes ns-o{from{opacity:0}}
 @media (prefers-reduced-motion:reduce){.ns-svg *{animation:none!important;stroke-dashoffset:0!important}.ns-pre .ns-b{stroke-dasharray:none}}
@@ -460,11 +460,12 @@ function decorate(s, V, d, T, at) {
   for (const k in mo) if (!want.includes(k)) { mo[k].remove(); delete mo[k] }
   M && X.spot(s, want.includes('spot'))
   for (const k of want) {
-    const key = M[k].length ? [w, h, s.mt, s.ss].join() : 1
+    // (las que no dependen del tamaño —sin parámetros declarados— no se rehacen al redimensionar)
+    const key = M[k].length ? [w, h, s.mt, s.ss, s.fps].join() : [s.mt, s.fps].join()
     let g = mo[k]
     if (g?._k !== key) {
       g?.remove()
-      g = mo[k] = mk('g', { class: 'ns-m' }, {}, ...M[k](id + k, w, h, s.mt, s.ss))
+      g = mo[k] = mk('g', { class: 'ns-m' }, {}, ...M[k](id + k, w, h, s.mt, s.ss, s.fps))
       g._k = key
       svg.insertBefore(g, s.p.f || null)
     }
@@ -535,14 +536,16 @@ function nested(s, inner) {
 
 function read(s) {
   const el = s.el, cs = getComputedStyle(el), b = cs.getPropertyValue('--ns-border').trim(), sp = attr(el, 'spin') ?? '-'
-  const mt = cs.getPropertyValue('--ns-motion-time').trim(), nest = attr(el, 'nest')
+  const mt = cs.getPropertyValue('--ns-motion-time').trim(), nest = attr(el, 'nest'), motion = (attr(el, 'motion') || '') + (attr(el, 'trace') != null ? ' comet' : '')
+  // tope de fotogramas de los bordes animados: --ns-motion-fps (0 = sin tope); en equipos modestos, 30
+  const fv = motion && cs.getPropertyValue('--ns-motion-fps').trim()
   const src = (s.dn && attr(el, 'press')) || (s.hot && attr(el, 'hover')) || (nest != null ? nested(s, nest) : attr(el, 'shape') || cs.getPropertyValue('--ns-shape').trim())
   return {
     // en RTL las esquinas lógicas (ss, se, es, ee) y los bordes start/end se invierten
     src: src && cs.direction == 'rtl' ? 'dir rtl;' + src : src,
     look: { border: b && b != 'none' ? b : FORCED.matches ? 'CanvasText' : '', inner: parseFloat(cs.getPropertyValue('--ns-inner')) || 0, bl: el.clientLeft, bt: el.clientTop },
     accent: attr(el, 'accent') || '', spin: TIME.test(sp) ? sp : sp ? '' : '6s', fo: el.tabIndex >= 0,
-    motion: (attr(el, 'motion') || '') + (attr(el, 'trace') != null ? ' comet' : ''), mt: TIME.test(mt) ? mt : '',
+    motion, mt: TIME.test(mt) ? mt : '', fps: !motion ? 0 : fv ? parseFloat(fv) || 0 : quality() == 'low' ? 30 : 0,
     ss: parseFloat(cs.getPropertyValue('--ns-spot-size')) || 140,
     nat: attr(el, 'native') != null, scr: attr(el, 'scroll'),
     // padding base = padding actual menos el margen seguro ya aplicado (sólo si se usa el margen seguro)
@@ -555,7 +558,7 @@ function read(s) {
 function write(s, r, animate) {
   if (!s.w || !s.h) return
   const { src, look } = r
-  const key = [s.w, s.h, src, look.border, look.inner, look.bl, look.bt, r.accent, r.motion, r.mt, r.spin, r.fo, r.ss, r.pad, r.nat, r.scr, FORCED.matches].join('|')
+  const key = [s.w, s.h, src, look.border, look.inner, look.bl, look.bt, r.accent, r.motion, r.mt, r.fps, r.spin, r.fo, r.ss, r.pad, r.nat, r.scr, FORCED.matches].join('|')
   if (key == s.key) return
   const moved = src != s.src
   Object.assign(s, r)
@@ -694,6 +697,30 @@ function scrolling() {
   }, { passive: true, capture: true })
 }
 
+// En reposo (20 s sin puntero, toque, tecla ni desplazamiento), <html> lleva .ns-resting y las mismas
+// animaciones de adorno se pausan hasta la siguiente señal de vida: un teléfono olvidado en la mesa con
+// un borde animado a la vista lo repintaba sin fin y se calentaba. <html data-ns-rest="30"> cambia la
+// espera (en segundos) y data-ns-rest="off" lo apaga. document recibe el evento ns-rest con
+// detail { resting }, para pausar también lo tuyo (un canvas, un vídeo de fondo)
+function resting() {
+  const h = document.documentElement
+  let last = 0, t = 0
+  const wait = () => { const v = h.getAttribute('data-ns-rest'); return v == 'off' ? 0 : (parseFloat(v) || 20) * 1000 }
+  const set = on => { if (h.classList.contains('ns-resting') != on) { h.classList.toggle('ns-resting', on); document.dispatchEvent(new CustomEvent('ns-rest', { detail: { resting: on } })) } }
+  const check = () => {
+    t = 0
+    const w = wait(), left = last + w - performance.now()
+    if (!w) return
+    if (left > 50) t = setTimeout(check, left)
+    else set(true)
+  }
+  // (una señal sólo anota la hora; el temporizador, uno solo, se reprograma al vencer)
+  const wake = () => { last = performance.now(); set(false); t ||= setTimeout(check, wait() || 6e4) }
+  for (const e of ['pointermove', 'pointerdown', 'keydown', 'wheel', 'scroll', 'focusin']) addEventListener(e, wake, { passive: true, capture: true })
+  document.addEventListener('visibilitychange', () => document.hidden || wake())
+  wake()
+}
+
 /** Activa ns-frame sobre cualquier elemento (normalmente vía data-ns / <ns-frame>). */
 export function attach(el) {
   if (!DOM) return el
@@ -711,7 +738,7 @@ export function attach(el) {
     // borde del sistema, y la vía rápida nativa, que allí perdería el borde)
     FORCED.addEventListener?.('change', () => document.querySelectorAll(SEL).forEach(e => { const s = S.get(e); s && refresh(s) }))
     delegate()
-    if (typeof NS_LITE == 'undefined') scrolling()
+    if (typeof NS_LITE == 'undefined') { scrolling(); resting() }
   }
   let s = S.get(el)
   if (!s) {
