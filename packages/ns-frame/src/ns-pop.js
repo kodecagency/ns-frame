@@ -9,7 +9,7 @@
 // · Posicionado con Anchor Positioning (CSS nativo); respaldo en JS si el navegador no lo soporta.
 // · Variables: --ns-arrow (tamaño de la flecha, 9px), --ns-pop-gap (separación, 6px), --ns-pop-bg.
 
-import { styles, cssTime } from './ns-frame.js'
+import { styles, cssTime, watch } from './ns-frame.js'
 
 const ANCHOR = typeof CSS != 'undefined' && CSS.supports('position-area: top')
 // sin Popover API (Safari < 17, Firefox < 125) el popover se oculta y se abre con una clase; el
@@ -57,30 +57,35 @@ function place(p) {
 const tick = () => { raf = 0; OPEN.forEach(place) }
 const schedule = () => { raf ||= requestAnimationFrame(tick) }
 
+// (cada popover y cada tooltip registran sus escuchas con la señal de un AbortController: destroy()
+// —al quitar el atributo o el elemento— las quita todas de una vez)
+const P = new WeakMap()
 function init(p) {
-  if (p._nsP) return
-  p._nsP = 1
+  if (P.has(p)) return P.get(p)
   if (!styled) {
     styled = 1
     styles(CSS_)
     addEventListener('scroll', schedule, { passive: true, capture: true })
     addEventListener('resize', schedule)
   }
+  const ac = new AbortController(), signal = ac.signal
   if (!p.hasAttribute('data-ns-pad')) p.setAttribute('data-ns-pad', '')
   p.addEventListener('beforetoggle', e => {
     if (e.newState == 'open') { OPEN.add(p); p.setAttribute('data-ns', base(p) + '; bottom tab center 18 9 9') }
     else OPEN.delete(p)
-  })
-  p.addEventListener('toggle', e => e.newState == 'open' && (place(p), schedule()))
+  }, { signal })
+  p.addEventListener('toggle', e => e.newState == 'open' && (place(p), schedule()), { signal })
+  const h = { destroy() { ac.abort(); OPEN.delete(p); P.delete(p) } }
+  P.set(p, h)
+  return h
 }
 
 // Tooltips por hover/foco: data-ns-tip="id" en el disparador, popover="manual" en el tooltip
 function tip(t) {
-  if (t._nsTip) return
-  t._nsTip = 1
   const p = document.getElementById(t.getAttribute('data-ns-tip'))
-  if (!p) return
+  if (!p) return null
   init(p)
+  const ac = new AbortController(), signal = ac.signal
   t.setAttribute('aria-describedby', p.id)
   // showPopover() sin invocador no crea ancla implícita: se declara con anchor-name / position-anchor
   const name = '--ns-tip-' + p.id.replace(/[^\w-]/g, '')
@@ -92,29 +97,27 @@ function tip(t) {
   const hide = () => { clearTimeout(timer); timer = setTimeout(() => isOpen(p) && hideP(p), cssTime(p, '--ns-pop-hide-delay', 80)) }
   // con el dedo no hay hover (y Safari no enfoca un botón al tocarlo): un toque lo abre o lo cierra,
   // y tocar fuera lo cierra
-  t.addEventListener('pointerdown', e => { touch = e.pointerType == 'touch' })
-  t.addEventListener('pointerenter', e => e.pointerType != 'touch' && show()); t.addEventListener('focus', () => touch || show())
-  t.addEventListener('pointerleave', e => e.pointerType != 'touch' && hide()); t.addEventListener('blur', () => touch || hide())
-  t.addEventListener('click', () => { if (!touch) return; clearTimeout(timer); p._nsT = t; isOpen(p) ? hideP(p) : showP(p) })
-  document.addEventListener('pointerdown', e => { if (touch && isOpen(p) && !t.contains(e.target) && !p.contains(e.target)) hideP(p) }, true)
-  t.addEventListener('keydown', e => e.key == 'Escape' && hide())
+  const o = { signal }
+  t.addEventListener('pointerdown', e => { touch = e.pointerType == 'touch' }, o)
+  t.addEventListener('pointerenter', e => e.pointerType != 'touch' && show(), o); t.addEventListener('focus', () => touch || show(), o)
+  t.addEventListener('pointerleave', e => e.pointerType != 'touch' && hide(), o); t.addEventListener('blur', () => touch || hide(), o)
+  t.addEventListener('click', () => { if (!touch) return; clearTimeout(timer); p._nsT = t; isOpen(p) ? hideP(p) : showP(p) }, o)
+  document.addEventListener('pointerdown', e => { if (touch && isOpen(p) && !t.contains(e.target) && !p.contains(e.target)) hideP(p) }, { capture: true, signal })
+  t.addEventListener('keydown', e => e.key == 'Escape' && hide(), o)
+  return { destroy() { ac.abort(); clearTimeout(timer); t.removeAttribute('aria-describedby'); t.style.removeProperty('anchor-name') } }
 }
 
 if (typeof document != 'undefined') {
-  const scan = n => {
-    if (n.nodeType != 1) return
-    n.matches('[popover][data-ns-arrow]') && init(n); n.querySelectorAll('[popover][data-ns-arrow]').forEach(init)
-    n.matches('[data-ns-tip]') && tip(n); n.querySelectorAll('[data-ns-tip]').forEach(tip)
-  }
+  // automático con watch del núcleo: también lo que llega después, y se desmonta al irse
+  watch('data-ns-arrow', el => el.hasAttribute('popover') ? init(el) : null)
+  watch('data-ns-tip', tip)
   const boot = () => {
-    scan(document.body)
     // (un popover que abren varios botones —las opciones de cada fila de una lista— apunta al que lo
     // abrió: se recuerda el último disparador pulsado, también con la Popover API nativa)
     document.addEventListener('click', e => {
       const b = e.target.closest?.('[popovertarget]'), p = b && document.getElementById(b.getAttribute('popovertarget'))
       if (p?.matches('[data-ns-arrow]')) { p._nsT = b; if (isOpen(p)) schedule() }
     }, true)
-    new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(scan))).observe(document.body, { childList: true, subtree: true })
     if (POP) return
     // respaldo de popovertarget: abrir/cerrar con su botón, cerrar con click fuera o Escape
     document.addEventListener('click', e => {

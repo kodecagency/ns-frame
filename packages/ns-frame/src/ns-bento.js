@@ -7,7 +7,7 @@
 // · Espaciado con proporción fija: padding interno = 2 × gap, y respetando los cortes (data-ns-pad).
 // Requiere ns-frame.js (que dibuja las formas). CSP-safe: estilos por constructable stylesheet.
 
-import { styles as inject } from './ns-frame.js'
+import { styles as inject, watch } from './ns-frame.js'
 
 const CSS = `@layer ns{
 .ns-bento{display:grid;gap:var(--ns-gap,14px);grid-template-columns:repeat(var(--ns-cols,4),minmax(0,1fr));grid-auto-rows:minmax(var(--ns-row,150px),auto);grid-auto-flow:row dense;--ns-pad:calc(var(--ns-gap,14px) * 2)}
@@ -84,29 +84,21 @@ function layout() {
 
 const schedule = () => { raf ||= requestAnimationFrame(layout) }
 
+// automático con watch del núcleo (también los que llegan después). Cada bento vigila sólo sus
+// celdas —hijos directos—, no todo el documento; al quitar el atributo o el elemento, se desmonta
 function add(el) {
-  if (B.has(el)) return
   styles()
   ro ||= new ResizeObserver(schedule)
   B.set(el, 1)
   ro.observe(el)
   for (const k of el.children) ro.observe(k)
+  const mo = new MutationObserver(ms => { for (const m of ms) m.addedNodes.forEach(n => n.nodeType == 1 && ro.observe(n)); schedule() })
+  mo.observe(el, { childList: true })
   schedule()
+  return { destroy() { mo.disconnect(); B.delete(el); ro.unobserve(el); for (const k of el.children) ro.unobserve(k); el.removeAttribute('data-ns-cols'); el.style.removeProperty('--ns-cols') } }
 }
 
 /** Recalcula (p. ej. tras reordenar celdas por JS). */
 export const refresh = schedule
 
-if (typeof document != 'undefined') {
-  const scan = n => { if (n.nodeType != 1) return; n.matches('[data-ns-bento]') && add(n); n.querySelectorAll('[data-ns-bento]').forEach(add) }
-  const boot = () => {
-    scan(document.body)
-    new MutationObserver(ms => {
-      for (const m of ms) {
-        m.addedNodes.forEach(n => { scan(n); if (n.nodeType == 1 && B.has(n.parentElement)) { ro.observe(n); schedule() } })
-        if (m.removedNodes.length && B.has(m.target)) schedule()
-      }
-    }).observe(document.body, { childList: true, subtree: true })
-  }
-  document.readyState == 'loading' ? addEventListener('DOMContentLoaded', boot) : boot()
-}
+if (typeof document != 'undefined') watch('data-ns-bento', add)

@@ -759,24 +759,42 @@ export const shapeOf = el => ready(S.get(el))?.src
  * devuelva, cuando se quita el atributo o el elemento sale del documento (un elemento que sólo se
  * mueve de sitio no se toca: se comprueba en la tarea siguiente). Devuelve el mapa elemento → instancia.
  */
+// Todos los watch comparten UN MutationObserver sobre el body (antes, uno por atributo: el módulo de
+// controles solo abría catorce, y cada cambio del DOM despertaba a todos). Los nodos que llegan se
+// recorren una vez con el selector de todos los atributos; los que se van se revisan en la tarea
+// siguiente (un elemento que sólo se mueve de sitio no se desmonta)
+// (atributo → los watch que lo vigilan: dos módulos pueden vigilar el mismo)
+const WATCH = new Map()
+let wmo = null, wsel = '', wpend = 0, wbooted = false
+const wall = () => [...WATCH.values()].flat()
+const wadd = (w, el) => { if (!w.live.has(el)) { const h = w.make(el); if (h) w.live.set(el, h) } }
+const wdrop = (w, el) => { const h = w.live.get(el); if (h) { w.live.delete(el); h.destroy?.() } }
+const wscan = (n, only) => {
+  if (n.nodeType != 1 || !wsel) return
+  const found = n.matches(wsel) ? [n, ...n.querySelectorAll(wsel)] : n.querySelectorAll(wsel)
+  if (!found.length) return
+  const ws = only ? [only] : wall()
+  for (const el of found) for (const w of ws) el.hasAttribute(w.attr) && wadd(w, el)
+}
+const wsweep = () => { wpend = 0; for (const w of wall()) for (const el of [...w.live.keys()]) if (!el.isConnected) wdrop(w, el) }
+const wobserve = () => {
+  wsel = [...WATCH.keys()].map(a => `[${a}]`).join(',')
+  wmo ||= new MutationObserver(ms => {
+    for (const m of ms) {
+      if (m.type == 'attributes') { for (const w of WATCH.get(m.attributeName) || []) m.target.hasAttribute(w.attr) ? wadd(w, m.target) : wdrop(w, m.target) }
+      else { m.addedNodes.forEach(n => wscan(n)); if (m.removedNodes.length) wpend ||= setTimeout(wsweep) }
+    }
+  })
+  // (volver a llamar a observe con el mismo nodo sustituye las opciones: el filtro crece con cada watch)
+  wmo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: [...WATCH.keys()] })
+}
 export function watch(attr, make) {
-  const live = new Map(), sel = `[${attr}]`
+  const live = new Map()
   if (typeof document == 'undefined') return live
-  const add = el => { if (!live.has(el)) { const h = make(el); if (h) live.set(el, h) } }
-  const drop = el => { const h = live.get(el); if (h) { live.delete(el); h.destroy?.() } }
-  const scan = n => { if (n.nodeType != 1) return; n.matches(sel) && add(n); n.querySelectorAll(sel).forEach(add) }
-  let pend = 0
-  const sweep = () => { pend = 0; for (const el of [...live.keys()]) if (!el.isConnected) drop(el) }
-  const boot = () => {
-    scan(document.body)
-    new MutationObserver(ms => {
-      for (const m of ms) {
-        if (m.type == 'attributes') m.target.hasAttribute(attr) ? add(m.target) : drop(m.target)
-        else { m.addedNodes.forEach(scan); if (m.removedNodes.length && live.size) pend ||= setTimeout(sweep) }
-      }
-    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: [attr] })
-  }
-  document.readyState == 'loading' ? addEventListener('DOMContentLoaded', boot) : boot()
+  const w = { attr, make, live }
+  WATCH.has(attr) ? WATCH.get(attr).push(w) : WATCH.set(attr, [w])
+  const boot = () => { wbooted = true; wobserve(); wscan(document.body, w) }
+  wbooted || document.readyState != 'loading' ? boot() : addEventListener('DOMContentLoaded', boot, { once: true })
   return live
 }
 

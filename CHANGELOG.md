@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.14.1 — un solo observador para todos los módulos
+
+- **`watch` del núcleo:** todos los `watch` comparten un único `MutationObserver` del documento (antes, uno por atributo: el módulo de controles solo abría catorce y cada cambio del DOM los despertaba a todos). Los nodos que llegan se recorren una vez con el selector de todos los atributos. Varios módulos pueden vigilar el mismo atributo. En la landing, los observadores sobre todo el documento bajan de ~32 a 11.
+- **`ns-frame/pop` y `ns-frame/bento`** pasan a `watch`: arrancan también con lo que llega después y se desmontan al quitar el atributo o el elemento. Los tooltips sueltan sus escuchas (antes cada uno dejaba una en el documento para siempre); el bento vigila sólo sus celdas, no todo el documento, y al desmontarse quita sus columnas.
+
 ## 0.14.0 — API más coherente: tipos por módulo, acento común, textos traducibles
 
 Repaso de los 28 módulos (duplicados, nombres, limpieza, tipos):
