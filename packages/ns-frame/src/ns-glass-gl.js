@@ -32,6 +32,8 @@ uniform float q, depth, lens, lod, sat, disp, rim, lift;
 // distancia exacta, sin rejilla. nb = 0: el campo rasterizado de la textura (formas de ns-frame)
 uniform int nb;
 uniform vec4 bx[${MAXB}], br[${MAXB}];
+// (la opacidad de cada caja: la de su pieza, que puede estar desvaneciéndose)
+uniform float bo[${MAXB}];
 float box(vec2 u, int i){
   vec2 h = bx[i].zw * .5, v = u - bx[i].xy - h;
   vec4 r = br[i];
@@ -58,7 +60,7 @@ vec3 tap(vec2 q){
 void main(){
   float d = sd(p);
   // (el borde se suaviza en un píxel del lienzo, no en un px CSS: nítido también a 2×)
-  float a = clamp(.5 - d * q, 0., 1.);
+  float a = clamp(.5 - d * q, 0., 1.) * (nb > 0 ? bo[near] : 1.);
   if (a <= 0.) discard;
   vec2 e = vec2(1.5, 0.);
   vec2 g = vec2(sd1(p + e.xy) - sd1(p - e.xy), sd1(p + e.yx) - sd1(p - e.yx));
@@ -160,11 +162,11 @@ export function glEngine(host, src, onFail, onReady) {
     const s = getComputedStyle(host)
     const lens = cssNum(s, '--ns-glass-lens', 22), depth = cssNum(s, '--ns-glass-depth', 18)
     // cajas redondeadas: su distancia exacta la calcula el shader (nada que rasterizar)
-    const nb = lastB && lastB.length / 8 <= MAXB ? lastB.length / 8 : 0
+    const nb = lastB && lastB.length / 9 <= MAXB ? lastB.length / 9 : 0
     if (nb) {
-      const X = new Float32Array(MAXB * 4), Y = new Float32Array(MAXB * 4)
-      for (let i = 0; i < nb; i++) { X.set(lastB.slice(i * 8, i * 8 + 4), i * 4); Y.set(lastB.slice(i * 8 + 4, i * 8 + 8), i * 4) }
-      gl.uniform4fv(U('bx'), X); gl.uniform4fv(U('br'), Y)
+      const X = new Float32Array(MAXB * 4), Y = new Float32Array(MAXB * 4), O = new Float32Array(MAXB)
+      for (let i = 0, j = 0; i < nb; i++, j += 9) { X.set(lastB.slice(j, j + 4), i * 4); Y.set(lastB.slice(j + 4, j + 8), i * 4); O[i] = lastB[j + 8] }
+      gl.uniform4fv(U('bx'), X); gl.uniform4fv(U('br'), Y); gl.uniform1fv(U('bo'), O)
     }
     gl.uniform1i(U('nb'), nb)
     // si no, el campo, sólo si cambió la forma o el tamaño. Mientras las piezas se mueven, en una
@@ -211,7 +213,7 @@ export function glEngine(host, src, onFail, onReady) {
   const api = {
     // (el grupo llama desde su propio fotograma: se dibuja ya, a la vez que las piezas se mueven, y
     // no un fotograma después. moving: rejilla basta mientras dure el movimiento; boxes: las cajas
-    // redondeadas de las piezas, de 8 en 8 —x, y, ancho, alto y los cuatro radios—, o null)
+    // redondeadas de las piezas, de 9 en 9 —x, y, ancho, alto, los cuatro radios y la opacidad—, o null)
     draw: (d, moving = false, boxes = null) => { if (d != null) lastD = d; rough = moving; lastB = boxes; draw(lastD) },
     destroy() {
       if (E.get(host) != api) return

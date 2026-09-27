@@ -224,7 +224,7 @@ export function glassGroup(el: HTMLElement): { update(): void; destroy(): void }
 // ── ns-frame/glass-gl (lo carga ns-frame/glass cuando hace falta) ──
 /** Motor WebGL2 de un grupo sobre un fondo conocido; null sin WebGL2. */
 export function glEngine(host: HTMLElement, src: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | { url: string }, onFail?: () => void, onReady?: () => void): {
-  /** d: path de la unión · moving: rejilla basta mientras dure un movimiento · boxes: cajas redondeadas de 8 en 8 (x, y, ancho, alto y los cuatro radios) para la distancia exacta, o null */
+  /** d: path de la unión · moving: rejilla basta mientras dure un movimiento · boxes: cajas redondeadas de 9 en 9 (x, y, ancho, alto, los cuatro radios y la opacidad) para la distancia exacta, o null */
   draw(d?: string, moving?: boolean, boxes?: number[] | null): void
   destroy(): void
 } | null

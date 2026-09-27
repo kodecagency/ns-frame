@@ -138,7 +138,7 @@ const ACTIONS = [
         </div>
         <div class="cap">
           <h3>Barra de pestañas de vidrio</h3>
-          <p>Como la de iOS 26. Pulsa una pestaña y el indicador viaja con un muelle, se estira con la velocidad y deja una gota que se funde. Arrástralo y se levanta: crece y se vuelve una lente clara que aumenta lo que pasa por debajo; al soltarlo encaja en la pestaña más cercana. Desplaza el feed: el contenido pasa de verdad por detrás del vidrio, también en Safari.</p>
+          <p>Como la de un sistema móvil. Pulsa una pestaña y el indicador viaja con un muelle, se estira con la velocidad y deja una gota que se funde. Arrástralo y se levanta: crece y se vuelve una lente clara que aumenta lo que pasa por debajo; al soltarlo encaja en la pestaña más cercana. Desplaza el feed: el contenido pasa de verdad por detrás del vidrio, también en Safari.</p>
           <p>Teclado, lectores de pantalla y movimiento reducido incluidos.</p>
           <code class="tag"><b>data-ns-tabs</b> · <b>ns-frame/tabs</b></code>
         </div>
@@ -285,7 +285,9 @@ const ACTIONS = [
   .post img { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; border-radius: 22px; margin-bottom: 8px; background: #1b1b20 }
   .post b { margin: 0 6px; font: 650 var(--t-ui)/1.3 var(--body); color: var(--text) }
   .post small { margin: 0 6px; color: var(--text-3); font-size: var(--t-caption) }
-  .tb { position: absolute; left: 10px; right: 10px; bottom: 12px; display: flex; padding: 4px; --ns-liquid: 0px; --ns-glass-tint: rgba(22, 22, 26, .28); --ns-tabs-radius: 30px; --ns-tabs-ind-radius: 26px }
+  /* (dentro del ancho de las fotos y con una lente corta: la de serie, a un 55 % del lado corto, miraba
+     tan lejos del borde que doblaba el margen oscuro de la pantalla hacia los extremos de la barra) */
+  .tb { position: absolute; left: 14px; right: 14px; bottom: 12px; display: flex; padding: 4px; --ns-liquid: 0px; --ns-glass-tint: rgba(22, 22, 26, .28); --ns-glass-lens: 12px; --ns-glass-depth: 14px; --ns-tabs-radius: 30px; --ns-tabs-ind-radius: 26px }
   /* etiquetas cortas, con aire: nada de palabras pegadas a la pestaña vecina */
   .tb button { flex: 1; min-width: 0; height: 52px; padding: 0 2px; border: 0; background: none; display: grid; place-items: center; align-content: center; gap: 4px; font: 600 10px/1 var(--body); letter-spacing: .01em; cursor: pointer }
   .tb button :global(svg) { width: 20px; height: 20px }

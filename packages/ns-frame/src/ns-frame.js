@@ -293,6 +293,9 @@ export function mk(tag, a = {}, st = {}, ...kids) {
 // ───────────────────────────── runtime DOM ─────────────────────────────
 
 const BASE = 'ns-frame{display:block}:where([data-ns],[data-ns-nest],ns-frame){position:relative}.ns-fast{overflow:hidden;overflow:clip}' +
+  // (sin el recuadro gris del toque en iOS/Android: es rectangular aunque la pieza tenga forma, y
+  // aparecía unos milisegundos al tocar; cada pieza lleva su propio estado de pulsado)
+  ':where([data-ns],[data-ns] *,[data-ns-glass],[data-ns-glass] *,[data-ns-choice] *){-webkit-tap-highlight-color:transparent}' +
   ':where([data-ns-pad],ns-frame[pad]){--p:var(--ns-pad,1.25rem);padding:calc(var(--ns-safe-t,0px) + var(--p)) calc(var(--ns-safe-r,0px) + var(--p)) calc(var(--ns-safe-b,0px) + var(--p)) calc(var(--ns-safe-l,0px) + var(--p))}' +
   // (tras un toque o un clic, sin anillo de foco; !important dentro de la capa gana al CSS del sitio)
   '[data-ns-input=pointer] :focus-visible{outline:none!important}' +

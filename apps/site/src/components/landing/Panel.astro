@@ -150,17 +150,13 @@ const ROW: [K, string][] = [['torch', 'Linterna'], ['timer', 'Temporizador'], ['
   const pieces = (v: V) => [...VIEW[v].querySelectorAll<HTMLElement>(v == 'grid' ? '.pn-net, .pn-media, .pn-quick > *, .pn-focus, .pn-lv, .pn-row > *' : '.pn-back, .pn-mhead b, .pn-mode, .pn-orow')]
   const show = (v: V, yes: boolean) => v == 'grid' ? stage.classList.toggle('pn-open', !yes) : (VIEW[v].hidden = !yes)
   let cur: V = 'grid', busy = false
-  // (la pieza se anima en tamaño y visibilidad —su vidrio la sigue—; la opacidad, en lo que lleva
-  // dentro: el desenfoque del vidrio lo dibuja el grupo y no se desvanecería con la pieza)
+  // (la pieza entera se anima en tamaño, opacidad y visibilidad: el grupo de vidrio sigue las tres, así
+  // que el vidrio se desvanece con su contenido —antes quedaba su silueta vacía y se iba de golpe—)
   // (la visibilidad cambia en el primer 1 % de la entrada y en el último 1 % de la salida: WebKit la
   // cambia a mitad de camino si sólo hay dos fotogramas, y la pieza —y su vidrio— tardaban en verse)
-  const anim = (e: HTMLElement, frames: Keyframe[], fade: [number, number], o: KeyframeAnimationOptions) => {
-    const a = e.animate(frames, o)
-    for (const c of e.children) (c as HTMLElement).animate([{ opacity: fade[0] }, { opacity: fade[1] }], o)
-    return a.finished.catch(() => {})
-  }
-  const OUT: Keyframe[] = [{ transform: 'none', visibility: 'visible' }, { transform: 'scale(.92)', visibility: 'visible', offset: .99 }, { transform: 'scale(.92)', visibility: 'hidden' }]
-  const IN: Keyframe[] = [{ transform: 'translateY(-10px) scale(.9)', visibility: 'hidden' }, { transform: 'translateY(-10px) scale(.9)', visibility: 'visible', offset: .01 }, { transform: 'none', visibility: 'visible' }]
+  const anim = (e: HTMLElement, frames: Keyframe[], o: KeyframeAnimationOptions) => e.animate(frames, o).finished.catch(() => {})
+  const OUT: Keyframe[] = [{ transform: 'none', opacity: 1, visibility: 'visible' }, { transform: 'scale(.92)', opacity: 0, visibility: 'visible', offset: .99 }, { transform: 'scale(.92)', opacity: 0, visibility: 'hidden' }]
+  const IN: Keyframe[] = [{ transform: 'translateY(-10px) scale(.9)', opacity: 0, visibility: 'hidden' }, { transform: 'translateY(-10px) scale(.9)', opacity: 0, visibility: 'visible', offset: .01 }, { transform: 'none', opacity: 1, visibility: 'visible' }]
   // (curva de frenado largo, sin rebote: arranca rápido y se posa)
   const EASE_IN = 'cubic-bezier(.22,1,.36,1)', EASE_OUT = 'cubic-bezier(.4,0,.8,.6)'
   const go = async (to: V, focus?: HTMLElement | null) => {
@@ -170,14 +166,14 @@ const ROW: [K, string][] = [['torch', 'Linterna'], ['timer', 'Temporizador'], ['
     cur = to
     more.setAttribute('aria-expanded', String(to != 'grid'))
     // salida: todas a la vez, 170 ms. La entrada empieza a mitad (se solapan: sin hueco vacío)
-    const out = calm ? Promise.resolve() : Promise.all(old.map(e => anim(e, OUT, [1, 0],
+    const out = calm ? Promise.resolve() : Promise.all(old.map(e => anim(e, OUT,
       { duration: 170, easing: EASE_OUT, fill: 'forwards' })))
     if (!calm) await new Promise(r => setTimeout(r, 70))
     show(to, true)
     // entrada: de arriba abajo, una tras otra; el escalonado total no pasa de ~200 ms (la cuadrícula
     // tiene once piezas: si no, la última llegaría tarde)
     const P = pieces(to), gap = Math.min(40, 200 / Math.max(1, P.length - 1))
-    if (!calm) P.forEach((e, i) => anim(e, IN, [0, 1],
+    if (!calm) P.forEach((e, i) => anim(e, IN,
       { duration: 420, delay: i * gap, easing: EASE_IN, fill: 'backwards' }))
     // (el foco, en cuanto su pieza se ve —un elemento oculto no se puede enfocar—: se mira en cada
     // fotograma, no con un temporizador, porque en un móvil cargado la entrada puede ir con retraso)
@@ -189,7 +185,7 @@ const ROW: [K, string][] = [['torch', 'Linterna'], ['timer', 'Temporizador'], ['
     put()
     await out
     show(from, false)
-    for (const e of old) { e.getAnimations().forEach(a => a.cancel()); for (const c of e.children) c.getAnimations().forEach(a => a.cancel()) }
+    for (const e of old) e.getAnimations().forEach(a => a.cancel())
     busy = false
   }
 

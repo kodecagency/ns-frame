@@ -1,12 +1,19 @@
 # Changelog
 
+## 0.11.2 — el vidrio del grupo se desvanece con su pieza; sin destello al tocar
+
+- **Grupo de vidrio:** cada caja lleva la opacidad de su pieza (`draw(d, moving, boxes)` con 9 valores por caja). Una pieza que se desvanece se lleva su vidrio; antes quedaba su silueta vacía y se iba de golpe (en el panel de la landing parecía un parpadeo al abrir la lista de modos). El grupo redibuja también cuando sólo cambia la opacidad.
+- **Sin el recuadro gris del toque** (iOS/Android) en formas, vidrio, grupos de elección y controles: era rectangular aunque la pieza tuviera forma y se veía unos milisegundos al tocar.
+- Panel de la landing: la pieza entera se anima (tamaño, opacidad y visibilidad), la mitad de animaciones: la vuelta, con CPU 4×, sin fotogramas largos (antes 18).
+- Barra de pestañas de la landing: dentro del ancho de las fotos y con una lente corta (`--ns-glass-lens: 12px`); en el PC los extremos ya no doblan el margen oscuro de la pantalla. Fuera una marca ajena en su texto.
+
 ## 0.11.1 — grupo de vidrio más fluido y con bordes exactos, SEO del sitio
 
 ### Vidrio en grupo (motor WebGL)
 - **Bordes exactos:** las piezas con `border-radius` (casi todas) ya no se rasterizan: el shader calcula la distancia exacta de cada caja redondeada (hasta 48 por grupo). La silueta y el canto son limpios en las curvas (antes, escalones y un brillo suelto donde la curva se une a la recta). Las formas de ns-frame (chaflanes, muescas…) siguen con el campo rasterizado, ahora en coma flotante de 16 bits (sin escalones en el borde).
 - **Más fluido al animar:** el motor dibuja en el mismo fotograma que las piezas (antes, uno después: el vidrio iba desfasado) y, con formas rasterizadas, usa una rejilla más basta mientras hay movimiento y la fina al pararse. En el panel de la landing, con CPU 4×: la ida pasa de 41 a 62 fotogramas por segundo y la vuelta de 55 a 73.
 - El lienzo se dibuja a la densidad de la pantalla hasta 3× (antes 2×: en un iPhone el canto se veía granulado) y el borde se suaviza en un píxel del lienzo.
-- `glEngine().draw(d, moving, boxes)`; `corners(el, w, h)` exportado de `ns-frame/light` (radios reales de las cuatro esquinas).
+- `glEngine().draw(d, moving, boxes)` (desde 0.11.2, 9 valores por caja: también la opacidad); `corners(el, w, h)` exportado de `ns-frame/light` (radios reales de las cuatro esquinas).
 
 ### Landing
 - Panel de vidrio: la salida y la entrada se solapan (sin hueco vacío), escalonado de 200 ms como mucho y curva de frenado largo sin rebote; el foco llega a su sitio en cuanto la pieza se ve, también con el móvil cargado.

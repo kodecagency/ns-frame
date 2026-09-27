@@ -178,7 +178,7 @@ export function glassGroup(host) {
   layer.setAttribute('aria-hidden', 'true')
   host.classList.add('ns-glass-group')
   host.prepend(layer)
-  let raf = 0, last = '', engine = null, lens = null, srcKey, rough = false
+  let raf = 0, last = '', engine = null, lens = null, srcKey, rough = false, lastOp = ''
   // El nivel se elige por lo que hay detrás, y se vuelve a elegir si cambia (otra clase, otro fondo,
   // otro hijo): (1) fondo conocido → motor WebGL; (2) fondo de la página en Chromium → lente de la
   // unión; (3) si no, la capa de desenfoque. "native" fuerza la (3)
@@ -208,8 +208,8 @@ export function glassGroup(host) {
   const draw = () => {
     raf = 0
     const H = host.getBoundingClientRect(), ox = H.left + host.clientLeft, oy = H.top + host.clientTop, parts = []
-    // (las cajas redondeadas, para el motor: x, y, ancho, alto y los cuatro radios; null si alguna
-    // pieza tiene otra forma, y entonces el motor usa el path)
+    // (las cajas redondeadas, para el motor: x, y, ancho, alto, los cuatro radios y la opacidad; null
+    // si alguna pieza tiene otra forma, y entonces el motor usa el path)
     let boxes = []
     for (const e of host.querySelectorAll('[data-ns-glass]')) {
       // (sólo lo que se ve: una pieza con visibility:hidden —un panel que otra vista sustituye sin
@@ -222,7 +222,8 @@ export function glassGroup(host) {
       // tamaño en pantalla si está escalada, como a mitad de una entrada animada)
       const sx = P.w ? r.width / P.w : 1, sy = P.h ? r.height / P.h : 1
       parts.push(shift(P.d, r.left - ox, r.top - oy, sx, sy))
-      if (boxes && P.r) boxes.push(r.left - ox, r.top - oy, r.width, r.height, ...P.r.map(v => v * Math.min(sx, sy)))
+      // (con su opacidad: una pieza que se desvanece —al salir de una vista— lleva su vidrio con ella)
+      if (boxes && P.r) boxes.push(r.left - ox, r.top - oy, r.width, r.height, ...P.r.map(v => v * Math.min(sx, sy)), +getComputedStyle(e).opacity)
       else boxes = null
     }
     // (mientras una pieza —o lo que la contiene, dentro del grupo— se anima, se sigue cada fotograma;
@@ -231,8 +232,10 @@ export function glassGroup(host) {
     if (mv) schedule()
     const d = parts.join('')
     // (al pararse, el motor rehace en fino lo último que dibujó en basto durante el movimiento)
-    const settle = rough && !mv
-    if (d == last && !settle) return
+    // (y se redibuja también si sólo cambió la opacidad de alguna pieza)
+    const settle = rough && !mv, ok = boxes ? boxes.filter((_, i) => i % 9 == 8).join() : ''
+    if (d == last && ok == lastOp && !settle) return
+    lastOp = ok
     rough = mv && !!engine
     if (d != last) {
       last = d
