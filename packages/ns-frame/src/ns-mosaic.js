@@ -13,7 +13,7 @@
 // · El contenido va dentro del mayor rectángulo libre de cada pieza (padding automático).
 // Requiere ns-frame.js (que dibuja las formas). CSP-safe: estilos por constructable stylesheet.
 
-import { styles as inject, path, fontsReady, cssTime, mk, reduced } from './ns-frame.js'
+import { styles as inject, path, fontsReady, cssTime, mk, reduced, touch, TOUCH_MEDIA } from './ns-frame.js'
 import { flow, unflow } from './ns-flow.js'
 
 // nombres: las variables de efectos se llaman --ns-mosaic-* (light, width, fill, dot, line, a1, a2,
@@ -54,7 +54,6 @@ const CSS = `@layer ns{
 }`
 
 const M = new Map()
-const TOUCH = typeof matchMedia == 'function' ? matchMedia('(hover: none) and (pointer: coarse)') : { matches: false }
 let ro, raf, styled
 const TAU = Math.PI * 2, STEP = Math.PI * 4 / 9 // arcos en tramos de ≤ 80° (el núcleo dibuja cada tramo con un arco SVG)
 const fx = n => Math.round(n * 100) / 100 || 0   // sin "-0": un negativo en poly se mediría desde el final
@@ -381,8 +380,8 @@ function light(el, parts, W, H, holes, reduce, pl, pt, grid) {
   // efectos por tipo de pantalla: en táctil manda data-ns-mosaic-touch si existe; si no, se quitan
   // los que dependen de un puntero que flota (glow sigue al cursor; ripple es una onda al tocar,
   // incómoda en el móvil, donde cada toque también es scroll)
-  const touch = TOUCH.matches, tl = el.getAttribute('data-ns-mosaic-touch')
-  const want = (touch && tl != null ? tl : el.getAttribute('data-ns-mosaic') || '').split(/\s+/).filter(k => k && !(touch && tl == null && (k == 'glow' || k == 'ripple')))
+  const tap = touch(), tl = el.getAttribute('data-ns-mosaic-touch')
+  const want = (tap && tl != null ? tl : el.getAttribute('data-ns-mosaic') || '').split(/\s+/).filter(k => k && !(tap && tl == null && (k == 'glow' || k == 'ripple')))
   let L = el._nsl
   if (!want.length) { if (L) { L.svg.remove(); lightIO.unobserve?.(el) } el._nsl = null; return }
   if (!L) {
@@ -642,7 +641,8 @@ if (typeof document != 'undefined') {
       }
     }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-ns-area', 'data-ns-mosaic', 'data-ns-mosaic-touch', 'data-ns-flow', 'class'] })
     // pasar de ratón a táctil (tabletas con teclado, modo escritorio) cambia la lista de efectos
-    TOUCH.addEventListener?.('change', schedule)
+    // (al pasar de ratón a táctil —una tableta con teclado—, los efectos se vuelven a elegir)
+    if (typeof matchMedia == 'function') matchMedia(TOUCH_MEDIA).addEventListener?.('change', schedule)
     // las media queries cambian --ns-areas sin cambiar siempre el tamaño
     addEventListener('resize', schedule, { passive: true })
   }

@@ -114,6 +114,10 @@ export function watch<T extends { destroy?(): void }>(attr: string, make: (el: E
 export function quality(): 'high' | 'low'
 /** ¿Pide la persona movimiento reducido? Se consulta en el momento; false fuera del navegador. */
 export function reduced(): boolean
+/** ¿Pantalla táctil sin hover? (TOUCH_MEDIA). Se consulta en el momento; false fuera del navegador. */
+export function touch(): boolean
+/** La media query de touch(), para escuchar su cambio. */
+export const TOUCH_MEDIA: '(hover: none) and (pointer: coarse)'
 /**
  * Nodo SVG sin parsear markup (CSP-safe): atributos con setAttribute, estilos por CSSOM y los hijos
  * que se le pasen. `mk('path', { d }, {}, …hijos)`.

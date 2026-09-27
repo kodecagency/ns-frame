@@ -26,6 +26,7 @@ import { path, geometry, commands, lerp, safe, define, PRESETS, attach, detach, 
 | `update(el)` | Relee el elemento (tras cambiar variables CSS por JS). Las llamadas de una misma tarea se agrupan: se lee todo y luego se escribe todo, antes del siguiente pintado |
 | `quality()` | `'high'` o `'low'`: el nivel para los efectos caros. Automático (memoria ≤ 4 GB, 2 núcleos o menos, ahorro de datos, o fotogramas lentos al cargar) o fijo con `<html data-ns-quality="low\|high">`. Queda en `<html data-ns-tier>` para tu CSS; un cambio avisa con el evento `ns-quality` en `document` |
 | `reduced()` | `true` si la persona pide movimiento reducido; se consulta en el momento (y es `false` fuera del navegador). La usan todos los módulos que animan |
+| `touch()` · `TOUCH_MEDIA` | `true` en una pantalla táctil sin hover (teléfono, tableta); la consulta, para escuchar su cambio |
 | `mk(tag, attrs?, style?, ...hijos)` | un nodo SVG sin parsear markup (CSP estricta): atributos, estilos por CSSOM e hijos. Lo usan todos los módulos que dibujan en SVG |
 | `cssTime(el, var, def)` · `cssNum` · `cssVal` | una variable CSS de `el` como duración en ms, número o texto (o `def`) |
 | `fontsReady(fn)` | `fn` cuando las fuentes web ya cargaron (para volver a medir texto), en un momento libre y con una sola espera para todos |

@@ -331,6 +331,12 @@ const attr = (el, k) => el.getAttribute(el.localName == 'ns-frame' ? k : k == 's
  * cambiar sin recargar) y es false fuera del navegador (SSR). La usan todos los módulos que animan.
  */
 export const reduced = () => typeof matchMedia == 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+/**
+ * ¿Pantalla táctil sin hover (un teléfono, una tableta)? Se consulta en el momento; false fuera del
+ * navegador. Los efectos que siguen al puntero o dependen del hover se apagan con ella.
+ */
+export const TOUCH_MEDIA = '(hover: none) and (pointer: coarse)'
+export const touch = () => typeof matchMedia == 'function' && matchMedia(TOUCH_MEDIA).matches
 // alto contraste (Windows): un marco sin borde quedaría invisible, así que recibe uno del sistema
 const FORCED = DOM && matchMedia('(forced-colors: active)')
 
@@ -351,7 +357,7 @@ function extras(s) {
   if (s) WAIT.add(s)
   // (la promesa devuelve el módulo: open()/close() la esperan antes de que cargue)
   XP ||= import('./ns-extra.js').then(m => {
-    X = m.init({ mk, f, num, geometry, paint, write, read, reduced, styles, lerp })
+    X = m.init({ mk, f, num, geometry, paint, write, read, reduced, touch, styles, lerp })
     for (const q of WAIT) { q.key = 0; refresh(q) }
     WAIT.clear()
     return X

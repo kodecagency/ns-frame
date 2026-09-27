@@ -1,7 +1,7 @@
 /*! ns-frame/extra · se carga bajo demanda: degradados en bordes y animaciones de borde */
 // El núcleo lo importa sólo cuando algún elemento lo necesita y le pasa sus helpers,
 // así este módulo no importa nada y no crea dependencias circulares ni chunks compartidos.
-let mk, f, num, geometry, paint, write, read, reduced, lerp
+let mk, f, num, geometry, paint, write, read, reduced, touch, lerp
 
 // estilos de las animaciones de borde: sólo viajan (y se inyectan) si se usan
 const CSS = `@layer ns{
@@ -31,7 +31,7 @@ const CSS = `@layer ns{
 }`
 
 export function init(h) {
-  ({ mk, f, num, geometry, paint, write, read, reduced, lerp } = h)
+  ({ mk, f, num, geometry, paint, write, read, reduced, touch, lerp } = h)
   h.styles(CSS)
   return { gradient, motions: motions(), spot, aperture, play, scroll, accent }
 }
@@ -147,8 +147,7 @@ function spots() {
   for (const [s, r] of jobs) { const g = s.mo.spot.firstChild.firstChild; g.setAttribute('cx', f(px - r.left)); g.setAttribute('cy', f(py - r.top)) }
 }
 // sin puntero que flote (táctil) el foco no tiene nada que seguir: no se registra, y así el
-// scroll no recalcula todos los marcos en cada frame
-const touch = () => matchMedia('(hover: none) and (pointer: coarse)').matches
+// scroll no recalcula todos los marcos en cada frame (touch() viene del núcleo)
 function spot(s, on) {
   on && !touch() ? SPOTS.add(s) : SPOTS.delete(s)
   if (on) track()

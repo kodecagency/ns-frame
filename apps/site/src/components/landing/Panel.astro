@@ -31,6 +31,7 @@ const I = {
   idcard: '<path d="M13 19a4 4 0 0 0-8 0"/><path d="M16 10h2"/><path d="M16 14h2"/><circle cx="9" cy="12" r="3"/><rect x="2" y="5" width="20" height="14" rx="2"/>',
   dots: '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
   updown: '<path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/>',
+  back: '<path d="m15 18-6-6 6-6"/>',
 }
 type K = keyof typeof I
 // modos de enfoque: clave · nombre · descripción · icono · color (--m: el círculo del icono al activarse)
@@ -94,7 +95,12 @@ const ROW: [K, string][] = [['torch', 'Linterna'], ['timer', 'Temporizador'], ['
       <!-- la lista de modos: sustituye al panel mientras está abierta (el panel queda oculto, con su
            tamaño; el grupo de vidrio sólo dibuja las piezas visibles). Un modo a la vez: data-ns-choice
            con role="radio" -->
-      <div class="pn-menu" id="pn-menu" role="radiogroup" aria-label="Modos de enfoque" data-ns-choice hidden>
+      <div class="pn-menu" id="pn-menu" hidden>
+        <div class="pn-mhead">
+          <button type="button" class="pn-back" id="pn-back" data-ns-glass aria-label="Volver al panel"><svg viewBox="0 0 24 24" aria-hidden="true" set:html={I.back} /></button>
+          <b id="pn-mtitle">Enfoque</b>
+        </div>
+        <div class="pn-modes" role="radiogroup" aria-labelledby="pn-mtitle" data-ns-choice>
         {MODES.map(([k, n, s, ic, c], i) => (
           <div class="pn-mode" data-ns-glass data-color={c}>
             <button type="button" role="radio" aria-checked={String(!i)} class="pn-mpick" data-mode={k} data-name={n} data-color={c}>
@@ -105,6 +111,7 @@ const ROW: [K, string][] = [['torch', 'Linterna'], ['timer', 'Temporizador'], ['
             <button type="button" class="pn-mx" popovertarget="pn-opts" data-name={n} aria-label={`Opciones de ${n}`}><svg viewBox="0 0 24 24" aria-hidden="true" set:html={I.dots} /></button>
           </div>
         ))}
+        </div>
       </div>
     </div>
   </div>
@@ -146,6 +153,7 @@ const ROW: [K, string][] = [['torch', 'Linterna'], ['timer', 'Temporizador'], ['
     }
   }
   more.addEventListener('click', () => open(true))
+  document.getElementById('pn-back')!.addEventListener('click', () => open(false))
   menu.addEventListener('change', e => {
     const b = (e as CustomEvent<{ button: HTMLElement }>).detail.button
     pill.style.setProperty('--m', b.dataset.color!)
@@ -154,13 +162,13 @@ const ROW: [K, string][] = [['torch', 'Linterna'], ['timer', 'Temporizador'], ['
     on.setAttribute('aria-pressed', 'true')
     open(false)
   })
-  // (un toque en un modo ya elegido también cierra; fuera de las pastillas, cierra sin cambiar)
+  // (un toque en un modo ya elegido también cierra; en el fondo, entre pastillas, cierra sin cambiar)
   menu.addEventListener('click', e => {
     const t = e.target as Element, b = t.closest('.pn-mpick')
     // (las opciones de un modo abren su popover; el título es el del modo)
     const o = t.closest<HTMLElement>('.pn-mx')
     if (o) { document.getElementById('pn-otitle')!.textContent = o.dataset.name!; return }
-    if (b ? b.getAttribute('aria-checked') == 'true' : !t.closest('.pn-mode')) open(false)
+    if (b ? b.getAttribute('aria-checked') == 'true' : t == menu || t.classList.contains('pn-modes')) open(false)
   })
   // (Escape con las opciones abiertas las cierra a ellas —lo hace el navegador—; si no, cierra la lista)
   menu.addEventListener('keydown', e => { if (e.key == 'Escape' && !document.getElementById('pn-opts')!.matches(':popover-open')) { e.preventDefault(); open(false) } })
@@ -216,10 +224,17 @@ const ROW: [K, string][] = [['torch', 'Linterna'], ['timer', 'Temporizador'], ['
   /* la lista de modos, en el sitio del panel */
   .pn-stage { position: relative }
   .pn-open .pn { visibility: hidden }
-  .pn-menu { position: absolute; inset: calc(var(--g) * 1.6); display: flex; flex-direction: column; justify-content: center; gap: calc(var(--g) * .9); animation: pn-in .28s cubic-bezier(.2, .8, .2, 1) }
+  .pn-menu { position: absolute; inset: calc(var(--g) * 1.6); display: flex; flex-direction: column; gap: calc(var(--g) * .9); animation: pn-in .28s cubic-bezier(.2, .8, .2, 1) }
+  /* cabecera: volver al panel (un botón redondo de vidrio) y el título */
+  .pn-mhead { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; color: #fff }
+  .pn-mhead b { text-align: center; font-size: clamp(16px, 4.4vw, 19px); font-weight: 700 }
+  .pn-back { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; color: #fff }
+  .pn-back svg { width: 22px; height: 22px; stroke-width: 2.4 }
+  :global(:root:not([data-ns-input=pointer])) .pn-back:focus-visible { outline: 2px solid #fff; outline-offset: 2px }
+  .pn-modes { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: calc(var(--g) * .75) }
   .pn-menu[hidden] { display: none }
   /* cada fila: el modo (radio) y sus opciones (•••), dos botones dentro de una pastilla de vidrio */
-  .pn-mode { flex: none; display: flex; align-items: stretch; min-height: calc(var(--c) * .9); padding: 0 6px 0 0; border-radius: 999px; color: #fff; transition: background-color .25s }
+  .pn-mode { flex: none; display: flex; align-items: stretch; min-height: calc(var(--c) * .8); padding: 0 6px 0 0; border-radius: 999px; color: #fff; transition: background-color .25s }
   /* (el elegido se tiñe con el color de su modo) */
   .pn-mode:has(> .pn-mpick[aria-checked=true]) { background: color-mix(in srgb, var(--m) 42%, rgba(255, 255, 255, .1)) }
   .pn-mpick { flex: 1; min-width: 0; display: grid; grid-template-columns: 32px 1fr; align-items: center; gap: 6px; padding: 8px 0 8px 16px; border: 0; border-radius: 999px 0 0 999px; background: none; color: inherit; text-align: center }
@@ -236,7 +251,9 @@ const ROW: [K, string][] = [['torch', 'Linterna'], ['timer', 'Temporizador'], ['
 
   /* opciones de un modo: popover de ns-frame/pop con vidrio esmerilado; interruptores y segmento de
      ns-frame/controls */
-  .pn-opts { width: min(300px, calc(100vw - 32px)); padding: 16px 16px 14px; display: grid; gap: 10px; color: #fff; --ns-pop-bg: transparent; --ns-glass-tint: rgba(28, 28, 32, .62); --ns-glass-blur: 22px; --ns-ui-accent: #34c759 }
+  /* (display sólo abierto: un display en el popover pisaría el display:none que lo oculta cerrado) */
+  .pn-opts:popover-open { display: grid }
+  .pn-opts { width: min(300px, calc(100vw - 32px)); padding: 16px 16px 14px; gap: 10px; color: #fff; --ns-pop-bg: transparent; --ns-glass-tint: rgba(28, 28, 32, .62); --ns-glass-blur: 22px; --ns-ui-accent: #34c759 }
   .pn-opts > b { font-size: var(--t-control) }
   .pn-orow { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: var(--t-small) }
   .pn-olb { font: 500 var(--t-micro)/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: rgba(255, 255, 255, .6) }
