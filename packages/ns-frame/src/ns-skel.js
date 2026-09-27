@@ -88,7 +88,7 @@ function measure(el) {
   const cs = getComputedStyle(st.sk), band = parseFloat(cs.getPropertyValue('--ns-sk-band')) || 280, cl = el.clientLeft, ct = el.clientTop
   // (la primera vez, el punto del ciclo: el mismo en todos, así los brillos van sincronizados)
   let delay = ''
-  if (!st.synced) { st.synced = true; const T = (cs.getPropertyValue('--ns-skel-time') || cs.getPropertyValue('--ns-sk-time')).trim(); delay = -f(performance.now() % ((parseFloat(T) || 1.8) * (/ms$/.test(T) ? 1 : 1e3))) + 'ms' }
+  if (!st.synced) { st.synced = true; delay = -f(performance.now() % cssTime(cs, '--ns-skel-time', cssTime(cs, '--ns-sk-time', 1800))) + 'ms' }
   // (lectura y escritura separadas: en un lote se mide todo y después se escribe todo)
   return () => {
     const s = st.sk.style

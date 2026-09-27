@@ -33,8 +33,8 @@ const M = [
         </article>
       ))}
       <article class="mv prog c-green" id="mv-prog" data-ns="tl+br bevel 18; radius 3" data-ns-motion="progress">
-        <b><span id="mv-val" class="num">64</span> %</b>
-        <label class="range"><span>Progreso en el borde</span><input type="range" min="0" max="100" value="64" id="mv-input"></label>
+        <b class="num"><output for="mv-input">64 %</output></b>
+        <label data-ns-field><span>Progreso en el borde</span><input type="range" min="0" max="100" value="64" id="mv-input" data-ns-range data-ns-unit=" %"></label>
         <code class="tag">"progress"</code>
       </article>
     </div>
@@ -44,7 +44,8 @@ const M = [
 
 <script>
   const input = document.getElementById('mv-input') as HTMLInputElement, box = document.getElementById('mv-prog')!
-  input.addEventListener('input', () => { box.style.setProperty('--ns-progress', input.value); document.getElementById('mv-val')!.textContent = input.value })
+  // (la pista y la cifra, output[for], las pone ns-frame/controls: aquí sólo el progreso del borde)
+  input.addEventListener('input', () => box.style.setProperty('--ns-progress', input.value))
 </script>
 
 <style>
@@ -59,8 +60,6 @@ const M = [
   .mv b { font: 600 var(--t-title)/1.2 var(--display); font-stretch: 106% }
   .mv span { font-size: var(--t-small); color: var(--text-2) }
   .mv .tag { margin-top: auto; padding-top: 12px }
-  .range { display: grid; gap: 6px; font-size: var(--t-small); color: var(--text-2) }
-  .range input { width: 100%; accent-color: var(--signal); height: 24px; margin: 0 }
   @media (max-width: 960px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)) } }
   @media (max-width: 640px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px } .mv { min-height: 128px; padding: 20px 18px } .mv b { font-size: var(--t-control) } .mv span { font-size: var(--t-caption) } }
 </style>

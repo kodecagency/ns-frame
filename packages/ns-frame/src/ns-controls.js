@@ -19,16 +19,19 @@
 // · data-ns-range: pista fina, lo recorrido con el acento, mando claro. Actualiza el output[for] de
 //   su id con el valor (data-ns-unit se añade detrás; data-ns-scale lo multiplica: 100 → porcentaje).
 // · data-ns-swatches: muestras redondas; el color sale de data-color (por CSSOM: CSP estricta).
+// · data-ns-switch: en un <input type="checkbox">, un interruptor (role="switch"). Variables:
+//   --ns-switch-w, -h, -on, -off, -knob, -time.
+// · data-ns-copy="#id": un botón que copia el texto de #id y dice «Copiado» un momento (ver copy()).
 // · data-ns-level: nivel vertical (brillo, volumen): una píldora alta que se llena desde abajo, con
 //   un icono abajo. <label data-ns-level><input type="range" aria-label="Brillo"><svg …/></label>.
 //   Es un input range de verdad (teclado, lector de pantalla), vertical con writing-mode (sin girar:
 //   su caja es la del nivel). Con data-ns-glass, de vidrio.
 //   Variables: --ns-level-w, -h, -radius, -fill, -track, -ink (el icono), -icon (tamaño), -icon-y.
 // Sin dependencias (usa el núcleo) y CSP-safe.
-import { styles, watch } from './ns-frame.js'
+import { styles, watch, cssTime } from './ns-frame.js'
 
 const CSS = `@layer ns{
-:where([data-ns-segment],[data-ns-chips],[data-ns-field],[data-ns-swatches],[data-ns-range],[data-ns-level]){--_s:var(--ns-ui-surface,#141416);--_l:var(--ns-ui-line,rgba(255,255,255,.09));--_i:var(--ns-ui-ink,#f4f4f5);--_m:var(--ns-ui-muted,rgba(244,244,245,.62));--_a:var(--ns-ui-accent,#00e676);--_r:var(--ns-ui-radius,14px);--_h:var(--ns-ui-h,40px)}
+:where([data-ns-segment],[data-ns-chips],[data-ns-field],[data-ns-swatches],[data-ns-range],[data-ns-level],[data-ns-switch]){--_s:var(--ns-ui-surface,#141416);--_l:var(--ns-ui-line,rgba(255,255,255,.09));--_i:var(--ns-ui-ink,#f4f4f5);--_m:var(--ns-ui-muted,rgba(244,244,245,.62));--_a:var(--ns-ui-accent,#00e676);--_r:var(--ns-ui-radius,14px);--_h:var(--ns-ui-h,40px)}
 :where([data-ns-segment]){display:inline-flex;flex-wrap:wrap;gap:2px;padding:4px;border-radius:var(--_r);background:var(--_s);border:1px solid var(--_l)}
 :where([data-ns-segment]) > :where(button){min-height:var(--_h);padding:0 14px;border:0;border-radius:calc(var(--_r) - 4px);background:transparent;color:var(--_m);font:inherit;font-family:var(--ns-ui-font,inherit);font-size:13.5px;cursor:pointer;transition:background-color .25s cubic-bezier(.2,.8,.2,1),color .2s}
 :where([data-ns-segment~=sm]) > :where(button){min-height:calc(var(--_h) - 6px);padding:0 11px;font-size:12.5px}
@@ -45,6 +48,7 @@ const CSS = `@layer ns{
 :where([data-ns-field]) :where(output){color:var(--_i);letter-spacing:0;text-transform:none}
 :where([data-ns-field]) > :where(select,input:not([type=range]),textarea){-webkit-appearance:none;appearance:none;width:100%;min-height:calc(var(--_h) + 8px);box-sizing:border-box;padding:0 14px;border-radius:var(--_r);border:1px solid var(--_l);background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02)),var(--_s);box-shadow:inset 0 1px 0 rgba(255,255,255,.05);color:var(--_i);font:600 13.5px/1 var(--ns-ui-font,inherit);letter-spacing:0;text-transform:none;transition:border-color .2s}
 :where([data-ns-field]) > :where(select){padding-right:38px;cursor:pointer}
+:where([data-ns-field]) > :where(textarea){min-height:calc(var(--_h) * 3);padding:12px 14px;font-weight:400;line-height:1.65;resize:vertical}
 :where([data-ns-field]):has(> select)::after{content:"";position:absolute;right:17px;bottom:calc((var(--_h) + 8px) / 2 - 1px);width:7px;height:7px;border:solid var(--_m);border-width:0 1.6px 1.6px 0;rotate:45deg;pointer-events:none}
 :where([data-ns-field]) > :where(select,input,textarea):active{border-color:color-mix(in srgb,var(--_a) 55%,transparent)}
 :where([data-ns-field]) :where(option){background:var(--_s);color:var(--_i)}
@@ -72,7 +76,15 @@ const CSS = `@layer ns{
 :root:not([data-ns-input=pointer]) :where([data-ns-level]):has(> input:focus-visible){outline:2px solid var(--ns-ui-accent,#00e676);outline-offset:3px}
 :where([data-ns-level]) > :where(input[type=range]):focus-visible{outline:none}
 @media (forced-colors:active){:where([data-ns-level]){border:1px solid CanvasText}:where([data-ns-level]) > :where(input[type=range]){background:linear-gradient(0deg,Highlight var(--p,50%),transparent var(--p,50%));forced-color-adjust:none}}
-@media (prefers-reduced-motion:reduce){:where([data-ns-segment],[data-ns-chips]) > :where(button){transition:none}}
+:where(input[type=checkbox][data-ns-switch]){-webkit-appearance:none;appearance:none;position:relative;flex:none;width:var(--ns-switch-w,51px);height:var(--ns-switch-h,31px);margin:0;border-radius:999px;background:var(--ns-switch-off,rgba(120,120,128,.36));cursor:pointer;transition:background-color var(--ns-switch-time,.25s)}
+:where(input[type=checkbox][data-ns-switch])::after{content:"";position:absolute;top:2px;left:2px;width:calc(var(--ns-switch-h,31px) - 4px);height:calc(var(--ns-switch-h,31px) - 4px);border-radius:50%;background:var(--ns-switch-knob,#fff);box-shadow:0 2px 6px rgba(0,0,0,.28),0 0 0 .5px rgba(0,0,0,.04);transition:translate var(--ns-switch-time,.35s) cubic-bezier(.3,1.3,.5,1)}
+:where(input[type=checkbox][data-ns-switch]):checked{background:var(--ns-switch-on,var(--_a))}
+:where(input[type=checkbox][data-ns-switch]):checked::after{translate:calc(var(--ns-switch-w,51px) - var(--ns-switch-h,31px)) 0}
+:where(input[type=checkbox][data-ns-switch]):disabled{opacity:.45;cursor:default}
+:root:not([data-ns-input=pointer]) :where(input[type=checkbox][data-ns-switch]):focus-visible{outline:2px solid var(--_a);outline-offset:2px}
+:where([data-ns-copy]){cursor:pointer}
+@media (forced-colors:active){:where(input[type=checkbox][data-ns-switch]){border:1px solid CanvasText}:where(input[type=checkbox][data-ns-switch]):checked{background:Highlight}:where(input[type=checkbox][data-ns-switch])::after{background:CanvasText}}
+@media (prefers-reduced-motion:reduce){:where([data-ns-segment],[data-ns-chips]) > :where(button),:where(input[type=checkbox][data-ns-switch]),:where(input[type=checkbox][data-ns-switch])::after{transition:none}}
 @media (forced-colors:active){:where([data-ns-segment],[data-ns-chips]) > :where(button):is([aria-pressed=true],[aria-checked=true]){outline:2px solid Highlight}}
 }
 [data-ns-segment]>button,[data-ns-chips]>button{color:var(--ns-ui-muted,rgba(244,244,245,.62))}
@@ -143,6 +155,37 @@ export function level(el) {
   return { update: () => r?.update(), destroy() { r?.destroy(); EV.forEach(([t, f]) => el.removeEventListener(t, f)) } }
 }
 
+/**
+ * Botón de copiar: data-ns-copy="#id" (o un selector) copia el texto de ese elemento (su value si es un
+ * campo). El botón dice data-ns-copied ("Copiado") o data-ns-copy-error ("No se pudo copiar") durante
+ * --ns-copy-time (1.4s) y vuelve a su texto; un lector de pantalla lo oye por una región aria-live.
+ * Evento ns-copy en el botón con detail { text, ok }. Devuelve { destroy() }.
+ */
+let live = null
+export function copy(el) {
+  css()
+  let t = 0, label = null
+  const say = s => {
+    if (!live) { live = document.createElement('span'); live.setAttribute('aria-live', 'polite'); Object.assign(live.style, { position: 'fixed', width: '1px', height: '1px', overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' }); document.body.append(live) }
+    live.textContent = ''; requestAnimationFrame(() => { live.textContent = s })
+  }
+  const click = async () => {
+    const n = document.querySelector(el.getAttribute('data-ns-copy'))
+    if (!n) return
+    const text = 'value' in n && typeof n.value == 'string' ? n.value : n.textContent
+    let ok = true
+    try { await navigator.clipboard.writeText(text) } catch { ok = false }
+    const msg = ok ? el.getAttribute('data-ns-copied') || 'Copiado' : el.getAttribute('data-ns-copy-error') || 'No se pudo copiar'
+    label ??= el.textContent
+    el.textContent = msg; say(msg)
+    el.dispatchEvent(new CustomEvent('ns-copy', { bubbles: true, detail: { text, ok } }))
+    clearTimeout(t)
+    t = setTimeout(() => { el.textContent = label; label = null }, cssTime(el, '--ns-copy-time', 1400))
+  }
+  el.addEventListener('click', click)
+  return { destroy() { el.removeEventListener('click', click); clearTimeout(t); if (label != null) el.textContent = label } }
+}
+
 /** Muestras de color: cada botón toma el color de su data-color. */
 export function swatches(el) {
   css()
@@ -156,5 +199,12 @@ export function swatches(el) {
 // automático: el CSS con cualquiera de los atributos; los que necesitan JS, con el suyo
 watch('data-ns-range', el => el.matches('input[type=range]') ? range(el) : null)
 watch('data-ns-level', el => level(el))
+watch('data-ns-switch', el => {
+  css()
+  // (se anuncia como interruptor, no como casilla)
+  el.hasAttribute('role') || el.setAttribute('role', 'switch')
+  return null
+})
+watch('data-ns-copy', el => copy(el))
 watch('data-ns-swatches', el => swatches(el))
 for (const a of ['data-ns-segment', 'data-ns-chips', 'data-ns-field']) watch(a, () => { css(); return null })

@@ -29,7 +29,7 @@ const MEDIA = [
     </SectionHead>
 
     <div class="play">
-      <div class="stage" data-ns="all round 22">
+      <div class="stage ns-dots" data-ns="all round 22">
         <div class="bar">
           <div data-ns-segment id="shape-tabs" role="group" aria-label="Forma de la tarjeta" data-ns-choice>
             {SHAPES.map((s, i) => <button type="button" data-full={s.full} data-code={s.code} aria-pressed={String(i == 0)}>{s.name}</button>)}
@@ -45,7 +45,7 @@ const MEDIA = [
         {MEDIA.map((m, i) => (
           <figure class:list={['m', 'm' + i]}>
             <img src={`https://picsum.photos/seed/${m.seed}/800/600.webp`} alt={m.alt} width="800" height="600" loading="lazy" data-ns={m.s}>
-            <figcaption class="tag"><b>{m.c}</b></figcaption>
+            <figcaption class="tag" data-ns-glass="frost"><b>{m.c}</b></figcaption>
           </figure>
         ))}
       </div>
@@ -64,6 +64,8 @@ const MEDIA = [
 </section>
 
 <script>
+  // el rótulo de cada foto es vidrio de la librería
+  import 'ns-frame/glass'
   const card = document.getElementById('shape-card')!, code = document.getElementById('shape-code')!, tabs = document.getElementById('shape-tabs')!
   const btns = [...tabs.querySelectorAll('button')]
   const set = (shape: string, label: string) => { card.setAttribute('data-ns', shape); code.textContent = label }
@@ -82,7 +84,7 @@ const MEDIA = [
 <style>
   .play { display: grid; grid-template-columns: 1.15fr 1fr; gap: 14px }
   .stage { position: relative; display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 16px 16px 20px; min-width: 0;
-    background: radial-gradient(60% 60% at 50% 45%, rgba(0, 230, 118, .08), transparent 70%), radial-gradient(circle, rgba(255, 255, 255, .08) 1px, transparent 1.5px) 0 0 / 16px 16px, var(--bg-2); --ns-border: var(--line-2) }
+    background: radial-gradient(60% 60% at 50% 45%, rgba(0, 230, 118, .08), transparent 70%), var(--bg-2); --ns-border: var(--line-2); --ns-pat: rgba(255, 255, 255, .08); --ns-pat-size: 16px; --ns-pat-mask: none }
   .bar { align-self: stretch; display: flex; justify-content: center }
   .card { width: min(340px, 90%); background: #fafafa; color: #0a0a0a; --ns-border: rgba(255, 255, 255, .5); --ns-morph-time: 520; filter: drop-shadow(0 24px 34px var(--veil-2)); display: flex; flex-direction: column }
   .card img { width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover }
@@ -99,7 +101,8 @@ const MEDIA = [
   .m { margin: 0; position: relative; min-height: 0 }
   .m0 { grid-column: 1 / -1 }
   .m img { width: 100%; height: 100%; min-height: 150px; object-fit: cover; --ns-border: rgba(255, 255, 255, .18) }
-  .m figcaption { position: absolute; left: 14px; bottom: 12px; padding: 5px 9px; border-radius: var(--r-sm); background: rgba(10, 10, 12, .72); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px) }
+  /* rótulo: vidrio esmerilado de ns-frame/glass (frost: desenfoque nativo, tinte y canto fino) */
+  .m figcaption { position: absolute; left: 14px; bottom: 12px; padding: 5px 9px; border-radius: var(--r-sm); --ns-glass-tint: rgba(10, 10, 12, .55); --ns-glass-blur: 8px }
 
   .sub { margin: 44px 0 14px; font-size: var(--t-title); color: var(--text) }
   .wall { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px }

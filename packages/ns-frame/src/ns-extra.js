@@ -36,7 +36,7 @@ export function init(h) {
   return { gradient, motions: motions(), spot, aperture, play, scroll, accent }
 }
 
-// linear-gradient()/radial-gradient() de CSS -> gradiente SVG en coordenadas de la caja
+// trocea por comas de nivel superior (respeta los paréntesis anidados, como los de rgba())
 function split(s) {
   const out = []
   let d = 0, cur = ''

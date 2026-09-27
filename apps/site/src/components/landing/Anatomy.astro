@@ -49,14 +49,14 @@ const NOTES = [
       <div class="box" data-ns="tl+br bevel 18; radius 3">
         <h3>Forma según su propio ancho</h3>
         <p>Debajo de 420 px el panel pierde la muesca y reduce el chaflán. Mueve el control o arrastra el borde derecho.</p>
-        <label class="range"><span>Ancho del componente: <b id="q-val" class="num">100 %</b></span><input type="range" min="30" max="100" value="100" id="q-in"></label>
+        <label data-ns-field><span>Ancho del componente <output for="q-in" class="num">100 %</output></span><input type="range" min="30" max="100" value="100" id="q-in" data-ns-range data-ns-unit=" %"></label>
         <div class="qbox" id="q-box"><div class="q" data-ns="panel; @<420 all bevel 10; @<420 top none; radius 3"><span id="q-w" class="num"></span></div></div>
         <pre>panel; <b>@&lt;420</b> all bevel 10; <b>@&lt;420</b> top none</pre>
       </div>
       <div class="box" data-ns="tl+br bevel 18; radius 3">
         <h3>Tu propio polígono</h3>
         <p>Coordenadas en px, % o <code>100%-24</code>; <code>rN</code> redondea ese vértice. Una flecha de «siguiente» en una sola línea:</p>
-        <div class="poly"><a href="#empezar" class="arrow" data-ns="poly 26 0 r4, 100%-56 0 r4, 100% 50% r3, 100%-56 100% r4, 26 100% r4, 0 100%-26 r3, 0 26 r3" data-ns-hover="poly 18 0 r4, 100%-44 0 r4, 100% 50% r3, 100%-44 100% r4, 18 100% r4, 0 100%-18 r3, 0 18 r3">Siguiente paso</a></div>
+        <div class="poly ns-dots"><a href="#empezar" class="arrow" data-ns="poly 26 0 r4, 100%-56 0 r4, 100% 50% r3, 100%-56 100% r4, 26 100% r4, 0 100%-26 r3, 0 26 r3" data-ns-hover="poly 18 0 r4, 100%-44 0 r4, 100% 50% r3, 100%-44 100% r4, 18 100% r4, 0 100%-18 r3, 0 18 r3">Siguiente paso</a></div>
         <pre>poly 26 0 r4, 100%-56 0 r4, 100% 50% r3,
      100%-56 100% r4, 26 100% r4, 0 100%-26 r3, 0 26 r3</pre>
       </div>
@@ -67,8 +67,9 @@ const NOTES = [
 <script>
   import 'ns-frame/link'
   const box = document.getElementById('q-box')!, input = document.getElementById('q-in') as HTMLInputElement
-  const w = document.getElementById('q-w')!, val = document.getElementById('q-val')!
-  input.addEventListener('input', () => { box.style.width = input.value + '%'; val.textContent = input.value + ' %' })
+  const w = document.getElementById('q-w')!
+  // (la pista y la cifra, output[for], las pone ns-frame/controls: aquí sólo el ancho)
+  input.addEventListener('input', () => { box.style.width = input.value + '%' })
   new ResizeObserver(() => { w.textContent = Math.round(box.offsetWidth) + ' px' + (box.offsetWidth < 420 ? ' · forma compacta' : ' · forma completa') }).observe(box)
 </script>
 
@@ -95,12 +96,9 @@ const NOTES = [
   .box { background: var(--surface); --ns-border: var(--line-2); padding: 24px; display: flex; flex-direction: column; gap: 10px; min-width: 0 }
   .box h3 { font-size: var(--t-title) }
   .box p { margin: 0; color: var(--text-2); font-size: var(--t-ui) }
-  .range { display: grid; gap: 6px; font-size: var(--t-small); color: var(--text-2) }
-  .range b { color: var(--text); font-weight: 500 }
-  .range input { width: 100%; accent-color: var(--signal); height: 24px; margin: 0 }
   .qbox { resize: horizontal; overflow: hidden; width: 100%; min-width: 160px; max-width: 100% }
   .q { height: 150px; display: grid; place-items: center; background: linear-gradient(180deg, rgba(255, 181, 71, .1), rgba(20, 20, 22, .6)); --ns-border: rgba(255, 181, 71, .55); --ns-inner: 5px; --ns-morph-time: 360; font: var(--t-caption) var(--mono); color: var(--text-2) }
-  .poly { display: grid; place-items: center; min-height: 150px; border-radius: 12px; background: radial-gradient(circle, rgba(255, 255, 255, .07) 1px, transparent 1.5px) 0 0 / 14px 14px }
+  .poly { display: grid; place-items: center; min-height: 150px; border-radius: 12px; --ns-pat: rgba(255, 255, 255, .07); --ns-pat-mask: none }
   .arrow { display: inline-grid; place-items: center; min-height: 64px; padding: 0 64px 0 34px; background: var(--signal); color: var(--ink-go); font: 600 var(--t-body) var(--display); font-stretch: 106%; --ns-morph-time: 300 }
   pre { margin: auto 0 0; padding: 12px 14px; border-radius: 10px; background: var(--veil-1); color: var(--text-2); font: var(--t-caption)/1.6 var(--mono); white-space: pre-wrap; word-break: break-word }
   pre b { color: var(--signal); font-weight: 500 }

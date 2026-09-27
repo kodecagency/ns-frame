@@ -351,7 +351,7 @@ export function pathField(d, w, h, step = 1) {
 }
 /**
  * Contorno de un path (M, L, A, C, Z absolutos, como los de ns-frame) como polígono cerrado [[x, y]]:
- * rectas tal cual, curvas y arcos en tramos de ~`seg` px. Lo usan la luz del vidrio y el relieve.
+ * rectas tal cual, curvas y arcos en tramos de ~`seg` px. Utilidad exportada del núcleo del vidrio.
  */
 export function polyline(d, seg = 5) {
   const t = d.match(/[A-Za-z]|-?\d*\.?\d+(?:e-?\d+)?/g) || [], P = []
@@ -495,9 +495,6 @@ function fitRect(n, S, iw, ih) {
   return [S.left + at(ox, S.width - w), S.top + at(oy ?? ox, S.height - h), w, h]
 }
 
-// ¿Es clara la zona de una imagen que queda bajo el grupo (su rectángulo r en pantalla)? Se lee una
-// copia de la imagen pedida con CORS, reducida a 6×6: si el servidor no lo permite, no se sabe
-// (undefined) y el vidrio se queda como está. `again` se llama cuando la copia llega
 // copias de imágenes pedidas con CORS (legibles: no manchan un canvas), una por url. `again` se
 // llama cuando llega. Devuelve la entrada ({ im } si ya está, { bad } si el servidor no lo permite)
 const LUMS = new Map()
@@ -514,12 +511,15 @@ function corsImg(u, again) {
   if (!e.im && !e.bad && again) e.cb.add(again)
   return e
 }
+// ¿Es clara la zona de una imagen que queda bajo el grupo (su rectángulo r en pantalla)? Se lee una
+// copia de la imagen pedida con CORS, reducida a 6×6: si el servidor no lo permite, no se sabe
+// (undefined) y el vidrio se queda como está. `again` se llama cuando la copia llega
 function imgLum(n, r, again) {
   const u = n.currentSrc || n.src
   if (!u) return
   const e = corsImg(u, again)
   if (e.bad || !e.im) return
-  const S = n.getBoundingClientRect(), [x, y, w, h] = fitRect(n, S, e.im.naturalWidth, e.im.naturalHeight)
+  const S = n.getBoundingClientRect(), [x, y, w] = fitRect(n, S, e.im.naturalWidth, e.im.naturalHeight)
   const k = e.im.naturalWidth / w, sx = (r.left - x) * k, sy = (r.top - y) * k, sw = r.width * k, sh = r.height * k
   if (sw <= 0 || sh <= 0) return
   const c = e.cv ||= Object.assign(document.createElement('canvas'), { width: 6, height: 6 }), g = c.getContext('2d', { willReadFrequently: true })
@@ -767,14 +767,11 @@ export function liquid(el, o = {}) {
   // Recorte del vidrio: una máscara SVG de este documento (mask: url(#…)). Se actualiza cambiando
   // un <path>, en el mismo frame, sin imágenes que decodificar. (Chromium no aplica un clip-path
   // libre al desenfoque de fondo si un antepasado recorta con esquinas redondeadas: pinta el
-  // rectángulo entero. La máscara sí se respeta.) El canto es otra máscara: el trazo del contorno,
-  // desenfocado y recortado a la forma, que se desvanece hacia dentro sin línea interior.
-  const mBody = mk('path', { fill: '#fff' }), mEdge = mk('path', { fill: 'none', stroke: '#fff', filter: `url(#${id}eb)` }), cEdge = mk('path')
-  const maskB = mk('mask', { id: id + 'm', maskUnits: 'userSpaceOnUse', x: 0, y: 0 }), maskE = mk('mask', { id: id + 'e', maskUnits: 'userSpaceOnUse', x: 0, y: 0 })
+  // rectángulo entero. La máscara sí se respeta.) El canto es la imagen de rimImage(): el trazo del
+  // contorno, desenfocado y recortado a la forma, aplicada como mask a la capa .ns-liquid-rim.
+  const mBody = mk('path', { fill: '#fff' })
+  const maskB = mk('mask', { id: id + 'm', maskUnits: 'userSpaceOnUse', x: 0, y: 0 })
   maskB.append(mBody)
-  const gE = mk('g', { 'clip-path': `url(#${id}c)` }); gE.append(mEdge); maskE.append(gE)
-  const clipE = mk('clipPath', { id: id + 'c' }); clipE.append(cEdge)
-  const eBlur = mk('feGaussianBlur'), fEdge = mk('filter', { id: id + 'eb', x: '-20%', y: '-20%', width: '140%', height: '140%' }); fEdge.append(eBlur)
   // Lente (Chromium): dos filtros que se turnan. El mapa nuevo se carga en el que no está en uso y
   // sólo se cambia de filtro cuando ya está decodificado: nunca hay un frame sin mapa (el filtro lo
   // leería transparente, rojo y verde a 0, y desplazaría todo el fondo en diagonal). Mientras la
@@ -820,7 +817,7 @@ export function liquid(el, o = {}) {
   defs.append(
     // brillo interior del vidrio, arriba (el canto lo pone ns-light)
     stops(mk('radialGradient', { id: id + 's', cx: .5, cy: -.15, r: .95 }), [[0, .22], [.55, .05], [1, 0]]),
-    maskB, maskE, clipE, fEdge, ...lenses.map(l => l.f))
+    maskB, ...lenses.map(l => l.f))
   // el canto: la silueta con el filtro de luz de ns-light (una línea especular donde el borde mira a
   // la luz de la página y un reflejo tenue enfrente), nítido a cualquier zoom
   const path = mk('path', { class: 'ns-lf' }), rim = mk('path', { class: 'ns-lr' })
@@ -1369,9 +1366,8 @@ export function liquid(el, o = {}) {
     back.style.mask = back.style.webkitMask = mb
     back.hidden = !(src && d)
     if (!g || !d) { glass.style.backdropFilter = back.style.filter = ''; now = null; return }
-    for (const M of [maskB, maskE]) setA(M, { width: r2(bw), height: r2(bh) })
-    mBody.setAttribute('d', d); mEdge.setAttribute('d', d); cEdge.setAttribute('d', d)
-    mEdge.setAttribute('stroke-width', r2(edgePx * 1.6)); eBlur.setAttribute('stdDeviation', r2(edgePx / 2.2))
+    setA(maskB, { width: r2(bw), height: r2(bh) })
+    mBody.setAttribute('d', d)
     // (con lente, el canto va dentro de su filtro; la capa aparte sólo queda de respaldo)
     edge.style.display = low || (lensPx && (LENS || src)) ? 'none' : ''
     if (!lensPx) { glass.style.backdropFilter = back.style.filter = ''; now = null; return }

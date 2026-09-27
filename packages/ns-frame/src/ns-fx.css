@@ -105,7 +105,7 @@
 /* ── Patrones de fondo (debajo del contenido, con desvanecido) ── */
 :is(.ns-dots, .ns-grid, .ns-lines, .ns-stripes, .ns-scan, .ns-scales) { isolation: isolate; position: relative }
 :is(.ns-dots, .ns-grid, .ns-lines, .ns-stripes, .ns-scan, .ns-scales)::before {
-  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; border-radius: inherit;
   --c: var(--ns-pat, rgba(61, 224, 255, .28)); --z: var(--ns-pat-size, 14px);
   -webkit-mask: var(--ns-pat-mask, linear-gradient(#000, transparent 85%));
   mask: var(--ns-pat-mask, linear-gradient(#000, transparent 85%));

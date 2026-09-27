@@ -23,8 +23,9 @@
 //   mismo, las aperturas (open, data-ns-open) no lo recortan.
 // · Como cualquier vidrio: sin filter, opacity < 1, mask ni backdrop-filter en sus antepasados.
 
-import { styles, path, shapeOf, pathOf, update, watch, quality } from './ns-frame.js'
+import { styles, path, shapeOf, pathOf, update, watch, quality, cssNum } from './ns-frame.js'
 import { liquid, shift, pathField, lensURL, LENS } from './ns-liquid.js'
+import { rounded } from './ns-light.js'
 
 const CSS = `@layer ns{
 [data-ns-glass]{background:none;--ns-glass-shadow:rgba(0,0,0,.28)}
@@ -45,19 +46,6 @@ const CSS = `@layer ns{
 }`
 let styled = 0
 const G = new WeakMap(), SH = new WeakMap()
-const px = v => parseFloat(v) || 0
-// rectángulo con el border-radius real, esquina por esquina (elíptico si hace falta, con el mismo
-// reparto que el navegador cuando los radios no caben)
-function rounded(el, w, h) {
-  const s = getComputedStyle(el), R = ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].map(c => {
-    const [a, b = a] = s['border' + c + 'Radius'].split(' ')
-    return [a.endsWith('%') ? px(a) * w / 100 : px(a), b.endsWith('%') ? px(b) * h / 100 : px(b)]
-  })
-  const f = Math.min(1, w / (R[0][0] + R[1][0] || 1), w / (R[3][0] + R[2][0] || 1), h / (R[0][1] + R[3][1] || 1), h / (R[1][1] + R[2][1] || 1))
-  const [tl, tr, br, bl] = R.map(([x, y]) => [x * f, y * f])
-  const A = ([x, y], X, Y) => x && y ? `A${x} ${y} 0 0 1 ${X} ${Y}` : `L${X} ${Y}`
-  return `M${tl[0]} 0L${w - tr[0]} 0${A(tr, w, tr[1])}L${w} ${h - br[1]}${A(br, w - br[0], h)}L${bl[0]} ${h}${A(bl, 0, h - bl[1])}L0 ${tl[1]}${A(tl, tl[0], 0)}Z`
-}
 
 // ── Canto ──
 // El vidrio no lleva un contorno plano: el canto lo dibuja la luz de la página (ns-frame/light), con la
@@ -150,8 +138,8 @@ function unionLens(host, layer) {
   layer.append(svg)
   let timer = 0, cur = -1, tok = 0, key = ''
   const build = (d, W, H) => {
-    const s = getComputedStyle(host), num = (k, v) => { const x = parseFloat(s.getPropertyValue(k)); return isNaN(x) ? v : x }
-    const lensPx = num('--ns-glass-lens', 22), depth = Math.max(1, num('--ns-glass-depth', 18))
+    const s = getComputedStyle(host)
+    const lensPx = cssNum(s, '--ns-glass-lens', 22), depth = Math.max(1, cssNum(s, '--ns-glass-depth', 18))
     const k = [d, W, H, lensPx, depth].join('|')
     if (k == key) return
     key = k
@@ -219,6 +207,9 @@ export function glassGroup(host) {
     raf = 0
     const H = host.getBoundingClientRect(), ox = H.left + host.clientLeft, oy = H.top + host.clientTop, parts = []
     for (const e of host.querySelectorAll('[data-ns-glass]')) {
+      // (sólo lo que se ve: una pieza con visibility:hidden —un panel que otra vista sustituye sin
+      // perder su sitio— no deja su vidrio pintado en la unión)
+      if (e.checkVisibility ? !e.checkVisibility({ visibilityProperty: true }) : getComputedStyle(e).visibility == 'hidden') continue
       const P = SH.get(e)?.()
       if (!P?.d) continue
       const r = e.getBoundingClientRect()

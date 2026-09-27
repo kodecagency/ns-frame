@@ -919,9 +919,8 @@ if (DOM) {
   addEventListener('keydown', e => { if (!e.metaKey && !e.ctrlKey && !e.altKey) input('keyboard') }, { capture: true, passive: true })
   // nivel de calidad desde el principio: el CSS de los módulos lo lee en <html data-ns-tier>
   quality()
-  const sel ='[data-ns],[data-ns-nest],ns-frame'
-  const scan = n => { if (n.nodeType != 1) return; n.matches(sel) && attach(n); n.querySelectorAll(sel).forEach(attach) }
-  const gone = n => { if (n.nodeType != 1 || n.isConnected) return; detach(n); n.querySelectorAll(sel).forEach(x => detach(x)) }
+  const scan = n => { if (n.nodeType != 1) return; n.matches(SEL) && attach(n); n.querySelectorAll(SEL).forEach(attach) }
+  const gone = n => { if (n.nodeType != 1 || n.isConnected) return; detach(n); n.querySelectorAll(SEL).forEach(x => detach(x)) }
   if (!customElements.get('ns-frame')) customElements.define('ns-frame', class extends HTMLElement {
     static observedAttributes = ATTRS
     connectedCallback() { attach(this) }

@@ -15,6 +15,7 @@
 // Sin WebGL2, sin CORS en la imagen o si se pierde el contexto: el grupo sigue con su capa de
 // desenfoque nativa (ns-frame/glass).
 import { pathField } from './ns-liquid.js'
+import { cssNum } from './ns-frame.js'
 
 const VS = `#version 300 es
 in vec2 a; out vec2 p; uniform vec2 size;
@@ -109,7 +110,7 @@ export function glEngine(host, src, onFail, onReady) {
     im.src = url
   }
   // vídeo: la textura sigue a cada fotograma mientras se reproduce
-  const tick = () => { vid = 0; if (dead || src.tagName != 'VIDEO') return; if (!src.paused && src.readyState >= 2) { iw = src.videoWidth; ih = src.videoHeight; upload(); draw(lastD, true) } vid = requestAnimationFrame(tick) }
+  const tick = () => { vid = 0; if (dead || src.tagName != 'VIDEO') return; if (!src.paused && src.readyState >= 2) { iw = src.videoWidth; ih = src.videoHeight; upload(); draw(lastD) } vid = requestAnimationFrame(tick) }
   if (src.tagName == 'VIDEO') { src.addEventListener('loadeddata', load); vid = requestAnimationFrame(tick) }
 
   // dónde se pinta el fondo, en px del grupo (origen: su caja de relleno)
@@ -128,14 +129,13 @@ export function glEngine(host, src, onFail, onReady) {
     return [r.left - Hr.left - host.clientLeft + (r.width - w) / 2, r.top - Hr.top - host.clientTop + (r.height - h) / 2, w, h]
   }
 
-  const num = (s, k, d) => { const v = parseFloat(s.getPropertyValue(k)); return isNaN(v) ? d : v }
   function draw(d = lastD) {
     // (sin fotogramas —un vídeo aún sin datos— no hay nada que dibujar)
     if (dead || !img || !iw || !ih || !d) return
     const W = host.clientWidth, H = host.clientHeight, q = Math.min(2, devicePixelRatio || 1)
     if (!W || !H) return
     const s = getComputedStyle(host)
-    const lens = num(s, '--ns-glass-lens', 22), depth = num(s, '--ns-glass-depth', 18), R = Math.max(depth, lens) + 6
+    const lens = cssNum(s, '--ns-glass-lens', 22), depth = cssNum(s, '--ns-glass-depth', 18), R = Math.max(depth, lens) + 6
     // el campo sólo si cambió la forma, el tamaño o el alcance del canto
     const fk = d + '|' + W + '|' + H + '|' + R
     if (fk != fieldKey || !field) {
@@ -160,7 +160,7 @@ export function glEngine(host, src, onFail, onReady) {
     gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT)
     const [bx, by, bw, bh] = bgRect(W, H)
     // el desenfoque en niveles de mipmap: px del desenfoque → nivel, en px de la imagen
-    const blur = num(s, '--ns-glass-group-blur', 10), k = iw / bw
+    const blur = cssNum(s, '--ns-glass-group-blur', 10), k = iw / bw
     gl.uniform2f(U('size'), W, H); gl.uniform2f(U('bgPos'), bx, by); gl.uniform2f(U('bgSize'), bw, bh)
     gl.uniform2f(U('sdfK'), 1 / (field.nx * field.step), 1 / (field.ny * field.step))
     gl.uniform2f(U('sdfO'), .5 / field.nx, .5 / field.ny)
@@ -168,13 +168,13 @@ export function glEngine(host, src, onFail, onReady) {
     gl.uniform2f(U('light'), -.35, -.94)
     gl.uniform1f(U('R'), R); gl.uniform1f(U('depth'), depth); gl.uniform1f(U('lens'), lens)
     gl.uniform1f(U('lod'), Math.max(0, Math.log2(Math.max(1, blur * k))))
-    gl.uniform1f(U('sat'), num(s, '--ns-glass-sat', 1.3)); gl.uniform1f(U('disp'), num(s, '--ns-glass-dispersion', 0) * .12)
-    gl.uniform1f(U('rim'), num(s, '--ns-glass-rim', 1)); gl.uniform1f(U('lift'), Math.min(1, Math.max(0, num(s, '--ns-glass-lift', 0))))
+    gl.uniform1f(U('sat'), cssNum(s, '--ns-glass-sat', 1.3)); gl.uniform1f(U('disp'), cssNum(s, '--ns-glass-dispersion', 0) * .12)
+    gl.uniform1f(U('rim'), cssNum(s, '--ns-glass-rim', 1)); gl.uniform1f(U('lift'), Math.min(1, Math.max(0, cssNum(s, '--ns-glass-lift', 0))))
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
     // (el primer dibujo con fondo: hasta aquí el grupo sigue con su capa nativa, sin un vidrio vacío)
     if (onReady) { const f = onReady; onReady = null; f() }
   }
-  const schedule = () => { raf ||= requestAnimationFrame(() => { raf = 0; draw(lastD, false) }) }
+  const schedule = () => { raf ||= requestAnimationFrame(() => { raf = 0; draw(lastD) }) }
   const api = {
     draw: d => { if (d != null) lastD = d; schedule() },
     destroy() {

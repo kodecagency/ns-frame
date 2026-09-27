@@ -1,7 +1,8 @@
 // Tipos de los módulos opcionales de ns-frame. Cada módulo se importa por su ruta:
 // ns-frame/css, ns-frame/static, ns-frame/vt, ns-frame/toast, ns-frame/skel, ns-frame/carousel,
 // ns-frame/pop, ns-frame/bento, ns-frame/mosaic, ns-frame/sheet, ns-frame/isle, ns-frame/concentric,
-// ns-frame/flow, ns-frame/mark, ns-frame/liquid, ns-frame/glass, ns-frame/relief, ns-frame/tabs, ns-frame/link, ns-frame/fx, ns-frame/audit.
+// ns-frame/flow, ns-frame/mark, ns-frame/liquid, ns-frame/controls, ns-frame/glass, ns-frame/glass-gl,
+// ns-frame/light, ns-frame/relief, ns-frame/tabs, ns-frame/link, ns-frame/fx, ns-frame/audit.
 import type { Shape } from './ns-frame'
 
 // ── ns-frame/css ──
@@ -98,7 +99,7 @@ export interface IsleOptions {
   media?: string
   /** Línea de lectura en fracción de la ventana (.45): la sección que la cruza es la actual. */
   line?: number
-  /** Cómo ir a una sección (por defecto, scrollIntoView suave). */
+  /** Cómo ir a una sección (por defecto, jump() del núcleo: suave y fiable con overflow o sticky). */
   go?: (target: HTMLElement, link: HTMLAnchorElement) => void
   /** Texto de posición ("2 / 7"). */
   pos?: (index: number, count: number) => string
@@ -194,6 +195,12 @@ export function swatches(el: HTMLElement): { update(): void; destroy(): void }
  * arrastra arriba y abajo desde cualquier punto, relativo al dedo; el input queda para teclado y lector.
  */
 export function level(el: HTMLElement): { update(): void; destroy(): void } | null
+/**
+ * Botón de copiar (automático con `data-ns-copy="#id"`): copia el texto (o el value) del destino, dice
+ * `data-ns-copied` («Copiado») o `data-ns-copy-error` durante `--ns-copy-time` y lo anuncia por aria-live.
+ * Evento `ns-copy` con detail { text, ok }. `data-ns-switch` en un checkbox es CSS: no tiene función.
+ */
+export function copy(el: HTMLElement): { destroy(): void }
 
 // ── ns-frame/glass ──
 /**

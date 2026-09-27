@@ -26,7 +26,7 @@
 // · La capa va detrás del contenido; un marco de ns-frame con relieve no se recorta con clip-path.
 
 import { styles, path, shapeOf, pathOf, update, watch } from './ns-frame.js'
-import { material, mk } from './ns-light.js'
+import { material, mk, rounded } from './ns-light.js'
 
 const CSS = `@layer ns{
 [data-ns-relief]{position:relative;isolation:isolate;background:none;--ns-border:transparent}
@@ -43,20 +43,9 @@ const PRESET = {
   pressed: { b: 1.3, s: .9, ks: .3, n: 60, amb: .76, inset: .1 },
 }
 const TONE = { metal: { ks: 1.15, n: .6 }, paper: { ks: .35, n: 1 } }
-const R = new WeakMap(), ALL = new Set()
+const R = new WeakMap()
 let styled = 0
 
-// rectángulo con el border-radius real, esquina por esquina (elíptico si hace falta)
-function rounded(el, w, h) {
-  const s = getComputedStyle(el), r = ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].map(c => {
-    const [a, b = a] = s['border' + c + 'Radius'].split(' '), v = (x, L) => x.endsWith('%') ? parseFloat(x) * L / 100 : parseFloat(x) || 0
-    return [v(a, w), v(b, h)]
-  })
-  const f = Math.min(1, w / (r[0][0] + r[1][0] || 1), w / (r[3][0] + r[2][0] || 1), h / (r[0][1] + r[3][1] || 1), h / (r[1][1] + r[2][1] || 1))
-  const [tl, tr, br, bl] = r.map(([x, y]) => [x * f, y * f])
-  const A = ([x, y], X, Y) => x && y ? `A${x} ${y} 0 0 1 ${X} ${Y}` : `L${X} ${Y}`
-  return `M${tl[0]} 0L${w - tr[0]} 0${A(tr, w, tr[1])}L${w} ${h - br[1]}${A(br, w - br[0], h)}L${bl[0]} ${h}${A(bl, 0, h - bl[1])}L0 ${tl[1]}${A(tl, tl[0], 0)}Z`
-}
 // color de la cara: --ns-relief, o el fondo del primer antepasado que lo tenga
 function face(el) {
   const v = getComputedStyle(el).getPropertyValue('--ns-relief').trim()
@@ -120,12 +109,11 @@ export function relief(el) {
     update: () => { key = ''; draw() },
     destroy() {
       if (R.get(el) != api) return
-      EV.forEach(([t, f]) => el.removeEventListener(t, f)); ro.disconnect(); mo.disconnect(); ALL.delete(api); R.delete(el); svg.remove()
+      EV.forEach(([t, f]) => el.removeEventListener(t, f)); ro.disconnect(); mo.disconnect(); R.delete(el); svg.remove()
       // (sin relieve, el marco vuelve a recortarse con su forma)
       if (el.isConnected && (el.hasAttribute('data-ns') || el.localName == 'ns-frame')) update(el)
     },
   }
-  ALL.add(api)
   R.set(el, api)
   return api
 }

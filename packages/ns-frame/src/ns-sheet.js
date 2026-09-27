@@ -41,7 +41,7 @@ const EASE = 'cubic-bezier(.2,.8,.2,1)'
  * Devuelve { open(), close(), reset(), destroy() }.
  */
 export function sheet(el, { handle = el, onClose, onProgress, track, settle, threshold = 6, dialog = el.closest('dialog') } = {}) {
-  let id = null, y0 = 0, y = 0, h = 1, drag = false, raf = 0, anim = null
+  let id = null, y0 = 0, y = 0, h = 1, drag = false, anim = null
   const samples = []
   if (dialog) {
     if (!styled) { styled = 1; styles('@layer ns{.ns-sheet-dialog::backdrop{opacity:var(--ns-sheet-p,1)}:where(.ns-sheet-dialog){margin:auto auto 0;padding:0;border:0;background:none;max-width:100%;overflow:visible}}') }
@@ -56,7 +56,6 @@ export function sheet(el, { handle = el, onClose, onProgress, track, settle, thr
     dialog?.style.setProperty('--ns-sheet-p', p)
     onProgress?.(+p)
   }
-  let pending = 0
 
   const down = e => {
     if (e.button > 0 || id != null) return
@@ -78,11 +77,9 @@ export function sheet(el, { handle = el, onClose, onProgress, track, settle, thr
       el.classList.add('ns-sheet-drag')
     }
     // (en el mismo evento, no en el siguiente fotograma: un fotograma menos de retraso bajo el dedo)
-    pending = dy >= 0 ? dy : -rubber(-dy, h)
-    put(pending)
+    put(dy >= 0 ? dy : -rubber(-dy, h))
   }
   const to = (target, done) => {
-    cancelAnimationFrame(raf); raf = 0
     const from = y
     if (reduced() || Math.abs(target - from) < 1) { put(target); done?.(); return }
     // (según la distancia, hasta --ns-sheet-time; la curva, --ns-sheet-ease)

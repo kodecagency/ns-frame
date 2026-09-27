@@ -15,25 +15,25 @@ const PRESETS = ['card', 'button', 'chip', 'soft', 'notch', 'scoop', 'wing', 'pa
 
     <div class="pg">
       <div class="ed" data-ns="tl bevel 18; br bevel 18; radius 3">
-        <label for="pg-src">Forma</label>
-        <textarea id="pg-src" spellcheck="false" rows="6">{START}</textarea>
+        <!-- todo con ns-frame/controls: el campo y las fichas (data-ns-choice pone aria-pressed y avisa con change) -->
+        <label data-ns-field class="src"><span>Forma</span><textarea id="pg-src" spellcheck="false" rows="6">{START}</textarea></label>
         <span class="lb" id="pg-pl">Presets</span>
-        <div class="chips" role="group" aria-labelledby="pg-pl" id="pg-chips">
-          {PRESETS.map(p => <button type="button" data-ns="all round 10" data-p={p} aria-pressed="false">{p}</button>)}
+        <div class="chips" data-ns-chips data-ns-choice role="group" aria-labelledby="pg-pl" id="pg-chips">
+          {PRESETS.map(p => <button type="button" data-p={p} aria-pressed="false">{p}</button>)}
         </div>
       </div>
-      <div class="st" data-ns="all round 20">
+      <div class="st ns-dots" data-ns="all round 20">
         <div class="rz" id="pg-rz" tabindex="0" aria-label="Vista previa redimensionable: arrastra la esquina inferior derecha">
           <div class="pv" id="pg-pv" data-ns={START}><span>arrastra la esquina ↘</span></div>
         </div>
         <output class="size tag" id="pg-size"></output>
       </div>
       <div class="out" data-ns="tl+br bevel 16; radius 3">
-        <div class="row"><span class="lb">HTML</span><button type="button" class="cp" data-ns="all round 10" data-copy="pg-html">Copiar</button></div>
+        <div class="row"><span class="lb">HTML</span><button type="button" class="cp" data-ns="all round 10" data-ns-copy="#pg-html">Copiar</button></div>
         <pre id="pg-html"></pre>
-        <div class="row"><span class="lb">CSS · <code>clip-path: shape()</code> · cero JS</span><button type="button" class="cp" data-ns="all round 10" data-copy="pg-css">Copiar</button></div>
+        <div class="row"><span class="lb">CSS · <code>clip-path: shape()</code> · cero JS</span><button type="button" class="cp" data-ns="all round 10" data-ns-copy="#pg-css">Copiar</button></div>
         <pre id="pg-css"></pre>
-        <div class="row"><span class="lb">Ruta SVG · tamaño actual</span><button type="button" class="cp" data-ns="all round 10" data-copy="pg-svg">Copiar</button></div>
+        <div class="row"><span class="lb">Ruta SVG · tamaño actual</span><button type="button" class="cp" data-ns="all round 10" data-ns-copy="#pg-svg">Copiar</button></div>
         <pre id="pg-svg"></pre>
       </div>
     </div>
@@ -68,9 +68,9 @@ const PRESETS = ['card', 'button', 'chip', 'soft', 'notch', 'scoop', 'wing', 'pa
   }
   const later = () => { raf ||= requestAnimationFrame(refresh) }
   src.addEventListener('input', later)
-  chips.addEventListener('click', e => {
-    const b = (e.target as Element).closest<HTMLElement>('[data-p]')
-    if (!b) return
+  // (elegir una ficha la marca sola; escribir a mano marca la que coincida, en refresh)
+  chips.addEventListener('change', e => {
+    const b = (e as CustomEvent<{ button: HTMLElement }>).detail.button
     src.value = (PRESETS as Record<string, string>)[b.dataset.p!].replace(/;\s*/g, '\n')
     refresh()
   })
@@ -83,10 +83,7 @@ const PRESETS = ['card', 'button', 'chip', 'soft', 'notch', 'scoop', 'wing', 'pa
     rz.style.width = Math.max(140, rz.offsetWidth + k[0]) + 'px'
     rz.style.height = Math.max(90, rz.offsetHeight + k[1]) + 'px'
   })
-  document.querySelectorAll<HTMLElement>('#playground [data-copy]').forEach(b => b.addEventListener('click', async () => {
-    try { await navigator.clipboard.writeText($(b.dataset.copy!).textContent!); b.textContent = 'Copiado' } catch { b.textContent = 'No se pudo' }
-    setTimeout(() => (b.textContent = 'Copiar'), 1400)
-  }))
+  // (los botones de copiar son data-ns-copy de ns-frame/controls)
   near($('playground'), async () => {
     css = (await import('ns-frame/css')).css as typeof css
     new ResizeObserver(later).observe(pv)
@@ -99,15 +96,11 @@ const PRESETS = ['card', 'button', 'chip', 'soft', 'notch', 'scoop', 'wing', 'pa
   .pg { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.3fr); gap: 14px }
   .lb, label { font: 500 var(--t-caption)/1.3 var(--body); color: var(--text-3) }
   .ed { background: var(--surface); --ns-border: var(--line-2); padding: 22px; display: flex; flex-direction: column; gap: 10px; min-width: 0 }
-  textarea { width: 100%; resize: vertical; min-height: 140px; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--veil-1); color: var(--text); font: var(--t-small)/1.7 var(--mono) }
-  textarea:focus-visible { outline-offset: 2px; border-color: var(--signal) }
-  textarea:focus-visible { border-color: var(--signal); box-shadow: 0 0 0 3px rgba(0, 230, 118, .18) }
-  .chips { display: flex; flex-wrap: wrap; gap: 6px }
-  .chips button { min-height: 36px; padding: 0 12px; border: 0; background: rgba(255, 255, 255, .06); --ns-border: var(--line); color: var(--text-2); font: var(--t-caption) var(--mono); cursor: pointer }
-  .chips button:hover { color: var(--text) }
-  .chips button[aria-pressed=true] { background: var(--text); color: #0a0a0a }
+  /* (sólo variables de ns-frame/controls: código en mono y fichas más bajas) */
+  .src { --ns-ui-font: var(--mono) }
+  .chips { --ns-ui-font: var(--mono); --ns-ui-h: 36px }
   .st { position: relative; min-height: 380px; display: grid; place-items: center; padding: 28px; overflow: hidden; min-width: 0;
-    background: radial-gradient(50% 60% at 50% 50%, rgba(0, 230, 118, .07), transparent 70%), radial-gradient(circle, rgba(255, 255, 255, .08) 1px, transparent 1.5px) 0 0 / 16px 16px, var(--bg-2); --ns-border: var(--line-2) }
+    background: radial-gradient(50% 60% at 50% 50%, rgba(0, 230, 118, .07), transparent 70%), var(--bg-2); --ns-border: var(--line-2); --ns-pat: rgba(255, 255, 255, .08); --ns-pat-size: 16px; --ns-pat-mask: none }
   .rz { resize: both; overflow: hidden; width: 78%; height: 250px; min-width: 140px; min-height: 90px; max-width: 100%; max-height: 330px; border-radius: var(--r-2xs) }
   .rz:focus-visible { outline-offset: 6px }
   .pv { width: 100%; height: 100%; display: grid; place-items: center; background: linear-gradient(150deg, rgba(0, 230, 118, .16), rgba(184, 243, 107, .05) 45%, rgba(20, 20, 22, .9)); --ns-border: linear-gradient(120deg, #00e676, rgba(255, 255, 255, .2) 50%, #b8f36b); --ns-border-width: 1.5px; --ns-inner: 6px; color: var(--text-2); font: var(--t-caption) var(--mono) }

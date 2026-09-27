@@ -36,7 +36,7 @@ const GAINS = [
         <figcaption><span>Con ns-frame</span><span class="dim">1 atributo</span></figcaption>
         <pre>&lt;<b>article</b> <i>data-ns</i>=<em>"tl+br bevel 24; radius 3"</em>
          <i>data-ns-hover</i>=<em>"all bevel 12; radius 3"</em>&gt;</pre>
-        <div class="live">
+        <div class="live ns-dots">
           <article class="demo" data-ns="tl+br bevel 24; radius 3" data-ns-hover="all bevel 12; radius 3" data-ns-motion="spot" tabindex="0">
             <span class="tag">Resultado en vivo · pasa el puntero</span>
             <strong>Borde real, radio en el chaflán y morph</strong>
@@ -69,7 +69,7 @@ const GAINS = [
   .after pre b { color: var(--text); font-weight: 500 }
   .after pre i { font-style: normal; color: var(--signal) }
   .after pre em { font-style: normal; color: var(--silver) }
-  .live { flex: 1; display: grid; place-items: center; padding: 18px; border-radius: 12px; background: radial-gradient(circle, rgba(255, 255, 255, .07) 1px, transparent 1.5px) 0 0 / 14px 14px }
+  .live { flex: 1; display: grid; place-items: center; padding: 18px; border-radius: 12px; --ns-pat: rgba(255, 255, 255, .07); --ns-pat-mask: none }
   .demo { width: min(320px, 100%); padding: 22px 24px; display: grid; gap: 6px; background: linear-gradient(160deg, var(--surface-signal), #141416 60%); --ns-border: linear-gradient(120deg, #00e676, rgba(255, 255, 255, .15) 50%, #b8f36b); --ns-motion: #fff; --ns-spot-size: 160; --ns-spot-fill: .08; --ns-morph-time: 380; cursor: default }
   .demo strong { font: 600 var(--t-title)/1.25 var(--display) }
 

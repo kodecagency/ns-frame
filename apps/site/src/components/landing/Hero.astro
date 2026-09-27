@@ -39,7 +39,7 @@ import { LINKS } from '../../data/sections'
         <span class="lbl">Al pulsar</span>
         <button type="button" class="shape-btn" data-ns="tl+br bevel 14; radius 2" data-ns-hover="tl+br bevel 22; radius 2" data-ns-press="all bevel 5; radius 2">Mantén pulsado</button>
       </div>
-      <label data-ns-area="x" class="sw"><span><span class="lbl">Modo foco</span><span class="sub">Silencia los avisos</span></span><input type="checkbox" checked></label>
+      <label data-ns-area="x" class="sw"><span><span class="lbl">Modo foco</span><span class="sub">Silencia los avisos</span></span><input type="checkbox" data-ns-switch checked></label>
       <div data-ns-area="y">
         <span class="lbl">Reproduciendo</span>
         <span class="track">Geometría nocturna</span>
@@ -103,10 +103,8 @@ import { LINKS } from '../../data/sections'
 
   .board > .sw { flex-direction: row; align-items: flex-end; justify-content: space-between; gap: 16px; cursor: pointer }
   .sw > span { display: grid; gap: 4px }
-  .sw input { appearance: none; width: 51px; height: 31px; border-radius: 99px; background: #3a3a3a; position: relative; cursor: pointer; transition: background-color .25s; margin: 0; flex: none }
-  .sw input::after { content: ''; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 2px 6px var(--veil-1); transition: transform .35s var(--ease) }
-  .sw input:checked { background: var(--signal) }
-  .sw input:checked::after { transform: translateX(20px) }
+  /* el interruptor es data-ns-switch de ns-frame/controls; aquí sólo su color apagado */
+  .sw { --ns-switch-off: #3a3a3a }
 
   .play { display: flex; align-items: center; gap: 12px; margin-top: auto }
   .play button { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--text); color: #0a0a0a; display: grid; place-items: center; cursor: pointer; flex: none }

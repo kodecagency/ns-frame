@@ -13,14 +13,12 @@
 // · El contenido va dentro del mayor rectángulo libre de cada pieza (padding automático).
 // Requiere ns-frame.js (que dibuja las formas). CSP-safe: estilos por constructable stylesheet.
 
-import { styles as inject, path, fontsReady } from './ns-frame.js'
+import { styles as inject, path, fontsReady, cssTime } from './ns-frame.js'
 import { flow, unflow } from './ns-flow.js'
 
 // nombres: las variables de efectos se llaman --ns-mosaic-* (light, width, fill, dot, line, a1, a2,
 // speed, y fx-time para el tiempo: --ns-mosaic-time es el de arrange); los antiguos --ns-mo-* siguen
 // valiendo. var(--ns-mo-X,d) → var(--ns-mosaic-X,var(--ns-mo-X,d)) (con un nivel de paréntesis en d)
-// una duración en ms desde una variable CSS: "1100", "1100ms" o "1.1s"
-const dur = (raw, def) => { raw = raw.trim(); const v = parseFloat(raw); return isNaN(v) ? def : /[^m]s$/.test(raw) ? v * 1000 : v }
 const alias = s =>s.replace(/var\(--ns-mo-([\w-]+),((?:[^()]|\([^()]*\))*)\)/g, (_, k, d) => `var(--ns-mosaic-${k == 'time' ? 'fx-time' : k},var(--ns-mo-${k},${d}))`)
 
 const CSS = `@layer ns{
@@ -28,8 +26,6 @@ const CSS = `@layer ns{
 .ns-mosaic>[data-ns-area]{box-sizing:border-box;min-width:0;min-height:0;padding:calc(var(--ns-in-t,0px) + var(--ns-pad,22px)) calc(var(--ns-in-r,0px) + var(--ns-pad,22px)) calc(var(--ns-in-b,0px) + var(--ns-pad,22px)) calc(var(--ns-in-l,0px) + var(--ns-pad,22px))}
 .ns-mosaic>[data-ns-area].ns-off-area{display:none}
 .ns-mosaic>.ns-flow{display:flow-root;padding:0}
-.ns-flow>.ns-fl,.ns-flow>.ns-fr{display:block;pointer-events:none;margin:0}
-.ns-flow>.ns-fl{float:left;clear:left}.ns-flow>.ns-fr{float:right;clear:right}
 .ns-mosaic>[data-ns-area]{position:relative;isolation:isolate}
 .ns-mosaic:is([data-ns-mosaic~=aurora],[data-ns-mosaic~=dots],[data-ns-mosaic~=grid])>[data-ns-area]::before{content:'';position:absolute;z-index:-1;pointer-events:none;left:calc(-1 * var(--ns-mx,0px));top:calc(-1 * var(--ns-my,0px));width:var(--ns-mw,100%);height:var(--ns-mh,100%);background-image:var(--_d,none),var(--_g,none),var(--_a,none),var(--_b,none);background-size:var(--ns-mosaic-dot-step,16px) var(--ns-mosaic-dot-step,16px),var(--ns-mosaic-grid-step,28px) var(--ns-mosaic-grid-step,28px),100% 100%,100% 100%}
 .ns-mosaic[data-ns-mosaic~=dots]>[data-ns-area]{--_d:radial-gradient(circle,var(--ns-mo-dot,rgba(255,255,255,.16)) 1px,transparent 1.6px)}
@@ -47,13 +43,12 @@ const CSS = `@layer ns{
 @keyframes ns-mo-wv{0%{transform:scale(0);opacity:1}70%{opacity:1}to{transform:scale(1);opacity:0}}
 .ns-mo-sc{transform-box:fill-box;animation:ns-mo-sc var(--ns-mo-time,4.5s) cubic-bezier(.45,0,.55,1) infinite}
 .ns-mo-pl{animation:ns-mo-pl var(--ns-mo-time,3.6s) ease-in-out infinite}
-.ns-mo-st path{fill:none;stroke:var(--ns-mo-light,var(--ns-motion,#fff));stroke-width:calc(var(--ns-mo-width,1.5px) * 1.6);stroke-linecap:round}
 .ns-mo-tr path{fill:none;stroke:var(--ns-mo-light,var(--ns-motion,#fff));stroke-width:calc(var(--ns-mo-width,1.5px) * 1.4);stroke-linecap:round;stroke-dasharray:6 94;animation:ns-mo-tr var(--ns-mo-time,6s) linear infinite}
 @keyframes ns-mo-sc{0%{transform:translateY(-50%)}75%,to{transform:translateY(50%)}}
 @keyframes ns-mo-pl{0%,to{opacity:.1}50%{opacity:.8}}
 @keyframes ns-mo-au{0%{transform:translate(-8%,-5%)}to{transform:translate(8%,5%)}}
 @keyframes ns-mo-tr{to{stroke-dashoffset:-100}}
-@media (prefers-reduced-motion:reduce){.ns-mo-sw,.ns-mo-wv,.ns-mo-sc,.ns-mo-tr,.ns-mo-st{display:none}.ns-mo-pl{animation:none;opacity:.4}.ns-mosaic>[data-ns-area]::before{animation:none!important}}
+@media (prefers-reduced-motion:reduce){.ns-mo-sw,.ns-mo-wv,.ns-mo-sc,.ns-mo-tr{display:none}.ns-mo-pl{animation:none;opacity:.4}.ns-mosaic>[data-ns-area]::before{animation:none!important}}
 @media (forced-colors:active){.ns-mo-fx{display:none}}
 @media (hover:none) and (pointer:coarse){.ns-mo-glow{filter:none}}
 }`
@@ -99,7 +94,6 @@ function outline(G, name, xs, ys) {
   return best
 }
 
-// mayor rectángulo de celdas del área (para el contenido)
 // rectángulos de celdas maximales del área (ninguno cabe dentro de otro), de mayor a menor:
 // son los sitios candidatos para el contenido (en una L, el brazo largo y el brazo ancho)
 function inner(G, name) {
@@ -370,7 +364,7 @@ function layout() {
     fit(el)
     light(el, parts, W, H, holes, matchMedia('(prefers-reduced-motion: reduce)').matches, px(cs.paddingLeft), px(cs.paddingTop), { G, xs, ys, gx, gy, r: ro_, speed: px(cs.getPropertyValue('--ns-mosaic-speed') || cs.getPropertyValue('--ns-mo-speed')) || 160,
       // la luz que sigue al puntero (radio) y la onda al tocar (duración: 1100, 1100ms o 1.1s)
-      glow: px(cs.getPropertyValue('--ns-mosaic-glow-size')) || 240, ripple: dur(cs.getPropertyValue('--ns-mosaic-ripple-time'), 1100) })
+      glow: px(cs.getPropertyValue('--ns-mosaic-glow-size')) || 240, ripple: cssTime(cs, '--ns-mosaic-ripple-time', 1100) })
   }
 }
 
@@ -409,7 +403,7 @@ function light(el, parts, W, H, holes, reduce, pl, pt, grid) {
     // capas, de atrás hacia delante: luz de fondo, luz de bordes y trazo libre (aurora, puntos y
     // retícula van en CSS, en un ::before de cada pieza, por detrás del contenido)
     const bg = mk('g', { mask: `url(#${id}f)` }, { opacity: alias('var(--ns-mo-fill,.07)') })
-    const top = mk('g', { mask: `url(#${id}l)` }), tr = mk('g', { class: 'ns-mo-tr' }), st = mk('g', { class: 'ns-mo-st' })
+    const top = mk('g', { mask: `url(#${id}l)` }), tr = mk('g', { class: 'ns-mo-tr' })
     const svg = mk('svg', { class: 'ns-mo-fx', 'aria-hidden': 'true', focusable: 'false' }, {},
       mk('defs', {}, {}, ml, mf, gg,
         mk('linearGradient', { id: id + 'b', gradientUnits: 'objectBoundingBox', x1: 0, y1: 0, x2: 1, y2: .35 }, {}, ...stops([0, 0], [.47, 0], [.5, 1], [.53, 0], [1, 0])),
@@ -421,8 +415,8 @@ function light(el, parts, W, H, holes, reduce, pl, pt, grid) {
         mk('filter', { id: id + 'o', x: '-5%', y: '-5%', width: '110%', height: '110%' }, {},
           mk('feGaussianBlur', { in: 'SourceGraphic', stdDeviation: 3.5, result: 'b' }),
           mk('feMerge', {}, {}, mk('feMergeNode', { in: 'b' }), mk('feMergeNode', { in: 'b' }), mk('feMergeNode', { in: 'SourceGraphic' })))),
-      bg, mk('g', { class: 'ns-mo-glow', filter: `url(#${id}o)` }, {}, top, tr, st))
-    L = el._nsl = { id, svg, lines, fills, ml, mf, gg, top, bg, tr, st }
+      bg, mk('g', { class: 'ns-mo-glow', filter: `url(#${id}o)` }, {}, top, tr))
+    L = el._nsl = { id, svg, lines, fills, ml, mf, gg, top, bg, tr }
     el.append(svg)
     lightIO.observe(el)
   }
@@ -463,8 +457,6 @@ function light(el, parts, W, H, holes, reduce, pl, pt, grid) {
   L.tr.replaceChildren(...(want.includes('trace') && !reduce ? P(ds, { pathLength: 100 }) : []))
   // corriente: dos o tres luces que recorren la figura entera, por fuera y por los huecos del centro
   const SM = want.includes('stream') && !reduce && grid ? streams([...ds, ...os], Math.min(grid.gx, grid.gy), grid.speed, L.id, L.svg) : null
-  // (su estela ya no es un trazo libre: se veía como líneas duras, también cruzando los huecos)
-  L.st.replaceChildren()
   const has = k => want.includes(k), full = (a = {}) => mk('rect', { x: 0, y: 0, width: fx(W), height: fx(H), ...a })
   const C = holes[0]?.O || [W / 2, H / 2], S = Math.max(...[[0, 0], [W, 0], [0, H], [W, H]].map(([x, y]) => Math.hypot(x - C[0], y - C[1])))
   const layer = (g, fill) => {
@@ -479,7 +471,7 @@ function light(el, parts, W, H, holes, reduce, pl, pt, grid) {
     if (has('pulse') && !fill) kids.push(full({ class: 'ns-mo-pl', fill: LIGHT }))
     if (has('glow')) kids.push(full({ fill: `url(#${L.id}g)`, opacity: fill ? 1 : .8 }))
     // los focos de la corriente encienden los bordes (y, tenue, el fondo) por donde pasan
-    if (SM) { if (!fill) kids.push(...SM.lines); for (const s of SM.spots) kids.push(s(fill ? 70 : 110, fill ? .5 : 1)) }
+    if (SM) for (const s of SM.spots) kids.push(s(fill ? 70 : 110, fill ? .5 : 1))
     g.replaceChildren(...kids)
   }
   layer(L.top, 0); layer(L.bg, 1)
@@ -543,7 +535,7 @@ function streams(shapes, gap, speed, id, host) {
     }
     return { pts, len }
   }
-  const lines = [], spots = []
+  const spots = []
   // Una luz = un foco que recorre la ruta e ilumina los bordes de las piezas por donde pasa (va en la
   // capa de bordes, como la luz que sigue al puntero; y tenue en la de fondos), con una estela de
   // focos más tenues detrás.
@@ -580,7 +572,7 @@ function streams(shapes, gap, speed, id, host) {
   // tres rutas desde piezas repartidas, en sentidos alternos y a destiempo
   const n = C.length, starts = [...new Set([0, Math.floor(n / 2), n - 1])]
   starts.forEach((s, k) => comet(walk(s, k % 2 ? -1 : 1), -k / starts.length))
-  return { lines, spots }
+  return { spots }
 }
 
 // onda puntual (ripple): mismo anillo en bordes y fondo, con Web Animations (nada que limpiar en CSS)
