@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.13.1 — menos trabajo al desplazarse y responsive a 320 px
+
+Medido en la landing con un móvil emulado (390 px, táctil, CPU 4×), sección por sección:
+- **Luz de la página (`ns-frame/light`):** en táctil sigue al desplazamiento, pero ahora gira al pararse. Girarla a mitad repintaba todos los filtros de luz de la pantalla (cantos de vidrio, relieves) en pleno scroll.
+- **Vidrio (`ns-frame/liquid`):** las animaciones infinitas de adorno dentro de un vidrio (un borde que gira, una luz que respira) ya no lo mantienen redibujándose en cada fotograma para siempre. Un vidrio fijo (la isla) mide el tono de lo de detrás al pararse el desplazamiento (y, en uno largo, como mucho cada 700 ms) en vez de cada 250 ms.
+- **Motor WebGL del grupo:** el shader se compila aparte (`KHR_parallel_shader_compile`) sin bloquear y la imagen de fondo se decodifica fuera del hilo principal (`createImageBitmap`) antes de subirla. El pico al acercarse al panel baja de 240 a ~50 ms.
+- **Isla:** el final de la página se guarda (se relee al cambiar de tamaño); leer `scrollHeight` en cada fotograma obligaba a maquetar.
+- **Esqueleto:** los cambios en las capas de la librería (el contorno que el núcleo repinta, el vidrio) ya no lo hacen volver a medir todo el texto.
+- Resultado en la medición limpia: el panel pasa de 57 a 68 fps al desplazarse y los picos de 240 ms desaparecen; bordes 71→73, imposibles y componentes sin fotogramas de más de 40 ms.
+- **Responsive:** el panel de vidrio cabe en un teléfono de 320 px (la pieza sale del ancho de la pantalla; antes, un mínimo fijo lo desbordaba) y el círculo de Enfoque mide al menos 28 px (objetivo táctil); la columna del texto no se ensancha por el bloque de código. En las guías, la barra superior cabe entera entre 320 y 380 px.
+
 ## 0.13.0 — tono: un color para todos los acentos
 
 - **`ns-tone`** (`ns-fx.css`): `class="ns-tone"` con `--ns-tone`, o un preajuste (`ns-tone-green`, `-cyan`, `-violet`, `-pink`, `-amber`, `-coral`, `-lime`, `-silver`, `-white`), tiñe con un solo color todos los acentos de la librería que haya dentro: luz en U, acento y luz del borde, halo, aguada, controles y check, avisos, carrusel, callouts y luz del mosaico. En `<html>`, tematiza la página entera. Antes cada módulo tenía su variable y su color por defecto (unos verdes, otros cian) y cambiar el acento de un bloque eran seis o siete variables.

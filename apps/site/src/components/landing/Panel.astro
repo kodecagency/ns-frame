@@ -241,7 +241,9 @@ const ROW: [K, string][] = [['torch', 'Linterna'], ['timer', 'Temporizador'], ['
   .pn-note { margin: 16px 0 0; color: var(--text-2); font-size: var(--t-control); max-width: 52ch }
 
   /* el escenario: una foto detrás (el grupo la detecta y usa el motor WebGL) */
-  .pn-stage { --c: clamp(64px, 17vw, 78px); --g: clamp(12px, 3.4vw, 16px); padding: calc(var(--g) * 1.6); border-radius: 36px; overflow: hidden; background: #111 url(https://picsum.photos/seed/ns-panel-glass/900/1100.webp) center / cover; --ns-pane-on-ink: #0a0a0a }
+  /* (la pieza, --c, sale del ancho de la pantalla: cuatro columnas, tres huecos y el relleno del
+     escenario caben siempre, también en un teléfono de 320 px; con un mínimo fijo se salía) */
+  .pn-stage { --g: clamp(10px, 3.4vw, 16px); --c: clamp(46px, calc((100vw - 48px - 6.2 * var(--g)) / 4), 78px); padding: calc(var(--g) * 1.6); border-radius: 36px; overflow: hidden; background: #111 url(https://picsum.photos/seed/ns-panel-glass/900/1100.webp) center / cover; --ns-pane-on-ink: #0a0a0a }
   .pn { display: grid; grid-template-columns: repeat(4, var(--c)); grid-auto-rows: var(--c); gap: var(--g); color: #fff }
   .pn-stage svg { fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round }
   /* (rellenos: el trazo fino redondea las esquinas, como el glifo de sistema) */
@@ -272,7 +274,7 @@ const ROW: [K, string][] = [['torch', 'Linterna'], ['timer', 'Temporizador'], ['
   .pn-focus { grid-area: 4 / 1 / 5 / 3; display: flex; align-items: center; gap: 6px; padding: 0 6px 0 9px; border-radius: 999px; --m: #5e5ce6 }
   .pn-fsw { display: contents }
   .pn-fon { flex: none; padding: 0; border: 0; border-radius: 50%; background: none; color: #fff }
-  .pn-dot { display: grid; place-items: center; width: calc(var(--c) - 28px); aspect-ratio: 1; border-radius: 50%; background: rgba(255, 255, 255, .16); color: #fff; transition: background-color .25s, color .25s }
+  .pn-dot { display: grid; place-items: center; width: max(28px, calc(var(--c) - 28px)); aspect-ratio: 1; border-radius: 50%; background: rgba(255, 255, 255, .16); color: #fff; transition: background-color .25s, color .25s }
   /* (encendido, relleno entero con el color del modo y el icono en blanco, como las conexiones de arriba) */
   .pn-fon[aria-pressed=true] .pn-dot { background: var(--m); color: #fff }
   .pn-dot svg { width: 46%; height: 46% }
@@ -328,7 +330,8 @@ const ROW: [K, string][] = [['torch', 'Linterna'], ['timer', 'Temporizador'], ['
   .pn-row > .pn-b { grid-row: 5 }
 
   @media (max-width: 900px) {
-    .pn-wrap { grid-template-columns: 1fr; gap: 28px }
+    /* (minmax(0, 1fr): el bloque de código, con su línea más larga, no ensancha la columna; se desplaza) */
+    .pn-wrap { grid-template-columns: minmax(0, 1fr); gap: 28px }
     .pn-stage { justify-self: center }
   }
 </style>

@@ -1161,10 +1161,15 @@ export function liquid(el, o = {}) {
     if (V?.src && vis) { scrT++; scrAt = performance.now(); fr ||= requestAnimationFrame(follow) }
     // (lo de detrás cambia al desplazarse: una barra fija pasa de una zona clara a una oscura). Sólo
     // si el vidrio es fijo o pegajoso: uno que se desplaza con la página tiene siempre lo mismo
-    // detrás. Y en un momento libre: elementsFromPoint obliga a maquetar
-    if (pin && vis && near && !toning && performance.now() - toned > 250) toning = (globalThis.requestIdleCallback || setTimeout)(() => { toning = 0; tone() }, { timeout: 400 })
+    // detrás. Se mide al pararse (y, en un desplazamiento largo, como mucho cada 700 ms), en un momento
+    // libre: elementsFromPoint obliga a maquetar y leer la imagen cuesta; cada 250 ms eran fotogramas
+    // largos en un teléfono
+    if (!(pin && vis && near)) return
+    clearTimeout(rest); rest = setTimeout(measure, 160)
+    if (performance.now() - toned > 700) measure()
   }
-  let toning = 0
+  const measure = () => { if (!toning) toning = (globalThis.requestIdleCallback || setTimeout)(() => { toning = 0; tone() }, { timeout: 400 }) }
+  let toning = 0, rest = 0
   // pin: el grupo (o un antepasado) es fijo o pegajoso
   let pin = false, resized = true
   // vidrio claro sobre fondos claros, salvo que se fije --ns-glass-tint
@@ -1457,7 +1462,7 @@ export function liquid(el, o = {}) {
     // en marcha mientras haya transiciones o animaciones CSS activas (por eventos); antes de parar,
     // una comprobación con getAnimations por si hay Web Animations
     let moving = active.size > 0
-    if (!moving && last == before && idle == 1) moving = !!el.getAnimations?.({ subtree: true }).some(a => a.playState == 'running')
+    if (!moving && last == before && idle == 1) moving = !!el.getAnimations?.({ subtree: true }).some(a => a.playState == 'running' && a.effect?.getTiming().iterations != Infinity)
     idle = last == before && !moving ? idle + 1 : 0
     if (idle >= 1 || cur < 0 || remap) { remap = false; refreshLens() }
     // la lente de la copia se desvanece o vuelve en unos 150 ms
@@ -1475,7 +1480,10 @@ export function liquid(el, o = {}) {
   // elementos con transiciones o animaciones CSS en curso (si uno termina antes que otra de sus
   // propiedades, la comprobación final con getAnimations evita parar antes de tiempo)
   const active = new Set()
-  const on = e => { if (!own(e.target)) { active.add(e.target); wake() } }
+  // (una animación infinita de adorno —un borde que gira, una luz que respira— no cuenta: nunca
+  // termina y el vidrio se redibujaba en cada fotograma, para siempre)
+  const endless = e => e.type == 'animationstart' && !!e.target.getAnimations?.().some(a => a.animationName == e.animationName && a.effect?.getTiming().iterations == Infinity)
+  const on = e => { if (!own(e.target) && !endless(e)) { active.add(e.target); wake() } }
   const off = e => { if (!own(e.target)) { active.delete(e.target); wake() } }
   const EV = [['pointerenter', wake], ['pointerleave', wake], ['pointerdown', wake], ['pointerup', wake], ['focusin', wake], ['focusout', wake],
     ['transitionrun', on], ['animationstart', on], ['transitionend', off], ['transitioncancel', off], ['animationend', off], ['animationcancel', off]]
@@ -1521,7 +1529,7 @@ export function liquid(el, o = {}) {
     update: stale,
     frame: wake,
     // (una sola vez: el vidrio, las pestañas y el arranque automático pueden pedirlo a la vez)
-    destroy() { if (REG.get(el) != handle) return; REG.delete(el); clearTimeout(settle); cancelAnimationFrame(raf); cancelAnimationFrame(fr); token++; unmirror(); G?.free(); G = null; ro.disconnect(); mo.disconnect(); nio.disconnect(); io?.disconnect(); removeEventListener('scroll', onScroll, { capture: true }); document.removeEventListener('ns-quality', stale); EV.forEach(([e, f]) => el.removeEventListener(e, f, true)); svg.remove(); glass.remove(); edge.remove(); back.remove(); el.classList.remove('ns-liquid', 'ns-glass'); el.style.removeProperty('--ns-glass-path') },
+    destroy() { if (REG.get(el) != handle) return; REG.delete(el); clearTimeout(settle); clearTimeout(rest); cancelAnimationFrame(raf); cancelAnimationFrame(fr); token++; unmirror(); G?.free(); G = null; ro.disconnect(); mo.disconnect(); nio.disconnect(); io?.disconnect(); removeEventListener('scroll', onScroll, { capture: true }); document.removeEventListener('ns-quality', stale); EV.forEach(([e, f]) => el.removeEventListener(e, f, true)); svg.remove(); glass.remove(); edge.remove(); back.remove(); el.classList.remove('ns-liquid', 'ns-glass'); el.style.removeProperty('--ns-glass-path') },
   }
   REG.set(el, handle)
   return handle

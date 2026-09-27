@@ -96,17 +96,30 @@ export function glEngine(host, src, onFail, onReady) {
   const sh = (t, s) => { const x = gl.createShader(t); gl.shaderSource(x, s); gl.compileShader(x); return x }
   const pr = gl.createProgram()
   gl.attachShader(pr, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(pr)
-  if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return null
-  gl.useProgram(pr)
-  const buf = gl.createBuffer()
-  gl.bindBuffer(gl.ARRAY_BUFFER, buf)
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW)
-  const aLoc = gl.getAttribLocation(pr, 'a')
-  gl.enableVertexAttribArray(aLoc); gl.vertexAttribPointer(aLoc, 2, gl.FLOAT, false, 0, 0)
+  // (compilar el shader puede costar decenas de ms en un móvil: con KHR_parallel_shader_compile se
+  // hace aparte y se espera, fotograma a fotograma, sin bloquear; preguntar LINK_STATUS antes de
+  // tiempo obligaría a esperar ahí mismo)
+  const PAR = gl.getExtension('KHR_parallel_shader_compile')
   const U = n => gl.getUniformLocation(pr, n)
   const tBg = gl.createTexture(), tSd = gl.createTexture()
-  gl.uniform1i(U('bg'), 0); gl.uniform1i(U('sdf'), 1)
-  gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+  let ready = false, wait = 0
+  const init = () => {
+    wait = 0
+    if (dead) return
+    if (PAR && !gl.getProgramParameter(pr, PAR.COMPLETION_STATUS_KHR)) { wait = requestAnimationFrame(init); return }
+    if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return fail()
+    gl.useProgram(pr)
+    const buf = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf)
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW)
+    const aLoc = gl.getAttribLocation(pr, 'a')
+    gl.enableVertexAttribArray(aLoc); gl.vertexAttribPointer(aLoc, 2, gl.FLOAT, false, 0, 0)
+    gl.uniform1i(U('bg'), 0); gl.uniform1i(U('sdf'), 1)
+    gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+    ready = true
+    if (img) upload()
+    schedule()
+  }
   host.prepend(cv)
 
   let img = null, iw = 0, ih = 0, lastD = '', field = null, fieldKey = '', raf = 0, dead = false, vid = 0, rough = false, lastB = null
@@ -115,6 +128,8 @@ export function glEngine(host, src, onFail, onReady) {
 
   // el fondo: una copia con CORS (una textura legible); sin CORS, el motor no sirve
   const upload = () => {
+    // (hasta que el shader esté listo no se sube nada: init lo hará)
+    if (!ready) return
     gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tBg)
     try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img) } catch { return fail() }
     gl.generateMipmap(gl.TEXTURE_2D)
@@ -129,7 +144,10 @@ export function glEngine(host, src, onFail, onReady) {
     if (!url) return fail()
     const im = new Image()
     im.crossOrigin = 'anonymous'
-    im.onload = () => { img = im; iw = im.naturalWidth; ih = im.naturalHeight; upload(); schedule() }
+    // (la imagen se decodifica fuera del hilo principal —createImageBitmap— antes de subirla: subir un
+    // <img> recién cargado la decodificaba ahí mismo, en el fotograma)
+    const set = b => { if (dead) return; img = b; iw = b.width || b.naturalWidth; ih = b.height || b.naturalHeight; upload(); schedule() }
+    im.onload = () => globalThis.createImageBitmap ? createImageBitmap(im).then(set, () => set(im)) : set(im)
     im.onerror = fail
     im.src = url
   }
@@ -155,7 +173,7 @@ export function glEngine(host, src, onFail, onReady) {
 
   function draw(d = lastD) {
     // (sin fotogramas —un vídeo aún sin datos— no hay nada que dibujar)
-    if (dead || !img || !iw || !ih || !d) return
+    if (dead || !ready || !img || !iw || !ih || !d) return
     // (a la densidad de la pantalla, hasta 3×: a 2× reescalado, el canto fino se ve granulado)
     const W = host.clientWidth, H = host.clientHeight, q = Math.min(3, devicePixelRatio || 1)
     if (!W || !H) return
@@ -219,12 +237,15 @@ export function glEngine(host, src, onFail, onReady) {
       if (E.get(host) != api) return
       // (dead antes de soltar el contexto: su webglcontextlost no cuenta como un fallo)
       dead = true
-      E.delete(host); cancelAnimationFrame(raf); cancelAnimationFrame(vid)
+      E.delete(host); cancelAnimationFrame(raf); cancelAnimationFrame(vid); cancelAnimationFrame(wait)
       src.removeEventListener?.('loadeddata', load)
+      // (la copia decodificada de la imagen se suelta ya, sin esperar al recolector)
+      if (img && img != src) img.close?.()
       cv.remove(); gl.getExtension('WEBGL_lose_context')?.loseContext()
     },
   }
   E.set(host, api)
   load()
+  init()
   return api
 }

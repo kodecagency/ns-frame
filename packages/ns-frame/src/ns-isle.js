@@ -687,9 +687,17 @@ function mount(el, o) {
   // cada vez el vidrio fijo al pie cambiaba de ancho: en WebKit, un parpadeo abajo en cualquier
   // sección. El rebote elástico de iOS, por encima de 0 o por debajo del final, no cuenta)
   let y0 = scrollY, raf = 0, lean = 0
+  // (el final de la página, guardado: leer scrollHeight en cada fotograma obligaba a maquetar si algo
+  // había cambiado. Se relee cuando cambia el tamaño del documento o de la ventana)
+  let end = 0
+  const measureEnd = () => { end = document.documentElement.scrollHeight - innerHeight }
+  const endRO = new ResizeObserver(measureEnd)
+  endRO.observe(document.documentElement); endRO.observe(document.body)
+  addEventListener('resize', measureEnd, { passive: true })
+  measureEnd()
   const frame = () => {
     raf = 0
-    const y = scrollY, end = document.documentElement.scrollHeight - innerHeight
+    const y = scrollY
     if (y >= end - 2) set(links.length - 1)
     if (y < 0 || y > end) return
     // (al bajar leyendo, completa: dice en qué sección estás; al subir, un icono. collapseOn: 'down',
@@ -713,8 +721,8 @@ function mount(el, o) {
     get index() { return cur },
     destroy() {
       run++; unfade(); mo?.remove(); mo = null; lock(false); document.documentElement.classList.remove('ns-has-isle'); el.style.zIndex = ''; el.classList.remove('ns-isle-m')
-      io.disconnect(); sh.destroy(); scrim.remove(); clearTimeout(timer)
-      removeEventListener('scroll', scroll); removeEventListener('keydown', key); document.removeEventListener('focusin', trap)
+      io.disconnect(); endRO.disconnect(); sh.destroy(); scrim.remove(); clearTimeout(timer)
+      removeEventListener('scroll', scroll); removeEventListener('resize', measureEnd); removeEventListener('keydown', key); document.removeEventListener('focusin', trap)
       btn.removeEventListener('pointerdown', down); btn.removeEventListener('pointerup', up)
       btn.removeEventListener('pointerenter', warm); btn.removeEventListener('focus', warm); btn.removeEventListener('click', click)
       panel.removeEventListener('click', pick); panel.removeEventListener('click', onClose)

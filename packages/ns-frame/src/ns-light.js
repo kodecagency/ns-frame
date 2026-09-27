@@ -112,9 +112,14 @@ const aim = () => {
   for (const l of LIGHTS) l.setAttribute('azimuth', ((az + l._flip) % 360).toFixed(1))
 }
 const move = v => { px = v; lraf ||= requestAnimationFrame(aim) }
+// (en el móvil la luz sigue al desplazamiento, pero se mueve al pararse: girarla a mitad repintaba
+// todos los filtros de luz de la pantalla —cantos de vidrio, relieves— en pleno scroll, y eran los
+// fotogramas largos de un teléfono)
+let still = 0
+const settle = () => { still = 0; move(Math.min(1, scrollY / Math.max(1, document.documentElement.scrollHeight - innerHeight))) }
 function bind() {
   if (bound || typeof addEventListener == 'undefined') return
   bound = true
   addEventListener('pointermove', e => { if (e.pointerType == 'mouse' || e.pointerType == 'pen') move(e.clientX / innerWidth) }, { passive: true })
-  addEventListener('scroll', () => { if (!(MQ ||= matchMedia('(hover: hover) and (pointer: fine)')).matches) move(Math.min(1, scrollY / Math.max(1, document.documentElement.scrollHeight - innerHeight))) }, { passive: true })
+  addEventListener('scroll', () => { if (!(MQ ||= matchMedia('(hover: hover) and (pointer: fine)')).matches) { clearTimeout(still); still = setTimeout(settle, 180) } }, { passive: true })
 }

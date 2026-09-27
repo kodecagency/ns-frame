@@ -60,3 +60,5 @@ html { scroll-padding-top: 76px }
 }
 /* (teléfono: la marca y los tres enlaces caben sin ensanchar la página) */
 @media (max-width: 520px) { .pager { grid-template-columns: 1fr } .pg-next { text-align: left } .dtop .wrap { gap: 8px } .dtop nav { gap: 0; min-width: 0 } .dtop nav a { padding: 12px 7px } .brand { gap: 8px } }
+/* (teléfonos estrechos, 320–380 px: sin la insignia de versión y con menos aire, la barra cabe entera) */
+@media (max-width: 380px) { .brand > [data-ns-badge] { display: none } .dtop nav a { padding: 12px 5px } }

@@ -1,6 +1,6 @@
 {
   "name": "ns-frame",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "description": "Native UI shapes for the web: bevels, notches, scoops, squircles and fillets on any corner of any element, with real borders, morph, WebGL frosted glass, shaped components and form controls. No images, no dependencies, strict-CSP safe.",
   "type": "module",
   "license": "MIT",

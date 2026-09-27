@@ -148,6 +148,8 @@ function off(el) {
 /** Vuelve a medir (tras cambiar el contenido de relleno por JS sin cambiar el tamaño). */
 export const refresh = el => el ? later(el) : ON.forEach((_, e) => later(e))
 
+// capas que pinta la librería (no son contenido)
+const LAYERS = '.ns-svg,.ns-sk,.ns-liquid-fx,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-src,.ns-glass-shared,.ns-glass-gl'
 if (typeof document != 'undefined') {
   const sel = '[data-ns-skeleton]'
   const scan = n => { if (n.nodeType == 1) { n.matches(sel) && on(n); n.querySelectorAll(sel).forEach(on) } }
@@ -160,9 +162,13 @@ if (typeof document != 'undefined') {
         else {
           m.addedNodes.forEach(scan)
           m.removedNodes.forEach(n => n.nodeType == 1 && !n.isConnected && [n, ...n.querySelectorAll(sel)].forEach(off))
-          // el contenido de un skeleton cambió: se vuelve a medir
-          const host = (t.nodeType == 1 ? t : t.parentElement)?.closest(sel)
-          host && ![...m.addedNodes].every(n => n.classList?.contains('ns-sk')) && later(host)
+          // el contenido de un skeleton cambió: se vuelve a medir. Salvo si el cambio es de una capa
+          // de la librería (la del contorno, que el núcleo repinta al entrar en pantalla; la del
+          // propio esqueleto; las del vidrio): no mueve el texto, y medir recorre todas sus líneas
+          const e = t.nodeType == 1 ? t : t.parentElement, host = e?.closest(sel)
+          const layer = n => n.nodeType == 1 && !!n.closest?.(LAYERS)
+          const ns = [...m.addedNodes, ...m.removedNodes]
+          host && !e.closest(LAYERS) && !(ns.length && ns.every(layer)) && later(host)
         }
       }
     }).observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['data-ns-skeleton'] })
