@@ -1,6 +1,6 @@
 ---
 title: Layout
-description: Padding que respeta la forma, formas concéntricas y bento unificado.
+description: "Padding que respeta la forma recortada, esquinas concéntricas automáticas y bento unificado: maquetar con formas sin romper el contenido."
 order: 6
 ---
 

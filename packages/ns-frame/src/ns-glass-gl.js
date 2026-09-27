@@ -20,14 +20,35 @@ import { cssNum } from './ns-frame.js'
 const VS = `#version 300 es
 in vec2 a; out vec2 p; uniform vec2 size;
 void main(){ p = (a * .5 + .5) * size; p.y = size.y - p.y; gl_Position = vec4(a, 0., 1.); }`
+// (hasta cuántas cajas redondeadas en un grupo se calculan exactas; con más, el campo rasterizado)
+const MAXB = 48
 const FS = `#version 300 es
 precision highp float;
 in vec2 p; out vec4 o;
 uniform sampler2D bg, sdf;
 uniform vec2 size, bgPos, bgSize, sdfK, sdfO, light;
-uniform float R, depth, lens, lod, sat, disp, rim, lift;
-// (el nodo i de la rejilla está en x = i·step: centro del texel i)
-float sd(vec2 q){ return (texture(sdf, q * sdfK + sdfO).r - .5) * 2. * R; }
+uniform float q, depth, lens, lod, sat, disp, rim, lift;
+// cajas redondeadas (x, y, ancho, alto · radios sup. izq., sup. der., inf. der., inf. izq.): su
+// distancia exacta, sin rejilla. nb = 0: el campo rasterizado de la textura (formas de ns-frame)
+uniform int nb;
+uniform vec4 bx[${MAXB}], br[${MAXB}];
+float box(vec2 u, int i){
+  vec2 h = bx[i].zw * .5, v = u - bx[i].xy - h;
+  vec4 r = br[i];
+  float c = v.x < 0. ? (v.y < 0. ? r.x : r.w) : (v.y < 0. ? r.y : r.z);
+  vec2 k = abs(v) - h + c;
+  return min(max(k.x, k.y), 0.) + length(max(k, 0.)) - c;
+}
+// (la caja más cercana: el canto y la lente siguen a esa, como en la unión del path)
+int near;
+// (el nodo i de la rejilla está en x = i·step: centro del texel i; la distancia va tal cual, en px)
+float sd(vec2 u){
+  if (nb == 0) return texture(sdf, u * sdfK + sdfO).r;
+  float d = 1e5;
+  for (int i = 0; i < ${MAXB}; i++) { if (i >= nb) break; float e = box(u, i); if (e < d) { d = e; near = i; } }
+  return d;
+}
+float sd1(vec2 u){ return nb == 0 ? texture(sdf, u * sdfK + sdfO).r : box(u, near); }
 vec3 tap(vec2 q){
   vec2 u = (q - bgPos) / bgSize, t = exp2(lod) / bgSize * .6;
   // cinco muestras alrededor, al nivel de desenfoque pedido: suaviza los escalones de los mipmaps
@@ -36,10 +57,11 @@ vec3 tap(vec2 q){
 }
 void main(){
   float d = sd(p);
-  float a = clamp(.5 - d, 0., 1.);
+  // (el borde se suaviza en un píxel del lienzo, no en un px CSS: nítido también a 2×)
+  float a = clamp(.5 - d * q, 0., 1.);
   if (a <= 0.) discard;
   vec2 e = vec2(1.5, 0.);
-  vec2 g = vec2(sd(p + e.xy) - sd(p - e.xy), sd(p + e.yx) - sd(p - e.yx));
+  vec2 g = vec2(sd1(p + e.xy) - sd1(p - e.xy), sd1(p + e.yx) - sd1(p - e.yx));
   vec2 n = g / max(length(g), 1e-4);
   // perfil del canto: 1 en el borde, 0 a "depth" hacia dentro (curva suave, como un bisel redondo)
   float k = clamp(1. + d / depth, 0., 1.), b = k * k;
@@ -59,7 +81,7 @@ void main(){
 const E = new WeakMap()
 /**
  * Motor del grupo `host` sobre la fuente `src` (un <img>, <video>, <canvas> o { url } de un fondo
- * CSS). Devuelve { draw(d), destroy() } o null si no se puede (sin WebGL2). onFail: si deja de
+ * CSS). Devuelve { draw(d, moving, boxes), destroy() } o null si no se puede (sin WebGL2). onFail: si deja de
  * poder (sin CORS, contexto perdido); onReady: al primer dibujo con el fondo cargado.
  */
 export function glEngine(host, src, onFail, onReady) {
@@ -85,7 +107,7 @@ export function glEngine(host, src, onFail, onReady) {
   gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
   host.prepend(cv)
 
-  let img = null, iw = 0, ih = 0, lastD = '', field = null, fieldKey = '', raf = 0, dead = false, vid = 0
+  let img = null, iw = 0, ih = 0, lastD = '', field = null, fieldKey = '', raf = 0, dead = false, vid = 0, rough = false, lastB = null
   const fail = () => { if (dead) return; api.destroy(); onFail?.() }
   cv.addEventListener('webglcontextlost', e => { e.preventDefault(); fail() })
 
@@ -132,22 +154,31 @@ export function glEngine(host, src, onFail, onReady) {
   function draw(d = lastD) {
     // (sin fotogramas —un vídeo aún sin datos— no hay nada que dibujar)
     if (dead || !img || !iw || !ih || !d) return
-    const W = host.clientWidth, H = host.clientHeight, q = Math.min(2, devicePixelRatio || 1)
+    // (a la densidad de la pantalla, hasta 3×: a 2× reescalado, el canto fino se ve granulado)
+    const W = host.clientWidth, H = host.clientHeight, q = Math.min(3, devicePixelRatio || 1)
     if (!W || !H) return
     const s = getComputedStyle(host)
-    const lens = cssNum(s, '--ns-glass-lens', 22), depth = cssNum(s, '--ns-glass-depth', 18), R = Math.max(depth, lens) + 6
-    // el campo sólo si cambió la forma, el tamaño o el alcance del canto
-    const fk = d + '|' + W + '|' + H + '|' + R
-    if (fk != fieldKey || !field) {
+    const lens = cssNum(s, '--ns-glass-lens', 22), depth = cssNum(s, '--ns-glass-depth', 18)
+    // cajas redondeadas: su distancia exacta la calcula el shader (nada que rasterizar)
+    const nb = lastB && lastB.length / 8 <= MAXB ? lastB.length / 8 : 0
+    if (nb) {
+      const X = new Float32Array(MAXB * 4), Y = new Float32Array(MAXB * 4)
+      for (let i = 0; i < nb; i++) { X.set(lastB.slice(i * 8, i * 8 + 4), i * 4); Y.set(lastB.slice(i * 8 + 4, i * 8 + 8), i * 4) }
+      gl.uniform4fv(U('bx'), X); gl.uniform4fv(U('br'), Y)
+    }
+    gl.uniform1i(U('nb'), nb)
+    // si no, el campo, sólo si cambió la forma o el tamaño. Mientras las piezas se mueven, en una
+    // rejilla más basta (unas 6 veces menos nodos: el campo se rehace en cada fotograma); al pararse, fino
+    const step = Math.min(3, Math.max(1, Math.sqrt(W * H / 120000))) * (rough ? 2.5 : 1)
+    const fk = d + '|' + W + '|' + H + '|' + step
+    if (!nb && (fk != fieldKey || !field)) {
       fieldKey = fk
-      const step = Math.min(3, Math.max(1, Math.sqrt(W * H / 120000)))
       const f = pathField(d, W, H, step)
       if (!f) return
-      const B = new Uint8Array(f.nx * f.ny)
-      for (let i = 0; i < B.length; i++) B[i] = Math.max(0, Math.min(255, Math.round((f.F[i] / R * .5 + .5) * 255)))
+      // (la distancia en px, en coma flotante de 16 bits: sin escalones en el borde y filtrable)
       gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, tSd)
       gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1)
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, f.nx, f.ny, 0, gl.RED, gl.UNSIGNED_BYTE, B)
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.R16F, f.nx, f.ny, 0, gl.RED, gl.FLOAT, f.F)
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
       field = f
@@ -162,11 +193,13 @@ export function glEngine(host, src, onFail, onReady) {
     // el desenfoque en niveles de mipmap: px del desenfoque → nivel, en px de la imagen
     const blur = cssNum(s, '--ns-glass-group-blur', 10), k = iw / bw
     gl.uniform2f(U('size'), W, H); gl.uniform2f(U('bgPos'), bx, by); gl.uniform2f(U('bgSize'), bw, bh)
-    gl.uniform2f(U('sdfK'), 1 / (field.nx * field.step), 1 / (field.ny * field.step))
-    gl.uniform2f(U('sdfO'), .5 / field.nx, .5 / field.ny)
+    if (!nb) {
+      gl.uniform2f(U('sdfK'), 1 / (field.nx * field.step), 1 / (field.ny * field.step))
+      gl.uniform2f(U('sdfO'), .5 / field.nx, .5 / field.ny)
+    }
     // (la luz: arriba, algo a la izquierda, como ns-frame/light)
     gl.uniform2f(U('light'), -.35, -.94)
-    gl.uniform1f(U('R'), R); gl.uniform1f(U('depth'), depth); gl.uniform1f(U('lens'), lens)
+    gl.uniform1f(U('q'), q); gl.uniform1f(U('depth'), depth); gl.uniform1f(U('lens'), lens)
     gl.uniform1f(U('lod'), Math.max(0, Math.log2(Math.max(1, blur * k))))
     gl.uniform1f(U('sat'), cssNum(s, '--ns-glass-sat', 1.3)); gl.uniform1f(U('disp'), cssNum(s, '--ns-glass-dispersion', 0) * .12)
     gl.uniform1f(U('rim'), cssNum(s, '--ns-glass-rim', 1)); gl.uniform1f(U('lift'), Math.min(1, Math.max(0, cssNum(s, '--ns-glass-lift', 0))))
@@ -176,7 +209,10 @@ export function glEngine(host, src, onFail, onReady) {
   }
   const schedule = () => { raf ||= requestAnimationFrame(() => { raf = 0; draw(lastD) }) }
   const api = {
-    draw: d => { if (d != null) lastD = d; schedule() },
+    // (el grupo llama desde su propio fotograma: se dibuja ya, a la vez que las piezas se mueven, y
+    // no un fotograma después. moving: rejilla basta mientras dure el movimiento; boxes: las cajas
+    // redondeadas de las piezas, de 8 en 8 —x, y, ancho, alto y los cuatro radios—, o null)
+    draw: (d, moving = false, boxes = null) => { if (d != null) lastD = d; rough = moving; lastB = boxes; draw(lastD) },
     destroy() {
       if (E.get(host) != api) return
       // (dead antes de soltar el contexto: su webglcontextlost no cuenta como un fallo)

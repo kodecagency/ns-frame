@@ -17,13 +17,17 @@ export { mk }
 const pxv = v => parseFloat(v) || 0
 // rectángulo con el border-radius real, esquina por esquina (elíptico si hace falta, con el mismo
 // reparto que el navegador cuando los radios no caben). Lo usan el vidrio y el relieve.
-export function rounded(el, w, h) {
+/** Radios reales [x, y] de las cuatro esquinas (sup. izq., sup. der., inf. der., inf. izq.), ya repartidos. */
+export function corners(el, w, h) {
   const s = getComputedStyle(el), R = ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].map(c => {
     const [a, b = a] = s['border' + c + 'Radius'].split(' ')
     return [a.endsWith('%') ? pxv(a) * w / 100 : pxv(a), b.endsWith('%') ? pxv(b) * h / 100 : pxv(b)]
   })
   const f = Math.min(1, w / (R[0][0] + R[1][0] || 1), w / (R[3][0] + R[2][0] || 1), h / (R[0][1] + R[3][1] || 1), h / (R[1][1] + R[2][1] || 1))
-  const [tl, tr, br, bl] = R.map(([x, y]) => [x * f, y * f])
+  return R.map(([x, y]) => [x * f, y * f])
+}
+export function rounded(el, w, h, C = corners(el, w, h)) {
+  const [tl, tr, br, bl] = C
   const A = ([x, y], X, Y) => x && y ? `A${x} ${y} 0 0 1 ${X} ${Y}` : `L${X} ${Y}`
   return `M${tl[0]} 0L${w - tr[0]} 0${A(tr, w, tr[1])}L${w} ${h - br[1]}${A(br, w - br[0], h)}L${bl[0]} ${h}${A(bl, 0, h - bl[1])}L0 ${tl[1]}${A(tl, tl[0], 0)}Z`
 }

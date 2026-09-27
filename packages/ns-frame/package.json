@@ -1,7 +1,7 @@
 {
   "name": "ns-frame",
-  "version": "0.11.0",
-  "description": "Native UI shapes for the web: bevels, notches, scoops, squircles and fillets on any corner of any element, with real borders, morph, apertures and shaped components. No images, no dependencies, strict-CSP safe.",
+  "version": "0.11.1",
+  "description": "Native UI shapes for the web: bevels, notches, scoops, squircles and fillets on any corner of any element, with real borders, morph, WebGL frosted glass, shaped components and form controls. No images, no dependencies, strict-CSP safe.",
   "type": "module",
   "license": "MIT",
   "author": "Francesco Sierchio <260309036+kodecagency@users.noreply.github.com> (https://github.com/kodecagency)",
@@ -12,7 +12,7 @@
     "directory": "packages/ns-frame"
   },
   "bugs": "https://github.com/kodecagency/ns-frame/issues",
-  "keywords": ["clip-path", "shape", "bevel", "chamfer", "notch", "squircle", "corner-shape", "hud", "sci-fi", "ui", "css", "web-components", "view-transitions", "skeleton", "toast", "carousel", "bento", "mosaic", "bottom-sheet", "navigation", "concentric", "shape-inside", "text-highlight", "liquid", "metaball", "liquid-glass", "tabs"],
+  "keywords": ["ui", "ui-library", "ui-components", "css", "css-shapes", "clip-path", "shape", "corner-shape", "bevel", "chamfer", "notch", "squircle", "border", "gradient-border", "glass", "glassmorphism", "frosted-glass", "webgl", "backdrop-filter", "metaball", "liquid", "hud", "sci-fi", "view-transitions", "skeleton", "toast", "carousel", "tabs", "bento", "mosaic", "bottom-sheet", "navigation", "range-slider", "switch", "form-controls", "concentric", "shape-inside", "text-highlight", "accessibility", "csp", "zero-dependency", "vanilla-js", "astro"],
   "exports": {
     ".": { "types": "./types/ns-frame.d.ts", "default": "./dist/ns-frame.js" },
     "./lite": { "types": "./types/ns-frame.d.ts", "default": "./dist/ns-frame.lite.js" },

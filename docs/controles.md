@@ -1,6 +1,6 @@
 ---
 title: Controles
-description: Controles de serie de ns-frame/controls — segmentos, fichas, campos, deslizadores, niveles, interruptores, copiar, insignias, código, tarjetas y asas — con su aspecto listo y todo ajustable con variables.
+description: "Segmentos, fichas, campos, deslizadores, niveles, interruptores, copiar, insignias y tarjetas de ns-frame/controls, listos y con variables."
 order: 7.2
 ---
 

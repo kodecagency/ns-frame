@@ -1,11 +1,11 @@
 ---
 name: ns-frame
-description: Build shaped web UI with the ns-frame library — bevels, notches, scoops, squircles and fillets on any corner of any element, borders that follow the cut, morph, apertures, and shaped components (toasts, carousel, skeletons, popovers, View Transitions, draggable sheet, navigation island), free-form mosaics (L/T/U pieces that interlock with a constant gap, shaped orbs, connected light effects), concentric corners, text that fills a shape, multi-line highlights, liquid (gooey) groups and materials (liquid glass with a real lens in every engine, draggable glass tabs, lit relief). Use when the project imports ns-frame, uses data-ns attributes or <ns-frame>, or the user asks for cut/chamfered/HUD/sci-fi/futuristic corners, squircle corners, shaped cards, buttons, panels or tickets without images.
+description: Build shaped web UI with the ns-frame library — bevels, notches, scoops, squircles and fillets on any corner of any element, borders that follow the cut, morph, apertures, and shaped components (toasts, carousel, skeletons, popovers, View Transitions, draggable sheet, navigation island), free-form mosaics (L/T/U pieces that interlock with a constant gap, shaped orbs, connected light effects), concentric corners, text that fills a shape, multi-line highlights, liquid (gooey) groups and materials (refractive glass with a real lens in every engine, draggable glass tabs, lit relief). Use when the project imports ns-frame, uses data-ns attributes or <ns-frame>, or the user asks for cut/chamfered/HUD/sci-fi/futuristic corners, squircle corners, shaped cards, buttons, panels or tickets without images.
 ---
 
 # ns-frame
 
-ns-frame draws shapes with a small shape language written in HTML attributes. The core (`ns-frame`, 9 KB gzip) activates every element with `data-ns` automatically, including elements added later. Optional modules add components. Docs in Spanish live in `docs/`; this skill is the working summary.
+ns-frame draws shapes with a small shape language written in HTML attributes. The core (`ns-frame`, 11 KB gzip) activates every element with `data-ns` automatically, including elements added later. Optional modules add components. Docs in Spanish live in `docs/`; this skill is the working summary.
 
 **Install from jsDelivr, not npm.** ns-frame is not published on npm yet; never install an npm package named `ns-frame` (it is not ours). Load `https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.10.0/packages/ns-frame/dist/ns-frame.js` (modules from the same `dist/` folder, same version), map the bare names with an import map, or vendor `dist/` and alias it — see `docs/instalacion.md`.
 
@@ -34,9 +34,9 @@ ns-frame draws shapes with a small shape language written in HTML attributes. Th
 | Child whose corners are concentric with its parent (any shape, or a CSS `border-radius` parent) | `data-ns-concentric` + `ns-frame/concentric` (writes the child's `data-ns`) |
 | Text that fills a non-rectangular shape (shape-inside) | `data-ns-flow` on a `data-ns` element with a defined height + `ns-frame/flow` |
 | One continuous highlight across several lines, with inner and outer curves | `<mark data-ns-mark>` + `ns-frame/mark` |
-| Nearby elements that melt together (gooey) with a crisp vector edge; liquid glass | `data-ns-liquid` / `data-ns-liquid="glass"` (+ `data-ns-blob`) + `ns-frame/liquid` |
-| Liquid glass on any element / any ns-frame shape (bevels, notches, cuts); cut-glass facets lit by the pointer; prism edge | `data-ns-glass` (`clear`, `tint`, `facet`, `prism`, `frost`) + `ns-frame/glass` |
-| Many glass pieces at once (bento, mosaic, control center): one pass for all, WebGL lens over a photo/video backdrop | `data-ns-glass-group` on the container (child `<img>`/`<video>`/`<canvas>` or CSS `url()` background → WebGL engine; otherwise union lens in Chromium, shared blur elsewhere; `="native"` forces the blur layer) · `--ns-glass-lens`, `-depth`, `-group-blur`, `-sat`, `-dispersion`, `-rim` |
+| Nearby elements that melt together (gooey) with a crisp vector edge; refractive glass | `data-ns-liquid` / `data-ns-liquid="glass"` (+ `data-ns-blob`) + `ns-frame/liquid` |
+| Refractive glass on any element / any ns-frame shape (bevels, notches, cuts); cut-glass facets lit by the pointer; prism edge | `data-ns-glass` (`clear`, `tint`, `facet`, `prism`, `frost`) + `ns-frame/glass` |
+| Many glass pieces at once (bento, mosaic, system panel): one pass for all, WebGL lens over a photo/video backdrop | `data-ns-glass-group` on the container (child `<img>`/`<video>`/`<canvas>` or CSS `url()` background → WebGL engine; otherwise union lens in Chromium, shared blur elsewhere; `="native"` forces the blur layer) · `--ns-glass-lens`, `-depth`, `-group-blur`, `-sat`, `-dispersion`, `-rim` |
 | Tactile controls / cards with real bevels (ceramic, metal, paper, clay) that sink when pressed | `data-ns-relief` (`inset`, `flat`) + `ns-frame/relief` |
 | iOS-style tab bar whose glass indicator can be dragged between tabs | `data-ns-tabs` + `ns-frame/tabs` |
 | A button that releases its actions as liquid drops (FAB / speed dial) | `data-ns-drops` + `ns-frame/liquid` |
@@ -45,7 +45,7 @@ ns-frame draws shapes with a small shape language written in HTML attributes. Th
 
 Read `references/shapes.md` before writing any non-trivial shape and `references/components.md` before using a module.
 
-## Liquid glass: ready to use
+## Glass: ready to use
 
 - Variable names follow one convention everywhere: `--ns-<module>-time` (accepts `320`, `320ms`, `.32s`), `-ease`, `-radius`, `-width`, `-ink` (text color), `-fill`/`-bg`.
 - Low-end phones: the library downgrades itself (`quality()`, `<html data-ns-tier="low">`: glass becomes native blur without lens/WebGL). Force it with `<html data-ns-quality="low">`; use `[data-ns-tier=low]` in your CSS to drop decorative animations. Prefer one mosaic effect at a time on mobile.

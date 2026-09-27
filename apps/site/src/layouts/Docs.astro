@@ -6,6 +6,7 @@ import 'ns-frame/fx.css'
 import '../styles/tokens.css'
 import '../styles/docs.css'
 import Footer from '../components/landing/Footer.astro'
+import Seo from '../components/Seo.astro'
 import { LINKS } from '../data/sections'
 
 interface Props { title: string; description: string; slug: string }
@@ -15,14 +16,22 @@ const i = docs.findIndex(d => d.id == slug), prev = docs[i - 1], next = docs[i +
 // el resaltado de código usa atributos style: sólo en las guías se permiten atributos de estilo
 // (style-src-attr); los scripts y las hojas de estilo siguen exigiendo hash
 Astro.csp?.insertStyleResource({ resource: "'unsafe-inline'", kind: 'attribute' })
+// (la URL absoluta de la guía, sin barra final como en Seo y el sitemap; sólo con `site`)
+const here = Astro.site && new URL(`/docs/${slug}`, Astro.site).href
 ---
 <!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>{title} · ns-frame</title>
-  <meta name="description" content={description}>
+  <Seo title={`${title} · ns-frame`} description={description} type="article" ld={[
+    { '@type': 'TechArticle', headline: title, description, inLanguage: 'es', proficiencyLevel: 'Beginner', about: { '@type': 'SoftwareSourceCode', name: 'ns-frame', codeRepository: LINKS.github }, author: { '@type': 'Organization', name: 'Kodec Agency' }, ...(here && { url: here }) },
+    ...(Astro.site ? [{ '@type': 'BreadcrumbList', itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'ns-frame', item: Astro.site.href },
+      { '@type': 'ListItem', position: 2, name: 'Guías', item: new URL(LINKS.docs, Astro.site).href },
+      { '@type': 'ListItem', position: 3, name: title, item: here },
+    ] }] : []),
+  ]} />
   <meta name="theme-color" content="#0b0b0c">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <Font cssVariable="--font-mona" preload />

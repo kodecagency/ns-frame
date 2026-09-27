@@ -1,6 +1,6 @@
 ---
 title: Seguridad
-description: Sin inyección, compatible con CSP estricta, sin dependencias ni red.
+description: "ns-frame no inyecta HTML, funciona con una CSP estricta y no tiene dependencias ni hace peticiones de red. Qué garantiza y cómo."
 order: 12
 ---
 

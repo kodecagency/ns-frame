@@ -1,0 +1,33 @@
+---
+// Cabecera de buscadores y redes, común a la landing y a las guías: título, descripción, idioma,
+// Open Graph, tarjeta de Twitter/X y datos estructurados (JSON-LD). La URL canónica y las absolutas
+// de og:url y og:image salen de `site` en astro.config.mjs: mientras no haya URL de producción se
+// omiten (una canónica relativa o equivocada es peor que ninguna)
+interface Props { title: string; description: string; type?: 'website' | 'article'; ld?: object[] }
+const { title, description, type = 'website', ld = [] } = Astro.props
+const site = Astro.site
+// (sin barra final, como los enlaces internos y el sitemap: una sola URL por página)
+const url = site && new URL(Astro.url.pathname.replace(/(.)\/$/, '$1'), site).href
+const image = site && new URL('/og.png', site).href
+---
+<title>{title}</title>
+<meta name="description" content={description}>
+{url && <link rel="canonical" href={url}>}
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="author" content="Kodec Agency">
+<meta property="og:type" content={type}>
+<meta property="og:site_name" content="ns-frame">
+<meta property="og:locale" content="es_ES">
+<meta property="og:title" content={title}>
+<meta property="og:description" content={description}>
+{url && <meta property="og:url" content={url}>}
+{image && <meta property="og:image" content={image}>}
+{image && <meta property="og:image:width" content="1200">}
+{image && <meta property="og:image:height" content="630">}
+{image && <meta property="og:image:alt" content="ns-frame: formas, bordes y vidrio para cualquier elemento HTML">}
+<meta name="twitter:card" content={image ? 'summary_large_image' : 'summary'}>
+<meta name="twitter:title" content={title}>
+<meta name="twitter:description" content={description}>
+{image && <meta name="twitter:image" content={image}>}
+{site && <link rel="sitemap" href="/sitemap.xml">}
+{ld.map(o => <script type="application/ld+json" set:html={JSON.stringify({ '@context': 'https://schema.org', ...o })} />)}

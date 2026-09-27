@@ -1,6 +1,6 @@
 ---
 title: Introducción
-description: Qué es ns-frame, qué resuelve y cómo está organizado.
+description: "Qué es ns-frame, la librería de formas para la web: chaflanes, muescas y squircles en cualquier elemento HTML, qué resuelve y cómo se organiza."
 order: 1
 ---
 
@@ -9,7 +9,7 @@ order: 1
 **ns-frame** es una librería de **formas nativas para la web**: cortes, chaflanes (bevel), escalones (notch), mordidas (scoop), esquinas squircle y radius en **cualquier vértice de cualquier elemento**, sin imágenes y sin dependencias.
 
 ```html
-<script type="module" src="https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.11.0/packages/ns-frame/dist/ns-frame.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/gh/kodecagency/ns-frame@v0.11.1/packages/ns-frame/dist/ns-frame.js"></script>
 
 <article data-ns="tl+br bevel 18; radius 3">Una tarjeta con dos esquinas cortadas</article>
 ```
@@ -29,16 +29,18 @@ order: 1
 
 | Pieza | Peso (gzip) | Para qué |
 |---|---|---|
-| `ns-frame` (núcleo) | 10,3 KB | Formas, recortes, bordes, foco, morph, estados, modo nativo, formas concéntricas (`data-ns-nest`), padding según la forma, grupos de elección, `modal`, `jump` y `watch` |
-| `ns-extra` | 3,8 KB | **Se carga solo, bajo demanda**: degradados, animaciones de borde, acentos, aperturas y formas ligadas al scroll |
-| `ns-frame/lite` | 6,7 KB | Sólo recortes, sin capa SVG |
-| `ns-frame/mosaic` | 7,4 KB + 2,0 KB | Mosaicos de piezas libres, orbes y luz conectada (usa `ns-flow.js`) |
-| `ns-frame/concentric` · `flow` · `mark` · `liquid` | 2,4 · 2,0 · 2,1 · 2,5 KB | Esquinas concéntricas automáticas · texto que llena la forma · resaltado en varias líneas · formas líquidas |
-| `ns-frame/skel` · `isle` · `toast` | 2,4 · 7,8 · 2,2 KB | Skeletons · isla de navegación · toasts |
-| `ns-frame/carousel` · `link` · `bento` · `pop` · `sheet` | 1,3–1,6 KB c/u | Carrusel · callouts · bento · popovers · hoja arrastrable |
+| `ns-frame` (núcleo) | 10,9 KB | Formas, recortes, bordes, foco, morph, estados, modo nativo, formas concéntricas (`data-ns-nest`), padding según la forma, grupos de elección, `modal`, `jump` y `watch` |
+| `ns-extra` | 3,9 KB | **Se carga solo, bajo demanda**: degradados, animaciones de borde, acentos, aperturas y formas ligadas al scroll |
+| `ns-frame/lite` | 8,4 KB | Sólo recortes, sin capa SVG |
+| `ns-frame/mosaic` | 9,0 KB + 2,0 KB | Mosaicos de piezas libres, orbes y luz conectada (usa `ns-flow.js`) |
+| `ns-frame/glass` · `liquid` · `tabs` | 3,4 · 18,8 · 3,7 KB | Vidrio en cualquier forma y en grupo (con motor WebGL bajo demanda, 3,8 KB) · formas líquidas y lente · pestañas de vidrio |
+| `ns-frame/controls` | 4,2 KB | Segmentos, fichas, campos, deslizadores, niveles, interruptores, copiar, insignias, código, tarjetas y asas |
+| `ns-frame/concentric` · `flow` · `mark` | 2,5 · 2,0 · 2,3 KB | Esquinas concéntricas automáticas · texto que llena la forma · resaltado en varias líneas |
+| `ns-frame/skel` · `isle` · `toast` | 2,6 · 8,6 · 2,3 KB | Skeletons · isla de navegación · toasts |
+| `ns-frame/carousel` · `link` · `bento` · `pop` · `sheet` | 1,5–2,1 KB c/u | Carrusel · callouts · bento · popovers · hoja arrastrable |
 | `ns-frame/audit` | 1,3 KB | Auditoría de texto recortado (sólo desarrollo) |
-| `ns-frame/css` · `vt` · `fx` · `static` | 0,5–0,7 KB c/u | Compilador a `shape()` · View Transitions · decode · build sin JS |
-| `ns-fx.css` | 2,1 KB | Efectos 100 % CSS: luz en U, aurora, halo, patrones, texto animado |
+| `ns-frame/css` · `vt` · `fx` · `static` | 0,5–0,8 KB c/u | Compilador a `shape()` · View Transitions · decode · build sin JS |
+| `ns-fx.css` | 2,3 KB | Efectos 100 % CSS: luz en U, aurora, halo, patrones, texto animado |
 
 Una página que sólo recorta formas carga el núcleo (o nada, si las compila en el build). Todo lo demás llega cuando un elemento lo pide. Cifras completas, también en brotli, en [Rendimiento](rendimiento.md).
 

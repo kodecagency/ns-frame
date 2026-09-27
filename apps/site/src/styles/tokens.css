@@ -141,9 +141,9 @@ html { overflow-x: hidden }
 /* las secciones fuera de pantalla no se maquetan ni se pintan hasta acercarse (auto recuerda
    su tamaño real una vez vistas, así el scroll no salta) */
 main > .sec:not(.hero) { content-visibility: auto; contain-intrinsic-size: auto 1100px }
-/* WebKit de Apple (todos los navegadores de iPhone y Safari): puede reconstruir la sección al
+/* WebKit de iOS y Safari (todos los navegadores de iPhone y Safari): puede reconstruir la sección al
    volver a pintarla y las animaciones empezaban de nuevo. Se detecta con CSS (sin esperar a JS,
-   que llegaría después de la primera maquetación): sólo WebKit de Apple entiende esta fuente */
+   que llegaría después de la primera maquetación): sólo WebKit de iOS y Safari entiende esta fuente */
 @supports (font: -apple-system-body) and (-webkit-appearance: none) { main > .sec:not(.hero) { content-visibility: visible } }.head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px 48px; align-items: end; margin-bottom: 36px }
 .head .lede { margin: 0; justify-self: end }
 .head.center { grid-template-columns: 1fr; text-align: center; justify-items: center }

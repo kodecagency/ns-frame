@@ -1,6 +1,6 @@
 ---
 title: Sintaxis de formas
-description: El mini lenguaje de ns-frame, con todas sus piezas y ejemplos.
+description: "El mini lenguaje de formas de ns-frame en un atributo HTML: esquinas, bevel, notch, scoop, squircle, radios y polígonos, con ejemplos."
 order: 3
 ---
 

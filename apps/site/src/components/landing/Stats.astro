@@ -17,7 +17,7 @@ const max = 8.9 // el núcleo es el módulo más grande
     <div class="ns-bento bn" data-ns-bento="outer bevel 30; inner round 12; radius 2">
       <article class="ns-big t" data-ns-motion="spot">
         <span class="k">Núcleo, con gzip</span>
-        <b class="v num">8,9 KB</b>
+        <b class="v num">10,9 KB</b>
         <p>Formas, bordes, morph y foco. Cada módulo se carga sólo si se usa.</p>
         <ul class="bars" aria-label="Tamaño de cada módulo en KB">
           {SIZES.map(([n, v], k) => <li><span>{n}</span><svg viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><rect width={(v / max * 100).toFixed(1)} height="6" rx="3" class:list={[{ hi: k < 3 }]} /></svg><b class="num">{v.toFixed(1).replace('.', ',')}</b></li>)}

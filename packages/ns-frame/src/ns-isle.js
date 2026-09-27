@@ -19,7 +19,7 @@
 //
 // · La cápsula muestra la sección en pantalla (icono, nombre y posición): completa mientras se baja
 //   leyendo, plegada a un icono al subir. La página reserva su hueco abajo.
-// · Al tocarla, la cápsula se convierte en la hoja, como la Dynamic Island: se ensancha, crece hacia
+// · Al tocarla, la cápsula se convierte en la hoja, como una isla de sistema: se ensancha, crece hacia
 //   arriba y el contenido aparece a su paso (sólo transform y opacity: el compositor la mueve).
 //   Al cerrarse, el camino inverso; arrastrando la hoja hacia abajo, el mismo camino con el dedo.
 // · Se cierra al soltarla lejos o lanzarla, con Escape, con el fondo o con [data-ns-isle-close].
@@ -137,7 +137,7 @@ let OPEN = 600, CLOSE = 480
 const N = 32
 // formas de serie de las casillas de secciones: squircle, y la actual con chaflán y redondeo
 const TILE = 'all squircle 16', CUR = 'tl+br bevel 14; tr+bl round 16; radius 2'
-// El recorrido de la silueta, como la Dynamic Island: al abrir, primero se ensancha a los lados (y
+// El recorrido de la silueta, como una isla de sistema: al abrir, primero se ensancha a los lados (y
 // baja hasta el borde de la hoja) y después crece hacia arriba, cada eje con su muelle; al cerrar,
 // al revés: baja hasta ser una barra y luego se estrecha hasta la cápsula. N+1 muestras del
 // rectángulo y su radio

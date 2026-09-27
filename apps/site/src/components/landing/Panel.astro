@@ -159,27 +159,37 @@ const ROW: [K, string][] = [['torch', 'Linterna'], ['timer', 'Temporizador'], ['
     for (const c of e.children) (c as HTMLElement).animate([{ opacity: fade[0] }, { opacity: fade[1] }], o)
     return a.finished.catch(() => {})
   }
-  const OUT: Keyframe[] = [{ transform: 'none', visibility: 'visible' }, { transform: 'scale(.9)', visibility: 'visible', offset: .99 }, { transform: 'scale(.9)', visibility: 'hidden' }]
-  const IN: Keyframe[] = [{ transform: 'translateY(-8px) scale(.86)', visibility: 'hidden' }, { transform: 'translateY(-8px) scale(.86)', visibility: 'visible', offset: .01 }, { transform: 'none', visibility: 'visible' }]
+  const OUT: Keyframe[] = [{ transform: 'none', visibility: 'visible' }, { transform: 'scale(.92)', visibility: 'visible', offset: .99 }, { transform: 'scale(.92)', visibility: 'hidden' }]
+  const IN: Keyframe[] = [{ transform: 'translateY(-10px) scale(.9)', visibility: 'hidden' }, { transform: 'translateY(-10px) scale(.9)', visibility: 'visible', offset: .01 }, { transform: 'none', visibility: 'visible' }]
+  // (curva de frenado largo, sin rebote: arranca rápido y se posa)
+  const EASE_IN = 'cubic-bezier(.22,1,.36,1)', EASE_OUT = 'cubic-bezier(.4,0,.8,.6)'
   const go = async (to: V, focus?: HTMLElement | null) => {
     if (busy || to == cur) return
     busy = true
-    const from = cur, calm = reduced()
+    const from = cur, calm = reduced(), old = pieces(from)
     cur = to
-    // salida: todas a la vez, 160 ms
-    if (!calm) await Promise.all(pieces(from).map(e => anim(e, OUT, [1, 0],
-      { duration: 160, easing: 'cubic-bezier(.4,0,1,1)', fill: 'forwards' })))
-    show(from, false)
-    for (const e of pieces(from)) { e.getAnimations().forEach(a => a.cancel()); for (const c of e.children) c.getAnimations().forEach(a => a.cancel()) }
-    show(to, true)
     more.setAttribute('aria-expanded', String(to != 'grid'))
-    // entrada: una tras otra (45 ms), 380 ms cada una, con un leve rebote al final
-    const P = pieces(to)
+    // salida: todas a la vez, 170 ms. La entrada empieza a mitad (se solapan: sin hueco vacío)
+    const out = calm ? Promise.resolve() : Promise.all(old.map(e => anim(e, OUT, [1, 0],
+      { duration: 170, easing: EASE_OUT, fill: 'forwards' })))
+    if (!calm) await new Promise(r => setTimeout(r, 70))
+    show(to, true)
+    // entrada: de arriba abajo, una tras otra; el escalonado total no pasa de ~200 ms (la cuadrícula
+    // tiene once piezas: si no, la última llegaría tarde)
+    const P = pieces(to), gap = Math.min(40, 200 / Math.max(1, P.length - 1))
     if (!calm) P.forEach((e, i) => anim(e, IN, [0, 1],
-      { duration: 380, delay: i * 45, easing: 'cubic-bezier(.2,.9,.3,1.08)', fill: 'backwards' }))
-    // (el foco, cuando su pieza ya se ve: un elemento oculto no se puede enfocar)
-    const k = Math.max(0, P.findIndex(e => !!focus && e.contains(focus)))
-    setTimeout(() => focus?.focus({ preventScroll: true }), calm ? 0 : k * 45 + 90)
+      { duration: 420, delay: i * gap, easing: EASE_IN, fill: 'backwards' }))
+    // (el foco, en cuanto su pieza se ve —un elemento oculto no se puede enfocar—: se mira en cada
+    // fotograma, no con un temporizador, porque en un móvil cargado la entrada puede ir con retraso)
+    const put = (n = 0) => {
+      if (!focus || cur != to) return
+      if (getComputedStyle(focus).visibility == 'visible') focus.focus({ preventScroll: true })
+      if (document.activeElement != focus && n < 90) requestAnimationFrame(() => put(n + 1))
+    }
+    put()
+    await out
+    show(from, false)
+    for (const e of old) { e.getAnimations().forEach(a => a.cancel()); for (const c of e.children) c.getAnimations().forEach(a => a.cancel()) }
     busy = false
   }
 

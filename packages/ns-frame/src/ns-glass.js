@@ -25,7 +25,7 @@
 
 import { styles, path, shapeOf, pathOf, update, watch, quality, cssNum, mk } from './ns-frame.js'
 import { liquid, shift, pathField, lensURL, LENS } from './ns-liquid.js'
-import { rounded } from './ns-light.js'
+import { rounded, corners } from './ns-light.js'
 
 const CSS = `@layer ns{
 [data-ns-glass]{background:none;--ns-glass-shadow:rgba(0,0,0,.28)}
@@ -63,8 +63,11 @@ export function glass(el, o = {}) {
     const w = el.offsetWidth, hh = el.offsetHeight, s = shapeOf(el)
     if (!w || !hh) return null
     // (la forma que el núcleo está pintando: a mitad de un morph, la intermedia)
-    const d = s ? pathOf(el) || path(s, w, hh) : rounded(el, w, hh)
-    return { d, w, h: hh }
+    if (s) return { d: pathOf(el) || path(s, w, hh), w, h: hh }
+    // (un rectángulo redondeado lleva también sus radios: el motor WebGL calcula su distancia exacta,
+    // sin rasterizar; sólo si las esquinas son circulares)
+    const C = corners(el, w, hh)
+    return { d: rounded(el, w, hh, C), w, h: hh, r: C.every(([x, y]) => Math.abs(x - y) < .5) ? C.map(c => c[0]) : null }
   }
   SH.set(el, shape)
   // (dentro de un grupo, data-ns-glass-group, el desenfoque lo pone la capa compartida del grupo: la
@@ -175,7 +178,7 @@ export function glassGroup(host) {
   layer.setAttribute('aria-hidden', 'true')
   host.classList.add('ns-glass-group')
   host.prepend(layer)
-  let raf = 0, last = '', engine = null, lens = null, srcKey
+  let raf = 0, last = '', engine = null, lens = null, srcKey, rough = false
   // El nivel se elige por lo que hay detrás, y se vuelve a elegir si cambia (otra clase, otro fondo,
   // otro hijo): (1) fondo conocido → motor WebGL; (2) fondo de la página en Chromium → lente de la
   // unión; (3) si no, la capa de desenfoque. "native" fuerza la (3)
@@ -205,6 +208,9 @@ export function glassGroup(host) {
   const draw = () => {
     raf = 0
     const H = host.getBoundingClientRect(), ox = H.left + host.clientLeft, oy = H.top + host.clientTop, parts = []
+    // (las cajas redondeadas, para el motor: x, y, ancho, alto y los cuatro radios; null si alguna
+    // pieza tiene otra forma, y entonces el motor usa el path)
+    let boxes = []
     for (const e of host.querySelectorAll('[data-ns-glass]')) {
       // (sólo lo que se ve: una pieza con visibility:hidden —un panel que otra vista sustituye sin
       // perder su sitio— no deja su vidrio pintado en la unión)
@@ -214,19 +220,28 @@ export function glassGroup(host) {
       const r = e.getBoundingClientRect()
       // (el path va en la caja de borde de la pieza: se lleva a su sitio dentro del grupo, y a su
       // tamaño en pantalla si está escalada, como a mitad de una entrada animada)
-      parts.push(shift(P.d, r.left - ox, r.top - oy, P.w ? r.width / P.w : 1, P.h ? r.height / P.h : 1))
+      const sx = P.w ? r.width / P.w : 1, sy = P.h ? r.height / P.h : 1
+      parts.push(shift(P.d, r.left - ox, r.top - oy, sx, sy))
+      if (boxes && P.r) boxes.push(r.left - ox, r.top - oy, r.width, r.height, ...P.r.map(v => v * Math.min(sx, sy)))
+      else boxes = null
     }
     // (mientras una pieza —o lo que la contiene, dentro del grupo— se anima, se sigue cada fotograma;
     // las animaciones infinitas de adorno no cuentan: se redibujaría para siempre)
-    if (moving()) schedule()
+    const mv = moving()
+    if (mv) schedule()
     const d = parts.join('')
-    if (d == last) return
-    last = d
-    // (la capa se recorta también con el motor: hasta que dibuja, y si falla, es la que se ve)
-    const lw = host.scrollWidth, lh = host.scrollHeight
-    Object.assign(layer.style, { width: lw + 'px', height: lh + 'px', clipPath: d ? `path("${d}")` : 'inset(50%)' })
-    if (engine) engine.draw(d)
-    else if (d) lens?.draw(d, lw, lh)
+    // (al pararse, el motor rehace en fino lo último que dibujó en basto durante el movimiento)
+    const settle = rough && !mv
+    if (d == last && !settle) return
+    rough = mv && !!engine
+    if (d != last) {
+      last = d
+      // (la capa se recorta también con el motor: hasta que dibuja, y si falla, es la que se ve)
+      const lw = host.scrollWidth, lh = host.scrollHeight
+      Object.assign(layer.style, { width: lw + 'px', height: lh + 'px', clipPath: d ? `path("${d}")` : 'inset(50%)' })
+      if (!engine && d) lens?.draw(d, lw, lh)
+    }
+    engine?.draw(d, mv, boxes)
   }
   const schedule = () => { raf ||= requestAnimationFrame(draw) }
   const moving = () => host.getAnimations?.({ subtree: true }).some(a => {

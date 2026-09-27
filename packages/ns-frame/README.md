@@ -1,6 +1,6 @@
 # ns-frame
 
-Native UI shapes for the web — bevels, notches, scoops, squircles and fillets on any corner of any element, with real borders that follow the cut, morph, apertures and shaped components. No images, no dependencies, strict-CSP safe. **8.9 KB gzip core.**
+Native UI shapes for the web — bevels, notches, scoops, squircles and fillets on any corner of any element, with real borders that follow the cut, morph, apertures and shaped components. No images, no dependencies, strict-CSP safe. **10.9 KB gzip core.**
 
 Formas nativas para la web: cortes, chaflanes, notches, scoops, squircles y radius en cualquier vértice de cualquier elemento.
 

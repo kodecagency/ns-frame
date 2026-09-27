@@ -89,7 +89,7 @@ export interface IsleOptions {
   collapseDelta?: number
   /** Deslizar la cápsula cambia de sección (true). */
   swipe?: boolean
-  /** La cápsula se convierte en la hoja como la Dynamic Island (true); false: la hoja entra desde abajo. */
+  /** La cápsula se convierte en la hoja como una isla de sistema (true); false: la hoja entra desde abajo. */
   morph?: boolean
   /** Forma de ns-frame de las casillas de [data-ns-isle-links] ('all squircle 16'); false = ninguna. */
   tile?: Shape | false
@@ -223,13 +223,21 @@ export function glassGroup(el: HTMLElement): { update(): void; destroy(): void }
 
 // ── ns-frame/glass-gl (lo carga ns-frame/glass cuando hace falta) ──
 /** Motor WebGL2 de un grupo sobre un fondo conocido; null sin WebGL2. */
-export function glEngine(host: HTMLElement, src: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | { url: string }, onFail?: () => void, onReady?: () => void): { draw(d?: string): void; destroy(): void } | null
+export function glEngine(host: HTMLElement, src: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | { url: string }, onFail?: () => void, onReady?: () => void): {
+  /** d: path de la unión · moving: rejilla basta mientras dure un movimiento · boxes: cajas redondeadas de 8 en 8 (x, y, ancho, alto y los cuatro radios) para la distancia exacta, o null */
+  draw(d?: string, moving?: boolean, boxes?: number[] | null): void
+  destroy(): void
+} | null
 
 // ── ns-frame/light ──
 /** Parámetros de un material: superficie (relieve) o canto (rim: true, vidrio). */
 export interface Material { b: number; s: number; ks: number; n: number; amb?: number; sh?: [number, number, number][]; inset?: number; rim?: boolean; back?: number; backColor?: string }
 /** Compila un material en un <filter> compartido e iluminado por la luz de la página; devuelve su id. */
 export function material(m: Material): string
+/** Radios reales [x, y] de las cuatro esquinas de `el` (sup. izq., sup. der., inf. der., inf. izq.), repartidos como el navegador. */
+export function corners(el: Element, w: number, h: number): [number, number][]
+/** Path del rectángulo redondeado de `el` con su border-radius real. */
+export function rounded(el: Element, w: number, h: number, corners?: [number, number][]): string
 
 // ── ns-frame/relief ──
 /**

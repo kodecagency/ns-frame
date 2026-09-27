@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.11.1 — grupo de vidrio más fluido y con bordes exactos, SEO del sitio
+
+### Vidrio en grupo (motor WebGL)
+- **Bordes exactos:** las piezas con `border-radius` (casi todas) ya no se rasterizan: el shader calcula la distancia exacta de cada caja redondeada (hasta 48 por grupo). La silueta y el canto son limpios en las curvas (antes, escalones y un brillo suelto donde la curva se une a la recta). Las formas de ns-frame (chaflanes, muescas…) siguen con el campo rasterizado, ahora en coma flotante de 16 bits (sin escalones en el borde).
+- **Más fluido al animar:** el motor dibuja en el mismo fotograma que las piezas (antes, uno después: el vidrio iba desfasado) y, con formas rasterizadas, usa una rejilla más basta mientras hay movimiento y la fina al pararse. En el panel de la landing, con CPU 4×: la ida pasa de 41 a 62 fotogramas por segundo y la vuelta de 55 a 73.
+- El lienzo se dibuja a la densidad de la pantalla hasta 3× (antes 2×: en un iPhone el canto se veía granulado) y el borde se suaviza en un píxel del lienzo.
+- `glEngine().draw(d, moving, boxes)`; `corners(el, w, h)` exportado de `ns-frame/light` (radios reales de las cuatro esquinas).
+
+### Landing
+- Panel de vidrio: la salida y la entrada se solapan (sin hueco vacío), escalonado de 200 ms como mucho y curva de frenado largo sin rebote; el foco llega a su sitio en cuanto la pieza se ve, también con el móvil cargado.
+- **SEO:** cabecera común (`Seo.astro`) con Open Graph, tarjeta grande de Twitter/X, `og:image` (`/og.png`), idioma y datos estructurados (`WebSite` y `SoftwareSourceCode` en la landing; `TechArticle` y migas de pan en las guías); `sitemap.xml` y `robots.txt` generados en el build sin dependencias. La canónica y las URL absolutas salen de `site` en `astro.config.mjs` (se omiten mientras no haya URL de producción). Descripciones de las guías entre 120 y 160 caracteres.
+- Los laboratorios locales de `packages/ns-frame/test` ya no se copian al sitio: sólo las páginas de prueba públicas (`bench`, `compat`, `csp`, `mosaic`), fuera de los buscadores.
+- Tamaños al día en la landing, el README y las guías (núcleo 10,9 KB gzip).
+- Sin nombres de marcas ajenas en textos, comentarios ni palabras clave del paquete (nuevas: `glassmorphism`, `frosted-glass`, `webgl`, `form-controls`…).
+
 ## 0.11.0 — vidrio en grupo, controles de serie y panel de sistema
 
 ### Móviles modestos
@@ -50,7 +65,7 @@
 - Autoría: © Francesco Sierchio (Kodec Agency) en la licencia y en la cabecera de cada archivo compilado.
 
 ### Isla que se convierte en la hoja (`ns-frame/isle`)
-- Al tocar la cápsula, se convierte en la hoja como la Dynamic Island: primero se ensancha a los lados, después crece hacia arriba (un muelle por eje). La forma que crece es la propia hoja (su color y su radio) y su contenido aparece pieza a pieza justo cuando la forma lo alcanza. Al cerrar, el camino inverso: baja hasta ser una barra y se estrecha hasta la cápsula. Un destello de luz da la vuelta al contorno durante el recorrido y mientras se arrastra, con un halo hacia dentro (`--ns-isle-glow`, `--ns-isle-rim`; blanco y gris por defecto). Al cerrar, sin rebote; soltada a medio camino, lo que falta (hasta cerrarse o de vuelta) va con una curva suave, y el contenido ya no reaparece un instante al terminar (un `play()` sobre animaciones ya acabadas las rebobinaba). Las piezas se van al paso del borde de arriba o de los lados.
+- Al tocar la cápsula, se convierte en la hoja como una isla de sistema: primero se ensancha a los lados, después crece hacia arriba (un muelle por eje). La forma que crece es la propia hoja (su color y su radio) y su contenido aparece pieza a pieza justo cuando la forma lo alcanza. Al cerrar, el camino inverso: baja hasta ser una barra y se estrecha hasta la cápsula. Un destello de luz da la vuelta al contorno durante el recorrido y mientras se arrastra, con un halo hacia dentro (`--ns-isle-glow`, `--ns-isle-rim`; blanco y gris por defecto). Al cerrar, sin rebote; soltada a medio camino, lo que falta (hasta cerrarse o de vuelta) va con una curva suave, y el contenido ya no reaparece un instante al terminar (un `play()` sobre animaciones ya acabadas las rebobinaba). Las piezas se van al paso del borde de arriba o de los lados.
 - Casillas de secciones con formas de ns-frame de serie (`tile`, `current`): su contorno ya sigue su forma.
 - Pestañas en Chromium: el segundo reflejo del canto del vidrio con lente es sólo un brillo tenue (antes, un contorno entero dentro del canto: doble burbuja en PC).
 - La cápsula oculta se marca con `[data-ns-hidden]` (antes `.ns-hide`): un atributo, para que su vidrio no se relea al ocultarse; y su texto ya no parpadea al abrir.
@@ -181,7 +196,7 @@
 
 ### Sitio
 - Demo de vidrio líquido sobre una foto: barra con lente clara que se estira y acciones que se separan en gotas de vidrio; «Vidrio / Sólido».
-- `content-visibility: auto` desactivado en WebKit de Apple con una detección en CSS (en iPhone podía reiniciar las animaciones al volver a una sección). Al hacerlo por CSS y no por JS, la carga vuelve a ser rápida.
+- `content-visibility: auto` desactivado en WebKit de iOS y Safari con una detección en CSS (en iPhone podía reiniciar las animaciones al volver a una sección). Al hacerlo por CSS y no por JS, la carga vuelve a ser rápida.
 - Tarjeta concéntrica con chaflán 24 (el botón al pie ya no queda comido por el chaflán con huecos pequeños).
 
 ## 0.10.0 — lo que CSS todavía no hace

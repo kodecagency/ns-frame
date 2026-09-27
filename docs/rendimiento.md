@@ -1,6 +1,6 @@
 ---
 title: Rendimiento
-description: Tamaños, cómo se mantiene ligero y resultados del benchmark.
+description: "Cuánto pesa ns-frame (núcleo de 11 KB gzip y módulos bajo demanda), cómo se mantiene ligero y los resultados del benchmark."
 order: 13
 ---
 
@@ -10,28 +10,29 @@ order: 13
 
 | Archivo | gzip | brotli | |
 |---|---|---|---|
-| `ns-frame.js` | 10,3 KB | 9,4 KB | Núcleo (con grupos de elección, `modal`, `jump` y `watch`) |
-| `ns-mosaic.js` | 9,2 KB | 8,3 KB | Mosaicos de piezas libres, orbes y luz conectada (más `ns-flow.js`) |
-| `ns-frame.lite.js` | 7,7 KB | 7,0 KB | Sólo recortes |
-| `ns-extra.js` | 3,8 KB | 3,6 KB | **Bajo demanda**: degradados, animaciones de borde, acentos, aperturas, formas con scroll |
-| `ns-liquid.js` | 18,4 KB | 16,5 KB | Formas líquidas, vidrio líquido y botón de gotas (más `ns-light.js`) |
-| `ns-glass.js` | 1,3 KB | 1,1 KB | Vidrio en cualquier forma (más `ns-liquid.js`) |
-| `ns-tabs.js` | 3,4 KB | 3,1 KB | Pestañas de vidrio líquido (más `ns-liquid.js`) |
-| `ns-relief.js` | 2,0 KB | 1,8 KB | Relieve (más `ns-light.js`) |
-| `ns-light.js` | 1,5 KB | 1,3 KB | La luz de la página y sus materiales (lo comparten vidrio y relieve) |
-| `ns-isle.js` | 7,6 KB | 6,8 KB | Isla de navegación, con su aspecto de serie (más `ns-sheet.js`) |
+| `ns-frame.js` | 10,9 KB | 9,9 KB | Núcleo (con grupos de elección, `modal`, `jump`, `watch` y utilidades compartidas) |
+| `ns-frame.lite.js` | 8,4 KB | 7,6 KB | Sólo recortes |
+| `ns-mosaic.js` | 9,0 KB | 8,2 KB | Mosaicos de piezas libres, orbes y luz conectada (más `ns-flow.js`) |
+| `ns-extra.js` | 3,9 KB | 3,6 KB | **Bajo demanda**: degradados, animaciones de borde, acentos, aperturas, formas con scroll |
+| `ns-liquid.js` | 18,8 KB | 16,9 KB | Formas líquidas, vidrio con lente y botón de gotas (más `ns-light.js`) |
+| `ns-glass.js` | 3,4 KB | 3,1 KB | Vidrio en cualquier forma y grupos de vidrio (más `ns-liquid.js`) |
+| `ns-glass-gl.js` | 3,8 KB | 3,4 KB | **Bajo demanda**: motor WebGL del grupo sobre una foto, un vídeo o un lienzo |
+| `ns-tabs.js` | 3,7 KB | 3,4 KB | Pestañas de vidrio (más `ns-liquid.js`) |
+| `ns-relief.js` | 1,7 KB | 1,4 KB | Relieve (más `ns-light.js`) |
+| `ns-light.js` | 1,8 KB | 1,6 KB | La luz de la página y sus materiales (lo comparten vidrio y relieve) |
+| `ns-isle.js` | 8,6 KB | 7,7 KB | Isla de navegación, con su aspecto de serie (más `ns-sheet.js`) |
+| `ns-controls.js` | 4,2 KB | 3,6 KB | Controles de serie (segmentos, fichas, campos, deslizadores, niveles, interruptores, copiar, insignias, código, tarjetas, asas) |
 | `ns-concentric.js` | 2,5 KB | 2,3 KB | Esquinas concéntricas automáticas |
-| `ns-skel.js` | 2,5 KB | 2,2 KB | Skeletons |
-| `ns-mark.js` | 2,2 KB | 2,0 KB | Resaltado continuo en varias líneas |
-| `ns-toast.js` | 2,2 KB | 1,9 KB | Toasts |
-| `ns-fx.css` | 2,2 KB | 2,0 KB | Efectos CSS |
+| `ns-skel.js` | 2,6 KB | 2,3 KB | Skeletons |
+| `ns-mark.js` | 2,3 KB | 2,0 KB | Resaltado continuo en varias líneas |
+| `ns-toast.js` | 2,3 KB | 2,0 KB | Toasts |
+| `ns-fx.css` | 2,3 KB | 2,1 KB | Efectos CSS |
+| `ns-carousel.js` | 2,1 KB | 1,8 KB | Carrusel |
 | `ns-flow.js` | 2,0 KB | 1,8 KB | Texto que llena la forma (lo comparte `ns-mosaic.js`) |
-| `ns-pop.js` | 1,8 KB | 1,5 KB | Popovers |
-| `ns-link.js` | 1,8 KB | 1,6 KB | Callouts HUD |
-| `ns-carousel.js` | 1,7 KB | 1,4 KB | Carrusel |
-| `ns-controls.js` | 2,1 KB | 1,8 KB | Controles de serie (segmentos, fichas, campos, deslizadores, muestras) |
-| `ns-bento.js` | 1,5 KB | 1,3 KB | Bento |
+| `ns-link.js` | 2,0 KB | 1,8 KB | Callouts HUD |
+| `ns-pop.js` | 1,8 KB | 1,6 KB | Popovers |
 | `ns-sheet.js` | 1,7 KB | 1,5 KB | Hoja arrastrable |
+| `ns-bento.js` | 1,5 KB | 1,3 KB | Bento |
 | `ns-audit.js` | 1,3 KB | 1,2 KB | Sólo desarrollo |
 | `ns-fx.js` · `ns-css.js` · `ns-vt.js` · `ns-astro.js` | 0,7–0,8 KB | 0,6–0,7 KB | decode · compilador · View Transitions · integración de Astro |
 | `ns-static.js` | 0,5 KB | 0,5 KB | Build (Node) |
