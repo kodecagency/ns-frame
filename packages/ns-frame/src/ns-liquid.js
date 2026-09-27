@@ -44,9 +44,9 @@ import { styles, watch, quality } from './ns-frame.js'
 import { material } from './ns-light.js'
 
 const CSS = `@layer ns{
-.ns-liquid{position:relative}
+.ns-liquid{position:relative;isolation:isolate}
 :where(.ns-liquid>:not(.ns-liquid-fx,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-src)){position:relative}
-.ns-liquid-fx,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-src{position:absolute;pointer-events:none;margin:0}
+.ns-liquid-fx,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-src{position:absolute;z-index:-1;pointer-events:none;margin:0}
 .ns-liquid-src{overflow:hidden}.ns-liquid-gl{position:absolute;left:0;top:0;display:block}.ns-liquid-src>div{position:absolute;inset:0}.ns-liquid-src>div>div{position:absolute}
 .ns-liquid-fx{overflow:visible}
 .ns-liquid-fx .ns-lf{fill:var(--ns-liquid-fill,currentColor);stroke:var(--ns-liquid-border,none);stroke-width:var(--ns-liquid-width,1.5px)}
