@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.13.0 — tono: un color para todos los acentos
+
+- **`ns-tone`** (`ns-fx.css`): `class="ns-tone"` con `--ns-tone`, o un preajuste (`ns-tone-green`, `-cyan`, `-violet`, `-pink`, `-amber`, `-coral`, `-lime`, `-silver`, `-white`), tiñe con un solo color todos los acentos de la librería que haya dentro: luz en U, acento y luz del borde, halo, aguada, controles y check, avisos, carrusel, callouts y luz del mosaico. En `<html>`, tematiza la página entera. Antes cada módulo tenía su variable y su color por defecto (unos verdes, otros cian) y cambiar el acento de un bloque eran seis o siete variables.
+- Landing: los planes, las tarjetas de movimiento y los preajustes de forma usan `ns-tone-*` (antes, tres tonos propios distintos: `--tone`, `--c`…).
+
 ## 0.12.0 — primitivas nuevas sacadas de la landing
 
 La landing no hace nada a mano que no sea composición: lo que se repetía pasa a ser una primitiva de la librería, con variables.

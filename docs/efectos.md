@@ -55,6 +55,7 @@ Las animaciones de conjunto mueven a la vez la base, los costados, las esquinas 
 | `ns-halo` | En un contenedor: glow exterior que sigue la forma |
 | `ns-pulse` | Glow que respira |
 | `ns-dots` `ns-grid` `ns-lines` `ns-stripes` `ns-scales` `ns-scan` | Patrones de fondo (`--ns-pat`, `--ns-pat-size`, `--ns-pat-mask`) |
+| `ns-tone` · `ns-tone-green` … | Un color para todos los acentos de la librería que haya dentro (ver abajo) |
 | `ns-wash` | Aguada: un resplandor suave en una esquina o un borde, bajo el contenido (`--ns-wash` color, `--ns-wash-at` posición, `--ns-wash-size`, `--ns-wash-fade`). Es una capa de `background-image`: conserva tu `background-color` |
 | `ns-shimmer` | Destello que barre el elemento |
 | `ns-text-shimmer` · `ns-text-aurora` | Texto con brillo · multicolor animado |
@@ -67,6 +68,17 @@ Los patrones y `ns-u-live`/`tide`/`surge`… usan capas distintas (`::before` y 
 ```
 
 Con `background-color` (no `background`): el atajo `background` borraría la capa de la aguada.
+
+## Tono: un color para todo (`ns-tone`)
+
+```html
+<!-- toda la página con un acento -->
+<html class="ns-tone" style="--ns-tone: #8b7bff">
+<!-- o un bloque, con un preajuste -->
+<article class="ns-tone-amber ns-u" data-ns="card">…</article>
+```
+
+`ns-tone` con `--ns-tone`, o un preajuste (`ns-tone-green`, `-cyan`, `-violet`, `-pink`, `-amber`, `-coral`, `-lime`, `-silver`, `-white`), tiñe con un solo color todo lo de la librería que haya dentro: la luz en U (`--ns-u`), el acento y la luz del borde (`--ns-accent`, `--ns-motion`), el halo, la aguada, los controles (`--ns-ui-accent`, `--ns-check`), los avisos, el carrusel, los callouts y la luz del mosaico. En tu CSS, `var(--ns-tone)` da ese color (un título, un borde). Son variables heredadas: una pieza de dentro con su propio color lo conserva.
 
 ## Texto que se descifra (`ns-frame/fx`)
 

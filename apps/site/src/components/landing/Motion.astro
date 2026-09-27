@@ -28,11 +28,11 @@ const M = [
 
     <div class="grid">
       {M.map(x => (
-        <article class:list={['mv', 'ns-wash', 'c-' + x.c]} data-ns={x.s} data-ns-hover={x.hover} data-ns-motion={x.m}>
+        <article class:list={['mv', 'ns-wash', 'ns-tone-' + x.c]} data-ns={x.s} data-ns-hover={x.hover} data-ns-motion={x.m}>
           <b>{x.t}</b><span>{x.d}</span><code class="tag">"{x.m}"</code>
         </article>
       ))}
-      <article class="mv prog c-green ns-wash" id="mv-prog" data-ns="tl+br bevel 18; radius 3" data-ns-motion="progress">
+      <article class="mv prog ns-tone-green ns-wash" id="mv-prog" data-ns="tl+br bevel 18; radius 3" data-ns-motion="progress">
         <b class="num"><output for="mv-input">64 %</output></b>
         <label data-ns-field><span>Progreso en el borde</span><input type="range" min="0" max="100" value="64" id="mv-input" data-ns-range data-ns-unit=" %"></label>
         <code class="tag">"progress"</code>
@@ -52,10 +52,9 @@ const M = [
   code { font: var(--t-small) var(--mono); color: var(--text) }
   .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px }
   .mv { min-height: 150px; padding: 20px; display: flex; flex-direction: column; gap: 4px; min-width: 0;
-    background-color: var(--surface); --ns-wash: color-mix(in srgb, var(--c) 10%, transparent); --ns-wash-size: 90% 70%; --ns-wash-at: 50% 120%; --ns-wash-fade: 70%;
-    --ns-border: rgba(255, 255, 255, .1); --ns-accent-width: 1.5px; --ns-glow: drop-shadow(0 0 5px var(--c)); --ns-spot-size: 140; --ns-spot-fill: .08; --ns-morph-time: 360 }
-  .c-white { --c: #ffffff } .c-green { --c: #00e676 } .c-amber { --c: #ffb547 } .c-lime { --c: #b8f36b } .c-silver { --c: #d4d4d8 } .c-coral { --c: #ff7a59 }
-  .mv { --ns-motion: var(--c) }
+    background-color: var(--surface); --ns-wash-size: 90% 70%; --ns-wash-at: 50% 120%; --ns-wash-fade: 70%;
+    --ns-border: rgba(255, 255, 255, .1); --ns-accent-width: 1.5px; --ns-glow: drop-shadow(0 0 5px var(--ns-tone)); --ns-spot-size: 140; --ns-spot-fill: .08; --ns-morph-time: 360 }
+  /* (el color de cada tarjeta —luz del borde, glow y aguada— es su tono: ns-tone-* de ns-fx.css) */
   .prog { --ns-progress: 64 }
   .mv b { font: 600 var(--t-title)/1.2 var(--display); font-stretch: 106% }
   .mv span { font-size: var(--t-small); color: var(--text-2) }

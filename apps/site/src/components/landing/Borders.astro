@@ -5,9 +5,9 @@ import SectionHead from '../SectionHead.astro'
 import Arrow from '../Arrow.astro'
 
 const PLANS = [
-  { n: 'Starter', p: '0', f: ['3 proyectos', 'Todas las formas', 'Soporte de la comunidad'], cls: 'silver', cta: 'Empezar' },
-  { n: 'Pro', p: '12', f: ['Proyectos ilimitados', 'Formas propias con define()', 'Exportar a CSS shape()', 'Soporte prioritario'], cls: 'green', cta: 'Elegir Pro', top: true },
-  { n: 'Equipo', p: '39', f: ['Todo lo de Pro', 'Tokens de diseño compartidos', 'Inicio de sesión único'], cls: 'amber', cta: 'Hablar con ventas' },
+  { n: 'Starter', p: '0', f: ['3 proyectos', 'Todas las formas', 'Soporte de la comunidad'], cls: 'ns-tone-silver', cta: 'Empezar' },
+  { n: 'Pro', p: '12', f: ['Proyectos ilimitados', 'Formas propias con define()', 'Exportar a CSS shape()', 'Soporte prioritario'], cls: 'ns-tone-green', cta: 'Elegir Pro', top: true },
+  { n: 'Equipo', p: '39', f: ['Todo lo de Pro', 'Tokens de diseño compartidos', 'Inicio de sesión único'], cls: 'ns-tone-amber', cta: 'Hablar con ventas' },
 ]
 const PATTERNS = [
   ['ns-dots', 'Puntos', 'soft'], ['ns-grid', 'Retícula', 'notch'], ['ns-scales', 'Escamas', 'plate'], ['ns-stripes', 'Rayas', 'wing'],
@@ -93,17 +93,16 @@ const PATTERNS = [
 
   .plans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 14px; align-items: stretch }
   .plan { --ns-u-bg: var(--surface); --ns-u-glow: .55; --ns-border: var(--line-2); padding: 26px 24px 24px; display: flex; flex-direction: column; gap: 10px; min-width: 0 }
-  .plan h3 { font-size: var(--t-control); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; color: var(--tone) }
+  .plan h3 { font-size: var(--t-control); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; color: var(--ns-tone) }
   .badge { --ns-badge-bg: var(--signal); --ns-badge-ink: var(--ink-go) }
   .price { margin: 0; font: 700 40px/1 var(--display); font-stretch: 108%; letter-spacing: -.03em }
   .price small { font-size: var(--t-ui); font-weight: 500; color: var(--text-3); letter-spacing: 0 }
   /* (la lista con check: data-ns-checks de ns-frame/controls; aquí sólo su sitio y el color del plan) */
-  .plan ul { margin: 6px 0 12px; color: var(--text-2); font-size: var(--t-ui); flex: 1; --ns-check: var(--tone) }
+  .plan ul { margin: 6px 0 12px; color: var(--text-2); font-size: var(--t-ui); flex: 1 }
   .plan .btn { width: 100% }
-  .silver { --ns-u: #d4d4d8; --tone: #d4d4d8 }
-  .green { --ns-u: #00e676; --tone: #00e676; --ns-u-glow: .8; --ns-border: linear-gradient(120deg, #00e676, rgba(255, 255, 255, .1) 45%, #b8f36b); --ns-border-width: 1.5px }
-  .amber { --ns-u: #ffb547; --tone: #ffb547 }
-  .plan .btn.ghost { --ns-border: color-mix(in srgb, var(--tone) 45%, transparent) }
+  /* (el color de cada plan —su luz en U, su check y su título— es su tono: ns-tone-* de ns-fx.css) */
+  .plan.top { --ns-u-glow: .8; --ns-border: linear-gradient(120deg, var(--ns-tone), rgba(255, 255, 255, .1) 45%, #b8f36b); --ns-border-width: 1.5px }
+  .plan .btn.ghost { --ns-border: color-mix(in srgb, var(--ns-tone) 45%, transparent) }
 
   .pats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-top: 14px }
   .pat { min-height: 104px; padding: 18px 22px; display: flex; flex-direction: column; justify-content: space-between; gap: 8px; background: var(--surface); --ns-border: var(--line-2); --ns-pat: rgba(255, 255, 255, .12); min-width: 0 }

@@ -14,6 +14,8 @@ const SHAPES = [
   { name: 'Ticket', code: 'all round 18; left+right scoop center 44 20', full: `all round 18; ${tail.cut}; left+right scoop center 44 20` },
   { name: 'Placa', code: 'tl+br bevel 22; tr+bl round 8; top cut center 40% 8 8', full: `tl bevel 22; tr round 8; br bevel 22; bl round 8; top cut center 40% 8 8; ${tail.scoop}` },
 ]
+// (el tono de cada preajuste, en ciclo: ns-tone-* de ns-fx.css)
+const TONES = ['ns-tone-green', 'ns-tone-silver', 'ns-tone-amber', 'ns-tone-lime', 'ns-tone-coral']
 const PRESETS = ['card', 'button', 'chip', 'soft', 'notch', 'scoop', 'wing', 'panel', 'plate', 'tab', 'ticket', 'media', 'pill', 'hud']
 const MEDIA = [
   { seed: 'nsframe-a', alt: 'Costa al atardecer', s: 'tl bevel 40; br round 40; top cut 58% 88% 12 r6; radius 4', c: 'bevel + round + cut' },
@@ -54,7 +56,7 @@ const MEDIA = [
     <h3 class="sub">14 formas listas, o la tuya en una línea</h3>
     <div class="wall" id="presets">
       {PRESETS.map((p, i) => (
-        <button type="button" class:list={['pre', 'k' + (i % 5)]} data-ns-card data-ns={p} data-p={p} aria-label={`Aplicar la forma ${p} a la tarjeta`}>
+        <button type="button" class:list={['pre', 'k' + (i % 5), TONES[i % 5]]} data-ns-card data-ns={p} data-p={p} aria-label={`Aplicar la forma ${p} a la tarjeta`}>
           <span class="nm">{p}</span><code class="tag">data-ns="{p}"</code>
         </button>
       ))}
@@ -111,16 +113,14 @@ const MEDIA = [
   .sub { margin: 44px 0 14px; font-size: var(--t-title); color: var(--text) }
   .wall { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px }
   /* tarjeta-botón: data-ns-card de ns-frame/controls */
-  .pre { position: relative; min-height: 112px; justify-content: space-between; --ns-card-pad: 20px 24px; --ns-card-gap: 8px; background: var(--surface); --ns-border: color-mix(in srgb, var(--tone, #fff) 30%, rgba(255, 255, 255, .16)); --ns-morph-time: 300; transition: background-color .25s }
+  .pre { position: relative; min-height: 112px; justify-content: space-between; --ns-card-pad: 20px 24px; --ns-card-gap: 8px; background: var(--surface); --ns-border: color-mix(in srgb, var(--ns-tone, #fff) 30%, rgba(255, 255, 255, .16)); --ns-morph-time: 300; transition: background-color .25s }
   .pre[data-p=pill] { padding-left: 44px }
-  .pre:hover { background: var(--surface-2); --ns-border: var(--tone) }
+  .pre:hover { background: var(--surface-2); --ns-border: var(--ns-tone) }
   .nm { font: 600 var(--t-control)/1 var(--display); font-stretch: 106% }
   .pre .tag { font-size: var(--t-micro) }
-  .k0 { --tone: #00e676; background-image: linear-gradient(160deg, rgba(0, 230, 118, .1), transparent 60%) }
-  .k1 { --tone: #d4d4d8 }
-  .k2 { --tone: #ffb547; background-image: linear-gradient(160deg, rgba(255, 181, 71, .09), transparent 60%) }
-  .k3 { --tone: #b8f36b }
-  .k4 { --tone: #ff7a59; background-image: linear-gradient(160deg, rgba(255, 122, 89, .09), transparent 60%) }
+  .k0 { background-image: linear-gradient(160deg, rgba(0, 230, 118, .1), transparent 60%) }
+  .k2 { background-image: linear-gradient(160deg, rgba(255, 181, 71, .09), transparent 60%) }
+  .k4 { background-image: linear-gradient(160deg, rgba(255, 122, 89, .09), transparent 60%) }
   @media (max-width: 1000px) { .play { grid-template-columns: 1fr } .wall { grid-template-columns: repeat(4, minmax(0, 1fr)) } }
   @media (max-width: 560px) { .wall { grid-template-columns: repeat(2, minmax(0, 1fr)) } .media { grid-template-rows: auto } .m0 img { height: 210px } .m1 img, .m2 img { height: 170px } .stage [data-ns-segment] { --ns-ui-h: 36px } }
 </style>

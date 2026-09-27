@@ -94,6 +94,20 @@
 .ns-aura-top::before { scale: 1 -1 }
 @keyframes ns-fade { to { opacity: var(--ns-aura-o, .55) } }
 
+/* ── Tono: un solo color para todo lo de la librería que haya dentro ──
+   class="ns-tone" con --ns-tone: <color>, o un preajuste (ns-tone-green, -cyan, -violet, -pink,
+   -amber, -coral, -lime, -silver, -white). Tiñe la luz en U, el acento y la luz del borde, el
+   halo, la aguada, los controles (acento, check), los avisos, el carrusel, los callouts y la luz del
+   mosaico. Son variables heredadas: una pieza de dentro con su propio color lo conserva */
+:is(.ns-tone, .ns-tone-green, .ns-tone-cyan, .ns-tone-violet, .ns-tone-pink, .ns-tone-amber, .ns-tone-coral, .ns-tone-lime, .ns-tone-silver, .ns-tone-white) {
+  --ns-u: var(--ns-tone); --ns-accent: var(--ns-tone); --ns-motion: var(--ns-tone); --ns-ui-accent: var(--ns-tone);
+  --ns-check: var(--ns-tone); --ns-toast-c: var(--ns-tone); --ns-car: var(--ns-tone); --ns-link: var(--ns-tone); --ns-mosaic-light: var(--ns-tone);
+  --ns-halo: color-mix(in srgb, var(--ns-tone) 35%, transparent); --ns-wash: color-mix(in srgb, var(--ns-tone) 10%, transparent);
+}
+.ns-tone-green { --ns-tone: #00e676 } .ns-tone-cyan { --ns-tone: #3de0ff } .ns-tone-violet { --ns-tone: #8b7bff }
+.ns-tone-pink { --ns-tone: #ff6bd6 } .ns-tone-amber { --ns-tone: #ffb547 } .ns-tone-coral { --ns-tone: #ff7a59 }
+.ns-tone-lime { --ns-tone: #b8f36b } .ns-tone-silver { --ns-tone: #d4d4d8 } .ns-tone-white { --ns-tone: #ffffff }
+
 /* ── Aguada: un resplandor suave en una esquina o un borde, bajo el contenido ──
    Es una capa de background-image: respeta el background-color propio y la forma del elemento, y
    se combina con los patrones (van en ::before). --ns-wash (color), --ns-wash-at (dónde: 0% 0%
