@@ -55,10 +55,18 @@ Las animaciones de conjunto mueven a la vez la base, los costados, las esquinas 
 | `ns-halo` | En un contenedor: glow exterior que sigue la forma |
 | `ns-pulse` | Glow que respira |
 | `ns-dots` `ns-grid` `ns-lines` `ns-stripes` `ns-scales` `ns-scan` | Patrones de fondo (`--ns-pat`, `--ns-pat-size`, `--ns-pat-mask`) |
+| `ns-wash` | Aguada: un resplandor suave en una esquina o un borde, bajo el contenido (`--ns-wash` color, `--ns-wash-at` posición, `--ns-wash-size`, `--ns-wash-fade`). Es una capa de `background-image`: conserva tu `background-color` |
 | `ns-shimmer` | Destello que barre el elemento |
 | `ns-text-shimmer` · `ns-text-aurora` | Texto con brillo · multicolor animado |
 
-Los patrones y `ns-u-live`/`tide`/`surge`… usan capas distintas (`::before` y `::after`), así que se combinan.
+Los patrones y `ns-u-live`/`tide`/`surge`… usan capas distintas (`::before` y `::after`), así que se combinan; `ns-wash` va en el fondo del propio elemento y se combina con todos.
+
+```html
+<!-- una tarjeta con un resplandor verde abajo a la izquierda -->
+<article class="ns-wash" data-ns="card" style="background-color:#141416; --ns-wash:rgba(0,230,118,.1); --ns-wash-at:0% 100%">…</article>
+```
+
+Con `background-color` (no `background`): el atajo `background` borraría la capa de la aguada.
 
 ## Texto que se descifra (`ns-frame/fx`)
 

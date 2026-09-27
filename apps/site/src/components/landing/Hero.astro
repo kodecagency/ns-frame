@@ -28,7 +28,7 @@ import { LINKS } from '../../data/sections'
       </div>
       <div data-ns-area="b">
         <span class="lbl">Editando ahora</span>
-        <div class="faces" role="img" aria-label="Ana, Luis y Marta"><i>A</i><i>L</i><i>M</i></div>
+        <div class="faces" data-ns-avatars role="img" aria-label="Ana, Luis y Marta"><i>A</i><i>L</i><i>M</i></div>
       </div>
       <div data-ns-area="c">
         <span class="lbl">Una línea</span>
@@ -90,11 +90,10 @@ import { LINKS } from '../../data/sections'
   .spec dd { margin: 0; font-family: var(--mono); font-size: var(--t-small) }
   .spec code { font: var(--t-caption) var(--mono); color: var(--signal); margin-top: 10px }
 
-  .faces { display: flex; margin-top: auto }
-  .faces i { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #151515; margin-left: -9px; display: grid; place-items: center; font: 600 var(--t-small)/1 var(--body); font-style: normal; color: #0a0a0a; background: var(--silver) }
-  .faces i:first-child { margin-left: 0 }
-  .faces i:nth-child(2) { background: var(--silver-2) }
-  .faces i:nth-child(3) { background: #666; color: #fff }
+  /* (la fila de avatares: data-ns-avatars de ns-frame/controls; aquí sólo el color de cada uno) */
+  .faces { margin-top: auto; --ns-avatar-ring: #151515; --ns-avatar-bg: var(--silver); --ns-avatar-ink: #0a0a0a; --ns-avatar-font: var(--t-small) }
+  .faces i:nth-child(2) { --ns-avatar-bg: var(--silver-2) }
+  .faces i:nth-child(3) { --ns-avatar-bg: #666; --ns-avatar-ink: #fff }
 
   .code { font: var(--t-small)/1.75 var(--mono); color: var(--text-2); white-space: pre; margin: auto 0 0; overflow: hidden }
   .code b { color: var(--signal); font-weight: 400 }

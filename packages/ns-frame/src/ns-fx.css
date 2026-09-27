@@ -94,6 +94,13 @@
 .ns-aura-top::before { scale: 1 -1 }
 @keyframes ns-fade { to { opacity: var(--ns-aura-o, .55) } }
 
+/* ── Aguada: un resplandor suave en una esquina o un borde, bajo el contenido ──
+   Es una capa de background-image: respeta el background-color propio y la forma del elemento, y
+   se combina con los patrones (van en ::before). --ns-wash (color), --ns-wash-at (dónde: 0% 0%
+   arriba a la izquierda, 50% 100% abajo…), --ns-wash-size (radios de la elipse) y --ns-wash-fade
+   (dónde se apaga) */
+.ns-wash { background-image: radial-gradient(var(--ns-wash-size, 80% 70%) at var(--ns-wash-at, 0% 0%), var(--ns-wash, rgba(255, 255, 255, .08)), transparent var(--ns-wash-fade, 60%)) }
+
 /* ── Aurora: borde multicolor (añade data-ns-spin para que gire) ── */
 .ns-aurora { --ns-border: linear-gradient(90deg, var(--ns-aurora-1, #3de0ff), var(--ns-aurora-2, #8b7bff), var(--ns-aurora-3, #ff6bd6), var(--ns-aurora-4, #ffb547), var(--ns-aurora-1, #3de0ff)) }
 

@@ -48,7 +48,7 @@ const ACTIONS = [
     <div class="grid">
       <!-- 1 · esquinas concéntricas -->
       <article class="x x1" data-ns="all round 22">
-        <div class="stage s1">
+        <div class="stage s1 ns-wash">
           <article class="prod" id="cc" data-ns="tl+br bevel 24; tr+bl round 22">
             <img data-ns-concentric src="https://picsum.photos/seed/ns-cliff-house/760/440.webp" alt="Muelle de madera sobre un lago al atardecer" width="760" height="440" loading="lazy">
             <div class="meta">
@@ -67,7 +67,7 @@ const ACTIONS = [
 
       <!-- 2 · texto que llena la forma -->
       <article class="x x2" data-ns="all round 22">
-        <div class="stage s2">
+        <div class="stage s2 ns-wash">
           <div class="quote" id="fq" data-ns={SHAPES[0][0]} data-ns-flow="22">
             <p><b>El texto llena la forma.</b> Cada línea mide lo que le deja el contorno, con el mismo margen en las diagonales, en las curvas y en los vértices. CSS lo especificó hace más de diez años con shape-inside y ningún navegador lo ha implementado.</p>
           </div>
@@ -82,7 +82,7 @@ const ACTIONS = [
 
       <!-- 3 · resaltado continuo -->
       <article class="x x3" data-ns="all round 22">
-        <div class="stage s3">
+        <div class="stage s3 ns-wash">
           <p class="hl" id="hl">Titulares con <mark data-ns-mark id="mk" class="go" contenteditable="plaintext-only" spellcheck="false">un resaltado que abraza cada línea y se adapta mientras escribes</mark></p>
           <div class="row">
             <div data-ns-segment="sm" id="mk-style" role="group" data-ns-choice aria-label="Estilo del resaltado">{MARKS.map(([c, n], i) => <button type="button" data-c={c} aria-pressed={String(!i)}>{n}</button>)}</div>
@@ -118,7 +118,7 @@ const ACTIONS = [
 
       <!-- 5 · barra de pestañas de vidrio sobre un feed que se desplaza -->
       <article class="x x5" data-ns="all round 22">
-        <div class="stage s5">
+        <div class="stage s5 ns-wash">
           <div class="phone">
             <div class="scr">
               <div class="feed" id="tb-feed" tabindex="0" aria-label="Publicaciones">
@@ -225,7 +225,7 @@ const ACTIONS = [
   .cap p { margin: 0; color: var(--text-2); font-size: var(--t-ui); line-height: 1.5; max-width: 60ch }
 
   /* 1 · tarjeta de reserva: foto y botón concéntricos con la tarjeta */
-  .s1 { background: radial-gradient(70% 80% at 50% 30%, rgba(0, 230, 118, .08), transparent 70%) }
+  .s1 { --ns-wash: rgba(0, 230, 118, .08); --ns-wash-size: 70% 80%; --ns-wash-at: 50% 30%; --ns-wash-fade: 70% }
   .prod { --g: 12px; width: min(100%, 420px); padding: var(--g); box-sizing: border-box; background: #f4f4f5; color: #0a0a0a; display: grid; gap: calc(var(--g) + 4px); --ns-border: none; filter: drop-shadow(0 24px 40px rgba(0, 0, 0, .45)); transition: padding .3s var(--ease), gap .3s var(--ease) }
   .prod img { display: block; width: 100%; height: 190px; object-fit: cover; --ns-morph-time: 0 }
   .meta { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 0 0 0 calc(12px - var(--g) / 3) }
@@ -234,13 +234,13 @@ const ACTIONS = [
   .cta { flex: none; min-height: 46px; padding: 0 28px 0 22px; border: 0; background: #0a0a0a; color: #fff; font: 600 var(--t-control)/1 var(--body); cursor: pointer; --ns-concentric-min: 10px; --ns-morph-time: 0 }
 
   /* 2 · pieza editorial que cambia de silueta */
-  .s2 { background: radial-gradient(70% 70% at 50% 35%, rgba(255, 181, 71, .07), transparent 70%) }
+  .s2 { --ns-wash: rgba(255, 181, 71, .07); --ns-wash-size: 70% 70%; --ns-wash-at: 50% 35%; --ns-wash-fade: 70% }
   .quote { width: min(100%, 290px); height: 290px; box-sizing: border-box; background: #f4f4f5; color: #18181b; --ns-border: none; --ns-morph-time: 0; font: 500 var(--t-ui)/1.42 var(--body) }
   .quote p { margin: 0; text-wrap: pretty }
   .quote b { display: block; font: 700 var(--t-title-lg)/1.1 var(--display); font-stretch: 108%; letter-spacing: -.02em; color: #0a0a0a; margin-bottom: 6px; text-align: center }
 
   /* 3 · titular con resaltado editable */
-  .s3 { align-items: flex-start; justify-content: center; background: radial-gradient(60% 70% at 20% 30%, rgba(0, 230, 118, .08), transparent 70%) }
+  .s3 { align-items: flex-start; justify-content: center; --ns-wash: rgba(0, 230, 118, .08); --ns-wash-size: 60% 70%; --ns-wash-at: 20% 30%; --ns-wash-fade: 70% }
   .hl { margin: 0; max-width: 560px; font: 700 clamp(28px, 3.2vw, 42px)/1.22 var(--display); font-stretch: 106%; letter-spacing: -.03em; color: var(--text) }
   .hl mark { background: none; color: var(--ink-go); outline: none; --ns-mark: var(--signal); --ns-mark-pad: 3px 7px; --ns-mark-radius: 12px; caret-color: currentColor }
   /* foco de teclado: el contorno del propio resaltado (un outline rectangular no seguiría las líneas) */
@@ -274,7 +274,7 @@ const ACTIONS = [
   /* 5 · móvil con feed y barra de pestañas de vidrio (el feed se desplaza por detrás de la barra) */
   .x5 { grid-column: 1 / -1; flex-direction: row }
   .x5 .cap { flex: 0 0 38%; align-content: center; padding: 32px 36px }
-  .s5 { padding: 36px 24px; background: radial-gradient(60% 70% at 50% 40%, rgba(0, 230, 118, .07), transparent 70%) }
+  .s5 { padding: 36px 24px; --ns-wash: rgba(0, 230, 118, .07); --ns-wash-size: 60% 70%; --ns-wash-at: 50% 40%; --ns-wash-fade: 70% }
   .phone { position: relative; width: 300px; height: 560px; border-radius: 46px; border: 1px solid var(--line-2); background: #0b0b0d; box-shadow: 0 30px 60px rgba(0, 0, 0, .45) }
   .scr { position: absolute; inset: 7px; border-radius: 39px; overflow: hidden; background: #111114 }
   .feed { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; padding: 22px 12px 100px; display: grid; gap: 14px; align-content: start }

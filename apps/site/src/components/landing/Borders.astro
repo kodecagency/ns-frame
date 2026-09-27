@@ -22,7 +22,7 @@ const PATTERNS = [
     </SectionHead>
 
     <div class="bento">
-      <article class="b b1" data-ns="tl+br bevel 26; radius 3" data-ns-spin="7s">
+      <article class="b b1 ns-wash" data-ns="tl+br bevel 26; radius 3" data-ns-spin="7s">
         <h3>Degradado que gira</h3>
         <p>Un <code>linear-gradient()</code> en el borde, girando sobre el contorno exacto.</p>
         <code class="tag">--ns-border: linear-gradient(…) · <b>data-ns-spin</b></code>
@@ -59,7 +59,7 @@ const PATTERNS = [
         <article class:list={['plan', 'ns-u', pl.cls, { top: pl.top }]} data-ns={pl.top ? 'tl+br bevel 28; tr+bl round 16; radius 3' : 'all round 18'} data-ns-spin={pl.top ? '8s' : undefined}>
           <h3>{pl.n}{pl.top && <span class="badge" data-ns-badge="solid">Recomendado</span>}</h3>
           <p class="price num">{pl.p} €<small> / mes</small></p>
-          <ul>{pl.f.map(f => <li>{f}</li>)}</ul>
+          <ul data-ns-checks>{pl.f.map(f => <li>{f}</li>)}</ul>
           <a href="#empezar" class:list={['btn', { ghost: !pl.top, go: pl.top }]} data-ns="all round 12">{pl.cta}</a>
         </article>
       ))}
@@ -82,7 +82,7 @@ const PATTERNS = [
   .b h3 { font-size: var(--t-title) }
   .b p { margin: 0; color: var(--text-2); font-size: var(--t-ui); flex: 1 }
   .b code:not(.tag) { font-size: var(--t-caption); color: var(--text) }
-  .b1 { grid-column: span 2; --ns-border: linear-gradient(90deg, #00e676, #b8f36b 30%, rgba(255, 255, 255, .06) 55%, #ffb547); --ns-border-width: 1.5px; background: radial-gradient(80% 90% at 0% 0%, rgba(0, 230, 118, .12), transparent 60%), var(--surface) }
+  .b1 { grid-column: span 2; --ns-border: linear-gradient(90deg, #00e676, #b8f36b 30%, rgba(255, 255, 255, .06) 55%, #ffb547); --ns-border-width: 1.5px; background-color: var(--surface); --ns-wash: rgba(0, 230, 118, .12); --ns-wash-size: 80% 90% }
   .b2 { --ns-u: #00e676; --ns-u-glow: .75 }
   .b3 { --ns-border: rgba(212, 212, 216, .35); --ns-inner: 6px }
   .b4w { --ns-halo: rgba(255, 181, 71, .35) }
@@ -97,9 +97,8 @@ const PATTERNS = [
   .badge { --ns-badge-bg: var(--signal); --ns-badge-ink: var(--ink-go) }
   .price { margin: 0; font: 700 40px/1 var(--display); font-stretch: 108%; letter-spacing: -.03em }
   .price small { font-size: var(--t-ui); font-weight: 500; color: var(--text-3); letter-spacing: 0 }
-  .plan ul { list-style: none; padding: 0; margin: 6px 0 12px; display: grid; gap: 8px; align-content: start; color: var(--text-2); font-size: var(--t-ui); flex: 1 }
-  .plan li { display: flex; gap: 10px; align-items: baseline }
-  .plan li::before { content: ''; flex: none; width: 10px; height: 6px; border-left: 1.5px solid var(--tone); border-bottom: 1.5px solid var(--tone); transform: rotate(-45deg) translateY(-2px) }
+  /* (la lista con check: data-ns-checks de ns-frame/controls; aquí sólo su sitio y el color del plan) */
+  .plan ul { margin: 6px 0 12px; color: var(--text-2); font-size: var(--t-ui); flex: 1; --ns-check: var(--tone) }
   .plan .btn { width: 100% }
   .silver { --ns-u: #d4d4d8; --tone: #d4d4d8 }
   .green { --ns-u: #00e676; --tone: #00e676; --ns-u-glow: .8; --ns-border: linear-gradient(120deg, #00e676, rgba(255, 255, 255, .1) 45%, #b8f36b); --ns-border-width: 1.5px }

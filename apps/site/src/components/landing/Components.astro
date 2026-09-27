@@ -21,7 +21,7 @@ const MODES = ['open', 'split', 'iris', 'wipe', 'drop']
     </SectionHead>
 
     <div class="grid">
-      <article class="c pop" data-ns="card">
+      <article class="c pop ns-wash" data-ns="card">
         <h3>Popover con flecha</h3>
         <p>La flecha es parte del contorno y apunta al botón aunque el navegador lo voltee.</p>
         <div class="acts">
@@ -32,7 +32,7 @@ const MODES = ['open', 'split', 'iris', 'wipe', 'drop']
         <div popover="manual" id="tip1" data-ns-arrow="all round 8" role="tooltip" class="pp">Tooltip con puntero y con teclado.</div>
       </article>
 
-      <article class="c press" data-ns="card">
+      <article class="c press ns-wash" data-ns="card">
         <h3>Estado presionado</h3>
         <p>La forma responde al puntero, al dedo y a Enter o Espacio.</p>
         <div class="acts">
@@ -48,7 +48,7 @@ const MODES = ['open', 'split', 'iris', 'wipe', 'drop']
         <div class="acts"><button type="button" class="btn" data-ns="button" id="dlg-open">Abrir diálogo</button></div>
       </article>
 
-      <article class="c toast" data-ns="all round 20; top cut center 34% 8 r3">
+      <article class="c toast ns-wash" data-ns="all round 20; top cut center 34% 8 r3">
         <h3>Avisos</h3>
         <p>El tiempo restante se consume en el borde y se pausa al pasar el puntero.</p>
         <div class="acts"><button type="button" class="btn ghost" data-ns="all round 12" data-toast="ok">Guardar cambios</button><button type="button" class="btn ghost" data-ns="all round 12" data-toast="error">Simular un error</button></div>
@@ -61,7 +61,7 @@ const MODES = ['open', 'split', 'iris', 'wipe', 'drop']
         <div class="acts"><button type="button" class="btn ghost" data-ns="all round 12" id="sk-run">Volver a cargar</button></div>
       </article>
 
-      <article class="c sht-c" data-ns="all squircle 26; top cut center 26% 6 r3">
+      <article class="c sht-c ns-wash" data-ns="all squircle 26; top cut center 26% 6 r3">
         <h3>Hoja que se arrastra</h3>
         <p>Como en una app nativa: sigue al dedo o al ratón, se estira arriba y se cierra al soltarla o lanzarla. <code>ns-frame/sheet</code>, 1,7 KB.</p>
         <div class="acts"><button type="button" class="btn go" data-ns="all round 12" id="sht-open">Abrir la hoja</button></div>
@@ -151,7 +151,7 @@ const MODES = ['open', 'split', 'iris', 'wipe', 'drop']
   code, kbd { font: var(--t-caption) var(--mono); color: var(--text) }
   .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-areas: 'pop press dlg' 'car car toast' 'car car skel' 'car car sht'; gap: 14px }
   .pop { grid-area: pop } .press { grid-area: press } .dlg-c { grid-area: dlg } .toast { grid-area: toast } .skel { grid-area: skel } .car-c { grid-area: car } .sht-c { grid-area: sht }
-  .sht-c { background: radial-gradient(80% 70% at 50% 110%, rgba(0, 230, 118, .1), transparent 60%), var(--surface) }
+  .sht-c { background-color: var(--surface); --ns-wash: rgba(0, 230, 118, .1); --ns-wash-at: 50% 110% }
   /* la hoja: pegada abajo, ancho de móvil también en escritorio; el fondo se aclara al bajarla */
   dialog.sht { width: min(520px, 100%); max-height: 90dvh }
   .sh { position: relative; padding: 28px 22px calc(22px + env(safe-area-inset-bottom)); display: grid; gap: 10px; background: #18181b; --ns-border: rgba(255, 255, 255, .14); cursor: grab }
@@ -170,12 +170,12 @@ const MODES = ['open', 'split', 'iris', 'wipe', 'drop']
   .c > p { margin: 0; color: var(--text-2); font-size: var(--t-ui) }
   .acts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: auto; padding-top: 14px }
   .acts .btn { font-size: var(--t-ui); min-height: 42px; padding: 0 16px }
-  .pop { background: radial-gradient(80% 70% at 100% 0%, rgba(255, 255, 255, .06), transparent 60%), var(--surface) }
-  .press { background: radial-gradient(80% 70% at 0% 100%, rgba(0, 230, 118, .1), transparent 60%), var(--surface) }
+  .pop { background-color: var(--surface); --ns-wash: rgba(255, 255, 255, .06); --ns-wash-at: 100% 0% }
+  .press { background-color: var(--surface); --ns-wash: rgba(0, 230, 118, .1); --ns-wash-at: 0% 100% }
   .dlg-c { --ns-border: rgba(212, 212, 216, .3) }
   /* (los nombres de las aperturas, en mono: una variable de ns-frame/controls) */
   .dlg-c [data-ns-segment] { align-self: flex-start; margin-top: 6px; --ns-ui-font: var(--mono) }
-  .toast { background: radial-gradient(80% 70% at 100% 100%, rgba(255, 181, 71, .08), transparent 60%), var(--surface) }
+  .toast { background-color: var(--surface); --ns-wash: rgba(255, 181, 71, .08); --ns-wash-at: 100% 100% }
   .car-c { --ns-car: #f4f4f5; --ns-car-bg: #1b1b1e; --ns-car-dot: rgba(255, 255, 255, .25) }
   .pp { --ns-border: rgba(255, 255, 255, .25); --ns-pop-bg: #1b1b1e; color: var(--text); font-size: var(--t-ui); max-width: 240px }
   .sk { margin-top: 8px; display: flex; gap: 14px; align-items: center; background: var(--surface-2); --ns-border: var(--line); padding: 12px }

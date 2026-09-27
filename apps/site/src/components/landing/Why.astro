@@ -47,7 +47,7 @@ const GAINS = [
 
     <div class="gains">
       {GAINS.map(g => (
-        <article class:list={['gain', g.k]} data-ns={g.s}>
+        <article class:list={['gain', 'ns-wash', g.k]} data-ns={g.s}>
           <h3>{g.t}</h3>
           <p>{g.p}</p>
           <code class="tag">{g.s}</code>
@@ -75,9 +75,9 @@ const GAINS = [
   .demo strong { font: 600 var(--t-title)/1.25 var(--display) }
 
   .gains { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 14px }
-  .gain { background: var(--surface); --ns-border: var(--line-2); padding: 22px 22px 20px; display: flex; flex-direction: column; gap: 8px; min-height: 210px; position: relative; overflow: hidden }
-  .gain::after { content: ''; position: absolute; inset: auto -20% -40% -20%; height: 70%; background: radial-gradient(50% 60% at 50% 100%, var(--glow), transparent); opacity: .5; pointer-events: none; z-index: 0 }
-  .gain > * { position: relative; z-index: 1 }
+  /* (el resplandor de abajo, con su color --glow: .ns-wash de ns-fx.css) */
+  .gain { background-color: var(--surface); --ns-border: var(--line-2); padding: 22px 22px 20px; display: flex; flex-direction: column; gap: 8px; min-height: 210px; position: relative; overflow: hidden;
+    --ns-wash: color-mix(in srgb, var(--glow) 50%, transparent); --ns-wash-size: 70% 55%; --ns-wash-at: 50% 125%; --ns-wash-fade: 100% }
   .gain h3 { font-size: var(--t-title) }
   .gain p { margin: 0; color: var(--text-2); font-size: var(--t-ui); flex: 1 }
   .d { --glow: rgba(0, 230, 118, .35) }

@@ -22,7 +22,7 @@ const PRESETS = ['card', 'button', 'chip', 'soft', 'notch', 'scoop', 'wing', 'pa
           {PRESETS.map(p => <button type="button" data-p={p} aria-pressed="false">{p}</button>)}
         </div>
       </div>
-      <div class="st ns-dots" data-ns="all round 20">
+      <div class="st ns-dots ns-wash" data-ns="all round 20">
         <div class="rz" id="pg-rz" tabindex="0" aria-label="Vista previa redimensionable: arrastra la esquina inferior derecha">
           <div class="pv" id="pg-pv" data-ns={START}><span>arrastra la esquina ↘</span></div>
         </div>
@@ -100,7 +100,7 @@ const PRESETS = ['card', 'button', 'chip', 'soft', 'notch', 'scoop', 'wing', 'pa
   .src { --ns-ui-font: var(--mono) }
   .chips { --ns-ui-font: var(--mono); --ns-ui-h: 36px }
   .st { position: relative; min-height: 380px; display: grid; place-items: center; padding: 28px; overflow: hidden; min-width: 0;
-    background: radial-gradient(50% 60% at 50% 50%, rgba(0, 230, 118, .07), transparent 70%), var(--bg-2); --ns-border: var(--line-2); --ns-pat: rgba(255, 255, 255, .08); --ns-pat-size: 16px; --ns-pat-mask: none }
+    background-color: var(--bg-2); --ns-wash: rgba(0, 230, 118, .07); --ns-wash-size: 50% 60%; --ns-wash-at: 50% 50%; --ns-wash-fade: 70%; --ns-border: var(--line-2); --ns-pat: rgba(255, 255, 255, .08); --ns-pat-size: 16px; --ns-pat-mask: none }
   .rz { resize: both; overflow: hidden; width: 78%; height: 250px; min-width: 140px; min-height: 90px; max-width: 100%; max-height: 330px; border-radius: var(--r-2xs) }
   .rz:focus-visible { outline-offset: 6px }
   .pv { width: 100%; height: 100%; display: grid; place-items: center; background: linear-gradient(150deg, rgba(0, 230, 118, .16), rgba(184, 243, 107, .05) 45%, rgba(20, 20, 22, .9)); --ns-border: linear-gradient(120deg, #00e676, rgba(255, 255, 255, .2) 50%, #b8f36b); --ns-border-width: 1.5px; --ns-inner: 6px; color: var(--text-2); font: var(--t-caption) var(--mono) }

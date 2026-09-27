@@ -52,23 +52,23 @@ const PICKS = [
          probar otra opción); en el móvil, selectores nativos en dos columnas, sin desplazamiento lateral -->
     <div class="bar" role="group" aria-label="Opciones del mosaico">
       <!-- todo con ns-frame/controls: segmentos, fichas, campos, deslizadores y muestras -->
-      <div class="grp" data-ns-segment="sm" id="mo-modes" role="group" data-ns-choice aria-label="Plantilla">{TEMPLATES.map(([t, n], i) => <button type="button" data-v={t} aria-pressed={String(!i)}>{n}</button>)}</div>
-      <div class="grp" data-ns-segment="sm" id="mo-hole" role="group" data-ns-choice aria-label="Forma del hueco">{HOLES.map(([h, n, d], i) => <button type="button" data-v={h} aria-pressed={String(!i)} aria-label={n} title={n}><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d={d} /></svg></button>)}</div>
-      <div class="grp" data-ns-segment="sm" id="mo-fill" role="group" data-ns-choice aria-label="Contenido del orbe">{FILLS.map(([c, n]) => <button type="button" data-v={c} aria-pressed={String(c == 'is-photo')}>{n}</button>)}</div>
-      <div class="grp" data-ns-segment="sm" id="mo-mat" role="group" data-ns-choice aria-label="Material de las piezas">{MATS.map(([c, n], i) => <button type="button" data-v={c} aria-pressed={String(!i)}>{n}</button>)}</div>
-      <div class="grp gl" data-ns-segment="sm" id="mo-bg" role="group" data-ns-choice aria-label="Fondo del vidrio" hidden>{BGS.map(([c, n], i) => <button type="button" data-v={c} aria-pressed={String(!i)}>{n}</button>)}</div>
+      <div class="grp" data-ns-segment="sm" id="mo-modes" role="group" data-ns-choice aria-label="Plantilla">{TEMPLATES.map(([t, n], i) => <button type="button" data-value={t} aria-pressed={String(!i)}>{n}</button>)}</div>
+      <div class="grp" data-ns-segment="sm" id="mo-hole" role="group" data-ns-choice aria-label="Forma del hueco">{HOLES.map(([h, n, d], i) => <button type="button" data-value={h} aria-pressed={String(!i)} aria-label={n} title={n}><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d={d} /></svg></button>)}</div>
+      <div class="grp" data-ns-segment="sm" id="mo-fill" role="group" data-ns-choice aria-label="Contenido del orbe">{FILLS.map(([c, n]) => <button type="button" data-value={c} aria-pressed={String(c == 'is-photo')}>{n}</button>)}</div>
+      <div class="grp" data-ns-segment="sm" id="mo-mat" role="group" data-ns-choice aria-label="Material de las piezas">{MATS.map(([c, n], i) => <button type="button" data-value={c} aria-pressed={String(!i)}>{n}</button>)}</div>
+      <div class="grp gl" data-ns-segment="sm" id="mo-bg" role="group" data-ns-choice aria-label="Fondo del vidrio" hidden>{BGS.map(([c, n], i) => <button type="button" data-value={c} aria-pressed={String(!i)}>{n}</button>)}</div>
       <div class="grp fx" data-ns-chips id="mo-fx" role="group" aria-label="Efecto de luz" data-ns-choice>
-        {FX.map(([k, n]) => <button type="button" data-v={k} aria-pressed={String(k == START)}>{n}</button>)}
+        {FX.map(([k, n]) => <button type="button" data-value={k} aria-pressed={String(k == START)}>{n}</button>)}
       </div>
       <div class="picks">
         {PICKS.map(([id, n, opts]) => (
-          <label data-ns-field hidden={id == 'mo-bg'}><span>{n}</span><select data-for={id}>{opts.map(([v, t]) => <option value={v} selected={id == 'mo-fx' ? v == START : id == 'mo-fill' ? v == 'is-photo' : v == opts[0][0]}>{t}</option>)}</select></label>
+          <label data-ns-field hidden={id == 'mo-bg'}><span>{n}</span><select data-ns-choice-for={id}>{opts.map(([v, t]) => <option value={v} selected={id == 'mo-fx' ? v == START : id == 'mo-fill' ? v == 'is-photo' : v == opts[0][0]}>{t}</option>)}</select></label>
         ))}
       </div>
       <div class="knobs">
         <label data-ns-field><span>Velocidad <output for="mo-speed"></output></span><input type="range" id="mo-speed" data-ns-range data-ns-unit="×" min="0.4" max="2.5" step="0.1" value="1"></label>
         <label data-ns-field><span>Intensidad <output for="mo-int"></output></span><input type="range" id="mo-int" data-ns-range data-ns-scale="100" data-ns-unit=" %" min="0" max="0.3" step="0.01" value="0.07"></label>
-        <div data-ns-swatches id="mo-tint" role="group" data-ns-choice aria-label="Color de la luz">{TINTS.map(([c, n], i) => <button type="button" data-v={c} data-color={c} aria-pressed={String(!i)} aria-label={n} title={n}></button>)}</div>
+        <div data-ns-swatches id="mo-tint" role="group" data-ns-choice aria-label="Color de la luz">{TINTS.map(([c, n], i) => <button type="button" data-value={c} data-color={c} aria-pressed={String(!i)} aria-label={n} title={n}></button>)}</div>
       </div>
       <!-- el motor del vidrio: sólo con el material vidrio -->
       <div class="knobs gknobs" id="mo-glass" role="group" aria-label="Ajustes del vidrio" hidden>
@@ -112,17 +112,17 @@ const PICKS = [
   // plantilla: con View Transitions las piezas viajan a su nuevo sitio (arrange de ns-frame/mosaic)
   const TEMPLATES = ['t-orb', 't-duo', 't-lock', 't-step']
   const template = (t: string) => arrange(mo, () => { mo.classList.remove(...TEMPLATES); mo.classList.add(t) })
-  modes.addEventListener('change', e => template(picked(e).dataset.v!))
+  modes.addEventListener('change', e => template(picked(e).dataset.value!))
 
   hole.addEventListener('change', e => {
-    const [k, r, rm] = picked(e).dataset.v!.split(' ')
+    const [k, r, rm] = picked(e).dataset.value!.split(' ')
     Object.entries({ '--hole': k, '--hole-r': r, '--hole-rm': rm }).forEach(([p, v]) => mo.style.setProperty(p, v))
-    mo.classList.contains('t-orb') ? refresh() : modes.querySelector<HTMLElement>('[data-v=t-orb]')!.click()
+    mo.classList.contains('t-orb') ? refresh() : modes.querySelector<HTMLElement>('[data-value=t-orb]')!.click()
   })
 
   // contenido del orbe; si sólo es decoración, se oculta a los lectores de pantalla
   fill.addEventListener('change', e => {
-    const c = picked(e).dataset.v
+    const c = picked(e).dataset.value
     orb.classList.remove('is-photo', 'is-data')
     if (c) { orb.classList.add(c); orb.removeAttribute('aria-hidden') } else orb.setAttribute('aria-hidden', 'true')
   })
@@ -146,18 +146,18 @@ const PICKS = [
   // sus siluetas. Nueve vidrios sueltos eran nueve desenfoques, demasiado para un móvil; así el coste
   // no depende de cuántas piezas haya)
   $('mo-mat').addEventListener('change', e => {
-    const glass = picked(e).dataset.v == 'glass', stage = $('mo-stage')
+    const glass = picked(e).dataset.value == 'glass', stage = $('mo-stage')
     if (glass) import('ns-frame/glass')
     stage.classList.toggle('glassy', glass)
     glass ? stage.setAttribute('data-ns-glass-group', '') : stage.removeAttribute('data-ns-glass-group')
     mo.querySelectorAll<HTMLElement>(':scope > [data-ns-area]:not(.ph)').forEach(a => glass ? a.setAttribute('data-ns-glass', '') : a.removeAttribute('data-ns-glass'))
     // (el fondo y los ajustes del motor sólo tienen sentido con vidrio)
-    ;[$('mo-bg'), $('mo-glass'), document.querySelector('.picks select[data-for=mo-bg]')!.parentElement!].forEach(n => n.hidden = !glass)
+    ;[$('mo-bg'), $('mo-glass'), document.querySelector('.picks select[data-ns-choice-for=mo-bg]')!.parentElement!].forEach(n => n.hidden = !glass)
     video(glass && stage.classList.contains('bg-video'))
   })
 
   $('mo-bg').addEventListener('change', e => {
-    const c = picked(e).dataset.v!, stage = $('mo-stage')
+    const c = picked(e).dataset.value!, stage = $('mo-stage')
     stage.classList.remove(...BGS); stage.classList.add(c)
     video(c == 'bg-video')
   })
@@ -179,25 +179,19 @@ const PICKS = [
     mo.style.setProperty('--ns-mosaic-speed', String(Math.round(160 * k)))
     mo.style.setProperty('--ns-mosaic-fill', int.value)
   }
-  fx.addEventListener('change', e => { effect = picked(e).dataset.v || ''; mo.setAttribute('data-ns-mosaic', effect); tune() })
+  fx.addEventListener('change', e => { effect = picked(e).dataset.value || ''; mo.setAttribute('data-ns-mosaic', effect); tune() })
   // (la corriente es JS: su velocidad se relee al soltar el control; lo demás es CSS y cambia al momento)
   speed.addEventListener('input', tune); int.addEventListener('input', tune)
   speed.addEventListener('change', () => refresh())
-  $('mo-tint').addEventListener('change', e => mo.style.setProperty('--ns-mosaic-light', picked(e).dataset.v!))
+  $('mo-tint').addEventListener('change', e => mo.style.setProperty('--ns-mosaic-light', picked(e).dataset.value!))
   tune()
 
   // en táctil no hay puntero que flote: la luz que lo sigue y la onda al tocar no existen (la librería
   // las quita), así que tampoco se ofrecen
   if (matchMedia('(hover: none) and (pointer: coarse)').matches)
-    document.querySelectorAll('#mo-fx [data-v=glow], #mo-fx [data-v=ripple], .picks option[value=glow], .picks option[value=ripple]').forEach(n => n.remove())
+    document.querySelectorAll('#mo-fx [data-value=glow], #mo-fx [data-value=ripple], .picks option[value=glow], .picks option[value=ripple]').forEach(n => n.remove())
 
-  // móvil: cada selector pulsa el botón de su grupo (mismo estado, mismo evento change)
-  document.querySelectorAll<HTMLSelectElement>('.picks select').forEach(s => {
-    const g = $(s.dataset.for!)
-    s.addEventListener('change', () => [...g.querySelectorAll<HTMLElement>('button')].find(b => (b.dataset.v || '') == s.value)?.click())
-    // (y al revés: un cambio desde los botones —o desde el código— se refleja en el selector)
-    g.addEventListener('change', e => { s.value = picked(e).dataset.v || '' })
-  })
+  // (en el móvil, cada selector nativo refleja su grupo: data-ns-choice-for del núcleo, en los dos sentidos)
 </script>
 
 <style>

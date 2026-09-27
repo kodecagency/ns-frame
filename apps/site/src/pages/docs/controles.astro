@@ -35,7 +35,7 @@ const SUN = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2
     <div class="box">
       <span class="lb">Código, copiar e insignias</span>
       <pre id="dc-snip" data-ns-code="scroll">import 'ns-frame/controls'</pre>
-      <div class="inline"><button type="button" class="btn" data-ns="all round 10" data-ns-copy="#dc-snip">Copiar</button><span data-ns-badge>0.11</span><span data-ns-badge="solid">Nuevo</span></div>
+      <div class="inline"><button type="button" class="btn" data-ns="all round 10" data-ns-copy="#dc-snip">Copiar</button><span data-ns-badge>0.12</span><span data-ns-badge="solid">Nuevo</span></div>
     </div>
     <div class="box">
       <span class="lb">Tarjetas y asa</span>
@@ -44,6 +44,11 @@ const SUN = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2
         <button type="button" data-ns-card data-ns="tl+br bevel 14; radius 2"><b>Equipo</b><span>Hasta 10</span></button>
       </div>
       <i data-ns-grip aria-hidden="true"></i>
+    </div>
+    <div class="box">
+      <span class="lb">Lista con check y avatares</span>
+      <ul data-ns-checks><li>Formas ilimitadas</li><li>Bordes animados</li><li>Soporte prioritario</li></ul>
+      <div data-ns-avatars role="img" aria-label="Ana, Luis y Marta" class="avs"><i>A</i><i>L</i><i>M</i></div>
     </div>
     <div class="box">
       <span class="lb">Muestras de color</span>
@@ -76,4 +81,7 @@ const SUN = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2
   .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px }
   .cards [data-ns-card] { --ns-card-bg: var(--bg-2); --ns-border: var(--line-2) }
   .cards span { font-size: var(--t-caption); color: var(--text-2) }
+  [data-ns-checks] { font-size: var(--t-small); color: var(--text-2) }
+  .avs { --ns-avatar-ring: var(--surface) }
+  .avs i:nth-child(2) { --ns-avatar-bg: #2a2a2e } .avs i:nth-child(3) { --ns-avatar-bg: #00e676; --ns-avatar-ink: #0a0a0a }
 </style>

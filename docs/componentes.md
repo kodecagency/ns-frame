@@ -71,6 +71,8 @@ Los controles de la landing, en la librería: el aspecto de serie, listo para us
 - `data-ns-code`: bloque de código en un `<pre>`, con fondo, radio y mono; parte las líneas largas. `"scroll"` no las parte (se desplaza), `"bare"` sin fondo ni relleno. Variables `--ns-code-bg`, `-ink`, `-pad`, `-radius`, `-size`. Con un `data-ns-copy="#id"` al lado, se copia.
 - `data-ns-card`: un botón o enlace con aspecto de tarjeta, sin reiniciar estilos a mano (apariencia, borde, fuente, alineación), con hover y foco de serie. Admite `data-ns` para su forma. Variables `--ns-card-bg`, `-hover`, `-pad`, `-gap`.
 - `data-ns-grip`: el asa de una hoja o de algo que se arrastra (decorativa, con `aria-hidden`). Variables `--ns-grip`, `-w`, `-h`, `-margin`.
+- `data-ns-checks`: en un `<ul>`/`<ol>`, lista con una marca de check en cada elemento (`--ns-check`, `--ns-checks-gap`); conserva el rol de lista.
+- `data-ns-avatars`: fila de avatares redondos que se montan (`<img>` o iniciales). Variables `--ns-avatar-size`, `-overlap`, `-ring`, `-ring-w`, `-bg`, `-ink`, `-font`.
 - `data-ns-level`: nivel vertical, como el brillo o el volumen de un panel de ajustes: `<label data-ns-level><input type="range" aria-label="Brillo"><svg …/></label>`. Una píldora alta que se llena desde abajo (`--ns-level-fill`) con el icono abajo (`--ns-level-ink`). Es un `input type=range` de verdad puesto en vertical con `writing-mode` (teclado, lector de pantalla, `aria-orientation="vertical"`), no un dibujo. El gesto lo lleva la librería: se arrastra arriba y abajo desde cualquier punto y el valor sigue al dedo, sin saltar a donde se toca (en iOS un deslizador nativo sólo se mueve por su mando); lanza `input` y `change` como el propio input. Con `data-ns-glass` es de vidrio. Tamaño y forma: `--ns-level-w`, `--ns-level-h`, `--ns-level-radius`, `--ns-level-icon`, `--ns-level-icon-y`; sin vidrio, `--ns-level-track`.
 - **Tema:** `--ns-ui-surface`, `--ns-ui-line`, `--ns-ui-ink`, `--ns-ui-muted`, `--ns-ui-accent`, `--ns-ui-on` y `--ns-ui-on-ink` (el elegido), `--ns-ui-radius`, `--ns-ui-h` (alto), `--ns-ui-font`, `--ns-ui-mono`. Todo en `@layer ns` salvo los colores del texto (un reset como `button { color: inherit }` los anulaba).
 - Foco visible sólo con el teclado; en alto contraste, el elegido se marca con el color del sistema.
@@ -182,6 +184,21 @@ Un `<dialog>` nativo (foco atrapado, capa superior) con `open()` / `close()` del
 ```
 
 Un grupo de botones que se comporta solo: uno elegido a la vez (`aria-pressed`; con `role="radio"`, `aria-checked`) o varios con `"many"`, flechas del teclado (al revés en RTL; en exclusivo eligen al moverse) y el evento `change` en el grupo con `detail { index, button, value, pressed }`. Todo lo que mira el estado lo sigue sin más: tus estilos por `[aria-pressed=true]`, el relieve (`data-ns-relief="ghost"` en cada botón: el elegido sube en su carril y los demás quedan como texto) o el vidrio.
+
+El valor de cada opción es su `value`, su `data-value` (también vacío, para «ninguno») o su texto.
+
+### Un select que refleja el grupo (`data-ns-choice-for`)
+
+```html
+<div id="plantilla" data-ns-choice aria-label="Plantilla">
+  <button data-value="orb" aria-pressed="true">Orbe</button> <button data-value="duo">Dúo</button>
+</div>
+<select data-ns-choice-for="plantilla" aria-label="Plantilla">
+  <option value="orb">Orbe</option> <option value="duo">Dúo</option>
+</select>
+```
+
+Elegir en el select pulsa la opción del grupo con ese valor (mismo estado y mismo evento `change`: tu código sólo escucha el grupo), y un cambio en el grupo se ve en el select. Sirve para enseñar el select nativo del sistema en el móvil y los botones en el escritorio sin sincronizar nada a mano.
 
 ## Salto a una sección (`jump`, en el núcleo)
 

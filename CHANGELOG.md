@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.12.0 — primitivas nuevas sacadas de la landing
+
+La landing no hace nada a mano que no sea composición: lo que se repetía pasa a ser una primitiva de la librería, con variables.
+
+- **`.ns-wash`** (`ns-fx.css`): una aguada de luz suave en una esquina o un borde, bajo el contenido. Es una capa de `background-image` (conserva tu `background-color` y se combina con los patrones). `--ns-wash`, `--ns-wash-at`, `--ns-wash-size`, `--ns-wash-fade`. Sustituye catorce resplandores escritos a mano en la landing.
+- **`data-ns-checks`** (`ns-frame/controls`): lista con una marca de check en cada elemento (`--ns-check`, `--ns-checks-gap`). Sin viñetas pero sigue siendo una lista para los lectores de pantalla (`role="list"`: Safari con VoiceOver la dejaba de anunciar).
+- **`data-ns-avatars`** (`ns-frame/controls`): fila de avatares redondos que se montan, con imágenes o iniciales (`--ns-avatar-size`, `-overlap`, `-ring`, `-ring-w`, `-bg`, `-ink`, `-font`).
+- **`<select data-ns-choice-for="id">`** (núcleo): un select nativo que refleja un grupo `data-ns-choice` en los dos sentidos (mismo estado y mismo evento `change`). Para el select del sistema en el móvil y los botones en el escritorio sin sincronizar a mano.
+- `data-ns-choice`: el valor de una opción admite `data-value=""` (vacío, «ninguno»); antes caía al texto.
+- Landing: el mosaico usa `data-value` y el espejo del núcleo; los planes, la lista con check; el hero, los avatares.
+
 ## 0.11.4 — mosaico de la landing sin esquinas recortadas
 
 - El escenario del mosaico tenía un radio fijo (30 px) mayor que el de las piezas (26, 20 en el móvil) y recortaba la esquina —y el borde— de las cuatro piezas de los extremos (se veía sobre todo en el iPhone). Ahora el radio es concéntrico: el de las piezas más el relleno del escenario (sólo con el material vidrio).

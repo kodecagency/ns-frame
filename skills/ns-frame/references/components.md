@@ -141,7 +141,7 @@ All four activate by attribute (also on elements added later) and export `refres
 
 ## Effects — `ns-fx.css` (+ `ns-frame/fx`)
 
-U light: `ns-u` (`-top`, `-left`, `-right`), section glow `ns-aura`; animations `ns-u-hover`, `ns-u-live`, `ns-u-tide`, `ns-u-surge`, `ns-u-breathe`, `ns-u-hue`; variables `--ns-u`, `--ns-u-glow`, `--ns-u-rise`, `--ns-u-side`, `--ns-u-corner`, `--ns-u-fade`, `--ns-u-time`. Others: `ns-aurora`, `ns-halo`, `ns-pulse`, patterns `ns-dots ns-grid ns-lines ns-stripes ns-scales ns-scan`, `ns-shimmer`, `ns-text-shimmer`, `ns-text-aurora`, and `data-ns-decode` (needs `ns-frame/fx`).
+U light: `ns-u` (`-top`, `-left`, `-right`), section glow `ns-aura`; animations `ns-u-hover`, `ns-u-live`, `ns-u-tide`, `ns-u-surge`, `ns-u-breathe`, `ns-u-hue`; variables `--ns-u`, `--ns-u-glow`, `--ns-u-rise`, `--ns-u-side`, `--ns-u-corner`, `--ns-u-fade`, `--ns-u-time`. Others: `ns-aurora`, `ns-halo`, `ns-pulse`, patterns `ns-dots ns-grid ns-lines ns-stripes ns-scales ns-scan`, `ns-shimmer`, `ns-text-shimmer`, `ns-text-aurora`, `ns-wash` (soft corner/edge glow as a background-image layer: `--ns-wash`, `--ns-wash-at`, `--ns-wash-size`, `--ns-wash-fade`; keep your own `background-color`, not the `background` shorthand), and `data-ns-decode` (needs `ns-frame/fx`).
 
 ## Build-time — `ns-frame/static`, `ns-frame/astro`, `ns-frame/css`
 

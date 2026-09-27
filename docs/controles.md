@@ -79,7 +79,7 @@ Copia el texto (o el `value`) del destino y dice «Copiado» durante `--ns-copy-
 ## Insignias, código, tarjetas y asas
 
 ```html
-<span data-ns-badge>0.11</span> <span data-ns-badge="solid">Nuevo</span>
+<span data-ns-badge>0.12</span> <span data-ns-badge="solid">Nuevo</span>
 <pre data-ns-code="scroll">…</pre>
 <button data-ns-card data-ns="tl+br bevel 16"><b>Plan Pro</b><span>Para equipos</span></button>
 <i data-ns-grip aria-hidden="true"></i>
@@ -91,6 +91,24 @@ Copia el texto (o el `value`) del destino y dice «Copiado» durante `--ns-copy-
 | `data-ns-code` (`scroll`, `bare`) | `--ns-code-bg`, `-ink`, `-pad`, `-radius`, `-size` |
 | `data-ns-card` | `--ns-card-bg`, `-hover`, `-pad`, `-gap` (admite `data-ns` para su forma) |
 | `data-ns-grip` | `--ns-grip`, `-w`, `-h`, `-margin` |
+
+## Listas con check y avatares
+
+```html
+<ul data-ns-checks>
+  <li>Formas ilimitadas</li>
+  <li>Bordes animados</li>
+</ul>
+
+<div data-ns-avatars role="img" aria-label="Ana, Luis y Marta">
+  <img src="ana.jpg" alt=""> <i>L</i> <i>M</i>
+</div>
+```
+
+| Atributo | Variables |
+|---|---|
+| `data-ns-checks` (en `<ul>`/`<ol>`) | `--ns-check` (color; por defecto el acento), `--ns-checks-gap`. Sin viñetas pero sigue siendo una lista para los lectores de pantalla (se le pone `role="list"`: Safari la dejaba de anunciar) |
+| `data-ns-avatars` | `--ns-avatar-size`, `-overlap`, `-ring` (el aro: el color del fondo), `-ring-w`, `-bg`, `-ink`, `-font`. Cada avatar puede llevar su propio `--ns-avatar-bg` |
 
 ## Muestras de color
 

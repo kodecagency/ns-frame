@@ -771,6 +771,8 @@ export function watch(attr, make) {
  * ns-frame/relief y los estilos por [aria-pressed=true] siguen al estado solos.
  */
 const PICK = 'button,[role=radio],[role=checkbox]'
+// (el valor de una opción: value, data-value —también vacío: «ninguno»— o el texto)
+const val = b => b.value || (b.dataset.value ?? b.textContent.trim())
 function choice(g) {
   const many = g.getAttribute('data-ns-choice') == 'many'
   // (si el grupo tiene radios o casillas, sólo ellos son opciones: un botón de al lado —las opciones
@@ -785,7 +787,7 @@ function choice(g) {
   const pick = b => {
     if (many) b.setAttribute(aria(b), String(!on(b)))
     else { if (on(b)) return; for (const x of items()) x.setAttribute(aria(x), String(x == b)) }
-    g.dispatchEvent(new CustomEvent('change', { bubbles: true, detail: { index: items().indexOf(b), button: b, value: b.value || b.dataset.value || b.textContent.trim(), pressed: on(b) } }))
+    g.dispatchEvent(new CustomEvent('change', { bubbles: true, detail: { index: items().indexOf(b), button: b, value: val(b), pressed: on(b) } }))
   }
   const click = e => { const b = e.target.closest?.(PICK); if (b && !b.disabled && items().includes(b)) pick(b) }
   const key = e => {
@@ -800,8 +802,22 @@ function choice(g) {
   g.hasAttribute('role') || g.setAttribute('role', 'group')
   return { destroy() { g.removeEventListener('click', click); g.removeEventListener('keydown', key) } }
 }
+/**
+ * Espejo de un grupo: <select data-ns-choice-for="id"> refleja el grupo data-ns-choice con ese id
+ * (uno a la vez). Elegir en el select pulsa la opción del grupo con ese valor (mismo estado, mismo
+ * evento change) y un cambio en el grupo —con el ratón, el teclado o desde el código— se ve en el
+ * select. Para un select nativo en el móvil y el grupo de botones en el escritorio, sin sincronizar
+ * nada a mano.
+ */
+function mirror(s) {
+  const id = () => s.getAttribute('data-ns-choice-for'), group = () => document.getElementById(id())
+  const from = () => { const G = group(); if (G) [...G.querySelectorAll(PICK)].find(b => val(b) == s.value)?.click() }
+  const to = e => { if (e.target.id && e.target.id == id() && e.detail?.button) s.value = e.detail.value }
+  s.addEventListener('change', from); document.addEventListener('change', to)
+  return { destroy() { s.removeEventListener('change', from); document.removeEventListener('change', to) } }
+}
 // (la versión lite, sólo recortes, no los lleva)
-if (typeof NS_LITE == 'undefined') watch('data-ns-choice', choice)
+if (typeof NS_LITE == 'undefined') { watch('data-ns-choice', choice); watch('data-ns-choice-for', mirror) }
 
 /**
  * Un <dialog> nativo con apertura y cierre que respetan la forma de su panel (open/close del núcleo):

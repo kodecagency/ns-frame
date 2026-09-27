@@ -35,12 +35,17 @@
 //   Es un input range de verdad (teclado, lector de pantalla), vertical con writing-mode (sin girar:
 //   su caja es la del nivel). Con data-ns-glass, de vidrio.
 //   Variables: --ns-level-w, -h, -radius, -fill, -track, -ink (el icono), -icon (tamaño), -icon-y.
+// · data-ns-checks: en un <ul>/<ol>, una lista con una marca de check en cada elemento (el color,
+//   --ns-check; el hueco, --ns-checks-gap). Conserva el rol de lista.
+// · data-ns-avatars: una fila de avatares redondos que se montan (<img> o iniciales en <span>/<i>).
+//   Ponle role="img" y aria-label con los nombres si son decorativos. Variables --ns-avatar-size,
+//   -overlap, -ring (el aro, del color del fondo), -ring-w, -bg, -ink, -font.
 // Sin dependencias (usa el núcleo) y CSP-safe.
 import { styles, watch, cssTime } from './ns-frame.js'
 
 const CSS = `@layer ns{
 :where([data-ns-segment],[data-ns-chips],[data-ns-field],[data-ns-swatches],[data-ns-range],[data-ns-level],[data-ns-switch],[data-ns-copy],[data-ns-card]),:where([data-ns-segment],[data-ns-chips],[data-ns-swatches],[data-ns-level],[data-ns-card]) *{-webkit-tap-highlight-color:transparent}
-:where([data-ns-segment],[data-ns-chips],[data-ns-field],[data-ns-swatches],[data-ns-range],[data-ns-level],[data-ns-switch],[data-ns-badge],[data-ns-code],[data-ns-card],[data-ns-grip]){--_s:var(--ns-ui-surface,#141416);--_l:var(--ns-ui-line,rgba(255,255,255,.09));--_i:var(--ns-ui-ink,#f4f4f5);--_m:var(--ns-ui-muted,rgba(244,244,245,.62));--_a:var(--ns-ui-accent,#00e676);--_r:var(--ns-ui-radius,14px);--_h:var(--ns-ui-h,40px)}
+:where([data-ns-segment],[data-ns-chips],[data-ns-field],[data-ns-swatches],[data-ns-range],[data-ns-level],[data-ns-switch],[data-ns-badge],[data-ns-code],[data-ns-card],[data-ns-grip],[data-ns-checks],[data-ns-avatars]){--_s:var(--ns-ui-surface,#141416);--_l:var(--ns-ui-line,rgba(255,255,255,.09));--_i:var(--ns-ui-ink,#f4f4f5);--_m:var(--ns-ui-muted,rgba(244,244,245,.62));--_a:var(--ns-ui-accent,#00e676);--_r:var(--ns-ui-radius,14px);--_h:var(--ns-ui-h,40px)}
 :where([data-ns-segment]){display:inline-flex;flex-wrap:wrap;gap:2px;padding:4px;border-radius:var(--_r);background:var(--_s);border:1px solid var(--_l)}
 :where([data-ns-segment]) > :where(button){min-height:var(--_h);padding:0 14px;border:0;border-radius:calc(var(--_r) - 4px);background:transparent;color:var(--_m);font:inherit;font-family:var(--ns-ui-font,inherit);font-size:13.5px;cursor:pointer;transition:background-color .25s cubic-bezier(.2,.8,.2,1),color .2s}
 :where([data-ns-segment~=sm]) > :where(button){min-height:calc(var(--_h) - 6px);padding:0 11px;font-size:12.5px}
@@ -102,6 +107,13 @@ const CSS = `@layer ns{
 :where([data-ns-card]){-webkit-appearance:none;appearance:none;box-sizing:border-box;display:flex;flex-direction:column;gap:var(--ns-card-gap,4px);margin:0;padding:var(--ns-card-pad,14px);border:0;background:var(--ns-card-bg,var(--_s));color:inherit;font:inherit;text-align:start;cursor:pointer;transition:background-color .25s}
 :where([data-ns-card]):hover{background:var(--ns-card-hover,color-mix(in srgb,var(--_i) 6%,var(--ns-card-bg,var(--_s))))}
 :root:not([data-ns-input=pointer]) :where([data-ns-card]):focus-visible{outline:2px solid var(--_a);outline-offset:2px}
+:where([data-ns-checks]){list-style:none;margin:0;padding:0;display:grid;gap:var(--ns-checks-gap,8px);align-content:start}
+:where([data-ns-checks]) > :where(li){display:flex;gap:10px;align-items:baseline}
+:where([data-ns-checks]) > :where(li)::before{content:"";flex:none;width:10px;height:6px;border:solid var(--ns-check,var(--_a));border-width:0 0 1.5px 1.5px;transform:rotate(-45deg) translateY(-2px)}
+:where([data-ns-avatars]){display:flex;align-items:center}
+:where([data-ns-avatars]) > *{box-sizing:border-box;flex:none;width:var(--ns-avatar-size,36px);height:var(--ns-avatar-size,36px);margin:0 0 0 calc(var(--ns-avatar-overlap,9px) * -1);border-radius:50%;border:var(--ns-avatar-ring-w,2px) solid var(--ns-avatar-ring,#151515);overflow:hidden;object-fit:cover;display:grid;place-items:center;background:var(--ns-avatar-bg,var(--_s));color:var(--ns-avatar-ink,var(--_i));font:600 var(--ns-avatar-font,12px)/1 var(--ns-ui-font,inherit);font-style:normal}
+:where([data-ns-avatars]) > :first-child{margin-left:0}
+@media (forced-colors:active){:where([data-ns-checks]) > :where(li)::before{border-color:CanvasText}:where([data-ns-avatars]) > *{border-color:Canvas}}
 @media (forced-colors:active){:where(input[type=checkbox][data-ns-switch]){border:1px solid CanvasText}:where(input[type=checkbox][data-ns-switch]):checked{background:Highlight}:where(input[type=checkbox][data-ns-switch])::after{background:CanvasText}}
 @media (prefers-reduced-motion:reduce){:where([data-ns-segment],[data-ns-chips]) > :where(button),:where(input[type=checkbox][data-ns-switch]),:where(input[type=checkbox][data-ns-switch])::after{transition:none}}
 @media (forced-colors:active){:where([data-ns-segment],[data-ns-chips]) > :where(button):is([aria-pressed=true],[aria-checked=true]){outline:2px solid Highlight}}
@@ -226,4 +238,6 @@ watch('data-ns-switch', el => {
 })
 watch('data-ns-copy', el => copy(el))
 watch('data-ns-swatches', el => swatches(el))
-for (const a of ['data-ns-segment', 'data-ns-chips', 'data-ns-field', 'data-ns-badge', 'data-ns-code', 'data-ns-card', 'data-ns-grip']) watch(a, () => { css(); return null })
+for (const a of ['data-ns-segment', 'data-ns-chips', 'data-ns-field', 'data-ns-badge', 'data-ns-code', 'data-ns-card', 'data-ns-grip', 'data-ns-avatars']) watch(a, () => { css(); return null })
+// (una lista sin viñetas deja de anunciarse como lista en Safari con VoiceOver: se le devuelve el rol)
+watch('data-ns-checks', el => { css(); if (el.matches('ul, ol') && !el.hasAttribute('role')) el.setAttribute('role', 'list'); return null })
