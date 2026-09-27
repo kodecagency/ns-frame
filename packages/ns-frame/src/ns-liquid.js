@@ -1587,12 +1587,14 @@ export function drops(el, o = {}) {
   }
   const onMain = () => set(!on)
   const onAct = () => { if (!o.stay) set(false) }
+  // (Escape en todo el documento mientras está abierto: Safari no enfoca un botón al pulsarlo, y con
+  // un teclado físico la tecla llegaba al body y no cerraba nada)
   const onKey = e => { if (e.key == 'Escape' && on) { set(false); main.focus() } }
   const onOut = e => { if (on && !el.contains(e.target)) set(false) }
   main.setAttribute('aria-expanded', 'false')
   acts.forEach(b => { b.inert = true; b.addEventListener('click', onAct) })
   main.addEventListener('click', onMain)
-  el.addEventListener('keydown', onKey)
+  document.addEventListener('keydown', onKey)
   document.addEventListener('pointerdown', onOut, true)
   const handle = {
     open: () => set(true), close: () => set(false), toggle: () => set(!on),
@@ -1600,7 +1602,7 @@ export function drops(el, o = {}) {
     destroy() {
       if (DROPS.get(el) != handle) return
       DROPS.delete(el)
-      main.removeEventListener('click', onMain); el.removeEventListener('keydown', onKey)
+      main.removeEventListener('click', onMain); document.removeEventListener('keydown', onKey)
       document.removeEventListener('pointerdown', onOut, true)
       acts.forEach(b => { b.removeEventListener('click', onAct); b.inert = false; b.classList.remove('ns-drops-act'); ['x', 'y', 'n'].forEach(p => b.style.removeProperty('--ns-drops-' + p)) })
       main.classList.remove('ns-drops-main'); main.removeAttribute('aria-expanded')
