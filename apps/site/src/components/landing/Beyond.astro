@@ -28,8 +28,9 @@ const POSTS = [
   ['ns-feed-sea', 'Mar de fondo', 'Choroní · ayer'],
   ['ns-feed-peak', 'Cumbre nevada', 'Pico Bolívar · hace 3 días'],
 ]
-// editor de fotos: filtros que se aplican a la imagen
-const FILTERS = [['Original'], ['Vívido'], ['Cálido'], ['Noir'], ['Frío']]
+// luz en U sobre vidrio: movimiento (clases de ns-fx.css) y color (--ns-u)
+const MOVES = [['', 'Quieta'], ['ns-u-live', 'Respira'], ['ns-u-tide', 'Marea'], ['ns-u-surge', 'Pulso']]
+const HUES = [['#00e676', 'Verde'], ['#3de0ff', 'Cian'], ['#ffb547', 'Ámbar'], ['#ff7a59', 'Coral'], ['#f4f4f5', 'Blanco']]
 const ACTIONS = [
   ['Compartir', 'M13.5 5.5a2 2 0 1 0 0-.01 M6.5 10a2 2 0 1 0 0-.01 M13.5 14.5a2 2 0 1 0 0-.01 M8.3 9 11.7 6.5 M8.3 11l3.4 2.5'],
   ['Guardar', 'M6 3.5h8v13l-4-3-4 3Z'],
@@ -143,24 +144,28 @@ const ACTIONS = [
         </div>
       </article>
 
-      <!-- 6 · editor de fotos: controles de vidrio con forma sobre la imagen que se edita -->
+      <!-- 6 · luz en U sobre vidrio: una pieza de vidrio que recoge una luz desde abajo; su movimiento,
+           su color y su intensidad son variables de la librería. Todo con piezas de ns-frame -->
       <article class="x x6" data-ns="all round 22">
         <div class="stage s6">
-          <img class="bg" id="ed-img" src="https://picsum.photos/seed/ns-facet-night/1200/760.webp" alt="La foto que se edita" width="1200" height="760" loading="lazy">
-          <p class="ed-name" data-ns="button" data-ns-glass aria-live="polite"><span id="ed-name">Original</span></p>
-          <div class="ed-panel" data-ns="card" data-ns-glass="u">
-            <label for="ed-k">Intensidad</label>
-            <input type="range" id="ed-k" min="0" max="100" value="70">
-            <output for="ed-k" id="ed-out">70</output>
+          <img class="bg" src="https://picsum.photos/seed/ns-facet-night/1200/760.webp" alt="" width="1200" height="760" loading="lazy">
+          <div class="uc ns-u ns-u-live" id="uc" data-ns="tl+br bevel 26; radius 3" data-ns-glass>
+            <small>Luz en U</small>
+            <b>Vidrio que recoge la luz</b>
+            <span>La luz sube desde la base y dobla por los costados.</span>
           </div>
-          <nav class="ed-tools" id="ed-tools" data-ns-tabs data-ns-liquid="glass" aria-label="Filtro">
-            {FILTERS.map(([n], i) => <button type="button" aria-pressed={String(!i)}>{n}</button>)}
+          <nav class="u-moves" id="u-moves" data-ns-tabs aria-label="Movimiento de la luz">
+            {MOVES.map(([c, n]) => <button type="button" data-v={c} aria-pressed={String(c == 'ns-u-live')}>{n}</button>)}
           </nav>
+          <div class="u-set" data-ns-glass>
+            <div data-ns-swatches id="u-hue" role="group" data-ns-choice aria-label="Color de la luz">{HUES.map(([c, n], i) => <button type="button" data-color={c} aria-pressed={String(!i)} aria-label={n} title={n}></button>)}</div>
+            <label data-ns-field><span>Intensidad <output for="u-k"></output></span><input type="range" id="u-k" data-ns-range data-ns-scale="100" data-ns-unit=" %" min="0.2" max="1" step="0.05" value="0.7"></label>
+          </div>
         </div>
         <div class="cap">
-          <h3>Controles de vidrio sobre lo que editas</h3>
-          <p>Un editor de fotos de verdad: los controles flotan sobre la imagen sin taparla. La barra de filtros es vidrio líquido (arrastra el indicador), el panel de intensidad es una forma de ns-frame con luz en U y la etiqueta, un chaflán. El texto sigue legible sobre cualquier foto y los filtros se aplican de verdad.</p>
-          <code class="tag"><b>data-ns-glass</b> · <b>data-ns-glass="u"</b> · <b>data-ns-tabs</b></code>
+          <h3>Luz en U sobre vidrio</h3>
+          <p>Una pieza de vidrio con la forma que quieras recoge una luz que sube desde la base, dobla por los costados y enciende el borde. Elige cómo se mueve (con pestañas de vidrio), su color y su intensidad: son clases y variables de la librería, nada hecho a mano.</p>
+          <code class="tag"><b>data-ns-glass</b> · <b>class="ns-u ns-u-live"</b> · <b>--ns-u</b> · <b>--ns-u-glow</b> · <b>--ns-u-time</b></code>
         </div>
       </article>
 
@@ -197,23 +202,17 @@ const ACTIONS = [
     $('tb-feed').scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
   })
 
-  // editor de fotos: el filtro elegido (barra de vidrio) y su intensidad (panel) se aplican a la foto
-  const FX: Record<string, (k: number) => string> = {
-    Original: () => 'none',
-    'Vívido': k => `saturate(${1 + .9 * k}) contrast(${1 + .12 * k})`,
-    'Cálido': k => `sepia(${.35 * k}) saturate(${1 + .35 * k}) hue-rotate(${-8 * k}deg)`,
-    Noir: k => `grayscale(${k}) contrast(${1 + .35 * k}) brightness(${1 - .05 * k})`,
-    'Frío': k => `saturate(${1 - .15 * k}) hue-rotate(${16 * k}deg) brightness(${1 + .04 * k})`,
-  }
-  let fx = 'Original'
-  const img = $('ed-img'), k = $('ed-k') as HTMLInputElement
-  const apply = () => {
-    img.style.filter = FX[fx](+k.value / 100)
-    $('ed-out').textContent = k.value
-    $('ed-name').textContent = fx
-  }
-  $('ed-tools').addEventListener('change', e => { fx = (e as CustomEvent<{ tab: HTMLElement }>).detail.tab.textContent!.trim(); apply() })
-  k.addEventListener('input', apply)
+  // luz en U: el movimiento es una clase de ns-fx.css; el color y la intensidad, variables (--ns-u,
+  // --ns-u-glow). Las pestañas y las muestras avisan con change
+  const uc = $('uc'), uk = $('u-k') as HTMLInputElement
+  $('u-moves').addEventListener('change', e => {
+    uc.classList.remove('ns-u-live', 'ns-u-tide', 'ns-u-surge')
+    const c = (e as CustomEvent<{ tab: HTMLElement }>).detail.tab.dataset.v
+    if (c) uc.classList.add(c)
+  })
+  $('u-hue').addEventListener('change', e => uc.style.setProperty('--ns-u', (e as CustomEvent<{ button: HTMLElement }>).detail.button.dataset.color!))
+  const glow = () => uc.style.setProperty('--ns-u-glow', uk.value)
+  uk.addEventListener('input', glow); glow()
 </script>
 
 <style>
@@ -297,13 +296,17 @@ const ACTIONS = [
   .x6 { grid-column: 1 / -1 }
   .s6 { min-height: 470px; padding: 0; overflow: hidden; overflow: clip; justify-content: flex-end }
   .s6 .bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: filter .45s var(--ease) }
-  .s6 > :not(.bg) { color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, .4) }
-  .ed-name { position: absolute; left: 22px; top: 22px; margin: 0; padding: 10px 18px; font: 600 var(--t-small)/1 var(--body); color: var(--ns-glass-ink, #fff); transition: color .35s; --ns-glass-tint: rgba(12, 12, 16, .2) }
-  .ed-panel { position: absolute; right: 22px; top: 22px; width: 220px; padding: 18px 20px 20px; box-sizing: border-box; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px 10px; font: 600 var(--t-small)/1 var(--body); color: var(--ns-glass-ink, #fff); transition: color .35s; --ns-u: #00e676 }
-  .ed-panel input { grid-column: 1 / -1; width: 100%; margin: 0; accent-color: #fff }
-  .ed-panel output { font: 600 var(--t-small)/1 var(--mono); opacity: .8 }
-  .ed-tools { position: relative; margin: 0 auto 22px; padding: 5px; --ns-liquid: 0px; --ns-glass-tint: rgba(14, 14, 18, .22); --ns-tabs-radius: 26px; --ns-tabs-ind-radius: 21px }
-  .ed-tools button { width: 88px; height: 42px; border: 0; background: none; font: 600 var(--t-small)/1 var(--body); cursor: pointer }
+  /* (composición: la pieza de vidrio en el centro, debajo las pestañas y los ajustes. El aspecto de
+     cada pieza es de la librería: vidrio, luz en U, pestañas, muestras y deslizador) */
+  .s6 { justify-content: center; gap: 18px; padding: 32px 22px 24px }
+  .uc { position: relative; width: min(380px, 100%); padding: 26px 26px 30px; box-sizing: border-box; display: grid; gap: 6px; color: var(--ns-glass-ink, #fff); --ns-u: #00e676; --ns-u-glow: .7; --ns-glass-tint: rgba(12, 12, 16, .34); --ns-glass-blur: 14px }
+  .uc small { font: 500 var(--t-caption)/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; opacity: .72 }
+  .uc b { font: 700 var(--t-title-lg)/1.1 var(--display); font-stretch: 106%; letter-spacing: -.02em }
+  .uc span { font-size: var(--t-small); line-height: 1.45; opacity: .82; max-width: 30ch }
+  .u-moves { position: relative; padding: 5px; --ns-liquid: 0px; --ns-glass-tint: rgba(14, 14, 18, .3); --ns-tabs-radius: 26px; --ns-tabs-ind-radius: 21px }
+  .u-moves button { width: 86px; height: 40px; border: 0; background: none; font: 600 var(--t-small)/1 var(--body); cursor: pointer }
+  .u-set { position: relative; display: flex; flex-wrap: wrap; align-items: end; justify-content: center; gap: 12px 22px; padding: 12px 18px; border-radius: 20px; --ns-glass-tint: rgba(10, 10, 12, .4); --ns-glass-blur: 12px; --ns-ui-gap: #0a0a0c }
+  .u-set [data-ns-field] { width: 180px }
 
   @media (max-width: 960px) {
     .x1, .x2, .x3, .x4 { grid-column: 1 / -1 }
@@ -317,10 +320,8 @@ const ACTIONS = [
     .s5 { padding: 24px 14px }
     .phone { width: min(300px, 100%); height: 520px }
     .s6 { min-height: 440px }
-    .ed-panel { left: 14px; right: auto; top: auto; bottom: 76px; width: calc(100% - 28px) }
-    .ed-name { left: 14px; top: 14px }
-    .ed-tools button { width: 62px; font-size: 12px }
-    .ed-tools { margin-bottom: 14px }
+    .u-moves button { width: 70px; font-size: 12px }
+    .u-set [data-ns-field] { width: 100% }
     .cap p { font-size: var(--t-small) }
     .prod img { height: 150px }
     .lt button { width: 80px }

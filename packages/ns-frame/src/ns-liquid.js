@@ -1260,6 +1260,9 @@ export function liquid(el, o = {}) {
       pre = (P?.d || '') + `|${bw}|${bh}|${bx}|${by}` + tail
       make = () => {
         if (!P?.d) return [null, '']
+        // la silueta, para lo que el elemento pinte encima de su vidrio (la luz en U, un aura: ::after
+        // con clip-path: var(--ns-glass-path)). El vidrio no recorta el elemento (le cortaría el fondo)
+        el.style.setProperty('--ns-glass-path', `path("${el.clientLeft || el.clientTop ? shift(P.d, -el.clientLeft, -el.clientTop) : P.d}")`)
         const d = shift(P.d, m, m)
         // el recorte y los reflejos usan el path exacto; el campo sólo da la lente y el reflejo
         // interior: basta una rejilla de unos 12 000 nodos (entre 1 y 2,5 px)
@@ -1462,7 +1465,7 @@ export function liquid(el, o = {}) {
   // cambiar variables y radios: ésos obligan a releer. Las capas de otros grupos anidados no cuentan.
   // (el estilo en línea del propio grupo, sin lo que sólo lo mueve: una hoja que se arrastra cambia
   // su translate en cada fotograma, y releerlo todo —tono, fondo, variables— la frenaba)
-  const MOVE = /^(translate|transform|scale|rotate|opacity|will-change|z-index|--ns-sheet-p)$/
+  const MOVE = /^(translate|transform|scale|rotate|opacity|will-change|z-index|--ns-sheet-p|--ns-glass-path)$/
   const own$ = () => { let s = ''; for (const p of el.style) if (!MOVE.test(p)) s += p + ':' + el.style.getPropertyValue(p) + ';'; return s }
   let styleSig = own$()
   const mo = new MutationObserver(ms => {
@@ -1496,7 +1499,7 @@ export function liquid(el, o = {}) {
     update: stale,
     frame: wake,
     // (una sola vez: el vidrio, las pestañas y el arranque automático pueden pedirlo a la vez)
-    destroy() { if (REG.get(el) != handle) return; REG.delete(el); clearTimeout(settle); cancelAnimationFrame(raf); cancelAnimationFrame(fr); token++; unmirror(); G?.free(); G = null; ro.disconnect(); mo.disconnect(); nio.disconnect(); io?.disconnect(); removeEventListener('scroll', onScroll, { capture: true }); document.removeEventListener('ns-quality', stale); EV.forEach(([e, f]) => el.removeEventListener(e, f, true)); svg.remove(); glass.remove(); edge.remove(); back.remove(); el.classList.remove('ns-liquid', 'ns-glass') },
+    destroy() { if (REG.get(el) != handle) return; REG.delete(el); clearTimeout(settle); cancelAnimationFrame(raf); cancelAnimationFrame(fr); token++; unmirror(); G?.free(); G = null; ro.disconnect(); mo.disconnect(); nio.disconnect(); io?.disconnect(); removeEventListener('scroll', onScroll, { capture: true }); document.removeEventListener('ns-quality', stale); EV.forEach(([e, f]) => el.removeEventListener(e, f, true)); svg.remove(); glass.remove(); edge.remove(); back.remove(); el.classList.remove('ns-liquid', 'ns-glass'); el.style.removeProperty('--ns-glass-path') },
   }
   REG.set(el, handle)
   return handle

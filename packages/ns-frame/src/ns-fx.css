@@ -139,14 +139,14 @@
 @keyframes ns-text { from { background-position: 100% 0 } to { background-position: 0 0 } }
 
 /* ── Con vidrio (ns-frame/glass, data-ns-glass) ──
-   isolation, un fondo opaco y filter en el propio elemento lo harían raíz del fondo: el vidrio no
-   vería la página. Con vidrio: sin aislar y sin fondo; la luz en U y el aura quedan dentro del
-   cristal (la ::after va sobre él, sin tapar el texto: sólo suma luz), los patrones se ven a través
-   del cristal (la ::before va debajo de sus capas), y el halo lo dibuja el propio vidrio, fuera de
-   su silueta (--ns-glass-glow). */
-[data-ns-glass]:is(.ns-u, .ns-u-top, .ns-u-left, .ns-u-right, .ns-aura, .ns-aura-top, .ns-dots, .ns-grid, .ns-lines, .ns-stripes, .ns-scan, .ns-scales) { isolation: auto; background-color: transparent }
-[data-ns-glass]:is(.ns-u, .ns-u-top, .ns-u-left, .ns-u-right, .ns-aura, .ns-aura-top)::after { z-index: auto; mix-blend-mode: screen }
-[data-ns-glass]:is(.ns-aura, .ns-aura-top, .ns-dots, .ns-grid, .ns-lines, .ns-stripes, .ns-scan, .ns-scales)::before { z-index: auto }
+   Un fondo opaco o filter en el propio elemento lo harían raíz del fondo: el vidrio no vería la
+   página. Con vidrio: sin fondo; el elemento se aísla (el vidrio ya lo hace: isolation no es raíz
+   del fondo) y todo va por orden dentro de él: los patrones (::before) debajo, luego las capas del
+   cristal, la luz en U y el aura (::after, sólo suman luz) y encima el contenido. El halo lo dibuja
+   el propio vidrio, fuera de su silueta (--ns-glass-glow). */
+[data-ns-glass]:is(.ns-u, .ns-u-top, .ns-u-left, .ns-u-right, .ns-aura, .ns-aura-top, .ns-dots, .ns-grid, .ns-lines, .ns-stripes, .ns-scan, .ns-scales) { background-color: transparent }
+[data-ns-glass]:is(.ns-u, .ns-u-top, .ns-u-left, .ns-u-right, .ns-aura, .ns-aura-top)::after { mix-blend-mode: screen; clip-path: var(--ns-glass-path, none) }
+[data-ns-glass]:is(.ns-aura, .ns-aura-top, .ns-dots, .ns-grid, .ns-lines, .ns-stripes, .ns-scan, .ns-scales)::before { clip-path: var(--ns-glass-path, none) }
 [data-ns-glass].ns-halo { filter: none; --ns-glass-glow: var(--ns-halo, rgba(61, 224, 255, .35)); --ns-glass-glow-size: var(--ns-halo-size, 16px) }
 
 /* Táctil (móviles y tabletas): las animaciones que repintan grandes degradados o filtros en cada
