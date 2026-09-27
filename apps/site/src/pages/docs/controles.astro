@@ -1,0 +1,79 @@
+---
+// Guía de controles con demos vivas: la misma guía de /docs/controles.md (fuente única, también en
+// GitHub) y, encima, cada control funcionando. Todo es de ns-frame/controls: la página sólo compone.
+import { getEntry, render } from 'astro:content'
+import Docs from '../../layouts/Docs.astro'
+
+const entry = (await getEntry('docs', 'controles'))!
+const { Content } = await render(entry)
+// icono del nivel (Lucide, ISC)
+const SUN = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>'
+---
+<Docs title={entry.data.title} description={entry.data.description} slug={entry.id}>
+  <!-- el título arriba, las demos y después la guía (su propio título se oculta aquí: en GitHub se ve) -->
+  <h1>{entry.data.title}</h1>
+  <p class="lead">Todo con atributos sobre HTML nativo: teclado, lector de pantalla y sin JavaScript propio. Pruébalos aquí; debajo, cómo se usa cada uno.</p>
+  <section class="live" aria-label="Controles en vivo">
+    <div class="box">
+      <span class="lb">Segmento y fichas</span>
+      <div role="group" aria-label="Vista" data-ns-segment data-ns-choice><button type="button" aria-pressed="true">Semana</button><button type="button" aria-pressed="false">Mes</button><button type="button" aria-pressed="false">Año</button></div>
+      <div role="group" aria-label="Filtros" data-ns-chips data-ns-choice="many"><button type="button" aria-pressed="false">Nuevo</button><button type="button" aria-pressed="true">Popular</button><button type="button" aria-pressed="false">Oferta</button></div>
+    </div>
+    <div class="box">
+      <span class="lb">Campo y deslizador</span>
+      <label data-ns-field><span>Plantilla</span><select><option>Orbe</option><option>Dúo</option><option>Encaje</option></select></label>
+      <label data-ns-field><span>Velocidad <output for="dc-v"></output></span><input id="dc-v" type="range" data-ns-range data-ns-unit="×" min="0.5" max="2" step="0.1" value="1"></label>
+    </div>
+    <div class="box row">
+      <label data-ns-level class="lv"><input type="range" aria-label="Brillo" min="0" max="100" value="60"><svg viewBox="0 0 24 24" aria-hidden="true" set:html={SUN} /></label>
+      <div class="col">
+        <span class="lb">Nivel e interruptor</span>
+        <label class="sw">Modo foco<input type="checkbox" data-ns-switch checked></label>
+        <label class="sw">Avisos<input type="checkbox" data-ns-switch></label>
+      </div>
+    </div>
+    <div class="box">
+      <span class="lb">Código, copiar e insignias</span>
+      <pre id="dc-snip" data-ns-code="scroll">import 'ns-frame/controls'</pre>
+      <div class="inline"><button type="button" class="btn" data-ns="all round 10" data-ns-copy="#dc-snip">Copiar</button><span data-ns-badge>0.10</span><span data-ns-badge="solid">Nuevo</span></div>
+    </div>
+    <div class="box">
+      <span class="lb">Tarjetas y asa</span>
+      <div class="cards">
+        <button type="button" data-ns-card data-ns="tl+br bevel 14; radius 2"><b>Básico</b><span>Una persona</span></button>
+        <button type="button" data-ns-card data-ns="tl+br bevel 14; radius 2"><b>Equipo</b><span>Hasta 10</span></button>
+      </div>
+      <i data-ns-grip aria-hidden="true"></i>
+    </div>
+    <div class="box">
+      <span class="lb">Muestras de color</span>
+      <div role="group" aria-label="Color" data-ns-swatches data-ns-choice>
+        <button type="button" data-color="#00e676" aria-label="Verde" aria-pressed="true"></button><button type="button" data-color="#3de0ff" aria-label="Cian" aria-pressed="false"></button><button type="button" data-color="#ffb547" aria-label="Ámbar" aria-pressed="false"></button><button type="button" data-color="#ff7a59" aria-label="Coral" aria-pressed="false"></button>
+      </div>
+    </div>
+  </section>
+  <Content />
+</Docs>
+
+<script>
+  import 'ns-frame/controls'
+</script>
+
+<style>
+  /* sólo la composición de las demos; el aspecto de cada control es el de ns-frame/controls */
+  .lead { color: var(--text-2) }
+  .live ~ :global(h1) { display: none }
+  .live { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 12px; margin: 0 0 36px }
+  .box { display: grid; align-content: start; gap: 12px; padding: 16px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface) }
+  .row { grid-template-columns: auto 1fr; align-items: center }
+  .col { display: grid; gap: 12px }
+  .lb { font: 500 var(--t-micro)/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--text-3) }
+  .sw { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: var(--t-small) }
+  .lv { --ns-level-w: 64px; --ns-level-h: 150px; --ns-level-radius: 22px; --ns-level-icon: 24px }
+  .lv svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round }
+  .inline { display: flex; flex-wrap: wrap; align-items: center; gap: 8px }
+  .inline .btn { min-height: 40px; padding: 0 14px; font-size: var(--t-small) }
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px }
+  .cards [data-ns-card] { --ns-card-bg: var(--bg-2); --ns-border: var(--line-2) }
+  .cards span { font-size: var(--t-caption); color: var(--text-2) }
+</style>

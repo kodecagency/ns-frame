@@ -3,7 +3,10 @@ import { getCollection, render } from 'astro:content'
 import Docs from '../../layouts/Docs.astro'
 
 export async function getStaticPaths() {
-  return (await getCollection('docs')).map(entry => ({ params: { slug: entry.id }, props: { entry } }))
+  // (las guías con demos vivas tienen su propia página, como controles.astro; getStaticPaths corre
+  // aislada del resto del archivo: lo que usa va dentro)
+  const own = new Set(['controles'])
+  return (await getCollection('docs')).filter(entry => !own.has(entry.id)).map(entry => ({ params: { slug: entry.id }, props: { entry } }))
 }
 
 const { entry } = Astro.props

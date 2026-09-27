@@ -58,4 +58,5 @@ html { scroll-padding-top: 76px }
   .side a { white-space: nowrap; background: var(--surface); border: 1px solid var(--line); min-height: 40px; display: flex; align-items: center }
   .side a[aria-current] { box-shadow: none; background: var(--text); color: #0a0a0a }
 }
-@media (max-width: 520px) { .pager { grid-template-columns: 1fr } .pg-next { text-align: left } .dtop nav a { padding: 12px 8px } }
+/* (teléfono: la marca y los tres enlaces caben sin ensanchar la página) */
+@media (max-width: 520px) { .pager { grid-template-columns: 1fr } .pg-next { text-align: left } .dtop .wrap { gap: 8px } .dtop nav { gap: 0; min-width: 0 } .dtop nav a { padding: 12px 7px } .brand { gap: 8px } }
