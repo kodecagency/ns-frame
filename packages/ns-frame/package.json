@@ -5,7 +5,7 @@
   "type": "module",
   "license": "MIT",
   "author": "Francesco Sierchio <260309036+kodecagency@users.noreply.github.com> (https://github.com/kodecagency)",
-  "homepage": "https://github.com/kodecagency/ns-frame#readme",
+  "homepage": "https://ns-frame-site.vercel.app",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kodecagency/ns-frame.git",
