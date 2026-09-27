@@ -15,7 +15,7 @@
 // · Líneas que no se tocan en horizontal quedan como piezas separadas.
 // Sin dependencias (salvo el núcleo) y CSP-safe: sólo CSSOM y atributos SVG.
 
-import { styles, path } from './ns-frame.js'
+import { styles, path, fontsReady } from './ns-frame.js'
 
 const CSS = `@layer ns{
 .ns-mark-host{position:relative;isolation:isolate}
@@ -120,7 +120,7 @@ export const refresh = schedule
 if (typeof document != 'undefined') {
   const add = el => {
     if (M.has(el)) return
-    if (!styled) { styled = 1; styles(CSS); document.fonts?.ready.then(schedule) }
+    if (!styled) { styled = 1; styles(CSS); fontsReady(schedule) }
     M.set(el, {})
     ro ||= new ResizeObserver(schedule)
     ro.observe(el.parentElement || el)

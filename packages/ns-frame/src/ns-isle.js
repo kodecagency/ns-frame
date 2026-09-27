@@ -31,7 +31,7 @@
 // · Se inicia con isle(el); el atributo solo no la arranca (necesita saber qué hacer con la página).
 // Sin dependencias externas (usa el núcleo y ns-frame/sheet) y CSP-safe: estilos adoptados en @layer ns.
 
-import { styles, jump } from './ns-frame.js'
+import { styles, jump, fontsReady } from './ns-frame.js'
 import { sheet } from './ns-sheet.js'
 
 const CSS = `@layer ns{
@@ -70,9 +70,10 @@ const CSS = `@layer ns{
 [data-ns-isle-panel].ns-stage{translate:0 0;visibility:hidden;transition:none}
 [data-ns-isle-panel].ns-morphing{translate:0 0;visibility:visible;transition:none;background:none!important;box-shadow:none!important;border-color:transparent!important}
 [data-ns-isle-panel].ns-morphing>:is(.ns-liquid-src,.ns-liquid-glass,.ns-liquid-rim,.ns-liquid-fx,.ns-svg){visibility:hidden}
+[data-ns-isle-panel].ns-morphing{-webkit-mask-image:linear-gradient(transparent var(--ns-isle-cut,0px),#000 calc(var(--ns-isle-cut,0px) + var(--ns-isle-feather,36px)));mask-image:linear-gradient(transparent var(--ns-isle-cut,0px),#000 calc(var(--ns-isle-cut,0px) + var(--ns-isle-feather,36px)))}
 @media (prefers-reduced-motion:reduce){.ns-isle-scrim,[data-ns-isle],[data-ns-isle-panel]{transition:none!important}}
 html.ns-has-isle body{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
-[data-ns-isle][data-ns-isle]{--ns-glass-tint:rgba(16,16,20,.42);position:fixed;z-index:var(--ns-isle-z,40);left:50%;bottom:calc(14px + env(safe-area-inset-bottom));width:var(--ns-isle-width,212px);height:54px;translate:-50% 0;border-radius:27px;color:var(--ns-isle-ink,var(--ns-glass-ink,#f4f4f5));contain:layout style}
+[data-ns-isle][data-ns-isle]{--ns-glass-tint:rgba(16,16,20,.42);position:fixed;z-index:var(--ns-isle-z,40);left:50%;bottom:calc(14px + env(safe-area-inset-bottom));width:min(calc(100vw - 32px),max(var(--ns-isle-width,212px),var(--ns-isle-fit,0px)));height:54px;translate:-50% 0;border-radius:27px;color:var(--ns-isle-ink,var(--ns-glass-ink,#f4f4f5));contain:layout style}
 [data-ns-isle]:not(.ns-glass){background:rgba(18,18,20,.97);--ns-border:rgba(255,255,255,.14)}
 [data-ns-isle][data-ns-isle].ns-mini{width:54px}
 :root:not([data-ns-input=pointer]) [data-ns-isle-toggle]:focus-visible{outline:2px solid var(--ns-isle-ring,rgba(255,255,255,.72))!important;outline-offset:3px}
@@ -193,7 +194,13 @@ export function isle(el, o = {}) {
 }
 
 function mount(el, o) {
-  if (!styled) { styled = 1; styles(CSS) }
+  if (!styled) {
+    styled = 1; styles(CSS)
+    // el corte de la máscara, interpolado y sin heredar (si se heredara, cada fotograma recalcularía
+    // los estilos de todo el contenido de la hoja). Sin registro, igual funciona: por saltos de una
+    // muestra, uno por fotograma
+    try { globalThis.CSS.registerProperty({ name: '--ns-isle-cut', syntax: '<length>', inherits: false, initialValue: '0px' }) } catch {}
+  }
   const btn = q(el, '[data-ns-isle-toggle]') || q(el, 'button')
   const panel = o.panel || document.getElementById(btn?.getAttribute('aria-controls')) || q(document, '[data-ns-isle-panel]')
   if (!btn || !panel) throw new Error('ns-isle: falta el botón o la hoja')
@@ -230,6 +237,33 @@ function mount(el, o) {
     if (icon && ic) icon.replaceChildren(ic.cloneNode(true))
     o.onChange?.(i, a)
   }
+  // La cápsula cabe el texto de TODAS las secciones (nada de «desli…»): se mide una vez el nombre y la
+  // posición más largos (measureText en un canvas: sin maquetar) y el ancho queda fijo, entre
+  // --ns-isle-width (el mínimo) y el de la pantalla menos 32 px. Así no cambia de tamaño al cambiar de
+  // sección: cada cambio era una transición de ancho y su vidrio redibujándose. fit: false lo desactiva
+  const text = q(el, '[data-ns-isle-text]')
+  let fr2 = 0, ctx = null
+  const widest = (node, list) => {
+    if (!node || !list.length) return 0
+    const s = getComputedStyle(node), ls = parseFloat(s.letterSpacing) || 0
+    ctx ||= document.createElement('canvas').getContext('2d')
+    ctx.font = s.font || `${s.fontWeight} ${s.fontSize} ${s.fontFamily}`
+    return Math.max(...list.map(t => ctx.measureText(t).width + ls * t.length))
+  }
+  const fit = () => {
+    if (o.fit === false || !text || fr2) return
+    fr2 = requestAnimationFrame(() => {
+      fr2 = 0
+      // (plegada a un icono, el texto no se ve: se mide al desplegarse)
+      if (el.classList.contains('ns-mini')) return
+      const need = Math.max(widest(label, links.map(a => a.dataset.nsIsleName || a.textContent.trim())), widest(posEl, links.map((_, i) => pos(i, links.length))))
+      // (lo demás de la cápsula —icono, flecha, márgenes— es su ancho menos el del texto)
+      const w = Math.ceil(el.offsetWidth - text.clientWidth + need + 4) + 'px'
+      if (el.style.getPropertyValue('--ns-isle-fit') != w) el.style.setProperty('--ns-isle-fit', w)
+      fitted = true
+    })
+  }
+  let fitted = false
 
   // la cápsula se convierte en la hoja (salvo morph: false)
   const MORPH = o.morph !== false
@@ -254,6 +288,14 @@ function mount(el, o) {
     return out
   }
   const unfade = () => { fx.forEach(a => a.cancel()); fx = [] }
+  // Lo que queda por encima del borde de arriba de la silueta no se ve: la hoja lleva una máscara
+  // (un degradado vertical de opacidad, --ns-isle-feather de difuminado) cuyo corte sigue a ese borde
+  // con las mismas muestras. Así nada asoma fuera de la forma al cerrar y el borde entra suave. En
+  // reposo (borde en su sitio) el corte queda por encima de la hoja: todo a la vista
+  const cut = (R, B, dur) => {
+    const f = parseFloat(getComputedStyle(panel).getPropertyValue('--ns-isle-feather')) || 36
+    return panel.animate(R.map(s => { const e = Math.max(0, s.top - B.top); return { '--ns-isle-cut': r2(e - f * Math.max(0, 1 - e / f)) + 'px' } }), { duration: dur, fill: 'both' })
+  }
   // la silueta recorre las muestras R en dur ms (cada pieza con las mismas: encajan siempre)
   const morph = (R, dur, open, col) => {
     build()
@@ -375,9 +417,14 @@ function mount(el, o) {
   // dentro de algo de la hoja que tenga su propio scroll
   const scrolls = n => { for (; n && n != panel.parentNode; n = n.parentElement) if (n.scrollHeight > n.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(n).overflowY)) return true; return false }
   const block = e => { if (e.cancelable && !(panel.contains(e.target) && scrolls(e.target))) e.preventDefault() }
+  // (scrollbar-gutter sólo con una barra que ocupa sitio, la de un PC: en el móvil no la hay y el
+  // cambio de estilo de <html> no hace falta)
+  let locked = false
   const lock = on => {
+    if (on == locked) return
+    locked = on
     const h = document.documentElement.style
-    if (on) { h.setProperty('overflow', 'hidden'); h.setProperty('scrollbar-gutter', 'stable'); addEventListener('touchmove', block, { passive: false }) }
+    if (on) { if (innerWidth > document.documentElement.clientWidth) h.setProperty('scrollbar-gutter', 'stable'); h.setProperty('overflow', 'hidden'); addEventListener('touchmove', block, { passive: false }) }
     else { h.removeProperty('overflow'); h.removeProperty('scrollbar-gutter'); removeEventListener('touchmove', block) }
   }
 
@@ -394,7 +441,7 @@ function mount(el, o) {
     panel.classList.add('ns-morphing'); panel.classList.remove('ns-open', 'ns-warm', 'ns-stage')
     // (la cápsula vuelve a estar, pero transparente hasta su fundido: sin saltos al llegar)
     el.removeAttribute('data-ns-hidden')
-    const all = [...mine(),
+    const all = [...mine(), cut(R, B, CLOSE),
       el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150, delay: HOME, easing: 'ease-out', fill: 'both' }),
       mo.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, delay: HOME + 150, fill: 'both' }),
       // (cada pieza se va entre que el borde está 30 px por encima y pasa su mitad: en espacio, no en
@@ -408,6 +455,7 @@ function mount(el, o) {
   }
   // cerrada del todo / abierta otra vez (el dedo la devolvió a su sitio)
   const shut = () => {
+    lock(false)
     unfade(); unmorph()
     panel.classList.add('ns-now'); panel.classList.remove('ns-morphing', 'ns-open', 'ns-warm', 'ns-stage')
     el.style.zIndex = ''; scrim.style.transition = ''
@@ -467,8 +515,10 @@ function mount(el, o) {
   const show = (on, now = false, given = null) => {
     if (on == isOpen) return
     isOpen = on
-    lock(on)
     const t = ++run, anim = MORPH && !now && !reduced()
+    // (al cerrar con animación, la página se libera al terminar: soltarla a la vez que arranca el
+    // cierre obligaba a maquetar la página entera en ese mismo fotograma, un tirón en un móvil lento)
+    if (on || !anim) lock(on)
     btn.setAttribute('aria-expanded', String(on))
     panel.inert = !on
     // (con la hoja abierta, la cápsula está oculta: fuera del orden del foco y del lector de pantalla)
@@ -488,7 +538,7 @@ function mount(el, o) {
         const B = panel.getBoundingClientRect(), R = route(A, B, cap(A), r, true)
         el.style.zIndex = Z() + 2
         const g = morph(R, OPEN, true, col), p = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 130, easing: 'ease-out', fill: 'forwards' })
-        fx = [p, ...leaves().map(k => k.animate([{ opacity: 0, translate: '0 10px', scale: '.97' }, { opacity: 1, translate: '0 0', scale: '1' }],
+        fx = [p, cut(R, B, OPEN), ...leaves().map(k => k.animate([{ opacity: 0, translate: '0 10px', scale: '.97' }, { opacity: 1, translate: '0 0', scale: '1' }],
           { duration: 320, delay: Math.max(90, when(R, k.getBoundingClientRect(), true) / N * OPEN), easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }))]
         // (el desvanecido de la cápsula se queda puesto: si se cancelara, su texto volvería un
         // instante antes de ocultarse, un parpadeo)
@@ -604,6 +654,9 @@ function mount(el, o) {
   }, { rootMargin: `-${line * 100}% 0px -${100 - line * 100 - .1}% 0px` })
   targets.forEach(t => t && io.observe(t))
   set(0)
+  fit()
+  // (con las fuentes web ya cargadas el texto mide otra cosa)
+  fontsReady(() => { fitted = false; fit() })
 
 
   // pliegue al bajar y última sección al llegar al final (no siempre alcanza la línea)
@@ -614,7 +667,12 @@ function mount(el, o) {
     if (y + innerHeight >= document.documentElement.scrollHeight - 2) set(links.length - 1)
     // (al bajar leyendo, completa: dice en qué sección estás; al subir, un icono. collapseOn: 'down',
     // al revés, como la barra de Safari en iPhone)
-    if (o.collapse !== false && !isOpen && Math.abs(y - y0) > 6) { el.classList.toggle('ns-mini', (o.collapseOn == 'down' ? y > y0 : y < y0) && y > (o.collapse ?? 200)); y0 = y }
+    // (sólo al cambiar de estado: al desplegarse se mide el texto)
+    if (o.collapse !== false && !isOpen && Math.abs(y - y0) > 6) {
+      const mini = (o.collapseOn == 'down' ? y > y0 : y < y0) && y > (o.collapse ?? 200)
+      if (mini != el.classList.contains('ns-mini')) { el.classList.toggle('ns-mini', mini); mini || fitted || fit() }
+      y0 = y
+    }
   }
   const scroll = () => { raf ||= requestAnimationFrame(frame) }
   addEventListener('scroll', scroll, { passive: true })
@@ -624,7 +682,7 @@ function mount(el, o) {
     go: i => targets[i] && go(targets[i], links[i]),
     get index() { return cur },
     destroy() {
-      run++; unfade(); mo?.remove(); mo = null; isOpen && lock(false); document.documentElement.classList.remove('ns-has-isle'); el.style.zIndex = ''; el.classList.remove('ns-isle-m')
+      run++; unfade(); mo?.remove(); mo = null; lock(false); document.documentElement.classList.remove('ns-has-isle'); el.style.zIndex = ''; el.classList.remove('ns-isle-m')
       io.disconnect(); sh.destroy(); scrim.remove(); clearTimeout(timer)
       removeEventListener('scroll', scroll); removeEventListener('keydown', key); document.removeEventListener('focusin', trap)
       btn.removeEventListener('pointerdown', down); btn.removeEventListener('pointerup', up)

@@ -10,6 +10,8 @@
 // · Dos tipos de filtro: "surface" (una superficie opaca: cara de su color, canto, sombras y hundido) y
 //   "rim" (sólo la luz del canto, sin cara: para el vidrio).
 
+import { quality } from './ns-frame.js'
+
 const NS = 'http://www.w3.org/2000/svg'
 export const mk = (t, a = {}, ...k) => { const e = document.createElementNS(NS, t); for (const n in a) e.setAttribute(n, a[n]); e.append(...k); return e }
 const EL = 52
@@ -86,7 +88,9 @@ let MQ = null, lraf = 0, px = .5
 const calm = () => (MQ ||= [matchMedia('(prefers-reduced-motion: reduce)'), matchMedia('(hover: hover) and (pointer: fine)')])[0].matches
 const aim = () => {
   lraf = 0
-  const az = +(258 + (calm() ? 0 : (px - .5) * 36)).toFixed(1)
+  // (en pasos de 2°: cada cambio repinta todos los filtros de luz a la vista; con 0,1° cambiaba en
+  // casi cada fotograma del desplazamiento. En calidad baja, fija)
+  const az = 258 + (calm() || quality() == 'low' ? 0 : Math.round((px - .5) * 18) * 2)
   if (az == AZ) return
   AZ = az
   for (const l of LIGHTS) l.setAttribute('azimuth', ((az + l._flip) % 360).toFixed(1))

@@ -40,7 +40,7 @@
 //   reposo no hace nada.
 // Sin dependencias externas (usa el núcleo y ns-frame/light). Sólo CSSOM y atributos SVG (sin HTML en texto).
 
-import { styles, watch } from './ns-frame.js'
+import { styles, watch, quality } from './ns-frame.js'
 import { material } from './ns-light.js'
 
 const CSS = `@layer ns{
@@ -868,7 +868,7 @@ export function liquid(el, o = {}) {
   // · elemento con contenido (texto, tarjetas, una lista que se desplaza por detrás): en Firefox,
   //   -moz-element(), el elemento en vivo; en Safari, un clon del DOM con los estilos calculados en
   //   línea, que se rehace cuando el original cambia (hasta CAP nodos; más, sólo el desenfoque).
-  let mirrored = null, kind = '', live = 0, vis = true, cc = null, smo = null, redo = 0
+  let mirrored = null, kind = '', live = 0, vis = true, cc = null, smo = null, redo = 0, low = false
   // lente en WebGL: G (el motor), glc (su canvas), gsrc (lo que se sube: la imagen pedida con CORS,
   // el vídeo o el canvas), gsz (su tamaño natural), gW (ancho de la textura), gU (la url de la imagen)
   let G = null, glc = null, gsrc = null, gsz = null, gW = 1, gU = '', shaped = '', gTok = 0
@@ -1135,19 +1135,27 @@ export function liquid(el, o = {}) {
   // al desplazarse la página o un contenedor, la copia se recoloca (y el clon copia el desplazamiento)
   const onScroll = () => {
     if (V?.src && vis) { scrT++; scrAt = performance.now(); fr ||= requestAnimationFrame(follow) }
-    // (lo de detrás cambia al desplazarse: una barra fija pasa de una zona clara a una oscura)
-    if (vis && near && performance.now() - toned > 250) tone()
+    // (lo de detrás cambia al desplazarse: una barra fija pasa de una zona clara a una oscura). Sólo
+    // si el vidrio es fijo o pegajoso: uno que se desplaza con la página tiene siempre lo mismo
+    // detrás. Y en un momento libre: elementsFromPoint obliga a maquetar
+    if (pin && vis && near && !toning && performance.now() - toned > 250) toning = (globalThis.requestIdleCallback || setTimeout)(() => { toning = 0; tone() }, { timeout: 400 })
   }
+  let toning = 0
   // pin: el grupo (o un antepasado) es fijo o pegajoso
-  let pin = false
+  let pin = false, resized = true
   // vidrio claro sobre fondos claros (como el de Apple), salvo que se fije --ns-glass-tint
   let toned = 0
   // Con un tinte propio (un vidrio oscuro de diseño, como una barra de pestañas) no se invierte:
   // sobre lo claro se oscurece un poco más y el texto sigue blanco, como la barra de Instagram
   // (invertir sólo el texto dejaba un vidrio oscuro con letras oscuras: turbio)
   const tone = () => {
+    if (!glassy()) return
+    // (fuera de la vista no se sabe: se intenta al acercarse; dentro, una vez. Una foto que todavía
+    // no se puede leer avisa al llegar y se vuelve a medir)
+    const r = el.getBoundingClientRect()
+    if (r.bottom < 0 || r.top > innerHeight || !r.width) return
     toned = performance.now()
-    const b = glassy() ? bright(el, stale) : undefined
+    const b = bright(el, () => { toned = 0; stale() })
     if (b === undefined) return
     const own = !!getComputedStyle(el).getPropertyValue('--ns-glass-tint').trim()
     el.classList.toggle('ns-glass-light', b && !own)
@@ -1190,15 +1198,21 @@ export function liquid(el, o = {}) {
     origin()
     const fresh = dirty || frame % 6 == 0
     if (dirty || !V) {
-      // (el tono va antes: el vidrio claro desenfoca y satura más por defecto)
-      tone()
-      pin = false
-      for (let n = el; n && n != document.body && !pin; n = n.parentElement) pin = /^(fixed|sticky)$/.test(getComputedStyle(n).position)
+      // (el tono va antes: el vidrio claro desenfoca y satura más por defecto). Una vez: lo de detrás
+      // no cambia porque un hijo cambie de clase; en un vidrio fijo lo actualiza el desplazamiento
+      if (!toned) tone()
+      // fijo o pegajoso: al empezar y al cambiar de tamaño (recorrer los antepasados en cada despertar
+      // costaba un getComputedStyle por nivel)
+      if (!V || resized) {
+        resized = false; pin = false
+        for (let n = el; n && n != document.body && !pin; n = n.parentElement) pin = /^(fixed|sticky)$/.test(getComputedStyle(n).position)
+      }
       const cs = getComputedStyle(el), num = (k, d) => { const v = parseFloat(cs.getPropertyValue(k)); return v >= 0 ? v : d }, lt = el.classList.contains('ns-glass-light')
       // (lente por defecto según el tamaño, como el cristal de Apple: el canto dobla el fondo en casi
       // la mitad del lado corto; una barra o un botón refractan enteros, un panel grande sólo su borde)
       const ms = Math.min(el.offsetWidth, el.offsetHeight) || 48, cl = (v, a, b) => Math.max(a, Math.min(b, v))
-      V = { k: num('--ns-liquid', 14), lens: num('--ns-glass-lens', cl(ms * .55, 10, 44)), edge: num('--ns-glass-edge', 8), depth: num('--ns-glass-depth', cl(ms * .42, 8, 36)), blur: num('--ns-glass-blur', lt ? 7 : 3), sat: num('--ns-glass-sat', lt ? 1.2 : 1.3), src: LENS || !glassy() ? null : source(), prism: !!o.prism?.(), hard: !!o.hard?.(), shadow: cs.getPropertyValue('--ns-glass-shadow').trim(), glow: cs.getPropertyValue('--ns-glass-glow').trim(), glowSize: num('--ns-glass-glow-size', 16), zoom: Math.min(1, num('--ns-glass-zoom', 0)),
+      low = quality() == 'low'
+      V = { k: num('--ns-liquid', 14), lens: num('--ns-glass-lens', cl(ms * .55, 10, 44)), edge: num('--ns-glass-edge', 8), depth: num('--ns-glass-depth', cl(ms * .42, 8, 36)), blur: num('--ns-glass-blur', lt ? 7 : 3), sat: num('--ns-glass-sat', lt ? 1.2 : 1.3), src: LENS || !glassy() || low ? null : source(), prism: !!o.prism?.(), hard: !!o.hard?.(), shadow: cs.getPropertyValue('--ns-glass-shadow').trim(), glow: cs.getPropertyValue('--ns-glass-glow').trim(), glowSize: num('--ns-glass-glow-size', 16), zoom: Math.min(1, num('--ns-glass-zoom', 0)),
         // canto: intensidad y reflejo opuesto (su fuerza y su color: la luz en U lo tiñe)
         light: lt, rim: num('--ns-glass-rim', 1), back: num('--ns-glass-rim-back', .5), backColor: cs.getPropertyValue('--ns-glass-rim-color').trim() || '#fff' }
       // Material grueso (desenfoque ≥ 12px: una hoja, un menú) fuera de Chromium: el desenfoque nativo
@@ -1225,7 +1239,9 @@ export function liquid(el, o = {}) {
     }
     dirty = false; frame++
     const k = o.k ?? V.k
-    const g = glassy(), src = g ? V.src : null, lensPx = g && (LENS || src) ? V.lens : 0, edgePx = V.edge, depth = V.depth
+    // (calidad baja: sólo el desenfoque nativo con su tinte y el canto de luz; sin mapa de lente,
+    // sin WebGL y sin la capa aparte del canto. Es lo que tumbaba la GPU de un móvil modesto)
+    const g = glassy(), src = g ? V.src : null, lensPx = g && !low && (LENS || src) ? V.lens : 0, edgePx = low ? 0 : V.edge, depth = V.depth
     const S = src?.getBoundingClientRect()
     const tail = `|${g}|${lensPx}|${edgePx}|${!!src}|${depth}|${V.blur}|${V.sat}|${V.light}|${V.hard}|${V.shadow}|${V.glow}`
     let bx, by, bw, bh, pre, make
@@ -1240,7 +1256,16 @@ export function liquid(el, o = {}) {
         const d = shift(P.d, m, m)
         // el recorte y los reflejos usan el path exacto; el campo sólo da la lente y el reflejo
         // interior: basta una rejilla de unos 12 000 nodos (entre 1 y 2,5 px)
-        return [pathField(d, bw, bh, o.step || Math.min(2.5, Math.max(1, Math.sqrt(bw * bh / 12000)))), d]
+        // (sin lente, el campo no sirve para nada: ni canvas, ni getImageData, ni distancias; en
+        // calidad baja una cápsula que cambia de ancho sólo mueve su path)
+        // Y con lente, perezoso: la geometría de la rejilla (lo que usa la lente para seguir a la forma
+        // en marcha) sale al instante; los valores, sólo cuando se regenera el mapa (al detenerse).
+        // Una cápsula que cambia de ancho ya no rasteriza y lee su forma en cada fotograma
+        if (!lensPx) return [null, d]
+        const step = o.step || Math.min(2.5, Math.max(1, Math.sqrt(bw * bh / 12000)))
+        let real = null
+        const get = () => real ||= pathField(d, bw, bh, step)
+        return [{ nx: Math.ceil(bw / step) + 1, ny: Math.ceil(bh / step) + 1, X0: 0, Y0: 0, step, get F() { return get()?.F } }, d]
       }
     } else {
       const boxes = list().filter(b => b.getClientRects().length).map(b => {
@@ -1310,7 +1335,7 @@ export function liquid(el, o = {}) {
     mBody.setAttribute('d', d); mEdge.setAttribute('d', d); cEdge.setAttribute('d', d)
     mEdge.setAttribute('stroke-width', r2(edgePx * 1.6)); eBlur.setAttribute('stdDeviation', r2(edgePx / 2.2))
     // (con lente, el canto va dentro de su filtro; la capa aparte sólo queda de respaldo)
-    edge.style.display = lensPx && (LENS || src) ? 'none' : ''
+    edge.style.display = low || (lensPx && (LENS || src)) ? 'none' : ''
     if (!lensPx) { glass.style.backdropFilter = back.style.filter = ''; now = null; return }
     // sobre la copia, la lente sólo desplaza: el desenfoque y la saturación los pone el cuerpo encima
     now = { f, d, bw, bh, depth, lensPx, blur: src ? 0 : V.blur, sat: src ? 1 : V.sat, src: !!src, hard: V.hard, zoom: V.zoom, light: V.light, rim: me.slice(5, -2), edge: edgePx }
@@ -1408,7 +1433,7 @@ export function liquid(el, o = {}) {
   // (se releen los estilos; la forma sólo se rehace si cambió algo que la define: un grupo que se
   // arrastra cambia su estilo en cada frame y no debe recalcular el campo)
   const stale = () => { dirty = true; wake() }
-  const ro = new ResizeObserver(stale)
+  const ro = new ResizeObserver(() => { resized = true; stale() })
   ro.observe(el)
   // elementos con transiciones o animaciones CSS en curso (si uno termina antes que otra de sus
   // propiedades, la comprobación final con getAnimations evita parar antes de tiempo)
@@ -1446,6 +1471,8 @@ export function liquid(el, o = {}) {
   nio.observe(el)
   let io = null
   addEventListener('scroll', onScroll, { capture: true, passive: true })
+  // si el dispositivo resulta no llegar (fotogramas lentos al cargar), el vidrio pasa a la versión ligera
+  document.addEventListener('ns-quality', stale)
   if (!LENS) {
     io = new IntersectionObserver(es => { vis = es[es.length - 1].isIntersecting; if (vis) { if (kind == 'frames' && !live) frames(mirrored); if (kind == 'gl' && !live && gsrc?.tagName != 'IMG') glLive(); if (!V?.src) stale() } })
     io.observe(el)
@@ -1457,7 +1484,7 @@ export function liquid(el, o = {}) {
     update: stale,
     frame: wake,
     // (una sola vez: el vidrio, las pestañas y el arranque automático pueden pedirlo a la vez)
-    destroy() { if (REG.get(el) != handle) return; REG.delete(el); clearTimeout(settle); cancelAnimationFrame(raf); cancelAnimationFrame(fr); token++; unmirror(); G?.free(); G = null; ro.disconnect(); mo.disconnect(); nio.disconnect(); io?.disconnect(); removeEventListener('scroll', onScroll, { capture: true }); EV.forEach(([e, f]) => el.removeEventListener(e, f, true)); svg.remove(); glass.remove(); edge.remove(); back.remove(); el.classList.remove('ns-liquid', 'ns-glass') },
+    destroy() { if (REG.get(el) != handle) return; REG.delete(el); clearTimeout(settle); cancelAnimationFrame(raf); cancelAnimationFrame(fr); token++; unmirror(); G?.free(); G = null; ro.disconnect(); mo.disconnect(); nio.disconnect(); io?.disconnect(); removeEventListener('scroll', onScroll, { capture: true }); document.removeEventListener('ns-quality', stale); EV.forEach(([e, f]) => el.removeEventListener(e, f, true)); svg.remove(); glass.remove(); edge.remove(); back.remove(); el.classList.remove('ns-liquid', 'ns-glass') },
   }
   REG.set(el, handle)
   return handle

@@ -15,7 +15,7 @@
 // · El orden y la selección del texto no cambian (los flotantes son <i aria-hidden> vacíos).
 // Sin dependencias (salvo el núcleo) y CSP-safe: estilos adoptados en @layer ns.
 
-import { styles, path, shapeOf } from './ns-frame.js'
+import { styles, path, shapeOf, fontsReady } from './ns-frame.js'
 
 const CSS = `@layer ns{
 .ns-flow{display:flow-root}
@@ -144,7 +144,7 @@ if (typeof document != 'undefined') {
   const scan = n => { if (n.nodeType != 1) return; n.matches('[data-ns-flow]') && add(n); n.querySelectorAll('[data-ns-flow]').forEach(add) }
   const boot = () => {
     scan(document.body)
-    document.fonts?.ready.then(() => { for (const st of E.values()) st.w = 0; schedule() })
+    fontsReady(() => { for (const st of E.values()) st.w = 0; schedule() })
     new MutationObserver(ms => {
       for (const m of ms) {
         m.addedNodes.forEach(scan)

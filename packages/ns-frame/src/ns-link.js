@@ -30,8 +30,16 @@ function add(el) {
     // durante otro ResizeObserver quedaba sin entregar y el navegador lo lanzaba como error global
     // ("ResizeObserver loop…"). Se compara la altura en eventos baratos y sólo se redibuja si cambió.
     // fotograma propio (no el de draw): si coincidiera con un cambio de tamaño, ése se perdería
-    let H = 0
-    check = () => { raf2 ||= requestAnimationFrame(() => { raf2 = 0; const h = document.documentElement.scrollHeight; if (h != H) { H = h; schedule() } }) }
+    // (como mucho tres veces por segundo: leer la altura justo después de que otro módulo escriba
+    // estilos obliga a maquetar antes de tiempo, y en el desplazamiento eso era cada fotograma)
+    let H = 0, at = 0
+    check = () => {
+      if (raf2) return
+      // (dentro del intervalo, una comprobación al final: el último cambio no se pierde)
+      const wait = 330 - (performance.now() - at)
+      if (wait > 0) { raf2 = setTimeout(() => { raf2 = 0; check() }, wait); return }
+      raf2 = requestAnimationFrame(() => { raf2 = 0; at = performance.now(); const h = document.documentElement.scrollHeight; if (h != H) { H = h; schedule() } })
+    }
     io = new IntersectionObserver(es => { for (const e of es) e.isIntersecting ? near.add(e.target) : near.delete(e.target); schedule() }, { rootMargin: '50% 0px' })
     addEventListener('resize', schedule)
     addEventListener('scroll', e => {
@@ -40,7 +48,7 @@ function add(el) {
       for (const [el, o] of L) if (e.target.contains?.(el) != e.target.contains?.(o.t)) return schedule()
     }, { passive: true, capture: true })
     addEventListener('load', check, true)
-    document.fonts?.ready.then(schedule)
+    ;(globalThis.requestIdleCallback || setTimeout)(() => document.fonts?.ready.then(schedule), { timeout: 1500 })
   }
   const g = mk('g'), p = mk('path', { fill: 'none', 'stroke-linejoin': 'round' }), a = mk('circle', { r: 2.5 }), b = mk('circle', { r: 4, fill: 'none' })
   g.append(p, a, b)

@@ -13,7 +13,7 @@
 // · El contenido va dentro del mayor rectángulo libre de cada pieza (padding automático).
 // Requiere ns-frame.js (que dibuja las formas). CSP-safe: estilos por constructable stylesheet.
 
-import { styles as inject, path } from './ns-frame.js'
+import { styles as inject, path, fontsReady } from './ns-frame.js'
 import { flow, unflow } from './ns-flow.js'
 
 // nombres: las variables de efectos se llaman --ns-mosaic-* (light, width, fill, dot, line, a1, a2,
@@ -608,7 +608,7 @@ const schedule = () => { raf ||= requestAnimationFrame(layout) }
 function add(el) {
   if (M.has(el)) return
   // las fuentes web cambian lo que mide el texto: al cargar, se vuelve a elegir dónde cabe
-  if (!styled) { styled = 1; inject(alias(CSS)); document.fonts?.ready.then(schedule) }
+  if (!styled) { styled = 1; inject(alias(CSS)); fontsReady(schedule) }
   // dentro del callback del ResizeObserver: la forma nueva llega en el mismo frame que el tamaño nuevo
   ro ||= new ResizeObserver(() => { cancelAnimationFrame(raf); layout() })
   M.set(el, 1)

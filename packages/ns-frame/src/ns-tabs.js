@@ -90,6 +90,9 @@ export function tabs(el, o = {}) {
   const X = { x: 0, v: 0 }, W = { x: 0, v: 0 }, D = { x: 0, v: 0 }, U = { x: 0, v: 0 }
   let Y = 0, H = 0, tx = 0, tw = 0, up = 0, drag = null, skip = false, raf = 0, last = 0, hot = -1, ready = false
   const box = b => ({ x: b.offsetLeft, y: b.offsetTop, w: b.offsetWidth, h: b.offsetHeight })
+  // cajas de las pestañas: se miden una vez y se olvidan al cambiar el tamaño o las pestañas
+  let cache = null
+  const boxes = () => cache ||= items().map(b => ({ b, ...box(b) }))
   const aim = i => { const b = items()[i]; if (!b) return; const r = box(b); tx = r.x; tw = r.w; Y = r.y; H = r.h }
   const paint = () => {
     const v = X.v, s = 1 + .14 * U.x, calm = reduced()
@@ -99,8 +102,10 @@ export function tabs(el, o = {}) {
     // la gota: más estrecha, sigue al centro con un muelle algo más blando
     if (hasDrop) { const dw = Math.max(H, W.x * .62); Object.assign(drop.style, { width: dw + 'px', height: H * .86 + 'px', transform: `translate(${D.x - dw / 2}px,${Y + H * .07}px)` }) }
     // la pestaña bajo el indicador (para que su texto cambie mientras la lente pasa)
-    const c = X.x + W.x / 2, i = items().findIndex(b => c >= b.offsetLeft && c < b.offsetLeft + b.offsetWidth)
-    if (i != hot) { items().forEach((b, k) => b.classList.toggle('ns-tabs-hot', k == i)); hot = i }
+    // (con las cajas guardadas: leer offsetLeft justo después de escribir el estilo obligaba a
+    // maquetar en cada fotograma)
+    const c = X.x + W.x / 2, B = boxes(), i = B.findIndex(r => c >= r.x && c < r.x + r.w)
+    if (i != hot) { B.forEach((r, k) => r.b.classList.toggle('ns-tabs-hot', k == i)); hot = i }
   }
   const loop = t => {
     raf = 0
@@ -207,11 +212,11 @@ export function tabs(el, o = {}) {
   const EV = [['pointerdown', down], ['pointermove', move], ['pointerup', upE], ['pointercancel', cancel], ['lostpointercapture', e => e.target == el && drag?.on && upE(e)], ['click', click, true], ['keydown', key]]
   EV.forEach(([t, f, c]) => el.addEventListener(t, f, c))
   // el material del indicador sigue al de la barra (vidrio o sólido)
-  const mo = new MutationObserver(() => { lens.setAttribute('data-ns-liquid', el.getAttribute('data-ns-liquid') || '') })
-  mo.observe(el, { attributes: true, attributeFilter: ['data-ns-liquid'] })
+  const mo = new MutationObserver(ms => { cache = null; if (ms.some(m => m.attributeName == 'data-ns-liquid')) lens.setAttribute('data-ns-liquid', el.getAttribute('data-ns-liquid') || '') })
+  mo.observe(el, { attributes: true, attributeFilter: ['data-ns-liquid'], childList: true })
   // al cambiar de tamaño, el indicador se recoloca sin animación
-  const ro = new ResizeObserver(() => { if (drag?.on) return; aim(cur); if (!ready || !raf) { X.x = tx; W.x = tw; D.x = tx + tw / 2; paint(); glass.frame(); ready = true } })
-  ro.observe(el)
+  const ro = new ResizeObserver(() => { cache = null; if (drag?.on) return; aim(cur); if (!ready || !raf) { X.x = tx; W.x = tw; D.x = tx + tw / 2; paint(); glass.frame(); ready = true } })
+  ro.observe(el); items().forEach(b => ro.observe(b))
   // data-ns-tabs="shrink": como la barra de iOS 26, se encoge un poco al desplazar hacia abajo y
   // vuelve al subir o al tocarla. Escucha el contenedor de data-ns-tabs-scroll (o la página). Sólo
   // cambia scale: el vidrio escala con la barra sin recalcular nada

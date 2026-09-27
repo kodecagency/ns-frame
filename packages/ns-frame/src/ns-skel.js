@@ -11,7 +11,7 @@
 //   coordenadas de la ventana, así la luz cruza de un skeleton al siguiente.
 // · aria-busy mientras carga; el contenido oculto no se lee ni recibe foco.
 // · Variables: --ns-sk (color de los huesos), --ns-sk-glint (brillo), --ns-skel-time (o --ns-sk-time), --ns-sk-band.
-import { geometry, commands, shapeOf, styles } from './ns-frame.js'
+import { geometry, commands, shapeOf, styles, fontsReady } from './ns-frame.js'
 
 const CSS_ = `@layer ns{
 :where([data-ns-skeleton]){position:relative}
@@ -107,7 +107,7 @@ function on(el) {
     ro = new ResizeObserver(es => es.forEach(e => later(e.target)))
     io = new IntersectionObserver(es => es.forEach(e => ON.get(e.target)?.sk.classList.toggle('ns-sk-off', !e.isIntersecting)))
     addEventListener('resize', () => ON.forEach((_, e) => later(e)))
-    document.fonts?.ready.then(() => ON.forEach((_, e) => later(e)))
+    fontsReady(() => ON.forEach((_, e) => later(e)))
   }
   const cs = getComputedStyle(el), T = (cs.getPropertyValue('--ns-skel-time') || cs.getPropertyValue('--ns-sk-time')).trim(), sk = document.createElement('div')
   sk.className = 'ns-sk'

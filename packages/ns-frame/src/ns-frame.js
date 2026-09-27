@@ -790,6 +790,54 @@ export function modal(dlg, { panel = dlg.firstElementChild, mode = 'open' } = {}
 }
 
 /**
+ * `fn` cuando las fuentes web ya están cargadas (para volver a medir texto). Una sola espera para
+ * todos los módulos, y en un momento libre: leer document.fonts.ready obliga a recalcular estilos, y
+ * cinco módulos haciéndolo durante la carga se notaba en un móvil modesto.
+ */
+let fontsP = null
+export const fontsReady = fn => (fontsP ||= new Promise(r => (globalThis.requestIdleCallback || setTimeout)(() => (document.fonts ? document.fonts.ready : Promise.resolve()).then(r), { timeout: 1500 }))).then(fn)
+
+/**
+ * Nivel de calidad para los efectos caros (vidrio con lente, WebGL, luces animadas): 'high' o 'low'.
+ * Fijo con <html data-ns-quality="low|high">; si no, automático: 'low' con poca memoria (Chrome la
+ * informa en tramos: ≤ 4 GB), 2 núcleos o menos, ahorro de datos, o si los fotogramas van lentos
+ * tras cargar (se mide un segundo; sólo baja, nunca sube). El nivel efectivo queda en
+ * <html data-ns-tier> para el CSS, y un cambio avisa con el evento ns-quality en document.
+ * (No se usa el número de núcleos a secas: Safari en iOS informa pocos también en un iPhone potente.)
+ */
+let tier = ''
+export function quality() {
+  if (typeof document == 'undefined') return 'high'
+  const set = document.documentElement.getAttribute('data-ns-quality')
+  if (set == 'low' || set == 'high') { if (document.documentElement.getAttribute('data-ns-tier') != set) document.documentElement.setAttribute('data-ns-tier', set); return set }
+  if (!tier) {
+    const n = navigator
+    tier = (n.deviceMemory && n.deviceMemory <= 4) || (n.hardwareConcurrency && n.hardwareConcurrency <= 2) || n.connection?.saveData ? 'low' : 'high'
+    document.documentElement.setAttribute('data-ns-tier', tier)
+    if (tier == 'high' && typeof requestAnimationFrame == 'function') {
+      // un segundo de fotogramas, a partir de 1,5 s tras cargar (la carga misma no cuenta): si más de
+      // un cuarto pasa de 34 ms (menos de 30 fps), el dispositivo no llega y se baja la calidad
+      const probe = () => setTimeout(() => {
+        let last = 0, slow = 0, all = 0
+        const t0 = performance.now()
+        const f = now => {
+          if (last) { all++; if (now - last > 34) slow++ }
+          last = now
+          if (now - t0 < 1000) return requestAnimationFrame(f)
+          if (all > 10 && slow / all > .25 && document.visibilityState == 'visible') {
+            tier = 'low'; document.documentElement.setAttribute('data-ns-tier', tier)
+            document.dispatchEvent(new CustomEvent('ns-quality', { detail: { quality: tier } }))
+          }
+        }
+        requestAnimationFrame(f)
+      }, 1500)
+      document.readyState == 'complete' ? probe() : addEventListener('load', probe, { once: true })
+    }
+  }
+  return tier
+}
+
+/**
  * Salto fiable a una sección, también con content-visibility: auto (las secciones sin pintar tienen
  * un alto estimado; al acercarse cambian y un salto normal cae desplazado). La primera vez se maquetan
  * un instante todas (el navegador recuerda su alto real con contain-intrinsic-size: auto); después el
@@ -848,7 +896,9 @@ if (DOM) {
   const root = document.documentElement, input = v => root.getAttribute('data-ns-input') != v && root.setAttribute('data-ns-input', v)
   addEventListener('pointerdown', () => input('pointer'), { capture: true, passive: true })
   addEventListener('keydown', e => { if (!e.metaKey && !e.ctrlKey && !e.altKey) input('keyboard') }, { capture: true, passive: true })
-  const sel = '[data-ns],[data-ns-nest],ns-frame'
+  // nivel de calidad desde el principio: el CSS de los módulos lo lee en <html data-ns-tier>
+  quality()
+  const sel ='[data-ns],[data-ns-nest],ns-frame'
   const scan = n => { if (n.nodeType != 1) return; n.matches(sel) && attach(n); n.querySelectorAll(sel).forEach(attach) }
   const gone = n => { if (n.nodeType != 1 || n.isConnected) return; detach(n); n.querySelectorAll(sel).forEach(x => detach(x)) }
   if (!customElements.get('ns-frame')) customElements.define('ns-frame', class extends HTMLElement {
