@@ -109,7 +109,9 @@ const PICKS = [
     const glass = picked(e).dataset.v == 'glass'
     if (glass) import('ns-frame/glass')
     $('mo-stage').classList.toggle('glassy', glass)
-    mo.querySelectorAll<HTMLElement>(':scope > [data-ns-area]:not(.ph)').forEach(a => glass ? a.setAttribute('data-ns-glass', '') : a.removeAttribute('data-ns-glass'))
+    // (en táctil, vidrio esmerilado "frost": nueve lentes a la vez son demasiado para un móvil)
+    const kind = matchMedia('(pointer: coarse)').matches ? 'frost' : ''
+    mo.querySelectorAll<HTMLElement>(':scope > [data-ns-area]:not(.ph)').forEach(a => glass ? a.setAttribute('data-ns-glass', kind) : a.removeAttribute('data-ns-glass'))
   })
 
   // un efecto a la vez; velocidad, intensidad y color son variables de la librería:
@@ -122,6 +124,8 @@ const PICKS = [
     const k = +speed.value
     $('mo-speed-v').textContent = k.toFixed(1).replace('.0', '').replace('.', ',') + '×'
     $('mo-int-v').textContent = Math.round(+int.value * 100) + ' %'
+    // (lo recorrido de cada deslizador, para su pista)
+    for (const r of [speed, int]) r.style.setProperty('--p', ((+r.value - +r.min) / (+r.max - +r.min) * 100).toFixed(1) + '%')
     effect in BASE ? mo.style.setProperty('--ns-mosaic-fx-time', (BASE[effect] / k).toFixed(2) + 's') : mo.style.removeProperty('--ns-mosaic-fx-time')
     mo.style.setProperty('--ns-mosaic-speed', String(Math.round(160 * k)))
     mo.style.setProperty('--ns-mosaic-fill', int.value)
@@ -164,7 +168,17 @@ const PICKS = [
   .knobs label { display: grid; gap: 2px; min-width: 110px; flex: 1 1 130px; max-width: 200px; font-size: var(--t-caption); color: var(--text-2) }
   .knobs label span { display: flex; justify-content: space-between }
   .knobs output { font: var(--t-caption) var(--mono); color: var(--text) }
-  .knobs input { width: 100%; height: 24px; margin: 0; accent-color: var(--signal) }
+  /* deslizadores propios: pista fina, lo recorrido en verde (--p lo pone el script) y un mando blanco */
+  .knobs input { -webkit-appearance: none; appearance: none; width: 100%; height: 24px; margin: 0; background: transparent; cursor: pointer; --p: 50% }
+  .knobs input::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: linear-gradient(90deg, var(--signal) var(--p), rgba(255, 255, 255, .14) var(--p)) }
+  .knobs input::-moz-range-track { height: 4px; border-radius: 4px; background: rgba(255, 255, 255, .14) }
+  .knobs input::-moz-range-progress { height: 4px; border-radius: 4px; background: var(--signal) }
+  .knobs input::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; margin-top: -7px; border-radius: 50%; background: #f4f4f5; box-shadow: 0 1px 4px rgba(0, 0, 0, .5), 0 0 0 4px rgba(0, 230, 118, .14); transition: box-shadow .2s }
+  .knobs input::-moz-range-thumb { width: 18px; height: 18px; border: 0; border-radius: 50%; background: #f4f4f5; box-shadow: 0 1px 4px rgba(0, 0, 0, .5), 0 0 0 4px rgba(0, 230, 118, .14) }
+  .knobs input:active::-webkit-slider-thumb { box-shadow: 0 1px 4px rgba(0, 0, 0, .5), 0 0 0 7px rgba(0, 230, 118, .22) }
+  .knobs input:focus-visible { outline: none }
+  .knobs input:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px #0e0e10, 0 0 0 5px var(--signal) }
+  .knobs input:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px #0e0e10, 0 0 0 5px var(--signal) }
   .tints { display: flex; gap: 8px; margin-left: auto }
   .tints button { width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; background: var(--c) padding-box; box-shadow: 0 0 0 1px var(--line-2); cursor: pointer }
   .tints button[aria-pressed=true] { border-color: #0e0e10; box-shadow: 0 0 0 2px var(--text) }
@@ -172,7 +186,9 @@ const PICKS = [
   .mo { --ns-gap: 14px; --ns-row: 150px; --ns-mosaic-radius: 26px; --ns-pad: 24px; --ns-mosaic-light: #fff }
   /* material vidrio: el mosaico sobre una foto y las piezas de vidrio líquido (sin fondo propio; el
      texto toma el color que contrasta con lo de detrás, --ns-glass-ink) */
-  .mo-stage { position: relative; border-radius: 30px; transition: padding .35s var(--ease) }
+  /* (overflow: las capas de cada vidrio sobresalen un poco de su pieza para la lente; sin recortar,
+     ensanchaban la página en el móvil. overflow no corta el fondo que ve el vidrio) */
+  .mo-stage { position: relative; border-radius: 30px; overflow: hidden; transition: padding .35s var(--ease) }
   .mo-stage.glassy { padding: 18px; background: #0b0b0d url(https://picsum.photos/seed/ns-mosaic-glass/1400/1000.webp) center / cover }
   .glassy .mo > [data-ns-area]:not(.ph) { background: none !important; color: var(--ns-glass-ink, #fff) }
   .glassy .mo p, .glassy .mo .hi h3, .glassy .mo .hi p { color: color-mix(in srgb, var(--ns-glass-ink, #fff) 88%, transparent) }
@@ -219,8 +235,14 @@ const PICKS = [
     .bar > .seg, .bar > .fx { display: none }
     .picks { display: grid; grid-template-columns: 1fr 1fr; gap: 10px }
     .mo-stage.glassy { padding: 10px; border-radius: 24px }
-    .picks label { display: grid; gap: 4px; font-size: var(--t-caption); color: var(--text-2) }
-    .picks select { width: 100%; min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line-2); background: #18181a; color: var(--text); font: inherit; font-size: var(--t-small) }
+    /* selectores: nativos (en el teléfono abren la lista del sistema), con acabado propio: superficie,
+       flecha, etiqueta en mono y estados */
+    .picks label { position: relative; display: grid; gap: 6px; font: 500 10.5px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--text-3) }
+    .picks label::after { content: ''; position: absolute; right: 15px; bottom: 21px; width: 7px; height: 7px; border: solid var(--text-2); border-width: 0 1.6px 1.6px 0; rotate: 45deg; pointer-events: none }
+    .picks select { -webkit-appearance: none; appearance: none; width: 100%; min-height: 48px; padding: 0 38px 0 14px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, .09); background: linear-gradient(180deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, .02)), #141416; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05); color: var(--text); font: 600 var(--t-small)/1 var(--body); letter-spacing: 0; text-transform: none; cursor: pointer; transition: border-color .2s, background-color .2s }
+    .picks select:active { border-color: rgba(0, 230, 118, .5) }
+    .picks select:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px }
+    .picks option { background: #18181a; color: var(--text) }
     .knobs { flex-wrap: wrap; padding: 8px 0 0; border-top: 1px solid var(--line) }
     .knobs label { max-width: none }
     .tints { margin-left: 0 }

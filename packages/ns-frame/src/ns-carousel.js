@@ -9,12 +9,15 @@
 // · Evento change en el carrusel al cambiar de posición (detail { index, slide }); desde JS,
 //   carousel(el) → { go(i), get index(), destroy() }. Se desmonta solo al quitar el atributo o el
 //   elemento.
+// · La diapositiva actual lleva la clase ns-car-on; con data-ns-carousel-current="forma" cambia de
+//   silueta al llegar (morph) y las demás toman data-ns-carousel-shape (o la suya). --ns-snap alinea
+//   las diapositivas (start por defecto; center para verlas centradas con las vecinas asomando).
 import { styles, watch } from './ns-frame.js'
 
 const CSS_ = `@layer ns{
 [data-ns-carousel]{display:flex;gap:var(--ns-gap,16px);overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;overscroll-behavior-x:contain;scrollbar-width:none}
 [data-ns-carousel]::-webkit-scrollbar{display:none}
-[data-ns-carousel]>*{flex:0 0 var(--ns-slide,100%);scroll-snap-align:start;min-width:0}
+[data-ns-carousel]>*{flex:0 0 var(--ns-slide,100%);scroll-snap-align:var(--ns-snap,start);min-width:0}
 .ns-car{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:16px}
 .ns-car>button{font:inherit;font-size:18px;line-height:1;width:40px;height:34px;border:0;cursor:pointer;color:inherit;background:var(--ns-car-bg,rgba(61,224,255,.1));--ns-border:var(--ns-car,#3de0ff)}
 .ns-car>button[aria-disabled=true]{opacity:.35;cursor:default}
@@ -53,10 +56,13 @@ export function carousel(sc) {
   // distancia de cada diapositiva al inicio visible (en RTL el inicio está a la derecha)
   const rtl = () => getComputedStyle(sc).direction == 'rtl'
   const off = (s, r = rtl(), b = sc.getBoundingClientRect()) => { const a = s.getBoundingClientRect(); return r ? b.right - a.right : a.left - b.left }
-  let cur = 0, raf, P = null, max = 0, seen = ''
+  // formas: la de la diapositiva actual y la del resto (si no, la suya de siempre)
+  const curShape = sc.getAttribute('data-ns-carousel-current'), restShape = sc.getAttribute('data-ns-carousel-shape'), own = slides.map(s => s.getAttribute('data-ns'))
+  let cur = 0, on = -1, raf, P = null, SP = null, max = 0, seen = ''
   function go(i) {
     i = Math.max(0, Math.min(n - 1, i))
-    sc.scrollBy({ left: off(slides[i]) * (rtl() ? -1 : 1) })
+    if (!SP) measure()
+    sc.scrollBy({ left: (SP[i] - Math.abs(sc.scrollLeft)) * (rtl() ? -1 : 1) })
   }
   // las posiciones de las diapositivas no dependen del desplazamiento: se miden al cambiar de tamaño,
   // no en cada fotograma (medir todas y reescribir todos los indicadores al desplazar pesaba en un
@@ -64,26 +70,36 @@ export function carousel(sc) {
   function measure() {
     const x = Math.abs(sc.scrollLeft)
     max = sc.scrollWidth - sc.clientWidth
-    // un indicador por posición alcanzable (con 3 visibles de 5, hay 3); si sobra recorrido
-    // tras la última, el final cuenta como una posición más
-    const r = rtl(), b = sc.getBoundingClientRect()
-    P = slides.map(s => off(s, r, b) + x).filter(p => p <= max + 2)
-    // (sin .at(): Safari anterior a 15.4)
+    // dónde se detiene cada diapositiva, según su alineación (--ns-snap: start, center o end)
+    const r = rtl(), b = sc.getBoundingClientRect(), al = getComputedStyle(slides[0] || sc).scrollSnapAlign
+    SP = slides.map(s => { const w = s.getBoundingClientRect().width, a = /center/.test(al) ? (b.width - w) / 2 : /end/.test(al) ? b.width - w : 0; return Math.max(0, Math.min(max, off(s, r, b) + x - a)) })
+    // un indicador por posición alcanzable (con 3 visibles de 5, hay 3): sin repetidas
+    P = SP.filter((p, k) => k == 0 || p - SP[k - 1] > 2)
+    // (sin .at(): Safari anterior a 15.4) si sobra recorrido tras la última, el final cuenta como otra
     if (P[P.length - 1] < max - 2) P.push(max)
     marks.forEach((b, k) => { b.hidden = k >= P.length })
   }
+  const nearest = (L, x) => { const d = L.map(p => Math.abs(p - x)); return d.indexOf(Math.min(...d)) }
   function sync() {
     raf = 0
     if (!P) measure()
-    const x = Math.abs(sc.scrollLeft), d = P.map(p => Math.abs(p - x)), i = d.indexOf(Math.min(...d))
+    const x = Math.abs(sc.scrollLeft), i = nearest(P, x), s = nearest(SP, x)
     // (sólo se escribe lo que cambia)
-    const k = `${x < 2}|${x > max - 2}|${i}`
+    const k = `${x < 2}|${x > max - 2}|${i}|${s}`
     if (k == seen) return
     seen = k
     prev.setAttribute('aria-disabled', x < 2)
     next.setAttribute('aria-disabled', x > max - 2)
     marks.forEach((b, j) => b.setAttribute('aria-current', j == i))
-    if (i != cur) { cur = i; sc.dispatchEvent(new CustomEvent('change', { detail: { index: i, slide: slides[i] } })) }
+    // la diapositiva actual: su clase y, si se pidió, su forma (el núcleo anima el cambio)
+    if (s != on) {
+      on = s
+      slides.forEach((d, j) => {
+        d.classList.toggle('ns-car-on', j == s)
+        if (curShape) { const f = j == s ? curShape : restShape || own[j]; f ? d.getAttribute('data-ns') != f && d.setAttribute('data-ns', f) : d.removeAttribute('data-ns') }
+      })
+    }
+    if (i != cur) { cur = i; sc.dispatchEvent(new CustomEvent('change', { detail: { index: i, slide: slides[s] } })) }
   }
   const onScroll = () => { raf ||= requestAnimationFrame(sync) }
   const onSize = () => { P = null; seen = ''; onScroll() }
@@ -102,7 +118,10 @@ export function carousel(sc) {
   // (la primera medida la pide el ResizeObserver, ya maquetado: medir aquí forzaba la maquetación)
   const api = {
     go, get index() { return cur },
-    destroy() { C.delete(sc); cancelAnimationFrame(raf); ro.disconnect(); sc.removeEventListener('scroll', onScroll); sc.removeEventListener('keydown', key); bar.remove() },
+    destroy() {
+      C.delete(sc); cancelAnimationFrame(raf); ro.disconnect(); sc.removeEventListener('scroll', onScroll); sc.removeEventListener('keydown', key); bar.remove()
+      slides.forEach((d, j) => { d.classList.remove('ns-car-on'); if (curShape) own[j] ? d.setAttribute('data-ns', own[j]) : d.removeAttribute('data-ns') })
+    },
   }
   C.set(sc, api)
   return api

@@ -11,7 +11,9 @@
 // · Palabras de data-ns-glass (se combinan): "clear" casi sin tinte (una lente); "tint" más cuerpo;
 //   "u" la luz en U dentro del cristal; "facet" canto tallado y lente plana por caras; "prism"
 //   dispersión cromática; "border" dibuja también el borde de ns-frame; "lens" fuerza la lente donde
-//   se usaría el desenfoque nativo.
+//   se usaría el desenfoque nativo; "frost" vidrio esmerilado: desenfoque nativo, tinte y un canto
+//   fino, sin lente, sin WebGL ni filtros de luz (ligero e igual en todos los motores: para muchas
+//   piezas a la vez, o en el móvil). Es lo que usa todo vidrio con calidad baja (quality()).
 // · Variables: las de ns-frame/liquid (--ns-glass-*), todas opcionales.
 // · Sigue a la forma también a mitad de un morph (data-ns-hover, data-ns-press): el núcleo avisa con
 //   el evento ns-shape y el vidrio lee la forma intermedia (pathOf).
@@ -66,7 +68,7 @@ export function glass(el, o = {}) {
     const d = s ? pathOf(el) || path(s, w, hh) : rounded(el, w, hh)
     return { d, w, h: hh }
   }
-  const h = liquid(el, { glass: true, prism: () => tok().includes('prism'), hard: () => tok().includes('facet'), path: shape, ...o })
+  const h = liquid(el, { glass: true, prism: () => tok().includes('prism'), hard: () => tok().includes('facet'), frost: () => tok().includes('frost'), path: shape, ...o })
   el.addEventListener('ns-shape', h.frame)
   // un marco de ns-frame deja de recortarse (lo lee el núcleo al pintar)
   if (el.hasAttribute('data-ns') || el.localName == 'ns-frame') update(el)

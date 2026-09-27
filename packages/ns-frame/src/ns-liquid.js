@@ -1211,7 +1211,8 @@ export function liquid(el, o = {}) {
       // (lente por defecto según el tamaño, como el cristal de Apple: el canto dobla el fondo en casi
       // la mitad del lado corto; una barra o un botón refractan enteros, un panel grande sólo su borde)
       const ms = Math.min(el.offsetWidth, el.offsetHeight) || 48, cl = (v, a, b) => Math.max(a, Math.min(b, v))
-      low = quality() == 'low'
+      // (calidad baja o "frost": el vidrio ligero)
+      low = quality() == 'low' || !!o.frost?.()
       V = { k: num('--ns-liquid', 14), lens: num('--ns-glass-lens', cl(ms * .55, 10, 44)), edge: num('--ns-glass-edge', 8), depth: num('--ns-glass-depth', cl(ms * .42, 8, 36)), blur: num('--ns-glass-blur', lt ? 7 : 3), sat: num('--ns-glass-sat', lt ? 1.2 : 1.3), src: LENS || !glassy() || low ? null : source(), prism: !!o.prism?.(), hard: !!o.hard?.(), shadow: cs.getPropertyValue('--ns-glass-shadow').trim(), glow: cs.getPropertyValue('--ns-glass-glow').trim(), glowSize: num('--ns-glass-glow-size', 16), zoom: Math.min(1, num('--ns-glass-zoom', 0)),
         // canto: intensidad y reflejo opuesto (su fuerza y su color: la luz en U lo tiñe)
         light: lt, rim: num('--ns-glass-rim', 1), back: num('--ns-glass-rim-back', .5), backColor: cs.getPropertyValue('--ns-glass-rim-color').trim() || '#fff' }
@@ -1315,7 +1316,12 @@ export function liquid(el, o = {}) {
     // segundo reflejo: un contorno 1,6 px hacia dentro (sólo en vidrio)
     // (en Chromium la lente ya ilumina el canto dentro de su filtro: un segundo contorno entero, con su
     // reflejo opuesto, se leía como una burbuja dentro de otra; allí queda sólo el brillo, tenue)
-    if (g && d) rim.setAttribute('filter', `url(#${material({ rim: true, b: V.hard ? .8 : 1.3, s: 1.3, ks: +(.95 * V.rim * (LENS && lensPx ? .5 : 1)).toFixed(2), n: 110, back: LENS && lensPx ? .05 : V.back, backColor: V.backColor })})`)
+    // (en el vidrio ligero, sin filtro de luz: el canto es un trazo fino y el reflejo se oculta. El
+    // filtro de iluminación en cada pieza dejaba puntos blancos en las esquinas en WebKit y cuesta GPU)
+    rim.style.display = g && low ? 'none' : ''
+    path.style.stroke = g && low ? 'var(--ns-glass-frost-edge,rgba(255,255,255,.16))' : ''
+    path.style.strokeWidth = g && low ? '1px' : ''
+    if (g && d && !low) rim.setAttribute('filter', `url(#${material({ rim: true, b: V.hard ? .8 : 1.3, s: 1.3, ks: +(.95 * V.rim * (LENS && lensPx ? .5 : 1)).toFixed(2), n: 110, back: LENS && lensPx ? .05 : V.back, backColor: V.backColor })})`)
     el.classList.toggle('ns-glass', g)
     // (estilo en línea: el relleno de la capa en CSS ganaría a un atributo fill)
     path.style.fill = g ? `url(#${id}s)` : ''

@@ -68,13 +68,14 @@ const MODES = ['open', 'split', 'iris', 'wipe', 'drop']
       </article>
 
       <article class="c car-c" data-ns="all squircle 30">
-        <h3>Carrusel</h3>
-        <p>Desliza con el gesto del sistema; flechas e indicadores funcionan con teclado.</p>
-        <div class="car" data-ns-carousel aria-label="Rutas destacadas">
+        <h3>Carrusel con forma</h3>
+        <p>El gesto y el ajuste son los del sistema. La diapositiva que llega al centro cambia de silueta (morph) y su rótulo es vidrio sobre la foto; flechas e indicadores con forma, también con teclado.</p>
+        <div class="car" data-ns-carousel data-ns-carousel-current="tl+br bevel 28; radius 3" data-ns-carousel-shape="all squircle 24" aria-label="Rutas destacadas">
           {SLIDES.map(([seed, alt, t, s]) => (
-            <article class="slide" data-ns="media"><img src={`https://picsum.photos/seed/${seed}/480/360.webp`} alt={alt} width="480" height="360" loading="lazy"><div><b>{t}</b><span>{s}</span></div></article>
+            <article class="slide"><img src={`https://picsum.photos/seed/${seed}/720/900.webp`} alt={alt} width="720" height="900" loading="lazy"><div class="lbl" data-ns-glass><b>{t}</b><span>{s}</span></div></article>
           ))}
         </div>
+        <code class="tag">data-ns-carousel-current · data-ns-carousel-shape · --ns-snap: center</code>
       </article>
     </div>
     <p class="after"><a class="more" href="/docs/componentes">Todos los componentes<Arrow /></a></p>
@@ -108,7 +109,7 @@ const MODES = ['open', 'split', 'iris', 'wipe', 'drop']
   import { near } from '../../scripts/near'
 
   // los módulos de la sección, al acercarse (skel, carousel y pop se activan solos con sus atributos)
-  near(document.getElementById('componentes')!, () => { import('ns-frame/skel'); import('ns-frame/carousel'); import('ns-frame/pop') })
+  near(document.getElementById('componentes')!, () => { import('ns-frame/skel'); import('ns-frame/carousel'); import('ns-frame/pop'); import('ns-frame/glass') })
   const toast = async (...a: Parameters<typeof import('ns-frame/toast').toast>) => (await import('ns-frame/toast')).toast(...a)
 
   const MSG: Record<string, () => void> = {
@@ -180,15 +181,20 @@ const MODES = ['open', 'split', 'iris', 'wipe', 'drop']
   .sk img { width: 56px; height: 56px; object-fit: cover; flex: none }
   .sk b { display: block; font-size: var(--t-control) }
   .sk span, .slide span { font-size: var(--t-small); color: var(--text-2) }
-  .car { --ns-slide: calc((100% - 24px) / 3); margin-top: 10px }
-  .slide { background: var(--surface-2); --ns-border: var(--line); display: flex; flex-direction: column }
-  .slide img { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover }
-  /* en escritorio el carrusel ocupa tres filas: las diapositivas crecen hasta llenar la tarjeta */
-  @media (min-width: 961px) {
-    .car-c .slide img { aspect-ratio: 2 / 3 }
-    .car-c .car { margin-top: auto }
-  }
-  .slide div { padding: 12px 16px 16px }
+  /* centradas, con las vecinas asomando; la actual, con su forma y a tamaño completo */
+  /* (unidades de contenedor: el carrusel mide la tarjeta + 44 px; así la primera y la última también
+     quedan centradas) */
+  .car-c { container-type: inline-size }
+  .car { --w: 62cqw; --ns-slide: var(--w); --ns-snap: center; --ns-gap: 12px; padding-inline: calc((100cqw + 2 * var(--pad, 22px) - var(--w)) / 2); margin: 10px calc(-1 * var(--pad, 22px)) 0; --ns-morph-time: 380ms }
+  .slide { position: relative; background: #0b0b0d; --ns-border: rgba(255, 255, 255, .1); opacity: .5; scale: .92; transition: opacity .4s var(--ease), scale .4s var(--ease) }
+  .slide:global(.ns-car-on) { opacity: 1; scale: 1 }
+  .slide img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover }
+  /* el rótulo: vidrio sobre la foto (el texto contrasta solo con --ns-glass-ink) */
+  .lbl { position: absolute; left: 12px; right: 12px; bottom: 12px; padding: 12px 14px; border-radius: 16px; color: var(--ns-glass-ink, #fff); display: grid; gap: 2px }
+  .lbl span { color: color-mix(in srgb, var(--ns-glass-ink, #fff) 78%, transparent) }
+  .car-c .tag { margin-top: 12px; font: var(--t-caption) var(--mono); color: var(--text-3) }
+  @media (min-width: 961px) { .car-c .car { margin-top: auto } }
+  @media (prefers-reduced-motion: reduce) { .slide { transition: none } }
   .slide b { display: block; font: 600 var(--t-body)/1.2 var(--display); font-stretch: 106% }
   dialog { border: 0; padding: 0; background: transparent; color: var(--text); max-width: min(480px, calc(100% - 32px)) }
   dialog::backdrop { background: rgba(5, 5, 6, .7); backdrop-filter: blur(6px) }
@@ -197,6 +203,6 @@ const MODES = ['open', 'split', 'iris', 'wipe', 'drop']
   .dlg p { margin: 0; color: var(--text-2); font-size: var(--t-control) }
   .dlg .btn { justify-self: start }
   :global(.ns-toasts) { font-family: var(--body) }
-  @media (max-width: 960px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: 'pop press' 'dlg toast' 'skel sht' 'car car' } .car { --ns-slide: 46% } }
-  @media (max-width: 640px) { .grid { grid-template-columns: 1fr; grid-template-areas: 'pop' 'press' 'dlg' 'sht' 'toast' 'skel' 'car' } .car { --ns-slide: 78% } .c { padding: 20px 18px } }
+  @media (max-width: 960px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: 'pop press' 'dlg toast' 'skel sht' 'car car' } .car { --w: 48cqw } }
+  @media (max-width: 640px) { .grid { grid-template-columns: 1fr; grid-template-areas: 'pop' 'press' 'dlg' 'sht' 'toast' 'skel' 'car' } .car { --w: 78cqw } .c { padding: 20px 18px; --pad: 18px } }
 </style>

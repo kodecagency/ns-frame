@@ -463,7 +463,8 @@ function light(el, parts, W, H, holes, reduce, pl, pt, grid) {
   L.tr.replaceChildren(...(want.includes('trace') && !reduce ? P(ds, { pathLength: 100 }) : []))
   // corriente: dos o tres luces que recorren la figura entera, por fuera y por los huecos del centro
   const SM = want.includes('stream') && !reduce && grid ? streams([...ds, ...os], Math.min(grid.gx, grid.gy), grid.speed, L.id, L.svg) : null
-  L.st.replaceChildren(...(SM ? SM.lines : []))
+  // (su estela ya no es un trazo libre: se veía como líneas duras, también cruzando los huecos)
+  L.st.replaceChildren()
   const has = k => want.includes(k), full = (a = {}) => mk('rect', { x: 0, y: 0, width: fx(W), height: fx(H), ...a })
   const C = holes[0]?.O || [W / 2, H / 2], S = Math.max(...[[0, 0], [W, 0], [0, H], [W, H]].map(([x, y]) => Math.hypot(x - C[0], y - C[1])))
   const layer = (g, fill) => {
@@ -478,7 +479,7 @@ function light(el, parts, W, H, holes, reduce, pl, pt, grid) {
     if (has('pulse') && !fill) kids.push(full({ class: 'ns-mo-pl', fill: LIGHT }))
     if (has('glow')) kids.push(full({ fill: `url(#${L.id}g)`, opacity: fill ? 1 : .8 }))
     // los focos de la corriente encienden los bordes (y, tenue, el fondo) por donde pasan
-    if (SM) for (const s of SM.spots) kids.push(s(fill ? 70 : 110, fill ? .5 : 1))
+    if (SM) { if (!fill) kids.push(...SM.lines); for (const s of SM.spots) kids.push(s(fill ? 70 : 110, fill ? .5 : 1)) }
     g.replaceChildren(...kids)
   }
   layer(L.top, 0); layer(L.bg, 1)
@@ -563,7 +564,9 @@ function streams(shapes, gap, speed, id, host) {
     for (const [len, op] of TAIL) {
       // la estela termina donde termina la cabeza: se desplaza hacia atrás lo que mide de más
       const c = Math.min(60, len * u), sh = c - ch
-      const e = mk('path', { d, pathLength: 100 }, { 'stroke-dasharray': `${fx(c)} 300`, opacity: op })
+      // (va en la capa enmascarada por los bordes: sólo enciende el contorno de las piezas, con su
+      // degradado; en los huecos, nada. Un trazo ancho: la máscara deja la parte que cae en el borde)
+      const e = mk('path', { d, pathLength: 100 }, { 'stroke-dasharray': `${fx(c)} 300`, opacity: op, fill: 'none', stroke: LIGHT, 'stroke-width': '8px', 'stroke-linecap': 'round' })
       // Web Animations (no var() dentro de @keyframes: en Safari no es fiable): la luz entra por un
       // extremo de la ruta y sale por el otro
       e.animate([{ strokeDashoffset: ch + sh }, { strokeDashoffset: -100 + sh }], opt)

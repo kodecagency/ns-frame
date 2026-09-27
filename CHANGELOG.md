@@ -10,7 +10,10 @@
 - Mosaico: `--ns-mosaic-glow-size` y `--ns-mosaic-ripple-time`. Landing: un efecto a la vez, con velocidad, intensidad y color; en el móvil, selectores en dos columnas en vez de una fila que se desliza.
 - **Isla en el escritorio:** con ratón y 900 px o más, hoja de 600 px con cuatro columnas, sin asa, con respuesta al puntero; la rejilla de secciones pone tantas columnas como quepan (`--ns-isle-tile-min`). La landing la usa también en PC.
 - **Vidrio: el contenido siempre encima**, también un texto suelto (antes quedaba bajo las capas del vidrio): el elemento aísla su apilamiento y las capas van detrás. Combinado con `ns-frame/bento`, cada pieza de vidrio sigue la forma que le da el bento.
-- Landing: fuera la sección de relieve (el módulo sigue en la librería).
+- **`data-ns-glass="frost"`**: vidrio esmerilado sin lente, sin WebGL y sin filtros de luz (desenfoque nativo, tinte y canto fino), igual en todos los motores; es el que usa todo vidrio con calidad baja. En el iPhone, nueve piezas con lente a la vez salían negras, con bordes dentados y puntos blancos en las esquinas.
+- **Mosaico, efecto `stream`:** la estela sólo enciende el contorno de las piezas (va en la capa enmascarada por los bordes): ya no hay líneas duras cruzando los huecos.
+- **Carrusel:** `data-ns-carousel-current` y `data-ns-carousel-shape` (la diapositiva que llega cambia de silueta con morph), clase `ns-car-on`, `--ns-snap` (centradas, con las vecinas asomando); las posiciones siguen la alineación real.
+- Landing: fuera la sección de relieve (el módulo sigue en la librería); mosaico con material vidrio; selectores y deslizadores con acabado propio.
 - `ns-mark`: dos líneas con los bordes casi alineados se igualan (sin escalones diminutos).
 - Autoría: © Francesco Sierchio (Kodec Agency) en la licencia y en la cabecera de cada archivo compilado.
 
