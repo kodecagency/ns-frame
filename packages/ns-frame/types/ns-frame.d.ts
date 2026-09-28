@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // Tipos del núcleo de ns-frame (también válidos para ns-frame/lite).
 // Al importarse, el núcleo activa solo todo elemento con data-ns / data-ns-nest y el custom element <ns-frame>.
 

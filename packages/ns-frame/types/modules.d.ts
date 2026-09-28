@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // Tipos de los módulos opcionales de ns-frame. Cada módulo se importa por su ruta:
 // ns-frame/css, ns-frame/static, ns-frame/vt, ns-frame/toast, ns-frame/skel, ns-frame/carousel,
 // ns-frame/pop, ns-frame/bento, ns-frame/mosaic, ns-frame/sheet, ns-frame/isle, ns-frame/concentric,

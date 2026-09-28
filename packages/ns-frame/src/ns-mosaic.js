@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*! ns-frame/mosaic · mosaico de piezas libres: áreas en L, T o U que encajan con hueco constante */
 // <div class="ns-mosaic" data-ns-mosaic style="--ns-areas: 'a a b' 'c d b' 'c d d'">
 //   <article data-ns-area="a">…</article> <article data-ns-area="b">…</article> …

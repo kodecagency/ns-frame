@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*! ns-frame/vt · transiciones entre vistas (View Transitions) que conservan los cortes */
 // import { morph } from './ns-vt.js'
 // morph(card, () => { grid.hidden = true; detail.hidden = false }, detail)

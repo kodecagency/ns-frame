@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*! ns-frame/static · formas sin JS en runtime: compila data-ns-static a CSS shape() en el build */
 // Para Node (build o SSR), no para el navegador.
 //

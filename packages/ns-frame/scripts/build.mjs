@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // Genera dist/: núcleo, lite (sólo recortes), extras bajo demanda y módulos opcionales.
 // Pipeline: esbuild (bundle + minify + tree-shaking) → terser (3 pasadas) → informe gzip y brotli.
 // esbuild y terser son devDependencies con versión fija (pnpm-lock.yaml): nada se descarga al construir.
@@ -25,9 +26,9 @@ for (const f of readdirSync(dir).filter(f => f.endsWith('.js'))) {
   })
   if (t != s) writeFileSync(`${dir}/${f}`, t)
 }
-// cada archivo compilado lleva el aviso de autoría y licencia (la MIT exige conservarlo); terser
+// cada archivo compilado lleva el aviso de autoría y licencia (la Apache-2.0 exige conservarlo); terser
 // respeta los comentarios /*! */
-const NOTICE = '/*! ns-frame · MIT © 2026 Francesco Sierchio (Kodec Agency) · https://github.com/kodecagency/ns-frame */'
+const NOTICE = '/*! ns-frame · Apache-2.0 © 2026 Francesco Sierchio (Kodec Agency) · https://github.com/kodecagency/ns-frame */'
 const esb = o => buildSync({ minify: true, logLevel: 'warning', tsconfigRaw: {}, legalComments: 'none', banner: { js: NOTICE, css: NOTICE }, ...o })
 const bundle = (src, dst, o) => esb({ entryPoints: [`${dir}/${src}`], bundle: true, format: 'esm', external: ['./ns-extra.js'], outfile: `${out}/${dst}`, ...o })
 

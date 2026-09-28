@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*! ns-frame/light · la luz de la página: materiales compilados en filtros SVG de iluminación */
 // Una sola luz direccional para toda la página, compartida por el relieve (ns-frame/relief) y el
 // canto del vidrio (ns-frame/liquid, ns-frame/glass): todo lo que tiene volumen se ilumina desde el

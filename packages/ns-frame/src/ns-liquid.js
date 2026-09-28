@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*! ns-frame/liquid · formas líquidas y vidrio líquido: elementos cercanos se funden, con borde vectorial nítido */
 // <nav data-ns-liquid style="--ns-liquid: 14px; --ns-liquid-fill: #1c1c1f">
 //   <button>…</button> <button>…</button> <button>…</button>     ← se ven como una sola gota

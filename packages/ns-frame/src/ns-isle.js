@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*! ns-frame/isle · isla de navegación: cápsula flotante que sigue la sección actual y abre una hoja */
 // import { isle } from 'ns-frame/isle'
 // const nav = isle(document.querySelector('[data-ns-isle]'), { panel: document.getElementById('menu') })

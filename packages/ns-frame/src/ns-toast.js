@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*! ns-frame/toast · notificaciones con forma: capa superior nativa, apertura y tiempo en el borde */
 // import { toast } from './ns-toast.js'
 // toast('Cambios guardados')

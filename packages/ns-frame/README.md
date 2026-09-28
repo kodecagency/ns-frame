@@ -37,4 +37,4 @@ Every entry lives in `dist/` (`ns-frame/toast` → `dist/ns-toast.js`, `ns-frame
 
 Documentation (Spanish), demo and AI agent skill: **https://github.com/kodecagency/ns-frame**
 
-MIT © 2026 Francesco Sierchio · Kodec Agency. Al usarla o redistribuirla, conserva este aviso y el archivo LICENSE.
+Apache-2.0 © 2026 Francesco Sierchio · Kodec Agency. Al redistribuirla, conserva los archivos LICENSE y NOTICE.

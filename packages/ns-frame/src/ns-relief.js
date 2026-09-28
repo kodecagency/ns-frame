@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*! ns-frame/relief · motor de materiales: volumen y luz calculados de la silueta exacta */
 // <article data-ns="card" data-ns-relief>…</article>
 // <button data-ns-relief aria-pressed="false">Auto</button>

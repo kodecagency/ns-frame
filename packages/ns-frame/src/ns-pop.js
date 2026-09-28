@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*! ns-frame/pop · popovers y tooltips con la flecha integrada en la forma */
 // <button popovertarget="info">Info</button>
 // <div popover id="info" data-ns-arrow="all round 8">…</div>          ← click (Popover API)

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*! ns-frame/fx · texto que se "descifra" al entrar en pantalla (data-ns-decode[="hover"]) y pausa fuera de pantalla de los efectos animados de ns-fx.css */
 // Duración: data-ns-decode-time (ms) o --ns-decode-time (900 ms). También los elementos que se añaden
 // después (con watch del núcleo), y se desmonta al quitar el atributo.

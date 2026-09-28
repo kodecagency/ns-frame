@@ -1,4 +1,5 @@
-/*! ns-frame v0.10.0 · MIT · Kodec Agency · formas nativas para la web: cortes, chaflanes, scoops y fillets */
+// SPDX-License-Identifier: Apache-2.0
+/*! ns-frame · Kodec Agency · formas nativas para la web: cortes, chaflanes, scoops y fillets */
 
 // build "lite" (--define:NS_LITE=true): sólo recortes, sin capa SVG, gradientes ni morph
 const K = Math.SQRT1_2, EPS = 1e-6

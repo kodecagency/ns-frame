@@ -1,9 +1,9 @@
 {
   "name": "ns-frame",
-  "version": "0.17.1",
+  "version": "0.18.0",
   "description": "Native UI shapes for the web: bevels, notches, scoops, squircles and fillets on any corner of any element, with real borders, morph, WebGL frosted glass, shaped components and form controls. No images, no dependencies, strict-CSP safe.",
   "type": "module",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "author": "Francesco Sierchio <260309036+kodecagency@users.noreply.github.com> (https://github.com/kodecagency)",
   "homepage": "https://ns-frame-site.vercel.app",
   "repository": {
@@ -44,7 +44,7 @@
     "./fx.css": "./dist/ns-fx.css",
     "./package.json": "./package.json"
   },
-  "files": ["dist", "src", "types", "README.md", "LICENSE"],
+  "files": ["dist", "src", "types", "README.md", "LICENSE", "NOTICE"],
   "engines": { "node": ">=20" },
   "scripts": {
     "build": "node scripts/build.mjs",

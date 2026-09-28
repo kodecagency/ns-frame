@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*! ns-frame/sheet · hoja que se arrastra como en una app nativa: sigue al dedo y se cierra al soltarla */
 // import { sheet } from 'ns-frame/sheet'
 // const s = sheet(panel, { onClose: () => dialog.close(), onProgress: p => … })

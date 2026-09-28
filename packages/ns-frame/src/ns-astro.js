@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*! ns-frame/astro · integración de Astro: compila data-ns-static a CSS al terminar el build */
 // astro.config.mjs
 //   import nsStatic from 'ns-frame/astro'

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*! ns-frame/extra · se carga bajo demanda: degradados en bordes y animaciones de borde */
 // El núcleo lo importa sólo cuando algún elemento lo necesita y le pasa sus helpers,
 // así este módulo no importa nada y no crea dependencias circulares ni chunks compartidos.

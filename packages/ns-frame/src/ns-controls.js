@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*! ns-frame/controls · controles de serie: segmentos, fichas, campos, deslizadores y muestras de color */
 // <div role="group" aria-label="Plantilla" data-ns-segment data-ns-choice> <button aria-pressed="true">A</button> … </div>
 // <div role="group" aria-label="Efecto" data-ns-chips data-ns-choice> <button>…</button> … </div>

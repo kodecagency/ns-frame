@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*! ns-frame/bento · bento unificado: la cuadrícula se lee como un solo objeto esculpido */
 // <div class="ns-bento" data-ns-bento="outer bevel 28; inner round 10">
 //   <article class="ns-big">…</article> <article>…</article> <article class="ns-w2">…</article> …

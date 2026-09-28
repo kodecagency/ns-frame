@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*! ns-frame/link · líneas HUD que conectan un elemento con otro: data-ns-link="#destino" */
 // Las coordenadas son de página (no de ventana): el scroll no obliga a recalcular nada.
 // Se recalcula sólo cuando cambia el tamaño de algún extremo, la altura del documento o la ventana,

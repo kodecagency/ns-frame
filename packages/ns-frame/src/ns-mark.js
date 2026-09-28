@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*! ns-frame/mark · resaltado continuo de texto en varias líneas, con curvas cóncavas y convexas nítidas */
 // <h2>Diseña con <mark data-ns-mark>formas que se adaptan a cada línea del texto</mark></h2>
 //

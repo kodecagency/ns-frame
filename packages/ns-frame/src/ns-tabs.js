@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*! ns-frame/tabs · pestañas de vidrio líquido: el indicador se arrastra, se estira y encaja con un muelle */
 // <nav data-ns-tabs aria-label="Secciones">
 //   <button aria-pressed="true">Inicio</button> <button>Buscar</button> <button>Perfil</button>

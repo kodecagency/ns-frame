@@ -27,6 +27,20 @@ pnpm dev       # sitio de demo y documentación en http://localhost:4321
 - **Peso**: cada byte del núcleo cuenta. Lo opcional va en un módulo o en `ns-extra.js` (bajo demanda).
 - **Dependencias**: ninguna de runtime. Las de desarrollo, con versión exacta y sólo con pnpm.
 
+## Licencia y firma de los commits (DCO)
+
+ns-frame se publica con licencia [Apache-2.0](LICENSE). Al contribuir, aceptas que tu aporte se publique con esa misma licencia (sección 5), incluida su concesión de patentes.
+
+Cada commit debe llevar la firma del [Developer Certificate of Origin](https://developercertificate.org/): con ella declaras que escribiste el cambio o que tienes derecho a aportarlo con esta licencia. Se añade con `-s`:
+
+```bash
+git commit -s -m "fix: …"
+```
+
+Eso agrega al final del mensaje una línea `Signed-off-by: Tu Nombre <tu@correo>`, con el nombre y el correo de tu configuración de git. Un pull request con commits sin firmar no se fusiona hasta que se firmen (`git rebase --signoff main` los firma todos).
+
+No aportes código copiado de otros proyectos ni generado a partir de ellos si su licencia no es compatible con Apache-2.0, ni nada que no puedas publicar (código de un empleador, secretos, datos privados).
+
 ## Reportar vulnerabilidades
 
 No abras un issue público: mira [SECURITY.md](SECURITY.md).

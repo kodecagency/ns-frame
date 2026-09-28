@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*! ns-frame/css · compila un shape a CSS shape() puro: responsive, cero JS en runtime */
 import { geometry, commands } from './ns-frame.js'
 

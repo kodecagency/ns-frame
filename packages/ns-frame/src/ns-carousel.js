@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*! ns-frame/carousel · carrusel con scroll-snap nativo, flechas e indicadores con forma */
 // <div data-ns-carousel aria-label="Proyectos" style="--ns-slide: 80%"> <article>…</article> … </div>
 // El desplazamiento, el snap y el gesto táctil son del navegador; esto sólo añade los controles.

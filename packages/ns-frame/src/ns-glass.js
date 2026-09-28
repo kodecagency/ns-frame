@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*! ns-frame/glass · vidrio líquido en cualquier elemento y con cualquier forma */
 // <aside data-ns-glass>…</aside>                          ← con su border-radius (cada esquina)
 // <article data-ns="tl+br bevel 24; notch top 30% 12" data-ns-glass>…</article>   ← con su forma

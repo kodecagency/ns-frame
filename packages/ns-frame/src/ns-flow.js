@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*! ns-frame/flow · el texto llena la forma: recorre su interior con margen constante (shape-inside que CSS no tiene) */
 // <article data-ns="all bevel 60; top cut center 40% 14" data-ns-flow style="height: 320px">
 //   <h3>…</h3><p>…</p>                          ← las líneas se ajustan a los chaflanes y al corte

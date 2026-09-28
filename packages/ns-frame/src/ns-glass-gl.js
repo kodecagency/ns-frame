@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*! ns-frame/glass-gl · motor WebGL de un grupo de vidrio sobre un fondo conocido */
 // Lo carga ns-frame/glass cuando un grupo (data-ns-glass-group) tiene detrás una imagen, un vídeo o
 // un fondo CSS con url(): el vidrio de todas sus piezas se dibuja en UN lienzo y en UNA pasada.

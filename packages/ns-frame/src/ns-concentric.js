@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*! ns-frame/concentric · esquinas concéntricas automáticas: el hijo repite la forma del padre, desplazada el hueco */
 // <article data-ns="tl+br bevel 36; tr+bl round 24">
 //   <img data-ns-concentric src="…">          ← chaflanes de 36 − 0,59·hueco y redondeos de 24 − hueco

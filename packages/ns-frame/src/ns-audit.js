@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*! ns-frame/audit · herramienta de desarrollo: detecta texto o controles recortados por la forma */
 // En la consola:  (await import('/ns-frame/ns-audit.js')).audit()
 // Devuelve la lista de problemas y, con { mark: true }, los resalta en la página.

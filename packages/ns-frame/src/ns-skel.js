@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /*! ns-frame/skel · skeletons de carga que heredan la forma del componente real */
 // <article data-ns="card" data-ns-skeleton>…contenido real o de relleno…</article>
 // Quita el atributo cuando lleguen los datos: los huesos se desvanecen y el contenido aparece

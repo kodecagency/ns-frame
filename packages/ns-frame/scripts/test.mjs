@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // Verifica que los builds minificados producen exactamente lo mismo que el código fuente.
 import * as src from '../src/ns-frame.js'
 import * as min from '../dist/ns-frame.js'

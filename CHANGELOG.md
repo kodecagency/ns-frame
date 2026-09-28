@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.18.0 — licencia Apache-2.0
+
+Sin cambios de código ni de aspecto.
+
+- **Licencia: de MIT a Apache-2.0.** Sigue siendo libre, también para uso comercial, y añade una concesión expresa de patentes de quienes contribuyen (y la retira a quien demande por patentes sobre la librería), que la MIT no tiene. Al redistribuirla hay que conservar `LICENSE` y `NOTICE` e indicar los archivos modificados. Las versiones hasta la 0.17.1 siguen con su licencia MIT.
+- **`NOTICE`** en la raíz y en el paquete (se publica con él), con la autoría y la historia de la licencia.
+- **Identificador SPDX** (`SPDX-License-Identifier: Apache-2.0`) en la primera línea de cada fuente, tipo y script; el aviso de los archivos compilados dice Apache-2.0.
+- **Contribuciones con DCO:** cada commit se firma con `git commit -s` (ver [CONTRIBUTING](CONTRIBUTING.md)).
+
 ## 0.17.1 — la luz del mosaico en el compositor
 
 - **`ns-frame/mosaic`:** la capa de luz (bordes y fondos de todas las piezas) pasa de un SVG con máscaras, filtro de resplandor y focos SVG a capas HTML: máscaras de imagen (se rasterizan al cambiar la figura), cada luz una capa que sólo cambia con `transform`/`opacity` (barrido, escaneo, ondas, pulso, corriente, onda al tocar) y el foco que sigue al puntero movido con `transform` (antes cambiaba un atributo y repintaba). El resplandor, antes un filtro SVG bajo el que nada iba a la GPU, son dos filtros CSS equivalentes (halo desenfocado + `drop-shadow`). Los focos se vuelven a arrancar al entrar en pantalla para que el navegador los componga. En la landing, quieta sobre el mosaico: pintado y maquetación de ~140 ms/s a casi cero; reconstrucción de capas de 397 a 92 ms/s (PC) y de 161 a 59 (móvil); fotogramas del hilo principal de ~135 a 25–40 por segundo. Mismo aspecto en capturas congeladas de cinco efectos. El trazo libre (`trace`) sigue en SVG.
