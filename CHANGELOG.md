@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.16.0 — motor más barato: lecturas limpias, sólo lo cercano y el compositor
+
+Sin cambios de API ni de aspecto. Medido en una tienda de prueba (220 tarjetas, ~1100 marcos, isla y carrito con vidrio, 4 `scan`) a 390×844, dpr 3 y CPU ×4, frente a 0.15.1 (tabla completa en [Rendimiento](docs/rendimiento.md)).
+
+- **Núcleo, lecturas limpias:** todo lo que lee del estilo se lee justo después de maquetar (en un aviso de `ResizeObserver`), nunca con el DOM recién tocado. `update()`, los marcos que se acercan y los que esperaban al módulo de extras van a una cola que se atiende en ese momento (lo pide un centinela de 1×1 px). Maquetación forzada al cargar: de 1,2–3,5 s a 11–45 ms.
+- **Núcleo, escrituras en trozos de 40** cediendo el hilo entre trozos, sin lecturas de por medio; cada lectura lleva su generación y una escritura vieja no pisa a una nueva. Bloqueo al añadir tandas de 12 tarjetas: de 760 a 382 ms.
+- **Núcleo, sólo lo cercano también al cargar:** en el primer aviso, la posición de cada marco decide si se procesa ya o al acercarse (antes, al cargar se procesaban todos). Invalidaciones de la librería al cargar: de miles a ~30; hilo principal de la carga, −10 %.
+- **`ns-frame/isle`:** sin leer `scrollY` ni `scrollHeight` al montar (medio segundo de maquetación forzada en la tienda); el final de la página se mide en el siguiente fotograma de desplazamiento, y el ancho del texto, en un aviso de `ResizeObserver`.
+- **`ns-frame/glass`:** el primer dibujo, en el aviso de `ResizeObserver` (sin forzar maquetación); al acercarse a la pantalla, en el siguiente momento limpio.
+- **`data-ns-motion="scan"` en el compositor:** capa HTML con la máscara del trazo (rasterizada una vez) y la banda movida sólo con `transform`. Igual recorrido, banda, ángulo, color, duración, tope de fps y pausas; en capturas congeladas en tres momentos, a 390 px dpr 3 y en escritorio, difiere como mucho el 0,33 % de los píxeles, todos en la línea de 1 px del tramo encendido (suavizado del borde de la máscara). WebKit ya no repinta la SVG en cada fotograma; en el scroll, los pintados bajan de 8 a 4 por segundo.
+- **Luz en U animada** (`ns-u-live`, `-tide`, `-surge`): los hijos que no usan sus variables cortan la herencia; cada fotograma recalcula 18 elementos en vez de 66 en la tarjeta de la landing, y la isla al plegarse encima deja de perder fotogramas (de 22–62 de más de 20 ms a 3).
+- **Corregido:** una apertura (`data-ns-enter`) o `shapeOf()` sobre un marco con tamaño pero aún sin pintar ya no falla: `ready()` lo pinta en el acto.
+
 ## 0.15.1 — barrido continuo en cualquier proporción
 
 - **`data-ns-motion="scan"`:** la banda viaja en la dirección de la diagonal de la forma y cruza de justo fuera a justo fuera en línea recta, en bucle sin tiempo muerto (antes se detenía el 38 % del ciclo fuera del marco y, en formas altas y angostas, sólo barría en horizontal: se veía cortada y parecía quedarse a mitad de camino). El ancho de la banda y el recorrido salen de la proporción de la forma; la duración, de `--ns-motion-time` (3,2 s por defecto).

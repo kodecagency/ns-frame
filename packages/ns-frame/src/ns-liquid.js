@@ -1475,8 +1475,13 @@ export function liquid(el, o = {}) {
   // (se releen los estilos; la forma sólo se rehace si cambió algo que la define: un grupo que se
   // arrastra cambia su estilo en cada frame y no debe recalcular el campo)
   const stale = () => { dirty = true; wake() }
-  const ro = new ResizeObserver(() => { resized = true; stale() })
+  // (se dibuja en el mismo aviso: llega justo después de maquetar, con el estilo ya calculado, y medir
+  // ahí no fuerza nada. Un requestAnimationFrame va antes del recálculo: el primer dibujo obligaba a
+  // recalcular la página entera. Lo que sigue en marcha, ya sí, fotograma a fotograma)
+  const ro = new ResizeObserver(() => { resized = true; dirty = true; idle = 0; raf || tick(performance.now()) })
   ro.observe(el)
+  // el siguiente momento limpio: observar de nuevo provoca otro aviso en el fotograma siguiente
+  const soon = () => { dirty = true; ro.unobserve(el); ro.observe(el) }
   // elementos con transiciones o animaciones CSS en curso (si uno termina antes que otra de sus
   // propiedades, la comprobación final con getAnimations evita parar antes de tiempo)
   const active = new Set()
@@ -1512,7 +1517,7 @@ export function liquid(el, o = {}) {
   // sólo trabaja cerca de la pantalla (media pantalla de margen): un grupo al final de la página no
   // calcula formas ni mapas de lente durante la carga
   let near = false
-  const nio = new IntersectionObserver(es => { const n = es[es.length - 1].isIntersecting; if (n != near) { near = n; n && stale() } }, { rootMargin: '50% 0px' })
+  const nio = new IntersectionObserver(es => { const n = es[es.length - 1].isIntersecting; if (n != near) { near = n; n && soon() } }, { rootMargin: '50% 0px' })
   nio.observe(el)
   let io = null
   addEventListener('scroll', onScroll, { capture: true, passive: true })
@@ -1522,7 +1527,7 @@ export function liquid(el, o = {}) {
     io = new IntersectionObserver(es => { vis = es[es.length - 1].isIntersecting; if (vis) { if (kind == 'frames' && !live) frames(mirrored); if (kind == 'gl' && !live && gsrc?.tagName != 'IMG') glLive(); if (!V?.src) stale() } })
     io.observe(el)
   }
-  wake()
+  // (sin wake(): el primer aviso del ResizeObserver dibuja, ya en un momento limpio)
   const handle = {
     // update: relee estilos y vuelve a dibujar; frame: sólo redibuja (para quien mueve las piezas
     // por JS en cada frame, sin cambiar variables ni radios)

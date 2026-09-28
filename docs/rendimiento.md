@@ -52,10 +52,12 @@ Como referencia (bundlephobia, gzip): `@floating-ui/dom` 8,2 KB sólo para posic
 
 ## Trabajo en ejecución
 
-- Un único `ResizeObserver` y `MutationObserver` para toda la página, y dos `IntersectionObserver` (visibilidad y cercanía), compartidos por todos los marcos.
+- Dos `ResizeObserver` (el de tamaño y el del momento limpio), un `MutationObserver` y dos `IntersectionObserver` (visibilidad y cercanía) para toda la página, compartidos por todos los marcos.
 - **Eventos delegados.** Hover, pulsado y foco se escuchan con 6 listeners en el documento, no con varios por marco: montar miles de marcos no añade listeners. El hover sólo se activa con un puntero que flota (ratón o lápiz), nunca con el dedo.
 - Lectura y escritura del DOM por lotes: N elementos cuestan un recálculo de estilo, no N.
-- **En cambios masivos, el trabajo se reparte en lotes de 150 y cede el hilo principal** entre lotes (`scheduler.yield()` donde existe), para no bloquear la interacción (INP).
+- **Lecturas limpias.** Todo lo que el núcleo lee del estilo (`getComputedStyle`, bordes, posición) se lee justo después de que el navegador maquete y antes de pintar (en un aviso de `ResizeObserver`), con el estilo ya calculado: leer ahí no fuerza nada. Lo que no llega por el aviso de tamaño (`update()`, marcos que se acercan a la pantalla, los que esperaban al módulo de extras) espera a ese momento en una cola, y un centinela fijo de 1×1 px pide el aviso del fotograma siguiente.
+- **Escrituras en trozos.** Las escrituras (geometría, recorte, capa SVG) van de 40 en 40, cediendo el hilo entre trozos (`scheduler.yield()` donde existe): sin lecturas de por medio no hay recálculos forzados y cada tarea queda corta (INP, TBT). Cada lectura lleva su generación: si el marco se relee mientras espera, la escritura vieja se descarta.
+- **Sólo lo que está cerca, también al cargar.** En el primer aviso, la posición de cada marco (gratis en ese momento) decide: lo que está a más de una pantalla espera a acercarse. Antes, al cargar se procesaban todos: en una tienda de prueba con 220 tarjetas (~1100 marcos), la librería provocaba miles de invalidaciones de estilo y maquetación; ahora, unas 30.
 - Las capas SVG sólo existen si se usan; nada se repinta si tamaño, forma y estilo no cambiaron.
 - **Memo de geometría por (forma, ancho, alto).** Marcos con la misma forma y el mismo tamaño (listas, rejillas, bentos) comparten la geometría, los comandos y la cadena del path: se calculan una vez. La caché está acotada (se vacía al pasar de 400 entradas).
 - **Repintado perezoso.** Al cambiar de tamaño sólo se recalculan los marcos en pantalla o a menos de una pantalla de distancia; los demás quedan pendientes y se pintan al acercarse, antes de verse. `open()`, `close()`, `shapeOf()` y las aperturas de `data-ns-enter` pintan en el acto un marco pendiente; antes de imprimir se pinta todo.
@@ -66,7 +68,26 @@ Como referencia (bundlephobia, gzip): `@floating-ui/dom` 8,2 KB sólo para posic
 - **Mosaico:** la luz que sigue al puntero y la onda al tocar no se crean en táctil; los reintentos mientras llega el estilo de una plantilla nueva están acotados (nunca un bucle de frames).
 - **Hoja e isla:** sólo animan `translate` y `opacity`; el progreso del gesto se calcula de la temporización de la animación, sin leer estilos en cada frame.
 - El morph interpola vértices, no texto de path.
-- **Sin maquetación forzada al montar.** Pestañas, relieve y carrusel toman su primera medida del `ResizeObserver` (llega ya maquetado); el esqueleto mide en lote al final de la tarea; `update()` agrupa las llamadas de una tarea. Montar veinte piezas cuesta una maquetación, no veinte.
+- **Sin maquetación forzada al montar.** Pestañas, relieve, carrusel, vidrio e isla toman su primera medida del `ResizeObserver` (llega ya maquetado); el esqueleto mide en lote al final de la tarea; `update()` agrupa las llamadas de un fotograma. Montar veinte piezas cuesta una maquetación, no veinte.
+- **Bordes animados en el compositor.** `scan` es una capa HTML junto a la SVG del marco: la máscara (el trazo del borde) se rasteriza una vez y la banda se mueve sólo con `transform`. Chrome ya componía el `transform` de un elemento SVG; WebKit (Safari, todo iPhone) no, y repintaba la SVG en cada fotograma.
+- **Luz en U animada:** `ns-u-live`, `-tide` y `-surge` animan dos variables heredadas; los hijos de la pieza que no las usan cortan la herencia, así que cada fotograma recalcula sólo los hijos directos (en la tarjeta de vidrio de la landing, de 66 elementos a 18).
+
+### Medido (0.16.0 frente a 0.15.1)
+
+Chrome sin ventana, 390×844 a dpr 3, CPU ×4, tienda de prueba con 220 tarjetas en el HTML (~1100 marcos), isla y carrito con vidrio y 4 tarjetas con `scan`; mediciones simultáneas de las dos versiones (el paralelo infla los valores absolutos por igual):
+
+| | 0.15.1 | 0.16.0 |
+|---|---|---|
+| Maquetación forzada por la librería al cargar | 1,2–3,5 s | 11–45 ms |
+| Invalidaciones de estilo y maquetación de la librería al cargar | miles | ~30 |
+| Hilo principal en la carga | 21,8 s | 19,6 s |
+| Bloqueo (TBT) al añadir tandas de 12 tarjetas | 760 ms | 382 ms |
+| Scroll táctil: pintados por segundo | 8 | 4 |
+| Scroll táctil: compositor | ~70 ms/s | ~47 ms/s |
+
+En PC (landing, 1366 px), sobre la tarjeta de vidrio con luz en U: la isla al plegarse pasa de 22–62 fotogramas de más de 20 ms a 3 (p95 de 23,5 a 18,3 ms), y el estilo, de ~115 a ~74 ms por segundo.
+
+El bloqueo total de la **carga** de una página así lo domina su propio tamaño (maquetar miles de nodos, las fuentes que llegan): la librería ya casi no aporta, y el resto depende de la página (`content-visibility: auto` en listas largas, menos nodos por tarjeta).
 
 ## Dispositivos modestos
 

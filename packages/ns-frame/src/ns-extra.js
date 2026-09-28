@@ -17,6 +17,14 @@ const CSS = `@layer ns{
 .ns-mr{stroke-dasharray:var(--ns-progress,0) 100;transition:stroke-dasharray .6s cubic-bezier(.3,.7,.3,1)}
 :is([data-ns-motion~=hover],ns-frame[motion~=hover]):not(:hover,:focus-within) .ns-m{opacity:0}
 .ns-sc{animation:ns-sc var(--ns-motion-time,3.2s) linear infinite}
+.ns-band{position:absolute;pointer-events:none;z-index:1;filter:var(--ns-glow,none)}
+@media (hover:none) and (pointer:coarse){.ns-band{filter:var(--ns-glow-touch,none)}}
+.ns-band i{position:absolute;left:0;top:0;display:block}
+.ns-band>i{-webkit-mask:var(--m) 0 0/100% 100% no-repeat;mask:var(--m) 0 0/100% 100% no-repeat}
+.ns-band>i>i{transform-origin:0 0}
+.ns-band>i>i>i{animation:ns-bm var(--ns-motion-time,3.2s) linear infinite}
+.ns-band>i>i>i>i{height:100%;background:linear-gradient(90deg,transparent,var(--ns-motion,var(--ns-accent,currentColor)),transparent)}
+@keyframes ns-bm{from{transform:translateX(0)}to{transform:translateX(100%)}}
 .ns-or{animation:ns-or 4s linear infinite}
 @keyframes ns-sc{from{transform:translate(var(--a),0)}to{transform:translate(var(--b),0)}}
 @keyframes ns-or{to{transform:rotate(1turn)}}
@@ -121,6 +129,46 @@ const band = (id, w, h, geo, rect, cls, t, css, stops = [[0, 0], [.5, 1], [1, 0]
   grad('linearGradient', id, geo, stops),
   mk('mask', { id: id + 'm', maskUnits: 'userSpaceOnUse', x: -20, y: -20, width: f(w + 40), height: f(h + 40) }, { 'mask-type': 'alpha' }, mk('path', {}, { fill: 'none', stroke: '#fff' })),
   mk('g', { mask: `url(#${id}m)` }, {}, mk('rect', { class: cls, ...rect }, { fill: `url(#${id})`, stroke: 'none', 'animation-duration': t, ...css }))]
+// Barrido de luz que cruza el marco y enciende el borde a su paso. Viaja en la dirección de la
+// diagonal de la forma (casi horizontal en una ancha; en una alta, en diagonal y cubriendo todo el
+// alto) y va de justo fuera a justo fuera en línea recta: al salir una pasada entra la siguiente,
+// sin tiempo muerto.
+// En el compositor: una capa HTML junto a la SVG del marco, no dentro. Dentro de un SVG, mover la
+// banda repintaba el SVG entero en cada fotograma (y en cada uno del desplazamiento de la página).
+// Aquí la máscara (el trazo del borde, una imagen que se rasteriza una vez) y la banda son capas
+// fijas, y lo único que cambia es un transform: lo mueve la GPU sin pintar nada. Capas:
+//   resplandor (--ns-glow) > máscara (--m) > giro (ángulo de la diagonal) > desplazador > banda
+// El desplazador mide recorrido + banda y avanza el 100 % de su ancho (fotogramas clave fijos, sin
+// variables: así el compositor puede animarlo solo); la banda va a su izquierda, fuera, al empezar
+const I = (...k) => { const e = document.createElement('i'); k.length && e.append(...k); return e }
+function scan(id, w, h, t, r, fps, aw = 2) {
+  const a = Math.atan2(h, w), c = Math.cos(a), s = Math.sin(a)
+  const L = w * c + h * s, bw = Math.max(40, Math.min(240, L * .32)), v0 = -w * s - 20, vh = w * s + h * c + 40
+  // (el trazo sale la mitad hacia fuera del contorno: la máscara lo rodea con ese margen)
+  const p = Math.ceil(aw * 2), bar = I(), mov = I(bar), rot = I(mov), m = I(rot), out = I(m)
+  out.className = 'ns-m ns-band'
+  Object.assign(out.style, { width: f(w) + 'px', height: f(h) + 'px' })
+  Object.assign(m.style, { left: -p + 'px', top: -p + 'px', width: f(w + 2 * p) + 'px', height: f(h + 2 * p) + 'px' })
+  rot.style.transform = `translate(${p}px,${p}px) rotate(${f(a * 180 / Math.PI)}deg)`
+  Object.assign(mov.style, { top: f(v0) + 'px', width: f(L + bw) + 'px', height: f(vh) + 'px' })
+  const cp = cap(t, 3200, fps)
+  for (const k in cp) mov.style.setProperty(k, cp[k])
+  if (t) mov.style.animationDuration = t
+  Object.assign(bar.style, { left: f(-bw) + 'px', width: f(bw) + 'px' })
+  out._p = p; out._w = w; out._h = h; out._aw = aw
+  return out
+}
+scan.html = true
+// el contorno: la máscara (sólo si cambió; en un morph, en cada fotograma) y la posición de la capa,
+// la misma que la SVG del marco
+scan.path = (out, d, bl, bt) => {
+  if (out._d == d) return
+  out._d = d
+  const { _p: p, _w: w, _h: h, _aw: aw } = out
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${f(w + 2 * p)}' height='${f(h + 2 * p)}'><path transform='translate(${p} ${p})' d='${d}' fill='none' stroke='#fff' stroke-width='${f(2 * aw)}' stroke-linecap='round'/></svg>`
+  out.firstChild.style.setProperty('--m', `url("data:image/svg+xml,${encodeURIComponent(svg)}")`)
+  out.style.left = -bl + 'px'; out.style.top = -bt + 'px'
+}
 let MOTION
 const motions = () => MOTION ||= {
   comet: (id, w, h, t, r, fps) => [tail(100, 1, span(w, h), cap(t, 5000, fps))],   // cometa con estela
@@ -131,19 +179,7 @@ const motions = () => MOTION ||= {
   pulse: () => [mk('path', { class: 'ns-mp' })],                     // respira
   glitch: () => [mk('path', { class: 'ns-mg' })],                    // parpadeo desplazado
   progress: () => [mk('path', { class: 'ns-mr', pathLength: 100 })], // --ns-progress: 0–100
-  // barrido de luz que cruza el marco y enciende el borde a su paso. Viaja en la dirección de la
-  // diagonal de la forma (casi horizontal en una ancha; en una alta, en diagonal y cubriendo todo el
-  // alto) y va de justo fuera a justo fuera en línea recta: al salir una pasada entra la siguiente,
-  // sin tiempo muerto. La banda se dibuja en un grupo girado; la anima un translate en su eje
-  scan: (id, w, h, t, r, fps) => {
-    const a = Math.atan2(h, w), c = Math.cos(a), s = Math.sin(a)
-    const L = w * c + h * s, bw = Math.max(40, Math.min(240, L * .32)), v0 = -w * s - 20, vh = w * s + h * c + 40
-    const [defs, mask, g] = band(id, w, h, { x1: f(-bw), y1: 0, x2: 0, y2: 0 },
-      { x: f(-bw), y: f(v0), width: f(bw), height: f(vh) }, 'ns-sc', t || 'var(--ns-motion-time,3.2s)',
-      { '--a': '0px', '--b': f(L + bw) + 'px', ...cap(t, 3200, fps) })
-    g.replaceChildren(mk('g', { transform: `rotate(${f(a * 180 / Math.PI)})` }, {}, ...g.childNodes))
-    return [defs, mask, g]
-  },
+  scan,
   // banda que gira sobre el centro: dos destellos orbitando
   orbit: (id, w, h, t, r, fps) => { const D = Math.hypot(w, h) + 40; return band(id, w, h, { x1: 0, y1: f(h / 2), x2: f(w), y2: f(h / 2) },
     { x: f(w / 2 - D / 2), y: f(h / 2 - D / 2), width: f(D), height: f(D) }, 'ns-or', t || '4s',
@@ -211,7 +247,7 @@ function play(s, mode, dir, dur, delay = 0) {
       const k = Math.max(0, Math.min(1, (now - t0) / dur)), e = k < .5 ? 4 * k ** 3 : 1 - (2 - 2 * k) ** 3 / 2
       ap.p = from + (to - from) * e
       if (k >= 1 && to) s.ap = null
-      if (s.w) paint(s, geometry(s.src, s.w, s.h), !s.ap)
+      if (s.w && s.src) paint(s, geometry(s.src, s.w, s.h), !s.ap)
       if (k < 1) ap.raf = requestAnimationFrame(tick)
       else { ap.raf = 0; res() }
     }

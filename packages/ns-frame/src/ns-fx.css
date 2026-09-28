@@ -75,6 +75,11 @@
 @keyframes ns-u-tide { 0%, 100% { --ns-u-h: .72; --ns-u-k: .85 } 50% { --ns-u-h: 1.6; --ns-u-k: 1.05 } }
 .ns-u-surge { animation: ns-u-surge var(--ns-u-time, 6s) cubic-bezier(.33, 0, .2, 1) infinite }
 @keyframes ns-u-surge { 0%, 100% { --ns-u-h: .9; --ns-u-k: .8 } 32% { --ns-u-h: 1.95; --ns-u-k: 1.1 } 62% { --ns-u-h: 1.35; --ns-u-k: .72 } }
+/* (sólo los leen la luz —::after, que hereda igual— y el borde —la capa SVG—. Los demás hijos cortan la
+   herencia: si no, cada fotograma recalculaba el estilo de TODO lo que hay dentro de la pieza —64
+   elementos en una tarjeta con vidrio y controles, ~2 ms por fotograma—, y una animación de la página,
+   como la isla al plegarse, perdía fotogramas encima. Así se recalculan sólo los hijos directos) */
+:is(.ns-u-live, .ns-u-tide, .ns-u-surge) > :not(.ns-svg) { --ns-u-h: 1; --ns-u-k: 1 }
 /* el borde acompaña: su tramo encendido sube y baja con la luz (se "transmite" por los costados) */
 :is(.ns-u-live, .ns-u-tide, .ns-u-surge) { --ns-border: linear-gradient(var(--ns-u-dir, to top), var(--ns-u, #3de0ff), color-mix(in srgb, var(--ns-u, #3de0ff) 60%, transparent) 55%, color-mix(in srgb, var(--ns-u, #3de0ff) 22%, transparent)) }
 :is(.ns-u-live, .ns-u-tide, .ns-u-surge) > .ns-svg {

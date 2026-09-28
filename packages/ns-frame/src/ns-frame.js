@@ -316,7 +316,7 @@ const STYLE = `
 .ns-pre .ns-b,.ns-pre .ns-a{stroke-dasharray:100 100;stroke-dashoffset:100}
 .ns-draw .ns-b{stroke-dasharray:100 100;animation:ns-d var(--ns-draw-time,1.2s) cubic-bezier(.65,0,.35,1) both}
 .ns-draw .ns-a{animation:ns-o .4s var(--ns-draw-time,1.2s) both}
-.ns-off *,:is(.ns-scrolling,.ns-resting) :is(.ns-svg,.ns-mo-fx) *{animation-play-state:paused!important}
+.ns-off *,:is(.ns-scrolling,.ns-resting) :is(.ns-svg,.ns-mo-fx,.ns-band) *{animation-play-state:paused!important}
 @keyframes ns-d{from{stroke-dashoffset:100}to{stroke-dashoffset:0}}
 @keyframes ns-o{from{opacity:0}}
 @media (prefers-reduced-motion:reduce){.ns-svg *{animation:none!important;stroke-dashoffset:0!important}.ns-pre .ns-b{stroke-dasharray:none}}
@@ -361,7 +361,9 @@ function extras(s) {
   // (la promesa devuelve el módulo: open()/close() la esperan antes de que cargue)
   XP ||= import('./ns-extra.js').then(m => {
     X = m.init({ mk, f, num, geometry, paint, write, read, reduced, touch, styles, lerp })
-    for (const q of WAIT) { q.key = 0; refresh(q) }
+    // (todos juntos en el siguiente momento limpio: uno a uno, cada lectura seguía a la escritura del
+    // anterior y recalculaba la página entera)
+    for (const q of WAIT) { q.key = 0; clean(q) }
     WAIT.clear()
     return X
   })
@@ -461,15 +463,20 @@ function decorate(s, V, d, T, at) {
   M && X.spot(s, want.includes('spot'))
   for (const k of want) {
     // (las que no dependen del tamaño —sin parámetros declarados— no se rehacen al redimensionar)
-    const key = M[k].length ? [w, h, s.mt, s.ss, s.fps].join() : [s.mt, s.fps].join()
+    const key = M[k].length ? [w, h, s.mt, s.ss, s.fps, s.aw].join() : [s.mt, s.fps].join()
     let g = mo[k]
+    // (las que se animan en el compositor —M[k].html— son una capa HTML junto a la SVG, no un grupo
+    // dentro: moverlas no repinta nada)
+    const html = M[k].html
     if (g?._k !== key) {
       g?.remove()
-      g = mo[k] = mk('g', { class: 'ns-m' }, {}, ...M[k](id + k, w, h, s.mt, s.ss, s.fps))
+      g = mo[k] = html ? M[k](id + k, w, h, s.mt, s.ss, s.fps, s.aw) : mk('g', { class: 'ns-m' }, {}, ...M[k](id + k, w, h, s.mt, s.ss, s.fps))
       g._k = key
-      svg.insertBefore(g, s.p.f || null)
+      if (html) { g.classList.toggle('ns-off', svg.classList.contains('ns-off')); svg.after(g) }
+      else svg.insertBefore(g, s.p.f || null)
     }
-    for (const p of g.getElementsByTagName('path')) p.setAttribute('d', d)
+    if (html) M[k].path(g, d, L.bl, L.bt)
+    else for (const p of g.getElementsByTagName('path')) p.setAttribute('d', d)
   }
   if (pi) pi.setAttribute('transform', `translate(${L.inner} ${L.inner}) scale(${(w - 2 * L.inner) / w} ${(h - 2 * L.inner) / h})`)
   const E = gk && extras(s)
@@ -546,6 +553,8 @@ function read(s) {
     look: { border: b && b != 'none' ? b : FORCED.matches ? 'CanvasText' : '', inner: parseFloat(cs.getPropertyValue('--ns-inner')) || 0, bl: el.clientLeft, bt: el.clientTop },
     accent: attr(el, 'accent') || '', spin: TIME.test(sp) ? sp : sp ? '' : '6s', fo: el.tabIndex >= 0,
     motion, mt: TIME.test(mt) ? mt : '', fps: !motion ? 0 : fv ? parseFloat(fv) || 0 : quality() == 'low' ? 30 : 0,
+    // (el grosor del trazo, en px: el barrido del compositor lo dibuja en su máscara)
+    aw: motion ? parseFloat(cs.getPropertyValue('--ns-accent-width')) || 2 : 0,
     ss: parseFloat(cs.getPropertyValue('--ns-spot-size')) || 140,
     nat: attr(el, 'native') != null, scr: attr(el, 'scroll'),
     // padding base = padding actual menos el margen seguro ya aplicado (sólo si se usa el margen seguro)
@@ -558,7 +567,7 @@ function read(s) {
 function write(s, r, animate) {
   if (!s.w || !s.h) return
   const { src, look } = r
-  const key = [s.w, s.h, src, look.border, look.inner, look.bl, look.bt, r.accent, r.motion, r.mt, r.fps, r.spin, r.fo, r.ss, r.pad, r.nat, r.scr, FORCED.matches].join('|')
+  const key = [s.w, s.h, src, look.border, look.inner, look.bl, look.bt, r.accent, r.motion, r.mt, r.fps, r.aw, r.spin, r.fo, r.ss, r.pad, r.nat, r.scr, FORCED.matches].join('|')
   if (key == s.key) return
   const moved = src != s.src
   Object.assign(s, r)
@@ -580,11 +589,67 @@ function write(s, r, animate) {
   if (typeof NS_LITE == 'undefined' && s.scr) extras(s)?.scroll(s)
 }
 
-const refresh = (s, animate) => s.w && write(s, read(s), animate)
+// (lee y escribe ya; la generación sube: una escritura de un lote anterior que siga en cola se descarta)
+const refresh = (s, animate) => s.w && (s.rg = (s.rg || 0) + 1, write(s, read(s), animate))
 
-// cede el hilo principal entre lotes (scheduler.yield donde existe) para no bloquear la interacción
+// Lecturas limpias. Un ResizeObserver avisa justo después de maquetar y antes de pintar, con el
+// estilo ya calculado: leer ahí (getComputedStyle, clientLeft) no fuerza nada. Fuera de ese momento,
+// con el DOM recién tocado, cada lectura obligaba a recalcular el estilo de TODA la página: en una
+// tienda con cientos de tarjetas, cientos de ms a CPU ×4 al cargar. Por eso lo que no llega por el
+// aviso de tamaño (los lotes siguientes de un montaje grande, update()) espera en CLEAN, y `cro` pide
+// ese momento: observar de nuevo un elemento provoca un aviso en el siguiente fotograma. Se observa
+// uno solo, un centinela de 1×1 px fuera del flujo: un aviso por fotograma sea cual sea la cola
+// (observar cada marco hacía que el navegador los midiera todos otra vez) y un tamaño que nunca
+// cambia (con <html>, si la página crecía durante los avisos —tarjetas que entran, una plantilla
+// nueva—, su aviso quedaba sin entregar y WebKit lo daba por bucle). Los tamaños, del aviso de tamaño
+const CLEAN = new Set()
+let cro, tick0
+// (desde un requestAnimationFrame: dentro de un aviso de ResizeObserver, observar algo de nuevo podría
+// contarse como bucle; así, avisa en ese mismo fotograma, después de maquetar)
+const kick = () => requestAnimationFrame(() => {
+  if (!tick0?.isConnected) { tick0 = document.createElement('i'); tick0.setAttribute('aria-hidden', 'true'); tick0.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;visibility:hidden;pointer-events:none;contain:strict'; document.body.append(tick0) }
+  cro.unobserve(tick0); cro.observe(tick0)
+})
+const clean = s => {
+  cro ||= new ResizeObserver(() => batch(drain()))
+  if (!CLEAN.size) kick()
+  CLEAN.add(s)
+}
+// la cola, lista para un lote (los que siguen en el documento y tienen tamaño; lejos de la pantalla,
+// a LATE, salvo un update() explícito)
+const drain = () => {
+  const L = [...CLEAN].filter(s => S.get(s.el) == s && s.el.isConnected && s.w && (s.up || s.near !== false || (LATE.add(s), 0)))
+  CLEAN.clear()
+  return L
+}
+// cede el hilo principal entre trozos (scheduler.yield donde existe) para no bloquear la interacción
 const pause = () => globalThis.scheduler?.yield?.() || new Promise(r => setTimeout(r))
-async function onResize(es) {
+// Todo se lee ya, en el momento limpio (leer el estilo calculado es barato y no fuerza nada); las
+// escrituras (geometría, recorte, capa SVG), de 40 en 40 y cediendo el hilo entre trozos: sin
+// lecturas en medio no hay recálculos forzados, y cada tarea queda corta. Dentro del aviso, el
+// trabajo se sumaba a la tarea del fotograma, que en una página grande ya es larga: cada ms contaba
+// entero como bloqueo (TBT). Los primeros 40 (los de arriba, los que se ven antes) se escriben ya
+// (una lectura lleva su generación: si el marco se vuelve a leer mientras espera —cambió de tamaño—,
+// la escritura vieja se descarta y no pisa a la nueva)
+function batch(todo) {
+  if (!todo.length) return
+  let R, i = 0
+  INRO = true
+  try { R = todo.map(s => ({ s, r: read(s), g: (s.rg = (s.rg || 0) + 1) })) } finally { INRO = false }
+  const run = inro => {
+    INRO = inro
+    try {
+      for (const end = Math.min(R.length, i + 40); i < end; i++) {
+        const { s, r, g } = R[i]
+        if (g != s.rg || S.get(s.el) != s) continue
+        const a = s.up; s.up = 0; write(s, r, a)
+      }
+    } finally { INRO = false }
+  }
+  run(true)
+  if (i < R.length) (async () => { while (i < R.length) { await pause(); run(false) } })()
+}
+function onResize(es) {
   for (const e of es) {
     const s = S.get(e.target)
     if (!s) continue
@@ -592,28 +657,34 @@ async function onResize(es) {
     s.w = b ? b.inlineSize : s.el.offsetWidth
     s.h = b ? b.blockSize : s.el.offsetHeight
   }
-  // lejos de la pantalla (near === false): se aplaza hasta que se acerque (onNear)
-  const todo = es.map(e => S.get(e.target)).filter(s => s?.w && (s.near !== false || (LATE.add(s), 0)))
-  // por lotes de 150: cada lote lee todo y luego escribe todo (1 recálculo de estilo por lote), y
-  // cede el hilo entre lotes para que un montaje grande no bloquee la interacción
-  for (let i = 0; i < todo.length; i += 150) {
-    if (i) await pause()
-    const part = todo.slice(i, i + 150)
-    INRO = !i
-    try { part.map(read).forEach((r, k) => write(part[k], r)) } finally { INRO = false }
+  // lejos de la pantalla (near === false): se aplaza hasta que se acerque (onNear). En el primer
+  // aviso aún no se sabe (el de proximidad llega después) y se procesaban TODOS: en una tienda con
+  // 1100 marcos, 1100 geometrías, recortes y capas SVG al cargar para ver una veintena. Aquí, justo
+  // después de maquetar, medir la posición no cuesta nada: lo que esté a más de una pantalla (el
+  // mismo margen que onNear) espera a acercarse. La cola de momentos limpios va en el mismo lote:
+  // su aviso llegaría en esta misma pasada, pero después de estas escrituras, y ya no sería limpio
+  const H = innerHeight, W = innerWidth
+  for (const e of es) {
+    const s = S.get(e.target)
+    if (s && s.near === undefined) { const r = s.el.getBoundingClientRect(); s.near = r.bottom >= -H && r.top <= 2 * H && r.right >= 0 && r.left <= W }
   }
+  const L = es.map(e => S.get(e.target)).filter(s => s?.w && (s.near !== false || (LATE.add(s), 0)))
+  batch(CLEAN.size ? [...new Set([...L, ...drain()])] : L)
 }
 let INRO = false
 
 const LATE = new Set()
 // un marco pendiente que la API necesita ya (open, close…) se pinta en el acto
-const ready = s => { if (s && LATE.delete(s)) refresh(s); return s }
+// (también uno que espera en la cola de momentos limpios o en un trozo de escrituras: con tamaño pero
+// aún sin forma, una apertura o shapeOf() no tendrían nada que dibujar)
+const ready = s => { if (s && (LATE.delete(s) | CLEAN.delete(s) || (s.w && !s.src))) refresh(s); return s }
 function onNear(es) {
   for (const e of es) {
     const s = S.get(e.target)
     if (!s) continue
     s.near = e.isIntersecting
-    if (s.near && LATE.delete(s)) refresh(s)
+    // (a una pantalla de distancia: se pinta en el siguiente momento limpio, todos juntos, antes de verse)
+    if (s.near && LATE.delete(s)) clean(s)
   }
 }
 
@@ -638,6 +709,8 @@ function onView(es) {
     // (sólo animation-play-state: ya no hay SMIL, y pausar el reloj SVG en WebKit tocaba también
     // las animaciones CSS de la capa)
     svg.classList.toggle('ns-off', !e.isIntersecting)
+    // (las animaciones de borde del compositor van en su propia capa, junto a la SVG)
+    for (const k in s.mo) s.mo[k].localName == 'i' && s.mo[k].classList.toggle('ns-off', !e.isIntersecting)
     if (e.intersectionRatio >= .2 && svg.classList.contains('ns-pre')) svg.classList.replace('ns-pre', 'ns-draw')
   }
 }
@@ -760,7 +833,9 @@ export function attach(el) {
   if (s.svg && !s.svg.isConnected) el.append(s.svg) // un framework re-renderizó los hijos
   ro.observe(el, { box: 'border-box' })
   if (s.svg) vo.observe(el)
-  refresh(s, 1)
+  // (uno que ya tenía tamaño —vuelto a montar—: en el siguiente momento limpio; uno nuevo lo pinta el
+  // primer aviso de tamaño)
+  if (s.w) { s.up = 1; clean(s) }
   return el
 }
 
@@ -774,7 +849,7 @@ export function detach(el, clear) {
   LATE.delete(s)
   cancelAnimationFrame(s.anim)
   s.anim = 0
-  if (clear) { el.style.clipPath = ''; s.svg?.remove(); S.delete(el) }
+  if (clear) { el.style.clipPath = ''; s.svg?.remove(); for (const k in s.mo) s.mo[k].remove(); S.delete(el) }
 }
 
 /** Forma efectiva que ns-frame está usando en un elemento (incluye data-ns-nest y --ns-shape). */
@@ -980,18 +1055,15 @@ export function jump(el, { focus = false, smooth = false } = {}) {
 export const pathOf = el => { const s = S.get(el); return s?.cur?.length ? dOf(s.cur) : null }
 
 /** Fuerza una relectura (p. ej. tras cambiar variables CSS por JS). */
-// (en lote: las llamadas de una misma tarea —varias piezas de vidrio o de relieve que se montan
-// juntas— se leen todas y después se escriben todas, al final de la tarea y antes de pintar. Una a
-// una, cada lectura obligaba a recalcular estilos tras la escritura anterior)
-let upQ = null
+// (en lote y sin forzar nada: las llamadas de un mismo fotograma —varias piezas de vidrio o de relieve
+// que se montan juntas— se leen todas y después se escriben todas, justo después de maquetar y antes
+// de pintar (clean). Antes se leían al final de la tarea, con el DOM recién tocado: cada lote
+// obligaba a recalcular el estilo de toda la página)
 export const update = el => {
   const s = S.get(el)
   if (!s) return
-  if (!upQ) {
-    upQ = new Set()
-    queueMicrotask(() => { const L = [...upQ].filter(s => s.w && S.get(s.el) == s); upQ = null; const R = L.map(read); L.forEach((s, i) => write(s, R[i], 1)) })
-  }
-  upQ.add(s)
+  s.up = 1
+  clean(s)
 }
 
 /**

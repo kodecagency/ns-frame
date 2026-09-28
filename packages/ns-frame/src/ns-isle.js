@@ -264,7 +264,7 @@ function mount(el, o) {
   // --ns-isle-width (el mínimo) y el de la pantalla menos 32 px. Así no cambia de tamaño al cambiar de
   // sección: cada cambio era una transición de ancho y su vidrio redibujándose. fit: false lo desactiva
   const text = q(el, '[data-ns-isle-text]')
-  let fr2 = 0, ctx = null
+  let ctx = null
   const widest = (node, list) => {
     if (!node || !list.length) return 0
     const s = getComputedStyle(node), ls = parseFloat(s.letterSpacing) || 0
@@ -272,18 +272,23 @@ function mount(el, o) {
     ctx.font = s.font || `${s.fontWeight} ${s.fontSize} ${s.fontFamily}`
     return Math.max(...list.map(t => ctx.measureText(t).width + ls * t.length))
   }
+  // (se mide en el aviso de un ResizeObserver: llega justo después de maquetar, con el estilo ya
+  // calculado. En un requestAnimationFrame, que va antes, leer la fuente y los anchos obligaba a
+  // recalcular toda la página. Observar el texto de nuevo pide otra medida en el fotograma siguiente)
+  const fro = new ResizeObserver(() => {
+    fro.disconnect()
+    // (plegada a un icono, el texto no se ve: se mide al desplegarse)
+    if (el.classList.contains('ns-mini')) return
+    const need = Math.max(widest(label, links.map(a => a.dataset.nsIsleName || a.textContent.trim())), widest(posEl, links.map((_, i) => pos(i, links.length))))
+    // (lo demás de la cápsula —icono, flecha, márgenes— es su ancho menos el del texto)
+    const w = Math.ceil(el.offsetWidth - text.clientWidth + need + 4) + 'px'
+    // (el cambio de ancho se aplica fuera del aviso: dentro, el navegador lo contaría como bucle)
+    if (el.style.getPropertyValue('--ns-isle-fit') != w) requestAnimationFrame(() => el.style.setProperty('--ns-isle-fit', w))
+    fitted = true
+  })
   const fit = () => {
-    if (o.fit === false || !text || fr2) return
-    fr2 = requestAnimationFrame(() => {
-      fr2 = 0
-      // (plegada a un icono, el texto no se ve: se mide al desplegarse)
-      if (el.classList.contains('ns-mini')) return
-      const need = Math.max(widest(label, links.map(a => a.dataset.nsIsleName || a.textContent.trim())), widest(posEl, links.map((_, i) => pos(i, links.length))))
-      // (lo demás de la cápsula —icono, flecha, márgenes— es su ancho menos el del texto)
-      const w = Math.ceil(el.offsetWidth - text.clientWidth + need + 4) + 'px'
-      if (el.style.getPropertyValue('--ns-isle-fit') != w) el.style.setProperty('--ns-isle-fit', w)
-      fitted = true
-    })
+    if (o.fit === false || !text) return
+    fro.disconnect(); fro.observe(text)
   }
   let fitted = false
 
@@ -696,18 +701,24 @@ function mount(el, o) {
   // defecto—. Sin ella, al subir y bajar rápido se plegaba y desplegaba en cada cambio de dirección, y
   // cada vez el vidrio fijo al pie cambiaba de ancho: en WebKit, un parpadeo abajo en cualquier
   // sección. El rebote elástico de iOS, por encima de 0 o por debajo del final, no cuenta)
-  let y0 = scrollY, raf = 0, lean = 0
+  // (la posición de partida se toma en el primer desplazamiento: leer scrollY al montar obligaba a
+  // maquetar toda la página en ese momento; en una tienda con cientos de tarjetas, ~0,5 s a CPU ×4)
+  let y0 = NaN, raf = 0, lean = 0
   // (el final de la página, guardado: leer scrollHeight en cada fotograma obligaba a maquetar si algo
-  // había cambiado. Se relee cuando cambia el tamaño del documento o de la ventana)
-  let end = 0
-  const measureEnd = () => { end = document.documentElement.scrollHeight - innerHeight }
+  // había cambiado. Se relee cuando cambia el tamaño del documento o de la ventana. La primera medida
+  // la da el propio ResizeObserver, justo después de maquetar: sin forzar nada)
+  // Perezoso: un cambio de tamaño sólo lo marca como viejo y se mide en el siguiente fotograma de
+  // desplazamiento (en el aviso, tras las escrituras de otros observadores, obligaba a maquetar)
+  let end = NaN
+  const measureEnd = () => { end = NaN }
   const endRO = new ResizeObserver(measureEnd)
   endRO.observe(document.documentElement); endRO.observe(document.body)
   addEventListener('resize', measureEnd, { passive: true })
-  measureEnd()
   const frame = () => {
     raf = 0
     const y = scrollY
+    if (y0 !== y0) y0 = y
+    if (end !== end) end = document.documentElement.scrollHeight - innerHeight
     if (y >= end - 2) set(links.length - 1)
     if (y < 0 || y > end) return
     // (al bajar leyendo, completa: dice en qué sección estás; al subir, un icono. collapseOn: 'down',
@@ -733,7 +744,7 @@ function mount(el, o) {
       run++; unfade(); mo?.remove(); mo = null; lock(false); document.documentElement.classList.remove('ns-has-isle'); el.style.zIndex = ''; el.classList.remove('ns-isle-m')
       io.disconnect(); endRO.disconnect(); sh.destroy(); scrim.remove(); clearTimeout(timer)
       // (los fotogramas pendientes: el del pliegue al desplazarse, el del ajuste del texto y el de la luz)
-      cancelAnimationFrame(raf); cancelAnimationFrame(fr2); cancelAnimationFrame(lf)
+      cancelAnimationFrame(raf); fro.disconnect(); cancelAnimationFrame(lf)
       removeEventListener('scroll', scroll); removeEventListener('resize', measureEnd); removeEventListener('keydown', key); document.removeEventListener('focusin', trap)
       btn.removeEventListener('pointerdown', down); btn.removeEventListener('pointerup', up)
       btn.removeEventListener('pointerenter', warm); btn.removeEventListener('focus', warm); btn.removeEventListener('click', click)
