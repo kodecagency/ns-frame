@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.17.1 — la luz del mosaico en el compositor
+
+- **`ns-frame/mosaic`:** la capa de luz (bordes y fondos de todas las piezas) pasa de un SVG con máscaras, filtro de resplandor y focos SVG a capas HTML: máscaras de imagen (se rasterizan al cambiar la figura), cada luz una capa que sólo cambia con `transform`/`opacity` (barrido, escaneo, ondas, pulso, corriente, onda al tocar) y el foco que sigue al puntero movido con `transform` (antes cambiaba un atributo y repintaba). El resplandor, antes un filtro SVG bajo el que nada iba a la GPU, son dos filtros CSS equivalentes (halo desenfocado + `drop-shadow`). Los focos se vuelven a arrancar al entrar en pantalla para que el navegador los componga. En la landing, quieta sobre el mosaico: pintado y maquetación de ~140 ms/s a casi cero; reconstrucción de capas de 397 a 92 ms/s (PC) y de 161 a 59 (móvil); fotogramas del hilo principal de ~135 a 25–40 por segundo. Mismo aspecto en capturas congeladas de cinco efectos. El trazo libre (`trace`) sigue en SVG.
+
 ## 0.17.0 — efectos que no gastan: pausa fuera de pantalla real y más al compositor
 
 Sin cambios de aspecto. Medido en la landing (Chrome sin ventana, 1366 px y 390 px, página quieta).

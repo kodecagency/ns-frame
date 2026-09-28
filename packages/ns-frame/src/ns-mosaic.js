@@ -36,6 +36,12 @@ const CSS = `@layer ns{
 .ns-mosaic>[data-ns-orb]{position:absolute;margin:0;border-radius:50%;box-sizing:border-box}
 .ns-mosaic>[data-ns-orb].ns-orb-poly{border-radius:0}
 .ns-mo-fx{position:absolute;z-index:2;pointer-events:none;overflow:visible}
+.ns-mo-fx i{position:absolute;display:block;left:0;top:0}
+.ns-mo-fx>.ns-mo-bg,.ns-mo-glow,.ns-mo-glow>i,.ns-mo-glow>i>.ns-mo-top{width:100%;height:100%}
+.ns-mo-bg,.ns-mo-top{-webkit-mask:var(--m) 0 0/100% 100% no-repeat;mask:var(--m) 0 0/100% 100% no-repeat}
+.ns-mo-glow>.ns-mo-halo{filter:blur(3.5px)}
+.ns-mo-glow>.ns-mo-core{filter:drop-shadow(0 0 7px var(--ns-mo-light,var(--ns-motion,#fff)))}
+.ns-mo-defs,.ns-mo-tr{position:absolute;left:0;top:0;overflow:visible}
 .ns-mo-sw{transform-box:fill-box;animation:ns-mo-sw var(--ns-mo-time,5s) cubic-bezier(.45,0,.55,1) infinite}
 .ns-mo-wv{animation:ns-mo-wv var(--ns-mo-time,4.5s) cubic-bezier(.2,.6,.3,1) infinite backwards}
 .ns-mo-fx.ns-off *,.ns-resting .ns-mosaic[data-ns-mosaic~=aurora]>[data-ns-area]::before{animation-play-state:paused}
@@ -50,7 +56,7 @@ const CSS = `@layer ns{
 @keyframes ns-mo-tr{to{stroke-dashoffset:-100}}
 @media (prefers-reduced-motion:reduce){.ns-mo-sw,.ns-mo-wv,.ns-mo-sc,.ns-mo-tr{display:none}.ns-mo-pl{animation:none;opacity:.4}.ns-mosaic>[data-ns-area]::before{animation:none!important}}
 @media (forced-colors:active){.ns-mo-fx{display:none}}
-@media (hover:none) and (pointer:coarse){.ns-mo-glow{filter:none}}
+@media (hover:none) and (pointer:coarse){.ns-mo-glow>.ns-mo-halo{display:none}.ns-mo-glow>.ns-mo-core{filter:none}}
 }`
 
 const M = new Map()
@@ -363,18 +369,36 @@ function layout() {
     fit(el)
     light(el, parts, W, H, holes, reduced(), px(cs.paddingLeft), px(cs.paddingTop), { G, xs, ys, gx, gy, r: ro_, speed: px(cs.getPropertyValue('--ns-mosaic-speed') || cs.getPropertyValue('--ns-mo-speed')) || 160,
       // la luz que sigue al puntero (radio) y la onda al tocar (duración: 1100, 1100ms o 1.1s)
-      glow: px(cs.getPropertyValue('--ns-mosaic-glow-size')) || 240, ripple: cssTime(cs, '--ns-mosaic-ripple-time', 1100) })
+      glow: px(cs.getPropertyValue('--ns-mosaic-glow-size')) || 240, ripple: cssTime(cs, '--ns-mosaic-ripple-time', 1100),
+      // el grosor de la luz de los bordes, en px: va dibujado en la imagen de su máscara
+      width: px(cs.getPropertyValue('--ns-mosaic-width') || cs.getPropertyValue('--ns-mo-width')) || 1.5 })
   }
 }
 
-// ── Luz conectada: una sola capa SVG sobre todo el mosaico. Sus máscaras son los contornos de
-// todas las piezas (y del orbe), así un barrido o una onda recorre la figura entera como un
-// solo objeto: bordes (máscara de trazo) y fondos (máscara de relleno, tenue).
+// ── Luz conectada: una capa sobre todo el mosaico. Sus máscaras son los contornos de todas las
+// piezas (y del orbe), así un barrido o una onda recorre la figura entera como un solo objeto:
+// bordes (máscara de trazo) y fondos (máscara de relleno, tenue).
+// En el compositor: las máscaras son imágenes (se rasterizan una vez, al cambiar la figura) y cada
+// luz es una capa que sólo se mueve con transform u opacity. Con la capa SVG de antes, cada
+// fotograma repintaba máscaras, resplandor y luces, y Chrome rehacía las capas de toda la página.
+// El trazo libre (trace) sigue en SVG: un trazo discontinuo que avanza no tiene equivalente ahí.
 // data-ns-mosaic="sweep wave ripple glow" · color --ns-mosaic-light · grosor --ns-mosaic-width ·
 // tiempo --ns-mosaic-fx-time · intensidad del fondo --ns-mosaic-fill (o los antiguos --ns-mo-*)
 let uid = 0
 const LIGHT = alias('var(--ns-mo-light,var(--ns-motion,#fff))')
-const stops = (...s) => s.map(([o, a]) => mk('stop', { offset: o }, { 'stop-color': LIGHT, 'stop-opacity': a }))
+// la capa se extiende PAD px alrededor del mosaico (el resplandor y las ondas salen un poco)
+const PAD = 40
+// paradas de la luz: su color con la opacidad pedida (mismo color en todas: la mezcla CSS y la de
+// SVG coinciden)
+const tint = a => a >= 1 ? LIGHT : a <= 0 ? 'transparent' : `color-mix(in srgb,${LIGHT} ${fx(a * 100)}%,transparent)`
+const ramp = (s, k = 1) => s.map(([o, a]) => `${tint(a)} ${fx(o * k * 100)}%`).join()
+const SWEEP = [[0, 0], [.47, 0], [.5, 1], [.53, 0], [1, 0]], SCAN = [[0, 0], [.46, 0], [.5, 1], [.54, 0], [1, 0]]
+const RING = [[0, 0], [.8, 0], [.93, 1], [1, 0]], SPOT = [[0, .95], [.3, .45], [.65, .12], [1, 0]], GLOW = [[0, .9], [1, 0]]
+const box = (cls, st) => { const e = document.createElement('i'); if (cls) e.className = cls; if (st) Object.assign(e.style, st); return e }
+const radial = (R, s) => `radial-gradient(circle ${fx(R)}px at 50% 50%,${ramp(s)})`
+// los contornos como imagen de máscara, en la caja de la capa: `a` son los atributos del grupo
+// (relleno, o trazo y grosor)
+const maskOf = (P, W, H, a) => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='${fx(W + 2 * PAD)}' height='${fx(H + 2 * PAD)}'><g transform='translate(${PAD} ${PAD})' ${a}>${P.map(([d, t]) => `<path d='${d}'${t ? ` transform='${t}'` : ''}/>`).join('')}</g></svg>`)}")`
 
 function light(el, parts, W, H, holes, reduce, pl, pt, grid) {
   // efectos por tipo de pantalla: en táctil manda data-ns-mosaic-touch si existe; si no, se quitan
@@ -383,97 +407,102 @@ function light(el, parts, W, H, holes, reduce, pl, pt, grid) {
   const tap = touch(), tl = el.getAttribute('data-ns-mosaic-touch')
   const want = (tap && tl != null ? tl : el.getAttribute('data-ns-mosaic') || '').split(/\s+/).filter(k => k && !(tap && tl == null && (k == 'glow' || k == 'ripple')))
   let L = el._nsl
-  if (!want.length) { if (L) { L.svg.remove(); lightIO.unobserve?.(el) } el._nsl = null; return }
+  if (!want.length) { if (L) { L.box.remove(); lightIO.unobserve?.(el) } el._nsl = null; return }
   if (!L) {
-    const id = 'nsmo' + ++uid, box = { maskUnits: 'userSpaceOnUse', x: -40, y: -40 }
-    const lines = mk('g', {}, { fill: 'none', stroke: '#fff', 'stroke-width': alias('var(--ns-mo-width,1.5px)') })
-    const fills = mk('g', {}, { fill: '#fff', stroke: 'none' })
-    const ml = mk('mask', { id: id + 'l', ...box }, { 'mask-type': 'alpha' }, lines)
-    const mf = mk('mask', { id: id + 'f', ...box }, { 'mask-type': 'alpha' }, fills)
-    const gg = mk('radialGradient', { id: id + 'g', gradientUnits: 'userSpaceOnUse', cx: -9e3, cy: -9e3, r: 240 }, {}, ...stops([0, .9], [1, 0]))
-    // capas, de atrás hacia delante: luz de fondo, luz de bordes y trazo libre (aurora, puntos y
-    // retícula van en CSS, en un ::before de cada pieza, por detrás del contenido)
-    const bg = mk('g', { mask: `url(#${id}f)` }, { opacity: alias('var(--ns-mo-fill,.07)') })
-    const top = mk('g', { mask: `url(#${id}l)` }), tr = mk('g', { class: 'ns-mo-tr' })
-    const svg = mk('svg', { class: 'ns-mo-fx', 'aria-hidden': 'true', focusable: 'false' }, {},
-      mk('defs', {}, {}, ml, mf, gg,
-        mk('linearGradient', { id: id + 'b', gradientUnits: 'objectBoundingBox', x1: 0, y1: 0, x2: 1, y2: .35 }, {}, ...stops([0, 0], [.47, 0], [.5, 1], [.53, 0], [1, 0])),
-        mk('linearGradient', { id: id + 's', gradientUnits: 'objectBoundingBox', x1: 0, y1: 0, x2: 0, y2: 1 }, {}, ...stops([0, 0], [.46, 0], [.5, 1], [.54, 0], [1, 0])),
-        mk('radialGradient', { id: id + 'r' }, {}, ...stops([0, 0], [.8, 0], [.93, 1], [1, 0])),
-        // foco de la corriente: luz suave que se apaga hacia fuera
-        mk('radialGradient', { id: id + 'p' }, {}, ...stops([0, .95], [.3, .45], [.65, .12], [1, 0])),
-        // resplandor: la luz del borde es un núcleo nítido más un halo difuminado, no una línea plana
-        mk('filter', { id: id + 'o', x: '-5%', y: '-5%', width: '110%', height: '110%' }, {},
-          mk('feGaussianBlur', { in: 'SourceGraphic', stdDeviation: 3.5, result: 'b' }),
-          mk('feMerge', {}, {}, mk('feMergeNode', { in: 'b' }), mk('feMergeNode', { in: 'b' }), mk('feMergeNode', { in: 'SourceGraphic' })))),
-      bg, mk('g', { class: 'ns-mo-glow', filter: `url(#${id}o)` }, {}, top, tr))
-    L = el._nsl = { id, svg, lines, fills, ml, mf, gg, top, bg, tr }
-    el.append(svg)
+    const id = 'nsmo' + ++uid
+    // (un svg vacío para medir contornos: streams)
+    const defs = mk('svg', { class: 'ns-mo-defs', 'aria-hidden': 'true', focusable: 'false', width: 0, height: 0 })
+    // capas, de atrás hacia delante: luz de fondo (máscara de relleno) y luz de bordes (máscara de
+    // trazo, con el trazo libre) con su resplandor: la luz del borde es un núcleo nítido más un halo
+    // difuminado, no una línea plana. Era un filtro SVG (fuente sobre dos copias desenfocadas), pero
+    // bajo un filtro SVG nada va al compositor. Con filtros CSS, sí: una copia desenfocada (halo) y
+    // encima otra con drop-shadow, que con una luz de un solo color es la fuente sobre su copia
+    // desenfocada. Juntas, lo mismo que el filtro. Aurora, puntos y retícula van en CSS, en un
+    // ::before de cada pieza, por detrás del contenido
+    const bg = box('ns-mo-bg', { opacity: alias('var(--ns-mo-fill,.07)') }), glow = box('ns-mo-glow'), fxl = box('ns-mo-fx')
+    const tops = [], trs = []
+    for (const k of ['ns-mo-halo', 'ns-mo-core']) {
+      const t = box('ns-mo-top'), r = mk('svg', { class: 'ns-mo-tr', 'aria-hidden': 'true', focusable: 'false' }), w = box(k)
+      w.append(t, r); glow.append(w)
+      tops.push(t); trs.push(r)
+    }
+    fxl.append(defs, bg, glow); fxl.setAttribute('aria-hidden', 'true')
+    L = el._nsl = { id, box: fxl, defs, tops, bg, trs, gl: [] }
+    el.append(fxl)
     lightIO.observe(el)
   }
   // eventos (una vez por contenedor; leen la capa actual, que puede quitarse y volver): una onda
-  // nace donde tocas y cruza toda la figura; la luz de fondo sigue al puntero
+  // nace donde tocas y cruza toda la figura; la luz de fondo sigue al puntero (se mueve la capa del
+  // foco con transform: nada que repintar)
   if (!el._nse) {
     el._nse = 1
+    const at = (L, e) => { const r = L.box.getBoundingClientRect(); return [e.clientX - r.left - PAD, e.clientY - r.top - PAD] }
     el.addEventListener('pointerdown', e => {
       const L = el._nsl
       if (!L?.on.includes('ripple') || reduced()) return
-      const r = L.svg.getBoundingClientRect()
-      ring(L, e.clientX - r.left, e.clientY - r.top, Math.hypot(L.W, L.H), L.ripple || 1100)
+      ring(L, ...at(L, e), Math.hypot(L.W, L.H), L.ripple || 1100)
     })
-    el.addEventListener('pointermove', e => {
-      const L = el._nsl
-      if (!L?.on.includes('glow')) return
-      const r = L.svg.getBoundingClientRect()
-      L.gg.setAttribute('cx', fx(e.clientX - r.left)); L.gg.setAttribute('cy', fx(e.clientY - r.top))
-    }, { passive: true })
-    el.addEventListener('pointerleave', () => { const L = el._nsl; L?.gg.setAttribute('cx', -9e3); L?.gg.setAttribute('cy', -9e3) })
+    const aim = (L, x, y) => { for (const g of L.gl) g.style.transform = `translate(${fx(x - L.r + PAD)}px,${fx(y - L.r + PAD)}px)` }
+    el.addEventListener('pointermove', e => { const L = el._nsl; L?.on.includes('glow') && aim(L, ...at(L, e)) }, { passive: true })
+    el.addEventListener('pointerleave', () => { const L = el._nsl; L && aim(L, -9e3, -9e3) })
   }
   L.on = want; L.W = W; L.H = H; L.ripple = grid.ripple
-  if (L.gg.getAttribute('r') != grid.glow) L.gg.setAttribute('r', grid.glow)
-  Object.assign(L.svg.style, { left: fx(pl) + 'px', top: fx(pt) + 'px', width: fx(W) + 'px', height: fx(H) + 'px' })
-  L.svg.setAttribute('viewBox', `0 0 ${fx(W)} ${fx(H)}`)
-  for (const m of [L.ml, L.mf]) { m.setAttribute('width', fx(W + 80)); m.setAttribute('height', fx(H + 80)) }
+  Object.assign(L.box.style, { left: fx(pl - PAD) + 'px', top: fx(pt - PAD) + 'px', width: fx(W + 2 * PAD) + 'px', height: fx(H + 2 * PAD) + 'px' })
   // contornos: piezas y orbes (los orbes no se repiten en el trazo libre: ya los rodea su hueco)
   const ds = parts.map(p => [path(p.shape, p.w, p.h), `translate(${fx(p.ox)} ${fx(p.oy)})`])
   const os = holes.map(({ O, Ro, sh, Rb }) => sh ? [path(sh, 2 * Rb, 2 * Rb), `translate(${fx(O[0] - Rb)} ${fx(O[1] - Rb)})`] : [`M${fx(O[0] - Ro)} ${fx(O[1])}a${fx(Ro)} ${fx(Ro)} 0 1 0 ${fx(2 * Ro)} 0a${fx(Ro)} ${fx(Ro)} 0 1 0 ${fx(-2 * Ro)} 0Z`, ''])
   // misma figura y mismos efectos: nada que rehacer. Rehacer las capas reinicia sus animaciones, y
   // en el móvil cada vez que la barra del navegador aparece o se esconde llega un resize
-  const key = [want, reduce, fx(W), fx(H), ...ds.flat(), ...os.flat()].join('|')
+  const key = [want, reduce, fx(W), fx(H), grid.width, grid.glow, ...ds.flat(), ...os.flat()].join('|')
   if (L._k == key) return
   L._k = key
-  const P = (list, a = {}) => list.map(([d, t]) => mk('path', t ? { d, transform: t, ...a } : { d, ...a }))
-  L.lines.replaceChildren(...P([...ds, ...os])); L.fills.replaceChildren(...P([...ds, ...os]))
-  // trazo libre: una luz corta recorre a la vez el contorno de cada pieza, al mismo ritmo
-  L.tr.replaceChildren(...(want.includes('trace') && !reduce ? P(ds, { pathLength: 100 }) : []))
+  const all = [...ds, ...os]
+  L.bg.style.setProperty('--m', maskOf(all, W, H, `fill='#fff'`))
+  const lines = maskOf(all, W, H, `fill='none' stroke='#fff' stroke-width='${fx(grid.width)}'`)
+  for (const t of L.tops) t.style.setProperty('--m', lines)
+  // trazo libre: una luz corta recorre a la vez el contorno de cada pieza, al mismo ritmo (en las dos
+  // copias del resplandor)
+  for (const tr of L.trs) {
+    setA(tr, { width: fx(W + 2 * PAD), height: fx(H + 2 * PAD), viewBox: `${-PAD} ${-PAD} ${fx(W + 2 * PAD)} ${fx(H + 2 * PAD)}` })
+    tr.replaceChildren(...(want.includes('trace') && !reduce ? ds.map(([d, t]) => mk('path', { d, transform: t, pathLength: 100 })) : []))
+  }
   // corriente: dos o tres luces que recorren la figura entera, por fuera y por los huecos del centro
-  const SM = want.includes('stream') && !reduce && grid ? streams([...ds, ...os], Math.min(grid.gx, grid.gy), grid.speed, L.id, L.svg) : null
-  const has = k => want.includes(k), full = (a = {}) => mk('rect', { x: 0, y: 0, width: fx(W), height: fx(H), ...a })
+  const SM = want.includes('stream') && !reduce && grid ? streams(all, Math.min(grid.gx, grid.gy), grid.speed, L.defs) : null
+  const has = k => want.includes(k), full = st => box('', { left: PAD + 'px', top: PAD + 'px', width: fx(W) + 'px', height: fx(H) + 'px', ...st })
   const C = holes[0]?.O || [W / 2, H / 2], S = Math.max(...[[0, 0], [W, 0], [0, H], [W, H]].map(([x, y]) => Math.hypot(x - C[0], y - C[1])))
+  // barrido: su degradado iba en coordenadas de su propia caja (de la esquina a (1, 0,35)); en una
+  // caja de 2W × (H + 2·PAD) eso es una línea inclinada que aquí se traduce a un ángulo de CSS y
+  // sus paradas a la longitud de la línea de CSS (va de la esquina de arriba a la izquierda, c = 0,
+  // a la de abajo a la derecha, c = 1,35; una parada en t está en c = t · (1 + 0,35²))
+  const bw = 2 * W, bh = H + 2 * PAD, sa = Math.atan2(1 / bw, -.35 / bh)
+  L.r = grid.glow; L.gl = []
   const layer = (g, fill) => {
     const kids = []
     // barrido: una banda de 2·W que se desplaza su propio ancho (de -W a +W): cruza toda la figura
-    if (has('sweep') && !reduce) kids.push(mk('rect', { class: 'ns-mo-sw', x: fx(-W * .5), y: -40, width: fx(W * 2), height: fx(H + 80), fill: `url(#${L.id}b)` }))
+    if (has('sweep') && !reduce) kids.push(box('ns-mo-sw', { left: fx(PAD - W * .5) + 'px', width: fx(bw) + 'px', height: fx(bh) + 'px', background: `linear-gradient(${fx(sa)}rad,${ramp(SWEEP, 1.1225 / 1.35)})` }))
     // escaneo: una línea horizontal que baja por toda la figura
-    if (has('scan') && !reduce) kids.push(mk('rect', { class: 'ns-mo-sc', x: -40, y: fx(-H * .5), width: fx(W + 80), height: fx(H * 2), fill: `url(#${L.id}s)` }))
+    if (has('scan') && !reduce) kids.push(box('ns-mo-sc', { top: fx(PAD - H * .5) + 'px', width: fx(W + 2 * PAD) + 'px', height: fx(H * 2) + 'px', background: `linear-gradient(${ramp(SCAN)})` }))
     // ondas: anillos ya a su tamaño final que crecen desde el primer orbe (scale 0 → 1)
-    if (has('wave') && !reduce) for (const d of [0, .5]) kids.push(ringEl(L, C[0], C[1], S, { class: 'ns-mo-wv' }, { 'animation-delay': alias(`calc(${d} * var(--ns-mo-time,4.5s))`) }))
+    if (has('wave') && !reduce) for (const d of [0, .5]) { const w = ringEl(C[0], C[1], S, 'ns-mo-wv'); w.style.animationDelay = alias(`calc(${d} * var(--ns-mo-time,4.5s))`); kids.push(w) }
     // pulso: todos los bordes respiran juntos
-    if (has('pulse') && !fill) kids.push(full({ class: 'ns-mo-pl', fill: LIGHT }))
-    if (has('glow')) kids.push(full({ fill: `url(#${L.id}g)`, opacity: fill ? 1 : .8 }))
+    if (has('pulse') && !fill) kids.push(Object.assign(full({ background: LIGHT }), { className: 'ns-mo-pl' }))
+    // la luz que sigue al puntero: un foco que se mueve con transform (fuera de la vista hasta entonces)
+    if (has('glow')) { const G = box('', { width: fx(2 * L.r) + 'px', height: fx(2 * L.r) + 'px', background: radial(L.r, GLOW), opacity: fill ? 1 : .8, transform: 'translate(-9e3px,-9e3px)' }); L.gl.push(G); kids.push(G) }
     // los focos de la corriente encienden los bordes (y, tenue, el fondo) por donde pasan
     if (SM) for (const s of SM.spots) kids.push(s(fill ? 70 : 110, fill ? .5 : 1))
     g.replaceChildren(...kids)
   }
-  layer(L.top, 0); layer(L.bg, 1)
+  for (const t of L.tops) layer(t, 0)
+  layer(L.bg, 1)
 }
+const setA = (n, a) => { for (const k in a) n.setAttribute(k, a[k]) }
 
 // ── corriente (stream): la luz corre por los bordes de las propias piezas y salta de una a otra ──
 // Cada pieza (y el anillo de cada orbe) se muestrea por su contorno real. Donde dos piezas quedan
 // a la distancia del hueco hay un relevo: la luz que recorre el borde de una cruza el hueco y sigue
 // por el borde de la vecina, en el sentido que conserva su marcha, y así de pieza en pieza. Tres
 // rutas que empiezan en piezas distintas y a destiempo; todas a --ns-mo-speed (px/s).
-function streams(shapes, gap, speed, id, host) {
+function streams(shapes, gap, speed, host) {
   // 1) contornos muestreados cada ~4 px, en coordenadas del mosaico
   const probe = mk('path')
   host.append(probe)
@@ -555,7 +584,8 @@ function streams(shapes, gap, speed, id, host) {
         const [x, y] = pt(Math.min(1, Math.max(0, f)))
         K.push({ offset: t, transform: `translate(${fx(x)}px,${fx(y)}px)`, opacity: fade * op * k })
       }
-      const e = mk('circle', { r: fx(rad * s), cx: 0, cy: 0, fill: `url(#${id}p)` })
+      // (una capa con el foco, centrada en el origen de la figura: la mueve la GPU)
+      const R = rad * s, e = box('', { left: fx(PAD - R) + 'px', top: fx(PAD - R) + 'px', width: fx(2 * R) + 'px', height: fx(2 * R) + 'px', background: radial(R, SPOT) })
       e.animate(K, { ...opt, delay: (delay - lag) * dur })
       return e
     })
@@ -566,11 +596,12 @@ function streams(shapes, gap, speed, id, host) {
   return { spots }
 }
 
+// un anillo de luz de radio S centrado en (x, y), en coordenadas de la figura (crece desde su centro)
+const ringEl = (x, y, S, cls = '') => box(cls, { left: fx(x - S + PAD) + 'px', top: fx(y - S + PAD) + 'px', width: fx(2 * S) + 'px', height: fx(2 * S) + 'px', background: radial(S, RING) })
 // onda puntual (ripple): mismo anillo en bordes y fondo, con Web Animations (nada que limpiar en CSS)
-const ringEl = (L, x, y, S, a = {}, st = {}) => mk('rect', { x: fx(x - S), y: fx(y - S), width: fx(2 * S), height: fx(2 * S), fill: `url(#${L.id}r)`, ...a }, { 'transform-origin': `${fx(x)}px ${fx(y)}px`, ...st })
 function ring(L, x, y, S, dur) {
-  for (const g of [L.top, L.bg]) {
-    const r = ringEl(L, x, y, S)
+  for (const g of [...L.tops, L.bg]) {
+    const r = ringEl(x, y, S)
     g.append(r)
     r.animate([{ transform: 'scale(0)', opacity: 1 }, { transform: 'scale(1)', opacity: 0 }], { duration: dur, easing: 'cubic-bezier(.2,.6,.3,1)' }).onfinish = () => r.remove()
   }
@@ -578,11 +609,13 @@ function ring(L, x, y, S, dur) {
 
 // fuera de pantalla, las animaciones de la capa se pausan
 const lightIO = typeof IntersectionObserver != 'undefined' && new IntersectionObserver(es => es.forEach(e => {
-  const svg = e.target._nsl?.svg
-  if (!svg) return
-  svg.classList.toggle('ns-off', !e.isIntersecting)
-  // las luces de la corriente son Web Animations: se pausan a mano (siguen donde iban al volver)
-  for (const a of svg.getAnimations?.({ subtree: true }) || []) if (!a.animationName) e.isIntersecting ? a.play() : a.pause()
+  const b = e.target._nsl?.box
+  if (!b) return
+  b.classList.toggle('ns-off', !e.isIntersecting)
+  // las luces de la corriente son Web Animations: se pausan a mano (siguen donde iban al volver). Al
+  // volver, pausa y play: nacen fuera de la vista (en una sección que aún no se pintó) y el navegador
+  // sólo decide si las mueve la GPU al arrancar; así lo decide ahora, ya visibles, sin perder su tiempo
+  for (const a of b.getAnimations?.({ subtree: true }) || []) if (!a.animationName) { a.pause(); e.isIntersecting && a.play() }
 }))
 
 const schedule = () => { raf ||= requestAnimationFrame(layout) }

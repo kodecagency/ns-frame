@@ -99,8 +99,8 @@ Los efectos se combinan (`data-ns-mosaic="stream dots"`), pero cada uno suma tra
 
 Si el dispositivo cambia de modo (una tableta a la que se conecta un ratón), la lista se vuelve a elegir sola.
 
-- Los bordes y las luces usan una sola capa SVG sobre el mosaico, con los contornos de todas las piezas como máscara. La aurora y los patrones van en un `::before` de cada pieza, por detrás del contenido, alineados en coordenadas del mosaico.
-- Todo se anima con `transform`, `opacity` y el desplazamiento del trazo. Las animaciones se pausan fuera de pantalla (y siguen donde iban al volver), se desactivan con `prefers-reduced-motion`, y en alto contraste la capa desaparece.
+- Los bordes y las luces usan una sola capa sobre el mosaico, con los contornos de todas las piezas como máscara (una imagen que se rasteriza al cambiar la figura). La aurora y los patrones van en un `::before` de cada pieza, por detrás del contenido, alineados en coordenadas del mosaico.
+- Las luces se mueven en el compositor: cada una es una capa que sólo cambia con `transform` u `opacity`, y el resplandor de los bordes son dos filtros CSS (un halo desenfocado y un `drop-shadow`), no un filtro SVG (bajo el que nada va a la GPU). El trazo libre (`trace`) es el único que se repinta: un trazo discontinuo que avanza no tiene equivalente ahí. Las animaciones se pausan fuera de pantalla (y siguen donde iban al volver), se desactivan con `prefers-reduced-motion`, y en alto contraste la capa desaparece.
 - Las capas animadas sólo se rehacen si cambian la figura o los efectos: un `resize` que no cambia nada (en el móvil, la barra del navegador al subir y bajar) no reinicia las animaciones.
 - Como `::before` queda para los fondos compartidos, no combines `aurora`, `dots` o `grid` con las clases de patrón de `ns-fx.css` en la misma pieza.
 
