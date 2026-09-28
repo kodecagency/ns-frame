@@ -6,7 +6,7 @@ order: 5
 
 # Movimiento
 
-Todo el movimiento de ns-frame respeta `prefers-reduced-motion` y se pausa fuera de pantalla. En táctil, además, los adornos animados (bordes, luz en U viva, destellos, luces del mosaico) se pausan mientras se desplaza la página y siguen al parar: `<html>` lleva `.ns-scrolling` durante el desplazamiento (úsala también para tus animaciones) y `<html data-ns-scroll-motion>` los deja siempre en marcha.
+Todo el movimiento de ns-frame respeta `prefers-reduced-motion` y se pausa fuera de pantalla. Durante el desplazamiento sigue en marcha (un borde que se detiene al desplazar parece un cuelgue). Si prefieres ahorrar batería con bordes que repintan, `<html data-ns-scroll-pause>` los pausa en táctil mientras se desplaza la página y siguen al parar: `<html>` lleva `.ns-scrolling` durante el desplazamiento (úsala también para tus animaciones). `data-ns-scroll-motion`, que antes evitaba la pausa, ya no hace falta.
 
 **En reposo** (20 s sin puntero, toque, tecla ni desplazamiento), `<html>` lleva `.ns-resting` y esos mismos adornos se pausan hasta la siguiente señal de vida: una página olvidada con un borde animado a la vista ya no repinta sin fin (ni calienta el teléfono). `<html data-ns-rest="30">` cambia la espera en segundos y `data-ns-rest="off"` lo apaga. `document` recibe el evento `ns-rest` con `detail { resting }`, para pausar también tus animaciones de JS.
 
@@ -35,7 +35,7 @@ El morph interpola **vértices**, no el texto del path, así que funciona igual 
 | `scan` | Barrido de luz que cruza el marco y enciende el borde a su paso. Viaja en la dirección de la diagonal de la forma (casi horizontal en una ancha; en una alta, en diagonal y cubriendo todo el alto) y en bucle continuo: al salir una pasada entra la siguiente. Dura `--ns-motion-time` (3,2 s) |
 | `orbit` | Dos destellos que giran alrededor del centro |
 
-`scan`, `orbit` y el giro de degradados (`data-ns-spin`) se animan con CSS (`transform`), no con SMIL: se pausan fuera de pantalla y funcionan igual en móviles.
+`scan`, `orbit` y el giro de degradados (`data-ns-spin`) se animan con CSS (`transform`), no con SMIL: se pausan fuera de pantalla y funcionan igual en móviles. `scan` y el giro van además en el compositor: una capa con la máscara del trazo, rasterizada una vez, y dentro sólo cambia un `transform` (sin repintar el borde en cada fotograma). El giro sigue en la SVG si el marco tiene doble línea (`--ns-inner`) o dibujo de entrada (`data-ns-draw`).
 
 | `chase` | Pulsos cortos, tipo flujo de datos |
 | `march` | Borde discontinuo en marcha (selección, zonas para soltar) |

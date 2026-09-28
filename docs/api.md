@@ -69,7 +69,7 @@ await open(panel, 'iris', 500)
 | `ns-frame/light` | `material(parámetros)` → id de un `<filter>` compartido, iluminado por la luz de la página · `corners(el, w, h)` → radios reales de las cuatro esquinas · `rounded(el, w, h)` → path del rectángulo redondeado |
 | `ns-frame/relief` | `relief(el)` → `{ update(), destroy() }` · automático con `data-ns-relief` (`surface`, `raised`, `knob`, `inset`, `select`, `ghost`; tonos `metal`, `paper`) |
 | `ns-frame/tabs` | `tabs(el, { items, drop, shrink })` → `{ select(i), index, destroy() }` · evento `change` con `detail { index, tab }` |
-| `ns-frame/fx` | `decode(el, ms?)` |
+| `ns-frame/fx` | `decode(el, ms?)` · `refresh(root?)` (vigila los efectos animados de `root` para pausarlos fuera de pantalla; se llama sola al cargar) · `EFFECTS` (su selector) |
 | `ns-frame/audit` | `audit({ root, mark, margin, clearance })` → problemas encontrados |
 | `ns-frame/carousel` | `carousel(el)` → `{ go(i), index, destroy() }` · automático con `data-ns-carousel` · evento `change` con `detail { index, slide }` |
 | `ns-frame/controls` | Automático con `data-ns-segment`, `data-ns-chips`, `data-ns-field`, `data-ns-range`, `data-ns-swatches` · `range(el)` → `{ update(), destroy() }` · `swatches(el)` |

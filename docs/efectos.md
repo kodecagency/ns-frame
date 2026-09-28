@@ -45,7 +45,9 @@ La base se llena, esquinas incluidas, y la luz se desvanece **de abajo hacia arr
 | `ns-u-breathe` | Respira (sólo `opacity`) |
 | `ns-u-hue` | El color recorre una paleta |
 
-Las animaciones de conjunto mueven a la vez la base, los costados, las esquinas **y el tramo encendido del borde**, con curvas suaves. Animan dos multiplicadores registrados con `@property` (`--ns-u-h` altura, `--ns-u-k` intensidad), así que respetan tus valores. La duración se ajusta con `--ns-u-time`. Repintan la capa de luz en cada frame (por tarjeta es barato); con `ns-frame/fx` se pausan fuera de pantalla.
+Las animaciones de conjunto mueven a la vez la base, los costados, las esquinas **y el tramo encendido del borde**, con curvas suaves. Animan dos multiplicadores registrados con `@property` (`--ns-u-h` altura, `--ns-u-k` intensidad), así que respetan tus valores. La duración se ajusta con `--ns-u-time`. Repintan la capa de luz en cada frame (por tarjeta es barato); en táctil quedan fijas. Sólo recalculan la luz y el borde: los hijos de la pieza cortan la herencia de sus variables.
+
+**Fuera de pantalla se pausan todos los efectos animados** (luz en U animada, aura, `ns-scan`, `ns-shimmer`, `ns-pulse` y el texto con brillo) si cargas `ns-frame/fx`: una animación que no se ve seguiría produciendo fotogramas. Vigila los que haya al cargar; tras añadir contenido con efectos, llama a `refresh(contenedor)`. `ns-shimmer` se anima con `transform` (lo mueve la GPU, sin repintar).
 
 ## Otros efectos
 

@@ -4,9 +4,9 @@
 
 | Versión | Soporte |
 |---|---|
+| 0.17.x | ✅ |
 | 0.16.x | ✅ |
-| 0.15.x | ✅ |
-| 0.14.x | Sólo parches de seguridad |
+| 0.15.x | Sólo parches de seguridad |
 | < 0.8 | ❌ |
 
 ## Reportar una vulnerabilidad

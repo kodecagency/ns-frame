@@ -4,7 +4,7 @@
 // </nav>
 // (o role="tablist" con role="tab": entonces usa aria-selected y el foco itinerante)
 //
-// Como la barra de pestañas de iOS 26:
+// Barra de pestañas de vidrio:
 // · pulsa una pestaña y el indicador viaja hasta ella: llega con un muelle (un rebote corto), se
 //   estira un poco en la dirección del movimiento según la velocidad;
 // · mantén pulsada la pestaña activa, o arrastra desde cualquiera, y el indicador se levanta: crece,
@@ -233,7 +233,7 @@ export function tabs(el, o = {}) {
   // al cambiar de tamaño, el indicador se recoloca sin animación
   const ro = new ResizeObserver(() => { cache = null; feel = null; if (drag?.on) return; aim(cur); if (!ready || !raf) { X.x = tx; W.x = tw; D.x = tx + tw / 2; paint(); glass.frame(); ready = true } })
   ro.observe(el); items().forEach(b => ro.observe(b))
-  // data-ns-tabs="shrink": como la barra de iOS 26, se encoge un poco al desplazar hacia abajo y
+  // data-ns-tabs="shrink": se encoge un poco al desplazar hacia abajo y
   // vuelve al subir o al tocarla. Escucha el contenedor de data-ns-tabs-scroll (o la página). Sólo
   // cambia scale: el vidrio escala con la barra sin recalcular nada
   let sy = null, acc = 0, sraf = 0, scroller = null

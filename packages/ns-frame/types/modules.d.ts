@@ -260,13 +260,17 @@ export function tabs(el: HTMLElement, options?: {
   items?: string
   /** Deja una gota detrás que se funde con el indicador (si no, la palabra "drop" de data-ns-tabs). */
   drop?: boolean
-  /** Se encoge al desplazar hacia abajo, como la barra de iOS 26 (si no, la palabra "shrink"). */
+  /** Se encoge al desplazar hacia abajo (si no, la palabra "shrink"). */
   shrink?: boolean
 }): { select(index: number): void; readonly index: number; destroy(): void }
 
 // ── ns-frame/fx ──
 /** Efecto de texto que se "descifra". */
 export function decode(el: HTMLElement, duration?: number): void
+/** Selector de los efectos animados de ns-fx.css que se pausan fuera de pantalla. */
+export const EFFECTS: string
+/** ns-frame/fx: vigila los efectos animados de `root` (fuera de pantalla se pausan). Se llama sola al cargar; otra vez tras añadir contenido. */
+export function refresh(root?: Element | Document): void
 
 // ── ns-frame/audit (sólo desarrollo) ──
 export interface AuditIssue { el: Element; what: string; shape: Shape; type: 'clipped' | 'tight' | 'unanchored' | 'reset' }

@@ -488,10 +488,10 @@ La tendencia propia de ns-frame: superficies con un **volumen mínimo y exacto, 
 </nav>
 ```
 
-La barra de pestañas de iOS 26, hecha con dos grupos de `ns-frame/liquid` (la barra y el indicador):
+Una barra de pestañas de vidrio, hecha con dos grupos de `ns-frame/liquid` (la barra y el indicador):
 
 - **Pulsa** una pestaña y el indicador viaja con un muelle (llega con un rebote corto), se **estira** un poco en la dirección del movimiento según la velocidad (y se aplana, para conservar el volumen). Con `data-ns-tabs="drop"`, además deja una gota detrás que se funde con él (por defecto no: más limpio).
-- **`data-ns-tabs="shrink"`:** como la barra de iOS 26, se encoge un poco (`--ns-tabs-min`, 0,84) al desplazar hacia abajo y vuelve al subir o al tocarla. Escucha la página, o el contenedor de `data-ns-tabs-scroll="selector"`. Sólo cambia `scale`: el vidrio escala con la barra sin recalcular nada (`ns-frame/liquid` mide sus piezas en coordenadas del grupo, así que funciona bajo cualquier escala).
+- **`data-ns-tabs="shrink"`:** se encoge un poco (`--ns-tabs-min`, 0,84) al desplazar hacia abajo y vuelve al subir o al tocarla. Escucha la página, o el contenedor de `data-ns-tabs-scroll="selector"`. Sólo cambia `scale`: el vidrio escala con la barra sin recalcular nada (`ns-frame/liquid` mide sus piezas en coordenadas del grupo, así que funciona bajo cualquier escala).
 - **Arrastra** desde cualquier pestaña, o mantén pulsada la activa, y el indicador **se levanta**: crece un 14 % y se vuelve una lente clara que **aumenta** lo que hay debajo (`--ns-tabs-zoom-lift`, 0,38; `--ns-tabs-lens-lift`, `--ns-tabs-tint-lift`). Dentro de una barra con `data-ns-liquid-src`, el indicador hereda ese fondo (en Safari, su lente se aplica sobre la misma copia). Sigue al dedo; más allá de los extremos se resiste como una goma, y al soltar encaja en la pestaña más cercana. Un gesto más vertical que horizontal es un desplazamiento de la página, no un arrastre.
 - **Teclado:** flechas (dan la vuelta en los extremos; al revés en RTL), Inicio y Fin. Con `role="tablist"` y `role="tab"` usa `aria-selected` y foco itinerante; si no, `aria-pressed`.
 - La pestaña elegida lleva la clase `ns-tabs-on`. La pestaña bajo el indicador lleva la clase `ns-tabs-hot` mientras la lente pasa por encima (para cambiar el color del texto a la vez). Evento `change` con `detail { index, tab }`; `tabs(el).select(i)` la cambia por código.

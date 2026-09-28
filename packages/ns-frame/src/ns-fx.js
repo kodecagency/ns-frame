@@ -1,4 +1,4 @@
-/*! ns-frame/fx · texto que se "descifra" al entrar en pantalla: data-ns-decode[="hover"] */
+/*! ns-frame/fx · texto que se "descifra" al entrar en pantalla (data-ns-decode[="hover"]) y pausa fuera de pantalla de los efectos animados de ns-fx.css */
 // Duración: data-ns-decode-time (ms) o --ns-decode-time (900 ms). También los elementos que se añaden
 // después (con watch del núcleo), y se desmonta al quitar el atributo.
 import { watch, reduced, cssTime } from './ns-frame.js'
@@ -34,8 +34,18 @@ if (typeof document != 'undefined') {
     hover ? el.addEventListener('pointerenter', go) : io.observe(el)
     return { destroy() { el.removeEventListener('pointerenter', go); io.unobserve(el); cancelAnimationFrame(el._nsd) } }
   })
-  // las animaciones de conjunto de la luz en U repintan en cada frame: fuera de pantalla se pausan
-  const idle = new IntersectionObserver(es => es.forEach(e => e.target.classList.toggle('ns-idle', !e.isIntersecting)))
-  const init = () => document.querySelectorAll('.ns-u-live,.ns-u-tide,.ns-u-surge').forEach(el => { if (!el._nsi) { el._nsi = 1; idle.observe(el) } })
-  document.readyState == 'loading' ? addEventListener('DOMContentLoaded', init) : init()
 }
+
+// Efectos animados de ns-fx.css: fuera de pantalla se pausan (.ns-idle). Una animación CSS que no se
+// ve sigue produciendo fotogramas; cada uno recalculaba estilos y rehacía las capas de toda la página
+// (en la landing, 166 fotogramas por segundo en zonas sin nada animado a la vista)
+export const EFFECTS = '.ns-u-live,.ns-u-tide,.ns-u-surge,.ns-u-breathe,.ns-u-hue,.ns-aura,.ns-aura-top,.ns-scan,.ns-shimmer,.ns-pulse,.ns-text-shimmer,.ns-text-aurora'
+let idle
+/** Vigila los efectos animados que haya en `root` (se llama sola al cargar; tras añadir contenido, otra vez). */
+export function refresh(root = document) {
+  if (typeof IntersectionObserver == 'undefined') return
+  idle ||= new IntersectionObserver(es => es.forEach(e => e.target.classList.toggle('ns-idle', !e.isIntersecting)))
+  const all = root.querySelectorAll(EFFECTS)
+  for (const el of root.matches?.(EFFECTS) ? [root, ...all] : all) if (!el._nsi) { el._nsi = 1; idle.observe(el) }
+}
+if (typeof document != 'undefined') document.readyState == 'loading' ? addEventListener('DOMContentLoaded', () => refresh()) : refresh()

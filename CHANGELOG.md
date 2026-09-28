@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.17.0 — efectos que no gastan: pausa fuera de pantalla real y más al compositor
+
+Sin cambios de aspecto. Medido en la landing (Chrome sin ventana, 1366 px y 390 px, página quieta).
+
+- **`ns-frame/fx`: todos los efectos animados se pausan fuera de pantalla** (luz en U animada, aura, `ns-scan`, `ns-shimmer`, `ns-pulse`, texto con brillo), no sólo la luz en U. Nuevo `refresh(root?)` para contenido añadido después y `EFFECTS` (el selector). Zonas de la landing sin nada animado a la vista: de 55–220 ms de CPU por segundo a 1–19, sin fotogramas de más.
+- **Corregido:** la pausa fuera de pantalla de `ns-fx.css` perdía en la cascada frente a la regla de cada efecto y no pausaba sus `::before`/`::after`: ahora usa una clase doble.
+- **`ns-shimmer` en el compositor:** la capa del destello se desplaza con `transform` (mismo recorrido que el fondo de 100 % a 0 %); en capturas congeladas difiere el 0,003 % de los píxeles.
+- **`data-ns-spin` en el compositor:** capa con la máscara del borde y el degradado girando con `rotate`, traducido a CSS con la misma geometría y la mezcla de color de SVG. La tarjeta Pro de la landing en móvil deja de repintar su borde; difiere el 0,1–1 % de los píxeles (suavizado de las esquinas). Con doble línea o `data-ns-draw`, sigue en la SVG.
+- **Los bordes animados ya no se detienen al desplazar** (en táctil se pausaban y parecía un cuelgue): la pausa durante el scroll pasa a ser opcional con `<html data-ns-scroll-pause>`. `data-ns-scroll-motion` ya no hace falta (no molesta si se deja).
+- **Sin marcas ajenas en documentación, tipos y comentarios** (la barra de pestañas se describe por sí misma).
+
 ## 0.16.0 — motor más barato: lecturas limpias, sólo lo cercano y el compositor
 
 Sin cambios de API ni de aspecto. Medido en una tienda de prueba (220 tarjetas, ~1100 marcos, isla y carrito con vidrio, 4 `scan`) a 390×844, dpr 3 y CPU ×4, frente a 0.15.1 (tabla completa en [Rendimiento](docs/rendimiento.md)).
@@ -226,7 +237,7 @@ La landing no hace nada a mano que no sea composición: lo que se repetía pasa 
 ### Vidrio más limpio y barra que se encoge
 - **Sin contorno:** en `ns-frame/glass` el canto lo dibuja la luz (brillo según el ángulo de cada tramo, en un canvas recortado a la forma y sin costuras) y una sombra suave (`--ns-glass-shadow`) lo separa del fondo; el borde de ns-frame ya no se superpone (doble contorno) salvo con `data-ns-glass="border"`.
 - **Cristal tallado** con lente plana por caras: el fondo se parte en cada corte, como una gema.
-- `ns-tabs`: sin la gota que se quedaba atrás (se veía como un tirón y deformaba la píldora; ahora opcional con `drop`), estiramiento más sutil, más margen para distinguir un toque de un arrastre con el dedo, clase `ns-tabs-on` y `shrink` (se encoge al desplazar, como iOS 26).
+- `ns-tabs`: sin la gota que se quedaba atrás (se veía como un tirón y deformaba la píldora; ahora opcional con `drop`), estiramiento más sutil, más margen para distinguir un toque de un arrastre con el dedo, clase `ns-tabs-on` y `shrink` (se encoge al desplazar).
 - `ns-liquid` mide las piezas en coordenadas del grupo: correcto bajo `scale` o `transform`; la copia del fondo en Safari se desescala.
 - Clon del DOM (Safari) más ligero: sólo las ~100 propiedades que se ven, y se rehace en un momento libre del hilo.
 - Sitio: galería de piezas de vidrio con forma que se arrastran; etiquetas de la barra del móvil con más aire.
@@ -241,7 +252,7 @@ La landing no hace nada a mano que no sea composición: lo que se repetía pasa 
 
 ### Pestañas de vidrio líquido (`ns-frame/tabs`, nuevo)
 - Arrastre con el dedo: con toques, el navegador retiene el puntero en la pestaña tocada y al pasarlo a la barra esa pestaña emitía `lostpointercapture`, que subía hasta la barra y cortaba el arrastre. Sólo cuenta el de la barra (verificado con toques reales).
-- `data-ns-tabs`: la barra de pestañas de iOS 26. El indicador viaja con un muelle, se estira con la velocidad y deja una gota que se funde; se arrastra entre pestañas levantándose como una lente clara, con resistencia de goma en los extremos, y encaja al soltar. Teclado, ARIA (`tablist`/`tab` o `aria-pressed`), evento `change` y `prefers-reduced-motion`.
+- `data-ns-tabs`: barra de pestañas de vidrio. El indicador viaja con un muelle, se estira con la velocidad y deja una gota que se funde; se arrastra entre pestañas levantándose como una lente clara, con resistencia de goma en los extremos, y encaja al soltar. Teclado, ARIA (`tablist`/`tab` o `aria-pressed`), evento `change` y `prefers-reduced-motion`.
 
 ### Vidrio líquido (`ns-frame/liquid`)
 - **Contorno exacto:** curvas que pasan por los puntos del campo (Catmull-Rom → Bézier cúbicas) con los lados rectos en línea; un círculo sale redondo con menos de 0,05 px de error (antes, las cuadráticas por puntos medios lo achataban). Rejilla adaptativa entre 1,25 y 3 px.

@@ -88,7 +88,11 @@
   mask: linear-gradient(var(--ns-u-dir, to top), #000 calc(var(--m) * .75), rgb(0 0 0 / .3) calc(var(--m) * 1.7), rgb(0 0 0 / .12));
   opacity: calc(.5 + var(--ns-u-k, 1) * .5);
 }
-.ns-idle { animation-play-state: paused }
+/* fuera de pantalla (.ns-idle, lo pone ns-fx.js): la pieza, sus capas ::before/::after y su borde se
+   pausan. Una animación CSS que no se ve sigue produciendo fotogramas: cada uno recalculaba estilos y
+   rehacía las capas de TODA la página. (Clase doble: más específica que la de cada efecto, que va
+   después y con el atajo animation volvería a ponerla en marcha) */
+.ns-idle.ns-idle, .ns-idle.ns-idle::before, .ns-idle.ns-idle::after, .ns-idle.ns-idle > .ns-svg { animation-play-state: paused }
 /* sección: dos colores que se funden despacio (sólo opacity: se compone en GPU, sin repintar) */
 .ns-aura, .ns-aura-top { --ns-u: var(--ns-aura-1, #3de0ff); --ns-u-glow: var(--ns-aura-o, .55); --ns-u-rise: 38%; --ns-u-side: 16%; --ns-u-corner: 45% }
 :is(.ns-aura, .ns-aura-top)::before {
@@ -151,12 +155,14 @@
 
 /* ── Destello que barre el marco ── */
 .ns-shimmer { position: relative; overflow: hidden }
+/* (una capa del triple de ancho con el degradado, que se desplaza con transform: la mueve la GPU sin
+   repintar. Es el mismo recorrido que mover el fondo de 100 % a 0 %: de −2 anchos a 0) */
 .ns-shimmer::after {
-  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 2;
-  background: linear-gradient(105deg, transparent 38%, var(--ns-shine, rgba(255, 255, 255, .13)) 50%, transparent 62%) 0 0 / 300% 100% no-repeat;
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 300%; pointer-events: none; z-index: 2;
+  background: linear-gradient(105deg, transparent 38%, var(--ns-shine, rgba(255, 255, 255, .13)) 50%, transparent 62%) no-repeat;
   animation: ns-shine var(--ns-shine-time, 3.6s) ease-in-out infinite;
 }
-@keyframes ns-shine { from { background-position: 100% 0 } 60%, to { background-position: 0 0 } }
+@keyframes ns-shine { from { transform: translateX(-66.6667%) } 60%, to { transform: none } }
 
 /* ── Texto ── */
 .ns-text-shimmer, .ns-text-aurora { -webkit-background-clip: text; background-clip: text; color: transparent; animation: ns-text var(--ns-text-time, 2.8s) linear infinite }

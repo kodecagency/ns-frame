@@ -316,7 +316,7 @@ const STYLE = `
 .ns-pre .ns-b,.ns-pre .ns-a{stroke-dasharray:100 100;stroke-dashoffset:100}
 .ns-draw .ns-b{stroke-dasharray:100 100;animation:ns-d var(--ns-draw-time,1.2s) cubic-bezier(.65,0,.35,1) both}
 .ns-draw .ns-a{animation:ns-o .4s var(--ns-draw-time,1.2s) both}
-.ns-off *,:is(.ns-scrolling,.ns-resting) :is(.ns-svg,.ns-mo-fx,.ns-band) *{animation-play-state:paused!important}
+.ns-off *,:is(.ns-scrolling,.ns-resting) :is(.ns-svg,.ns-mo-fx,.ns-band,.ns-spin) *{animation-play-state:paused!important}
 @keyframes ns-d{from{stroke-dashoffset:100}to{stroke-dashoffset:0}}
 @keyframes ns-o{from{opacity:0}}
 @media (prefers-reduced-motion:reduce){.ns-svg *{animation:none!important;stroke-dashoffset:0!important}.ns-pre .ns-b{stroke-dasharray:none}}
@@ -480,12 +480,25 @@ function decorate(s, V, d, T, at) {
   }
   if (pi) pi.setAttribute('transform', `translate(${L.inner} ${L.inner}) scale(${(w - 2 * L.inner) / w} ${(h - 2 * L.inner) / h})`)
   const E = gk && extras(s)
-  if (gk != s.gk && (!gk || E)) {
-    s.gk = gk
-    const defs = part(s, 'd', gk || s.p.d)
-    if (defs) defs.replaceChildren(...(gk ? [E.gradient(L.border, w, h, id, s.spin)].filter(Boolean) : []))
+  // degradado que gira: en el compositor (una capa bajo la SVG, X.spin), salvo con doble línea o
+  // dibujo de entrada, que siguen en la SVG. Entonces la SVG no pinta el borde
+  let spun = !!(E && s.spin && !L.inner && attr(s.el, 'draw') == null)
+  const sk = spun && [L.border, w, h, s.spin, s.bw].join('|')
+  if (sk !== s.spk) {
+    s.sp?.remove()
+    s.sp = sk ? E.spin(L.border, w, h, s.spin, s.bw) : null
+    s.spk = sk
+    if (s.sp) { s.sp.classList.toggle('ns-off', svg.classList.contains('ns-off')); svg.before(s.sp) }
   }
-  if (pb) pb.style.stroke = s.gk ? url : ''
+  if (s.sp) E.spin.path(s.sp, d, L.bl, L.bt)
+  else spun = false
+  const gs = spun ? '' : gk
+  if (gs != s.gk && (!gs || E)) {
+    s.gk = gs
+    const defs = part(s, 'd', gs || s.p.d)
+    if (defs) defs.replaceChildren(...(gs ? [E.gradient(L.border, w, h, id, s.spin)].filter(Boolean) : []))
+  }
+  if (pb) pb.style.stroke = spun ? 'none' : s.gk ? url : ''
   if (pi) pi.style.stroke = s.gk ? `var(--ns-inner-color,${url})` : ''
   // acentos (brackets): se calculan en el módulo extra; mientras llega, el trazo espera oculto
   if (pa) { const A = extras(s); A ? A.accent(pa, s.accent, V, T, at) : (pa.style.display = 'none') }
@@ -555,6 +568,8 @@ function read(s) {
     motion, mt: TIME.test(mt) ? mt : '', fps: !motion ? 0 : fv ? parseFloat(fv) || 0 : quality() == 'low' ? 30 : 0,
     // (el grosor del trazo, en px: el barrido del compositor lo dibuja en su máscara)
     aw: motion ? parseFloat(cs.getPropertyValue('--ns-accent-width')) || 2 : 0,
+    // (el grosor del borde, en px, si el degradado gira: la capa del compositor lo dibuja en su máscara)
+    bw: TIME.test(sp) || sp == '' ? parseFloat(cs.getPropertyValue('--ns-border-width')) || 1 : 0,
     ss: parseFloat(cs.getPropertyValue('--ns-spot-size')) || 140,
     nat: attr(el, 'native') != null, scr: attr(el, 'scroll'),
     // padding base = padding actual menos el margen seguro ya aplicado (sólo si se usa el margen seguro)
@@ -567,7 +582,7 @@ function read(s) {
 function write(s, r, animate) {
   if (!s.w || !s.h) return
   const { src, look } = r
-  const key = [s.w, s.h, src, look.border, look.inner, look.bl, look.bt, r.accent, r.motion, r.mt, r.fps, r.aw, r.spin, r.fo, r.ss, r.pad, r.nat, r.scr, FORCED.matches].join('|')
+  const key = [s.w, s.h, src, look.border, look.inner, look.bl, look.bt, r.accent, r.motion, r.mt, r.fps, r.aw, r.bw, r.spin, r.fo, r.ss, r.pad, r.nat, r.scr, FORCED.matches].join('|')
   if (key == s.key) return
   const moved = src != s.src
   Object.assign(s, r)
@@ -711,6 +726,7 @@ function onView(es) {
     svg.classList.toggle('ns-off', !e.isIntersecting)
     // (las animaciones de borde del compositor van en su propia capa, junto a la SVG)
     for (const k in s.mo) s.mo[k].localName == 'i' && s.mo[k].classList.toggle('ns-off', !e.isIntersecting)
+    s.sp?.classList.toggle('ns-off', !e.isIntersecting)
     if (e.intersectionRatio >= .2 && svg.classList.contains('ns-pre')) svg.classList.replace('ns-pre', 'ns-draw')
   }
 }
@@ -754,17 +770,18 @@ function delegate() {
   on('focusout', e => { const a = chain(e.target); a.forEach(up); requestAnimationFrame(() => a.forEach(hot)) })
 }
 
-// En táctil, mientras se desplaza la página (o algo dentro), <html> lleva .ns-scrolling y las
-// animaciones de adorno de la librería se pausan; ~160 ms después de parar, siguen donde estaban. Cada
-// borde animado a la vista se repintaba en cada fotograma del desplazamiento, que en un teléfono es lo
-// que más cuesta. <html data-ns-scroll-motion> las deja siempre en marcha. En tu CSS, .ns-scrolling
-// sirve para lo mismo con tus animaciones
+// Opcional (<html data-ns-scroll-pause>): en táctil, mientras se desplaza la página (o algo dentro),
+// <html> lleva .ns-scrolling y las animaciones de adorno se pausan; ~160 ms después de parar, siguen
+// donde estaban. Ahorra batería con bordes que repintan (comet, twin…), pero un borde que se detiene
+// al desplazar parece un cuelgue: por defecto siguen en marcha (scan y el giro ya van en el
+// compositor). data-ns-scroll-motion, que antes lo desactivaba, ya es lo de siempre. En tu CSS,
+// .ns-scrolling sirve para lo mismo con tus animaciones
 function scrolling() {
   if (!touch()) return
   const h = document.documentElement
   let t = 0
   addEventListener('scroll', () => {
-    if (h.hasAttribute('data-ns-scroll-motion')) return
+    if (!h.hasAttribute('data-ns-scroll-pause')) return
     h.classList.add('ns-scrolling'); clearTimeout(t)
     t = setTimeout(() => h.classList.remove('ns-scrolling'), 160)
   }, { passive: true, capture: true })
@@ -849,7 +866,7 @@ export function detach(el, clear) {
   LATE.delete(s)
   cancelAnimationFrame(s.anim)
   s.anim = 0
-  if (clear) { el.style.clipPath = ''; s.svg?.remove(); for (const k in s.mo) s.mo[k].remove(); S.delete(el) }
+  if (clear) { el.style.clipPath = ''; s.svg?.remove(); s.sp?.remove(); for (const k in s.mo) s.mo[k].remove(); S.delete(el) }
 }
 
 /** Forma efectiva que ns-frame está usando en un elemento (incluye data-ns-nest y --ns-shape). */

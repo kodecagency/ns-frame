@@ -25,6 +25,14 @@ const CSS = `@layer ns{
 .ns-band>i>i>i{animation:ns-bm var(--ns-motion-time,3.2s) linear infinite}
 .ns-band>i>i>i>i{height:100%;background:linear-gradient(90deg,transparent,var(--ns-motion,var(--ns-accent,currentColor)),transparent)}
 @keyframes ns-bm{from{transform:translateX(0)}to{transform:translateX(100%)}}
+.ns-spin{position:absolute;pointer-events:none;z-index:1;filter:var(--ns-glow,none)}
+@media (hover:none) and (pointer:coarse){.ns-spin{filter:var(--ns-glow-touch,none)}}
+.ns-spin i{position:absolute;left:0;top:0;display:block}
+.ns-spin>i{-webkit-mask:var(--m) 0 0/100% 100% no-repeat;mask:var(--m) 0 0/100% 100% no-repeat}
+.ns-spin>i>i{animation:ns-spn 6s linear infinite}
+@keyframes ns-spn{to{transform:rotate(1turn)}}
+@media (prefers-reduced-motion:reduce){.ns-spin>i>i{animation:none}}
+@media (forced-colors:active){.ns-spin{display:none}}
 .ns-or{animation:ns-or 4s linear infinite}
 @keyframes ns-sc{from{transform:translate(var(--a),0)}to{transform:translate(var(--b),0)}}
 @keyframes ns-or{to{transform:rotate(1turn)}}
@@ -41,7 +49,7 @@ const CSS = `@layer ns{
 export function init(h) {
   ({ mk, f, num, geometry, paint, write, read, reduced, touch, lerp } = h)
   h.styles(CSS)
-  return { gradient, motions: motions(), spot, aperture, play, scroll, accent }
+  return { gradient, spin, motions: motions(), spot, aperture, play, scroll, accent }
 }
 
 // trocea por comas de nivel superior (respeta los paréntesis anidados, como los de rgba())
@@ -56,38 +64,33 @@ function split(s) {
 }
 const KW = { left: '0%', top: '0%', center: '50%', right: '100%', bottom: '100%' }
 
-// linear-gradient()/radial-gradient() de CSS -> gradiente SVG en coordenadas de la caja
-function gradient(str, w, h, id, spin) {
+// linear-gradient()/radial-gradient() de CSS, analizado en coordenadas de una caja w×h: tipo, ángulo
+// (a) y centro de un lineal con la longitud de su línea (len); centro y radios de un radial (círculo
+// hasta la esquina más lejana, o la elipse rx×ry pedida); y las paradas como fracciones de len
+function parse(str, w, h) {
   const m = /^(linear|radial)-gradient\((.*)\)$/s.exec(str)
-  if (!m) return
-  const parts = split(m[2]), head = parts[0]
-  let cx = w / 2, cy = h / 2, a = Math.PI, len, geo, t0
-  if (m[1] == 'linear') {
+  if (!m) return null
+  const parts = split(m[2]), head = parts[0], G = { kind: m[1], cx: w / 2, cy: h / 2, a: Math.PI }
+  if (G.kind == 'linear') {
     if (/^to\s/.test(head)) {
       const dx = /right/.test(head) - /left/.test(head), dy = /bottom/.test(head) - /top/.test(head)
-      a = Math.atan2(dx * h, -dy * w); parts.shift()
+      G.a = Math.atan2(dx * h, -dy * w); parts.shift()
     } else if (/^-?[\d.]+(deg|turn|rad)$/.test(head)) {
-      a = parseFloat(head) * { deg: Math.PI / 180, turn: 2 * Math.PI, rad: 1 }[/[a-z]+$/.exec(head)[0]]; parts.shift()
+      G.a = parseFloat(head) * { deg: Math.PI / 180, turn: 2 * Math.PI, rad: 1 }[/[a-z]+$/.exec(head)[0]]; parts.shift()
     }
-    const s = Math.sin(a), c = Math.cos(a)
-    len = Math.abs(w * s) + Math.abs(h * c)
-    geo = { x1: f(cx - s * len / 2), y1: f(cy + c * len / 2), x2: f(cx + s * len / 2), y2: f(cy - c * len / 2) }
+    G.len = Math.abs(w * Math.sin(G.a)) + Math.abs(h * Math.cos(G.a))
   } else {
-    let rx, ry
     if (/\bat\b|circle|ellipse|closest|farthest|^[\d.]+(px|%)/.test(head)) {
       let [, X = 'center', Y] = /at\s+(\S+)(?:\s+(\S+))?/.exec(head) || []
       if (!Y) Y = /top|bottom/.test(X) ? ((Y = X), (X = 'center'), Y) : 'center'
-      cx = num(KW[X] || X, w); cy = num(KW[Y] || Y, h); parts.shift()
+      G.cx = num(KW[X] || X, w); G.cy = num(KW[Y] || Y, h); parts.shift()
       // tamaño explícito: "70% 90% at …" (elipse) o "120px at …" (círculo)
       const sz = /^(?:ellipse\s+|circle\s+)?([\d.]+(?:px|%))(?:\s+([\d.]+(?:px|%)))?\s/.exec(head + ' ')
-      if (sz) { rx = num(sz[1], w); ry = sz[2] ? num(sz[2], h) : rx }
+      if (sz) { G.rx = num(sz[1], w); G.ry = sz[2] ? num(sz[2], h) : G.rx }
     }
-    len = rx ? Math.max(rx, ry) : Math.max(...[[0, 0], [w, 0], [0, h], [w, h]].map(([x, y]) => Math.hypot(x - cx, y - cy)))
-    // la elipse se hace con un círculo unitario escalado (SVG sólo tiene gradientes circulares)
-    geo = rx ? { cx: 0, cy: 0, r: 1, gradientTransform: `translate(${f(cx)} ${f(cy)}) scale(${f(rx)} ${f(ry)})` } : { cx: f(cx), cy: f(cy), r: f(len) }
-    if (rx) t0 = `translate(${f(cx)}px, ${f(cy)}px) scale(${f(rx)}, ${f(ry)})`
+    G.len = G.rx ? Math.max(G.rx, G.ry) : Math.max(...[[0, 0], [w, 0], [0, h], [w, h]].map(([x, y]) => Math.hypot(x - G.cx, y - G.cy)))
   }
-  const st = parts.map(p => { const q = /\s(-?[\d.]+)(%|px)$/.exec(p); return q ? [p.slice(0, q.index), q[2] == 'px' ? q[1] / len : q[1] / 100] : [p, null] })
+  const st = G.stops = parts.map(p => { const q = /\s(-?[\d.]+)(%|px)$/.exec(p); return q ? [p.slice(0, q.index), q[2] == 'px' ? q[1] / G.len : q[1] / 100] : [p, null] })
   st[0][1] ??= 0
   st[st.length - 1][1] ??= 1
   for (let i = 1; i < st.length; i++) if (st[i][1] == null) {
@@ -95,12 +98,68 @@ function gradient(str, w, h, id, spin) {
     while (st[j][1] == null) j++
     for (let k = i; k < j; k++) st[k][1] = st[i - 1][1] + (st[j][1] - st[i - 1][1]) * (k - i + 1) / (j - i + 1)
   }
+  return G
+}
+
+// → gradiente SVG en coordenadas de la caja (el trazo del borde lo usa con url(#id))
+function gradient(str, w, h, id, spin) {
+  const G = parse(str, w, h)
+  if (!G) return
+  const { cx, cy, len, rx, ry } = G
+  let geo, t0
+  if (G.kind == 'linear') {
+    const s = Math.sin(G.a), c = Math.cos(G.a)
+    geo = { x1: f(cx - s * len / 2), y1: f(cy + c * len / 2), x2: f(cx + s * len / 2), y2: f(cy - c * len / 2) }
+  } else {
+    // la elipse se hace con un círculo unitario escalado (SVG sólo tiene gradientes circulares)
+    geo = rx ? { cx: 0, cy: 0, r: 1, gradientTransform: `translate(${f(cx)} ${f(cy)}) scale(${f(rx)} ${f(ry)})` } : { cx: f(cx), cy: f(cy), r: f(len) }
+    if (rx) t0 = `translate(${f(cx)}px, ${f(cy)}px) scale(${f(rx)}, ${f(ry)})`
+  }
   // giro con una animación CSS (transform sobre el degradado, SVG 2) en vez de SMIL:
   // se pausa fuera de pantalla con .ns-off y no se congela en móviles
-  return mk(m[1] + 'Gradient', { id, gradientUnits: 'userSpaceOnUse', ...geo }, spin ? {
+  return mk(G.kind + 'Gradient', { id, gradientUnits: 'userSpaceOnUse', ...geo }, spin ? {
     animation: `ns-sp ${spin} linear infinite`, 'transform-origin': '0 0',
     '--c': `${f(w / 2)}px, ${f(h / 2)}px`, '--nc': `${f(-w / 2)}px, ${f(-h / 2)}px`, '--t0': t0 || 'translate(0)',
-  } : {}, ...st.map(([col, o]) => mk('stop', { offset: o }, { 'stop-color': col })))
+  } : {}, ...G.stops.map(([col, o]) => mk('stop', { offset: o }, { 'stop-color': col })))
+}
+
+// → el mismo degradado en CSS para una caja D×D centrada sobre la de w×h (la que gira en el
+// compositor: tiene que cubrir la caja en cualquier ángulo). Misma línea y mismas paradas: en un
+// lineal, la línea de la caja grande es más larga y las paradas se recolocan dentro de ella; un
+// radial conserva centro y radios, desplazados al origen de la caja grande
+function gradientCSS(G, w, h, D) {
+  const ox = (D - w) / 2, oy = (D - h) / 2, S = svgStops(G.stops)
+  if (G.kind == 'linear') {
+    const LD = D * (Math.abs(Math.sin(G.a)) + Math.abs(Math.cos(G.a))), o = (LD - G.len) / 2
+    return `linear-gradient(${f(G.a)}rad,${S.map(([c, t]) => `${c} ${f((o + t * G.len) / LD * 100)}%`).join()})`
+  }
+  const size = G.rx ? `${f(G.rx)}px ${f(G.ry)}px` : `circle ${f(G.len)}px`
+  return `radial-gradient(${size} at ${f(G.cx + ox)}px ${f(G.cy + oy)}px,${S.map(([c, t]) => `${c} ${f(t * 100)}%`).join()})`
+}
+// Un degradado SVG interpola color y opacidad por separado; uno CSS, premultiplicado: entre un verde
+// opaco y un blanco translúcido, el SVG pasa por blancos apagados y el CSS conserva el verde. Para que
+// la capa del compositor se vea igual que el borde SVG, entre dos paradas de distinta opacidad se
+// añaden paradas intermedias con la mezcla del SVG (8 por tramo: a esa escala ya no se distingue)
+let cx2d
+const rgba = c => {
+  cx2d ||= document.createElement('canvas').getContext('2d')
+  // (un color que el canvas no entiende deja el anterior: el centinela)
+  cx2d.fillStyle = 'rgba(1,2,3,0)'; const none = cx2d.fillStyle; cx2d.fillStyle = c
+  const v = cx2d.fillStyle, m = /^#(..)(..)(..)$/.exec(v) || /^rgba?\(([^,]+),([^,]+),([^,)]+)(?:,([^)]+))?\)$/.exec(v.replace(/\s/g, ''))
+  if (!m || v == none) return null
+  return m[0][0] == '#' ? [...m.slice(1, 4).map(x => parseInt(x, 16)), 1] : [+m[1], +m[2], +m[3], m[4] == null ? 1 : +m[4]]
+}
+function svgStops(st) {
+  const out = [st[0]]
+  for (let i = 1; i < st.length; i++) {
+    const [c0, t0] = st[i - 1], [c1, t1] = st[i], A = rgba(c0), B = rgba(c1)
+    if (A && B && A[3] != B[3]) for (let k = 1; k < 8; k++) {
+      const u = k / 8, L = j => A[j] + (B[j] - A[j]) * u
+      out.push([`rgba(${f(L(0))},${f(L(1))},${f(L(2))},${f(L(3))})`, t0 + (t1 - t0) * u])
+    }
+    out.push(st[i])
+  }
+  return out
 }
 
 // Animaciones de borde: cada una devuelve sus nodos; las que dependen del tamaño reciben (id, w, h, t).
@@ -141,6 +200,17 @@ const band = (id, w, h, geo, rect, cls, t, css, stops = [[0, 0], [.5, 1], [1, 0]
 // El desplazador mide recorrido + banda y avanza el 100 % de su ancho (fotogramas clave fijos, sin
 // variables: así el compositor puede animarlo solo); la banda va a su izquierda, fuera, al empezar
 const I = (...k) => { const e = document.createElement('i'); k.length && e.append(...k); return e }
+// el trazo de un contorno como imagen de máscara (se rasteriza una vez), con un margen p alrededor:
+// el trazo sale la mitad hacia fuera del contorno
+const strokeMask = (d, w, h, p, sw, cap) => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='${f(w + 2 * p)}' height='${f(h + 2 * p)}'><path transform='translate(${p} ${p})' d='${d}' fill='none' stroke='#fff' stroke-width='${f(sw)}' stroke-linecap='${cap}'/></svg>`)}")`
+// capa del compositor junto a la SVG del marco: su máscara sigue al contorno (sólo si cambió; en un
+// morph, en cada fotograma) y se coloca donde la SVG
+const place = (out, d, bl, bt, sw, cap) => {
+  if (out._d == d) return
+  out._d = d
+  out.firstChild.style.setProperty('--m', strokeMask(d, out._w, out._h, out._p, sw, cap))
+  out.style.left = -bl + 'px'; out.style.top = -bt + 'px'
+}
 function scan(id, w, h, t, r, fps, aw = 2) {
   const a = Math.atan2(h, w), c = Math.cos(a), s = Math.sin(a)
   const L = w * c + h * s, bw = Math.max(40, Math.min(240, L * .32)), v0 = -w * s - 20, vh = w * s + h * c + 40
@@ -159,16 +229,24 @@ function scan(id, w, h, t, r, fps, aw = 2) {
   return out
 }
 scan.html = true
-// el contorno: la máscara (sólo si cambió; en un morph, en cada fotograma) y la posición de la capa,
-// la misma que la SVG del marco
-scan.path = (out, d, bl, bt) => {
-  if (out._d == d) return
-  out._d = d
-  const { _p: p, _w: w, _h: h, _aw: aw } = out
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${f(w + 2 * p)}' height='${f(h + 2 * p)}'><path transform='translate(${p} ${p})' d='${d}' fill='none' stroke='#fff' stroke-width='${f(2 * aw)}' stroke-linecap='round'/></svg>`
-  out.firstChild.style.setProperty('--m', `url("data:image/svg+xml,${encodeURIComponent(svg)}")`)
-  out.style.left = -bl + 'px'; out.style.top = -bt + 'px'
+scan.path = (out, d, bl, bt) => place(out, d, bl, bt, 2 * out._aw, 'round')
+
+// Borde con degradado que gira (data-ns-spin) en el compositor: la máscara es el trazo del borde y
+// dentro gira un cuadrado que cubre la caja en cualquier ángulo, con el mismo degradado (gradientCSS).
+// Mover el degradado dentro de la SVG repintaba el borde y su estilo en cada fotograma; aquí sólo
+// cambia un transform. Va debajo de la SVG del marco: acentos y foco siguen pintándose encima
+function spin(str, w, h, t, bw) {
+  const G = parse(str, w, h)
+  if (!G) return null
+  const D = Math.ceil(Math.hypot(w, h)) + 2, p = Math.ceil(bw * 2), r = I(), m = I(r), out = I(m)
+  out.className = 'ns-spin'
+  Object.assign(out.style, { width: f(w) + 'px', height: f(h) + 'px' })
+  Object.assign(m.style, { left: -p + 'px', top: -p + 'px', width: f(w + 2 * p) + 'px', height: f(h + 2 * p) + 'px' })
+  Object.assign(r.style, { left: f((w - D) / 2 + p) + 'px', top: f((h - D) / 2 + p) + 'px', width: D + 'px', height: D + 'px', background: gradientCSS(G, w, h, D), animationDuration: t })
+  out._p = p; out._w = w; out._h = h; out._bw = bw
+  return out
 }
+spin.path = (out, d, bl, bt) => place(out, d, bl, bt, 2 * out._bw, 'butt')
 let MOTION
 const motions = () => MOTION ||= {
   comet: (id, w, h, t, r, fps) => [tail(100, 1, span(w, h), cap(t, 5000, fps))],   // cometa con estela
