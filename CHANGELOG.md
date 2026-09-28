@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.18.1 — la estela del cometa, alineada
+
+- **Corregido: `data-ns-motion="comet"` y `"twin"`.** La estela son tres trazos (tenue, medio y brillante) que deben ir con la punta brillante delante; su adelanto se redondeaba a una décima del ciclo y quedaba en 0 o en 0,1. En `twin` los tres salían juntos por detrás (lo brillante iba a la cola) y en `comet` la punta se adelantaba unos 80 px a la estela. Ahora van alineados, como estaba pensado.
+- Landing: sin el panel de control de vidrio.
+
 ## 0.18.0 — licencia Apache-2.0
 
 Sin cambios de código ni de aspecto.

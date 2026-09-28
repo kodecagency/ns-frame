@@ -166,9 +166,11 @@ function svgStops(st) {
 // Animaciones de borde: cada una devuelve sus nodos; las que dependen del tamaño reciben (id, w, h, t).
 // estela: tres trazos con la cabeza alineada (retraso negativo = adelantado) y opacidad decreciente.
 // k escala la estela: mide unos 100–130 px sea cual sea el marco (en uno grande, el 16 % del
-// perímetro era una línea de cientos de píxeles)
+// perímetro era una línea de cientos de píxeles). El adelanto (--d, fracción del ciclo) va con
+// cuatro decimales: redondeado a uno, como el resto, se quedaba en 0 o en 0,1 y la estela salía
+// desalineada (en twin, lo brillante iba detrás)
 const tail = (P, n = 1, k = 1, step = {}) => mk('g', { class: 'ns-t' }, {}, ...[[16, 0, .22], [8, 8, .5], [3, 13, 1]].map(([l, o, a]) =>
-  mk('path', { pathLength: 100 }, { '--d': f(-o * k / n / 100), 'stroke-dasharray': `${f(l * k / n)} ${f(P - l * k / n)}`, opacity: a, ...step })))
+  mk('path', { pathLength: 100 }, { '--d': Math.round(-o * k / n * 100) / 1e4, 'stroke-dasharray': `${f(l * k / n)} ${f(P - l * k / n)}`, opacity: a, ...step })))
 // Tope de fotogramas (--ns-motion-fps, o 30 en equipos modestos): steps() en lugar de linear, y el
 // trazo sólo se repinta cuando cambia de posición (cada borde animado se repinta entero en cada paso)
 const cap = (t, def, fps) => {
